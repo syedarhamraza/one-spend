@@ -69,9 +69,10 @@ class OneUICard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: OneUITheme.surfaceCard,
+        color: OneUITheme.cardColor,
         borderRadius: OneUITheme.cardBorderRadius,
-        border: OneUITheme.subtleBorder,
+        border: OneUITheme.cardBorder,
+        boxShadow: OneUITheme.cardShadow,
       ),
       child: Material(
         color: Colors.transparent,

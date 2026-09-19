@@ -16,7 +16,7 @@ void main() {
 
     // Verify One UI viewing area header
     expect(find.text('Subscriptions'), findsOneWidget);
-    expect(find.text('OneSpend'), findsOneWidget);
+    expect(find.textContaining('active'), findsOneWidget);
 
     // Verify floating bottom navigation bar exists with its 4 tabs
     expect(find.byType(OneUIFloatingNavBar), findsOneWidget);
@@ -119,5 +119,30 @@ void main() {
 
     store.removeSubscription('test_sub_unit');
     expect(store.subscriptions.length, initialCount);
+  });
+
+  testWidgets('Samsung One UI 9 collapsible header 3-stage scroll test', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Stage 1: Unscrolled -> Big centered title is visible
+    expect(find.text('Subscriptions'), findsOneWidget);
+
+    // Stage 2: Scroll slightly down by 50px
+    await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -50));
+    await tester.pump();
+
+    // Stage 3: Scroll deeply down by 300px
+    await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -300));
+    await tester.pump();
+
+    // Scroll back up to the top
+    await tester.drag(find.byType(CustomScrollView).first, const Offset(0, 400));
+    await tester.pumpAndSettle();
+    expect(find.text('Subscriptions'), findsWidgets);
   });
 }

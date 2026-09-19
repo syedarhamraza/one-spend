@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_card.dart';
-import '../widgets/one_ui_floating_header.dart';
+import '../widgets/one_ui_collapsible_header.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   const AddSubscriptionScreen({super.key});
@@ -125,36 +125,34 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // Top Floating Header Island matching Screenshot 2
-            OneUIFloatingHeader(
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // One UI Signature Collapsible Header with Back Button (Screenshots 1-4)
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: OneUICollapsibleHeaderDelegate(
               title: 'Add Subscription',
-              leadingIcon: Container(
-                width: 28,
-                height: 28,
-                decoration: const BoxDecoration(
-                  color: OneUITheme.accentGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add_rounded, size: 20, color: Colors.white),
-              ),
+              hasBigHeader: false,
+              showBackButton: true,
               onBack: () => Navigator.pop(context),
-              customActions: [
+              actions: [
                 GestureDetector(
                   onTap: _saveSubscription,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       color: OneUITheme.accentGreen,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        width: 0.8,
+                      ),
                     ),
                     child: const Text(
                       'Save',
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 13.0,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -163,292 +161,307 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                 ),
               ],
             ),
+          ),
 
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Section 1: Popular Subscriptions Carousel
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8, bottom: 12),
-                      child: Text(
-                        'Top & Popular Subscriptions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: OneUITheme.textPrimary,
-                        ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 50),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Section 1: Popular Subscriptions Carousel
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8, bottom: 12),
+                    child: Text(
+                      'Top & Popular Subscriptions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: OneUITheme.textPrimary,
                       ),
                     ),
-                    SizedBox(
-                      height: 106,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: popularCatalog.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 10),
-                        itemBuilder: (context, index) {
-                          final pop = popularCatalog[index];
-                          final isSelected = _selectedPopular?.id == pop.id;
+                  ),
+                  SizedBox(
+                    height: 106,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: popularCatalog.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 10),
+                      itemBuilder: (context, index) {
+                        final pop = popularCatalog[index];
+                        final isSelected = _selectedPopular?.id == pop.id;
 
-                          return GestureDetector(
-                            onTap: () => _selectPopular(pop),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 96,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
+                        return GestureDetector(
+                          onTap: () => _selectPopular(pop),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 96,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? OneUITheme.surfacePillActive
+                                  : OneUITheme.surfaceCard,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
                                 color: isSelected
-                                    ? OneUITheme.surfacePillActive
-                                    : OneUITheme.surfaceCard,
-                                borderRadius: BorderRadius.circular(22),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? pop.brandColor
-                                      : OneUITheme.surfacePillBorder,
-                                  width: isSelected ? 1.5 : 0.8,
-                                ),
+                                    ? pop.brandColor
+                                    : OneUITheme.surfacePillBorder,
+                                width: isSelected ? 1.5 : 0.8,
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    width: 38,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      color: pop.brandColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(pop.iconData, color: Colors.white, size: 20),
+                              boxShadow: OneUITheme.cardShadow,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: pop.brandColor,
+                                    shape: BoxShape.circle,
                                   ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    pop.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: OneUITheme.textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    '\$${pop.price.toStringAsFixed(0)}/mo',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: OneUITheme.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Section 2: Subscription Details Form
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8, bottom: 12),
-                      child: Text(
-                        'Details',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: OneUITheme.textPrimary,
-                        ),
-                      ),
-                    ),
-
-                    // Card 1: Service Name & Description
-                    Container(
-                      decoration: BoxDecoration(
-                        color: OneUITheme.surfaceCard,
-                        borderRadius: OneUITheme.cardBorderRadius,
-                        border: OneUITheme.subtleBorder,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                      child: Column(
-                        children: [
-                          TextField(
-                            controller: _nameController,
-                            style: const TextStyle(color: OneUITheme.textPrimary, fontSize: 16),
-                            decoration: const InputDecoration(
-                              labelText: 'Service Name',
-                              labelStyle: TextStyle(color: OneUITheme.textSecondary),
-                              border: InputBorder.none,
-                              prefixIcon: Icon(Icons.label_outline_rounded, color: OneUITheme.textSecondary),
-                            ),
-                          ),
-                          const Divider(height: 1),
-                          TextField(
-                            controller: _descController,
-                            style: const TextStyle(color: OneUITheme.textPrimary, fontSize: 14),
-                            decoration: const InputDecoration(
-                              labelText: 'Plan or Description (optional)',
-                              labelStyle: TextStyle(color: OneUITheme.textSecondary),
-                              border: InputBorder.none,
-                              prefixIcon: Icon(Icons.info_outline_rounded, color: OneUITheme.textSecondary),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // Card 2: Price & Billing Frequency
-                    Container(
-                      decoration: BoxDecoration(
-                        color: OneUITheme.surfaceCard,
-                        borderRadius: OneUITheme.cardBorderRadius,
-                        border: OneUITheme.subtleBorder,
-                      ),
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextField(
-                            controller: _priceController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            style: const TextStyle(
-                              color: OneUITheme.textPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            decoration: const InputDecoration(
-                              prefixText: '\$ ',
-                              prefixStyle: TextStyle(color: OneUITheme.textPrimary, fontSize: 22),
-                              labelText: 'Price',
-                              labelStyle: TextStyle(color: OneUITheme.textSecondary),
-                              border: InputBorder.none,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Billing Cycle',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: OneUITheme.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            children: BillingCycle.values.map((cycle) {
-                              final isSelected = _selectedCycle == cycle;
-                              return ChoiceChip(
-                                label: Text(cycle.label),
-                                selected: isSelected,
-                                onSelected: (_) {
-                                  setState(() => _selectedCycle = cycle);
-                                },
-                                selectedColor: OneUITheme.accentBlue,
-                                backgroundColor: OneUITheme.surfacePill,
-                                labelStyle: TextStyle(
-                                  color: isSelected ? Colors.white : OneUITheme.textSecondary,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  child: Icon(pop.iconData, color: Colors.white, size: 20),
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
+                                const SizedBox(height: 6),
+                                Text(
+                                  pop.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: OneUITheme.textPrimary,
+                                  ),
                                 ),
-                                side: BorderSide.none,
-                              );
-                            }).toList(),
+                                Text(
+                                  '\$${pop.price.toStringAsFixed(0)}/mo',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: OneUITheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Section 2: Subscription Details Form
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8, bottom: 12),
+                    child: Text(
+                      'Details',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: OneUITheme.textPrimary,
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 14),
-
-                    // Card 3: Next Renewal & Reminders
-                    OneUICard(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: OneUITheme.accentBlue.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.calendar_today_rounded, color: OneUITheme.accentBlue, size: 20),
-                      ),
-                      title: 'Next Renewal Date',
-                      subtitle: dateFormat.format(_selectedDate),
-                      subtitleColor: OneUITheme.accentBlue,
-                      trailing: const Icon(Icons.chevron_right_rounded, color: OneUITheme.textSecondary),
-                      onTap: _pickDate,
+                  // Card 1: Service Name & Description
+                  Container(
+                    decoration: BoxDecoration(
+                      color: OneUITheme.cardColor,
+                      borderRadius: OneUITheme.cardBorderRadius,
+                      border: OneUITheme.cardBorder,
+                      boxShadow: OneUITheme.cardShadow,
                     ),
-
-                    const SizedBox(height: 14),
-
-                    // Card 4: Reminder Setting
-                    OneUICard(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: OneUITheme.accentAmber.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.notifications_active_rounded, color: OneUITheme.accentAmber, size: 20),
-                      ),
-                      title: 'Renewal Notification',
-                      subtitle: 'Alert $_reminderDays days before renewal',
-                      trailing: DropdownButton<int>(
-                        value: _reminderDays,
-                        dropdownColor: OneUITheme.surfacePill,
-                        underline: const SizedBox(),
-                        style: const TextStyle(color: OneUITheme.textPrimary, fontWeight: FontWeight.bold),
-                        items: const [
-                          DropdownMenuItem(value: 1, child: Text('1 day')),
-                          DropdownMenuItem(value: 2, child: Text('2 days')),
-                          DropdownMenuItem(value: 3, child: Text('3 days')),
-                          DropdownMenuItem(value: 7, child: Text('1 week')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) setState(() => _reminderDays = val);
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Bottom Big Save Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: OneUITheme.accentGreen,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: OneUITheme.pillBorderRadius,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _nameController,
+                          style: const TextStyle(color: OneUITheme.textPrimary, fontSize: 16),
+                          decoration: const InputDecoration(
+                            labelText: 'Service Name',
+                            labelStyle: TextStyle(color: OneUITheme.textSecondary),
+                            border: InputBorder.none,
+                            prefixIcon: Icon(Icons.label_outline_rounded, color: OneUITheme.textSecondary),
                           ),
                         ),
-                        onPressed: _saveSubscription,
-                        child: const Text(
-                          'Save Subscription',
+                        const Divider(height: 1),
+                        TextField(
+                          controller: _descController,
+                          style: const TextStyle(color: OneUITheme.textPrimary, fontSize: 14),
+                          decoration: const InputDecoration(
+                            labelText: 'Plan or Description (optional)',
+                            labelStyle: TextStyle(color: OneUITheme.textSecondary),
+                            border: InputBorder.none,
+                            prefixIcon: Icon(Icons.info_outline_rounded, color: OneUITheme.textSecondary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Card 2: Price & Billing Frequency
+                  Container(
+                    decoration: BoxDecoration(
+                      color: OneUITheme.cardColor,
+                      borderRadius: OneUITheme.cardBorderRadius,
+                      border: OneUITheme.cardBorder,
+                      boxShadow: OneUITheme.cardShadow,
+                    ),
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: _priceController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: const TextStyle(
+                            color: OneUITheme.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: const InputDecoration(
+                            prefixText: '\$ ',
+                            prefixStyle: TextStyle(color: OneUITheme.textPrimary, fontSize: 22),
+                            labelText: 'Price',
+                            labelStyle: TextStyle(color: OneUITheme.textSecondary),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Billing Cycle',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: OneUITheme.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: BillingCycle.values.map((cycle) {
+                            final isSelected = _selectedCycle == cycle;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedCycle = cycle),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOutCubic,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? OneUITheme.accentBlue
+                                      : OneUITheme.floatingColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  cycle.label,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                    letterSpacing: -0.2,
+                                    color: isSelected ? Colors.white : OneUITheme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Card 3: Next Renewal & Reminders
+                  OneUICard(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: OneUITheme.accentBlue.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.calendar_today_rounded, color: OneUITheme.accentBlue, size: 20),
+                    ),
+                    title: 'Next Renewal Date',
+                    subtitle: dateFormat.format(_selectedDate),
+                    subtitleColor: OneUITheme.accentBlue,
+                    trailing: const Icon(Icons.chevron_right_rounded, color: OneUITheme.textSecondary),
+                    onTap: _pickDate,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Card 4: Reminder Setting
+                  OneUICard(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: OneUITheme.accentAmber.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.notifications_active_rounded, color: OneUITheme.accentAmber, size: 20),
+                    ),
+                    title: 'Renewal Notification',
+                    subtitle: 'Alert $_reminderDays days before renewal',
+                    trailing: DropdownButton<int>(
+                      value: _reminderDays,
+                      dropdownColor: OneUITheme.surfacePill,
+                      underline: const SizedBox(),
+                      style: const TextStyle(color: OneUITheme.textPrimary, fontWeight: FontWeight.bold),
+                      items: const [
+                        DropdownMenuItem(value: 1, child: Text('1 day')),
+                        DropdownMenuItem(value: 2, child: Text('2 days')),
+                        DropdownMenuItem(value: 3, child: Text('3 days')),
+                        DropdownMenuItem(value: 7, child: Text('1 week')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => _reminderDays = val);
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // Bottom Flat Save Button
+                  Container(
+                    width: double.infinity,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      color: OneUITheme.accentGreen,
+                      borderRadius: OneUITheme.pillBorderRadius,
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: OneUITheme.pillBorderRadius,
+                      child: InkWell(
+                        onTap: _saveSubscription,
+                        borderRadius: OneUITheme.pillBorderRadius,
+                        splashColor: Colors.white.withValues(alpha: 0.2),
+                        child: const Center(
+                          child: Text(
+                            'Save Subscription',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,172 +1,211 @@
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
-import '../widgets/one_ui_card.dart';
+import '../widgets/one_ui_alternative_options_card.dart';
+import '../widgets/one_ui_collapsible_header.dart';
+import '../widgets/one_ui_floating_search_pill.dart';
+import '../widgets/one_ui_group_card.dart';
 import 'subscription_detail_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = true;
-  bool _hapticsEnabled = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 120),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Settings',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.6,
-                  color: OneUITheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Preferences and One UI 9 design system',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: OneUITheme.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Section: One UI Design Reference Demo
-              OneUISection(
-                title: 'Design System & Reference Test',
-                child: Column(
-                  children: [
-                    OneUICard(
-                      leading: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: const BoxDecoration(
-                          color: OneUITheme.accentTeal,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 22),
-                      ),
-                      title: 'Open Routine Demo (Screenshot 3)',
-                      subtitle: 'Pixel-perfect 1:1 view of the reference routine screen',
-                      subtitleColor: OneUITheme.accentTeal,
-                      trailing: const Icon(Icons.chevron_right_rounded, color: OneUITheme.textSecondary),
-                      onTap: () {
-                        // Launch the exact "Color filter" demo
-                        final demoSub = Subscription(
-                          id: 'demo_routine',
-                          name: 'Color filter',
-                          description: 'Make text easier to read by applying a color filter to the screen while using selected apps.',
-                          price: 0,
-                          billingCycle: BillingCycle.monthly,
-                          category: SubscriptionCategory.utilities,
-                          brandColor: OneUITheme.accentTeal,
-                          iconData: Icons.menu_book_rounded,
-                          nextBillingDate: DateTime.now(),
-                          status: SubscriptionStatus.active,
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SubscriptionDetailScreen(subscription: demoSub),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+      body: Stack(
+        children: [
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // 1. One UI Signature Collapsible Header
+              const SliverPersistentHeader(
+                pinned: true,
+                delegate: OneUICollapsibleHeaderDelegate(
+                  title: 'Settings',
+                  hasBigHeader: true,
+                  expandedHeight: 270.0,
                 ),
               ),
 
-              // Section: Preferences
-              OneUISection(
-                title: 'Preferences',
-                child: Column(
-                  children: [
-                    OneUICard(
-                      leading: const Icon(Icons.attach_money_rounded, color: OneUITheme.accentGreen),
-                      title: 'Default Currency',
-                      subtitle: 'USD (\$)',
-                      trailing: const Icon(Icons.chevron_right_rounded, color: OneUITheme.textSecondary),
-                      onTap: () {},
-                    ),
-                    const SizedBox(height: 10),
-                    OneUICard(
-                      leading: const Icon(Icons.notifications_active_rounded, color: OneUITheme.accentBlue),
-                      title: 'Push Notifications',
-                      subtitle: _notificationsEnabled ? 'Alerts active 2 days prior' : 'Disabled',
-                      trailing: Switch.adaptive(
-                        value: _notificationsEnabled,
-                        activeTrackColor: OneUITheme.accentBlue,
-                        onChanged: (val) => setState(() => _notificationsEnabled = val),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    OneUICard(
-                      leading: const Icon(Icons.vibration_rounded, color: OneUITheme.accentAmber),
-                      title: 'Haptic Feedback',
-                      subtitle: 'Samsung One UI dynamic touch response',
-                      trailing: Switch.adaptive(
-                        value: _hapticsEnabled,
-                        activeTrackColor: OneUITheme.accentBlue,
-                        onChanged: (val) => setState(() => _hapticsEnabled = val),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Section: About
-              OneUISection(
-                title: 'About',
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: OneUITheme.surfaceCard,
-                    borderRadius: OneUITheme.cardBorderRadius,
-                    border: OneUITheme.subtleBorder,
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              // 2. Settings Content matching Screenshot 1:1
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 150),
+                  child: Column(
                     children: [
-                      Text(
-                        'OneSpend for Android',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: OneUITheme.textPrimary,
+                      // Profile Card (Matches Screenshot top card)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: OneUITheme.cardColor,
+                          borderRadius: OneUITheme.cardBorderRadius,
+                        ),
+                        padding: const EdgeInsets.all(18),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Syed Arham Raza',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.3,
+                                      color: OneUITheme.textPrimary,
+                                    ),
+                                  ),
+                                  SizedBox(height: 3),
+                                  Text(
+                                    'Samsung account',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: OneUITheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF8B0000), Color(0xFF2C0A0A)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                'SA',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Version 1.0.0 • Samsung One UI 9 Design Edition',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: OneUITheme.textSecondary,
-                        ),
+
+                      // Card 1: Warranty and care (Single item card matching screenshot)
+                      OneUIGroupCard(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        items: [
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.health_and_safety_rounded, OneUITheme.accentGreen),
+                            title: 'Warranty and care',
+                            onTap: () {},
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 12),
-                      Text(
-                        'Engineered with pure OLED pitch black canvas, floating navigation capsules, One UI typography, and responsive interaction hierarchy.',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          height: 1.4,
-                          color: OneUITheme.textSecondary,
-                        ),
+
+                      // Card 2: Connections & Connected devices (2 items matching screenshot)
+                      OneUIGroupCard(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        items: [
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.wifi_rounded, OneUITheme.accentBlue),
+                            title: 'Connections',
+                            onTap: () {},
+                          ),
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.devices_other_rounded, OneUITheme.accentBlue),
+                            title: 'Connected devices',
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
+
+                      // Card 3: Galaxy AI, Modes, Sounds, Notifications (4 items matching screenshot)
+                      OneUIGroupCard(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        items: [
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.auto_awesome_rounded, const Color(0xFF3880FF)),
+                            title: 'Galaxy AI',
+                            onTap: () {},
+                          ),
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.timelapse_rounded, OneUITheme.accentPurple),
+                            title: 'Modes and Routines',
+                            onTap: () {},
+                          ),
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.volume_up_rounded, OneUITheme.accentPurple),
+                            title: 'Sounds and vibration',
+                            onTap: () {},
+                          ),
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.notifications_rounded, const Color(0xFFFF7A00)),
+                            title: 'Notifications',
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
+
+                      // Card 4: Device Info & Routine Demo
+                      OneUIGroupCard(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        items: [
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.phone_android_rounded, const Color(0xFF1E88E5)),
+                            title: 'About OneSpend',
+                            onTap: () {},
+                          ),
+                          OneUIGroupItem(
+                            leading: _buildIconBadge(Icons.menu_book_rounded, OneUITheme.accentTeal),
+                            title: 'Open Routine Demo (Screenshot 3)',
+                            onTap: () {
+                              final demoSub = Subscription(
+                                id: 'demo_routine',
+                                name: 'Color filter',
+                                description: 'Make text easier to read by applying a color filter to the screen while using selected apps.',
+                                price: 0,
+                                billingCycle: BillingCycle.monthly,
+                                category: SubscriptionCategory.utilities,
+                                brandColor: OneUITheme.accentTeal,
+                                iconData: Icons.menu_book_rounded,
+                                nextBillingDate: DateTime.now(),
+                                status: SubscriptionStatus.active,
+                              );
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SubscriptionDetailScreen(subscription: demoSub),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // "Looking for something else?" Card matching Screenshot 1
+                      OneUIAlternativeOptionsCard(
+                        title: 'Looking for something else?',
+                        actions: [
+                          OneUIAlternativeAction(
+                            title: 'Software update',
+                            onTap: () {},
+                          ),
+                          OneUIAlternativeAction(
+                            title: 'Reset',
+                            onTap: () {},
+                          ),
+                          OneUIAlternativeAction(
+                            title: 'Contact us',
+                            onTap: () {},
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -174,8 +213,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-        ),
+
+          // Floating Search Pill matching Screenshot 1:1
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 74, // Positioned right above the bottom navigation bar
+            child: OneUIFloatingSearchPill(
+              hintText: 'Search',
+              onTap: () {},
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildIconBadge(IconData icon, Color color) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 }

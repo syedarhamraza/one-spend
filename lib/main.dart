@@ -25,11 +25,16 @@ class OneSpendApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'OneSpend',
-      debugShowCheckedModeBanner: false,
-      theme: OneUITheme.darkTheme,
-      home: const HomeScreen(),
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'OneSpend',
+          debugShowCheckedModeBanner: false,
+          theme: OneUITheme.darkTheme,
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }

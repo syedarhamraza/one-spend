@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_card.dart';
+import '../widgets/one_ui_collapsible_header.dart';
+import '../widgets/one_ui_group_card.dart';
 import 'subscription_detail_screen.dart';
 
 class UpcomingScreen extends StatelessWidget {
@@ -19,111 +21,107 @@ class UpcomingScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
-          body: SafeArea(
-            bottom: false,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Upcoming',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.6,
-                            color: OneUITheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Next 30 days renewal timeline',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: OneUITheme.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+          body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // One UI Signature Collapsible Header
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: OneUICollapsibleHeaderDelegate(
+                  title: 'Upcoming',
+                  subtitle: 'Next 30 days renewal timeline',
+                  hasBigHeader: true,
+                  expandedHeight: 270.0,
+                  actions: [
+                    OneUIHeaderAction(
+                      icon: Icons.calendar_month_outlined,
+                      tooltip: 'Calendar view',
+                      onTap: () {},
+                    ),
+                    OneUIHeaderAction(
+                      icon: Icons.more_vert_rounded,
+                      tooltip: 'More options',
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              ),
 
-                        // Notification alert pill
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: OneUITheme.surfaceCard,
-                            borderRadius: OneUITheme.cardBorderRadius,
-                            border: OneUITheme.subtleBorder,
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
+              // Content
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Notification alert pill card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: OneUITheme.cardColor,
+                          borderRadius: OneUITheme.cardBorderRadius,
+                          border: OneUITheme.cardBorder,
+                          boxShadow: OneUITheme.cardShadow,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: OneUITheme.accentTeal.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.notifications_active_rounded,
+                                color: OneUITheme.accentTeal,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Smart Reminders Active',
+                                    style: TextStyle(
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: OneUITheme.textPrimary,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'You will receive push alerts before renewals',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: OneUITheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Grouped Renewals Card
+                      OneUISection(
+                        title: 'Renewals calendar',
+                        child: OneUIGroupCard(
+                          items: list.map((sub) {
+                            final days = sub.nextBillingDate.difference(DateTime.now()).inDays;
+                            return OneUIGroupItem(
+                              leading: Container(
                                 width: 40,
                                 height: 40,
-                                decoration: BoxDecoration(
-                                  color: OneUITheme.accentTeal.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.notifications_active_rounded,
-                                  color: OneUITheme.accentTeal,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Smart Reminders Active',
-                                      style: TextStyle(
-                                        fontSize: 14.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: OneUITheme.textPrimary,
-                                      ),
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      'You will receive push alerts before renewals',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: OneUITheme.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Timeline List
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 120),
-                    child: OneUISection(
-                      title: 'Renewals calendar',
-                      child: Column(
-                        children: list.map((sub) {
-                          final days = sub.nextBillingDate.difference(DateTime.now()).inDays;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: OneUICard(
-                              leading: Container(
-                                width: 44,
-                                height: 44,
                                 decoration: BoxDecoration(
                                   color: sub.brandColor,
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(sub.iconData, color: Colors.white, size: 22),
+                                child: Icon(sub.iconData, color: Colors.white, size: 20),
                               ),
                               title: sub.name,
                               subtitle: '${dateFormat.format(sub.nextBillingDate)} • in $days days',
@@ -144,15 +142,15 @@ class UpcomingScreen extends StatelessWidget {
                                   ),
                                 );
                               },
-                            ),
-                          );
-                        }).toList(),
+                            );
+                          }).toList(),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

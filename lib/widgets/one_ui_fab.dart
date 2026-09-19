@@ -18,12 +18,11 @@ class OneUIFAB extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 60,
-      height: 60,
+      width: 58,
+      height: 58,
       decoration: BoxDecoration(
         color: color ?? OneUITheme.accentGreen,
         shape: BoxShape.circle,
-        boxShadow: OneUITheme.fabShadow,
       ),
       child: Material(
         color: Colors.transparent,
@@ -34,7 +33,7 @@ class OneUIFAB extends StatelessWidget {
           child: Icon(
             icon,
             color: Colors.white,
-            size: 30,
+            size: 28,
           ),
         ),
       ),

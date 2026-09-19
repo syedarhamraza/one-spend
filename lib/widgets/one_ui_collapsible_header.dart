@@ -1,0 +1,393 @@
+import 'package:flutter/material.dart';
+import '../theme/one_ui_theme.dart';
+
+/// Reusable action item for One UI top header bar
+class OneUIHeaderAction extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? tooltip;
+
+  const OneUIHeaderAction({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip ?? '',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            size: 21,
+            color: OneUITheme.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Samsung One UI 9 Signature Collapsible Header Delegate.
+///
+/// Features:
+/// 1. [hasBigHeader == true] (Main Pages):
+///    - Initial (unscrolled): Big centered title perfectly centered vertically between the status bar
+///      and the action bar row. Buttons (< and actions) sit directly above the first card.
+///    - Scrolled: Big header fades out; the buttons row travels with the scrolling cards up to the pinned
+///      top bar; the small title fades in beside the back button (or at left: 20 if no back button).
+///    - Deep scroll: Small title hides INSTANTLY; buttons gain 3D floating pill backgrounds matching the navbar.
+/// 2. [hasBigHeader == false] (Sub Setting Pages):
+///    - Compact top bar with `< Title` (no big viewing area).
+///    - Deep scroll: Title hides INSTANTLY; buttons gain 3D floating pill backgrounds.
+class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final String title;
+  final String? subtitle;
+  final bool hasBigHeader;
+  final bool showBackButton;
+  final VoidCallback? onBack;
+  final List<Widget>? actions;
+  final double expandedHeight;
+  final double collapsedHeight;
+
+  const OneUICollapsibleHeaderDelegate({
+    required this.title,
+    this.subtitle,
+    this.hasBigHeader = true,
+    this.showBackButton = false,
+    this.onBack,
+    this.actions,
+    this.expandedHeight = 270.0, // Balanced One UI viewing area with reduced bottom space
+    this.collapsedHeight = 92.0,  // Compact top bar height including status bar
+  });
+
+  @override
+  double get maxExtent => hasBigHeader ? expandedHeight : collapsedHeight;
+
+  @override
+  double get minExtent => collapsedHeight;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    return _OneUIHeaderContent(
+      title: title,
+      subtitle: subtitle,
+      hasBigHeader: hasBigHeader,
+      showBackButton: showBackButton,
+      onBack: onBack,
+      actions: actions,
+      shrinkOffset: shrinkOffset,
+      topPadding: topPadding,
+      expandedHeight: maxExtent,
+      collapsedHeight: minExtent,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant OneUICollapsibleHeaderDelegate oldDelegate) {
+    return oldDelegate.title != title ||
+        oldDelegate.subtitle != subtitle ||
+        oldDelegate.hasBigHeader != hasBigHeader ||
+        oldDelegate.showBackButton != showBackButton ||
+        oldDelegate.expandedHeight != expandedHeight ||
+        oldDelegate.collapsedHeight != collapsedHeight ||
+        oldDelegate.actions != actions;
+  }
+}
+
+class _OneUIHeaderContent extends StatefulWidget {
+  final String title;
+  final String? subtitle;
+  final bool hasBigHeader;
+  final bool showBackButton;
+  final VoidCallback? onBack;
+  final List<Widget>? actions;
+  final double shrinkOffset;
+  final double topPadding;
+  final double expandedHeight;
+  final double collapsedHeight;
+
+  const _OneUIHeaderContent({
+    required this.title,
+    this.subtitle,
+    required this.hasBigHeader,
+    required this.showBackButton,
+    this.onBack,
+    this.actions,
+    required this.shrinkOffset,
+    required this.topPadding,
+    required this.expandedHeight,
+    required this.collapsedHeight,
+  });
+
+  @override
+  State<_OneUIHeaderContent> createState() => _OneUIHeaderContentState();
+}
+
+class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
+  ScrollPosition? _position;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newPosition = Scrollable.maybeOf(context)?.position;
+    if (_position != newPosition) {
+      _position?.removeListener(_onScroll);
+      _position = newPosition;
+      _position?.addListener(_onScroll);
+    }
+  }
+
+  @override
+  void dispose() {
+    _position?.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Builds the back button with clean flat One UI styling
+  Widget _buildBackButton(BuildContext context, double pillProgress) {
+    if (!widget.showBackButton) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: widget.onBack ?? () => Navigator.maybePop(context),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: pillProgress > 0.05
+              ? OneUITheme.floatingColor.withValues(alpha: pillProgress)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          size: 20,
+          color: OneUITheme.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  /// Builds the right action buttons pill with clean flat One UI styling
+  Widget _buildActionPill(BuildContext context, double pillProgress) {
+    if (widget.actions == null || widget.actions!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      height: 44,
+      padding: EdgeInsets.symmetric(horizontal: pillProgress > 0.05 ? 6.0 : 0.0),
+      decoration: BoxDecoration(
+        color: pillProgress > 0.05
+            ? OneUITheme.floatingColor.withValues(alpha: pillProgress)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          for (int i = 0; i < widget.actions!.length; i++) ...[
+            widget.actions![i],
+            if (i < widget.actions!.length - 1)
+              SizedBox(width: pillProgress > 0.05 ? 2.0 : 4.0),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Small Title in top bar
+  Widget _buildSmallTitle(double smallTitleOpacity) {
+    if (smallTitleOpacity <= 0.01) {
+      return const SizedBox.shrink();
+    }
+
+    return Opacity(
+      opacity: smallTitleOpacity,
+      child: Text(
+        widget.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 22.0,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.4,
+          color: OneUITheme.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  /// Big centered viewing header with generous space and fixed height to prevent overflow
+  Widget _buildBigHeader(double bigHeaderOpacity) {
+    if (!widget.hasBigHeader || bigHeaderOpacity <= 0.01) {
+      return const SizedBox.shrink();
+    }
+
+    return Opacity(
+      opacity: bigHeaderOpacity,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 34.0,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.6,
+                  color: OneUITheme.textPrimary,
+                ),
+              ),
+              if (widget.subtitle != null) ...[
+                const SizedBox(height: 5),
+                Text(
+                  widget.subtitle!,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w400,
+                    color: OneUITheme.textSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = widget.topPadding;
+    final double currentOffset = (_position?.hasPixels == true
+            ? _position!.pixels
+            : widget.shrinkOffset)
+        .clamp(0.0, double.infinity);
+
+    final double bigHeaderOpacity;
+    final double smallTitleOpacity;
+    final double pillProgress;
+
+    // Keep top space identical to before (~75dp below status bar), while bottom space is reduced
+    const double bigHeaderHeight = 75.0;
+    final double bigHeaderTop = topPadding + 75.0;
+
+    if (widget.hasBigHeader) {
+      // 1. Big header fades out gracefully as user scrolls
+      bigHeaderOpacity = (1.0 - (currentOffset / 100.0)).clamp(0.0, 1.0);
+
+      // 2. Small title:
+      // Fades in between 50px and 115px as the action bar row travels up to the top.
+      // Stays fully visible while in top bar (115px to 190px).
+      // On deep scroll (> 190px), hides INSTANTLY!
+      if (currentOffset <= 50.0) {
+        smallTitleOpacity = 0.0;
+      } else if (currentOffset < 115.0) {
+        smallTitleOpacity = ((currentOffset - 50.0) / 65.0).clamp(0.0, 1.0);
+      } else if (currentOffset <= 190.0) {
+        smallTitleOpacity = 1.0;
+      } else {
+        // Hides instantly on deep scroll!
+        smallTitleOpacity = 0.0;
+      }
+
+      // 3. Floating 3D Pill Progress: appears smoothly with scroll as user scrolls deeper!
+      if (currentOffset <= 190.0) {
+        pillProgress = 0.0;
+      } else {
+        pillProgress = ((currentOffset - 190.0) / 60.0).clamp(0.0, 1.0);
+      }
+    } else {
+      // Sub setting pages: no big header, compact top bar from the start
+      bigHeaderOpacity = 0.0;
+
+      // Small title: visible at top (0 to 50px) -> hides INSTANTLY on deep scroll (> 50px)!
+      if (currentOffset <= 50.0) {
+        smallTitleOpacity = 1.0;
+        pillProgress = 0.0;
+      } else {
+        smallTitleOpacity = 0.0;
+        pillProgress = ((currentOffset - 50.0) / 50.0).clamp(0.0, 1.0);
+      }
+    }
+
+    return ClipRect(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 1. Big Centered Header (Strictly centered vertically in viewing area)
+          if (widget.hasBigHeader && bigHeaderOpacity > 0.01)
+            Positioned(
+              top: bigHeaderTop,
+              left: 0,
+              right: 0,
+              height: bigHeaderHeight,
+              child: _buildBigHeader(bigHeaderOpacity),
+            ),
+
+          // 2. Action Bar Row (Buttons & Small Title)
+          // Anchored to bottom: 4.0 of the sliver, directly above the first card!
+          Positioned(
+            bottom: 4.0,
+            left: 20.0,
+            right: 20.0,
+            height: 44.0,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Left: Back button (if enabled)
+                if (widget.showBackButton) ...[
+                  _buildBackButton(context, pillProgress),
+                  const SizedBox(width: 10.0),
+                ],
+
+                // Center / Left: Small Title
+                // If no back button, starts directly at left: 20 on screen!
+                // If back button, starts beside the back button!
+                Expanded(
+                  child: _buildSmallTitle(smallTitleOpacity),
+                ),
+
+                // Right: Action Buttons Pill (if actions present)
+                if (widget.actions != null && widget.actions!.isNotEmpty) ...[
+                  const SizedBox(width: 8.0),
+                  _buildActionPill(context, pillProgress),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

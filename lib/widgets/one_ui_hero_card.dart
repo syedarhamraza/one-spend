@@ -22,9 +22,10 @@ class OneUIHeroCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: OneUITheme.surfaceCard,
+        color: OneUITheme.cardColor,
         borderRadius: OneUITheme.cardBorderRadius,
-        border: OneUITheme.subtleBorder,
+        border: OneUITheme.cardBorder,
+        boxShadow: OneUITheme.cardShadow,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       child: Column(
@@ -37,13 +38,6 @@ class OneUIHeroCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: badgeColor,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: badgeColor.withValues(alpha: 0.35),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
             alignment: Alignment.center,
             child: Icon(

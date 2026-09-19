@@ -31,26 +31,19 @@ class OneUIFloatingHeader extends StatelessWidget {
             GestureDetector(
               onTap: onBack,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(100),
+                borderRadius: BorderRadius.circular(24),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                  filter: ImageFilter.blur(
+                    sigmaX: OneUIEffectsController.instance.blurSigma,
+                    sigmaY: OneUIEffectsController.instance.blurSigma,
+                  ),
                   child: Container(
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
                       color: const Color(0xCC202126),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        width: 0.8,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                      border: OneUITheme.subtleBorder,
                     ),
                     alignment: Alignment.center,
                     child: const Icon(
@@ -68,25 +61,18 @@ class OneUIFloatingHeader extends StatelessWidget {
           // Center pill with Icon + Title
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(100),
+              borderRadius: BorderRadius.circular(24),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                filter: ImageFilter.blur(
+                  sigmaX: OneUIEffectsController.instance.blurSigma,
+                  sigmaY: OneUIEffectsController.instance.blurSigma,
+                ),
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
                     color: const Color(0xCC202126),
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      width: 0.8,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(24),
+                    border: OneUITheme.subtleBorder,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
@@ -119,25 +105,18 @@ class OneUIFloatingHeader extends StatelessWidget {
           if (customActions != null || onSearch != null || onMore != null) ...[
             const SizedBox(width: 8),
             ClipRRect(
-              borderRadius: BorderRadius.circular(100),
+              borderRadius: BorderRadius.circular(24),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+                filter: ImageFilter.blur(
+                  sigmaX: OneUIEffectsController.instance.blurSigma,
+                  sigmaY: OneUIEffectsController.instance.blurSigma,
+                ),
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
                     color: const Color(0xCC202126),
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      width: 0.8,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(24),
+                    border: OneUITheme.subtleBorder,
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Row(
