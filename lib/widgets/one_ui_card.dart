@@ -66,64 +66,69 @@ class OneUICard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: OneUITheme.cardColor,
-        borderRadius: OneUITheme.cardBorderRadius,
-        border: OneUITheme.cardBorder,
-        boxShadow: OneUITheme.cardShadow,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: OneUITheme.cardBorderRadius,
-          splashColor: Colors.white.withValues(alpha: 0.06),
-          highlightColor: Colors.white.withValues(alpha: 0.03),
-          child: Padding(
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-            child: Row(
-              children: [
-                if (leading != null) ...[
-                  leading!,
-                  const SizedBox(width: 16),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.2,
-                          color: OneUITheme.textPrimary,
-                        ),
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          subtitle!,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: -0.1,
-                            color: subtitleColor ?? OneUITheme.textSecondary,
-                          ),
-                        ),
-                      ],
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: OneUITheme.cardColor,
+            borderRadius: OneUITheme.cardBorderRadius,
+            border: OneUITheme.cardBorder,
+            boxShadow: OneUITheme.cardShadow,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: OneUITheme.cardBorderRadius,
+              splashColor: Colors.white.withValues(alpha: 0.06),
+              highlightColor: Colors.white.withValues(alpha: 0.03),
+              child: Padding(
+                padding: padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                child: Row(
+                  children: [
+                    if (leading != null) ...[
+                      leading!,
+                      const SizedBox(width: 16),
                     ],
-                  ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.2,
+                              color: OneUITheme.textPrimary,
+                            ),
+                          ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              subtitle!,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w400,
+                                letterSpacing: -0.1,
+                                color: subtitleColor ?? OneUITheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (trailing != null) trailing!,
+                  ],
                 ),
-                ?trailing,
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

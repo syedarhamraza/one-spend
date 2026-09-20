@@ -1,17 +1,21 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_status_bar_scrim.dart';
 
 /// Reusable action item for One UI top header bar
 class OneUIHeaderAction extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final String? tooltip;
+  final double? size;
 
   const OneUIHeaderAction({
     super.key,
     required this.icon,
     required this.onTap,
     this.tooltip,
+    this.size,
   });
 
   @override
@@ -22,12 +26,12 @@ class OneUIHeaderAction extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          width: 38,
+          width: 32,
           height: 38,
           alignment: Alignment.center,
           child: Icon(
             icon,
-            size: 21,
+            size: size ?? 22,
             color: OneUITheme.textPrimary,
           ),
         ),
@@ -160,9 +164,10 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     }
   }
 
-  /// Builds the back button with clean flat One UI styling
+  /// Builds the back button with clean 3D or flat One UI styling
   Widget _buildBackButton(BuildContext context, double pillProgress) {
     if (!widget.showBackButton) return const SizedBox.shrink();
+    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
     return GestureDetector(
       onTap: widget.onBack ?? () => Navigator.maybePop(context),
@@ -172,9 +177,25 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
         height: 44,
         decoration: BoxDecoration(
           color: pillProgress > 0.05
-              ? OneUITheme.floatingColor.withValues(alpha: pillProgress)
+              ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress))
               : Colors.transparent,
+          gradient: (is3d && pillProgress > 0.05)
+              ? LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    OneUITheme.navbar3dBarTop.withValues(alpha: pillProgress),
+                    OneUITheme.navbar3dBarBottom.withValues(alpha: pillProgress),
+                  ],
+                )
+              : null,
           borderRadius: BorderRadius.circular(22),
+          border: (is3d && pillProgress > 0.05)
+              ? Border.all(
+                  color: Colors.white.withValues(alpha: 0.10 * pillProgress),
+                  width: 0.8,
+                )
+              : null,
         ),
         alignment: Alignment.center,
         child: const Icon(
@@ -186,20 +207,37 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     );
   }
 
-  /// Builds the right action buttons pill with clean flat One UI styling
+  /// Builds the right action buttons pill with clean 3D or flat One UI styling
   Widget _buildActionPill(BuildContext context, double pillProgress) {
     if (widget.actions == null || widget.actions!.isEmpty) {
       return const SizedBox.shrink();
     }
+    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
     return Container(
       height: 44,
       padding: EdgeInsets.symmetric(horizontal: pillProgress > 0.05 ? 6.0 : 0.0),
       decoration: BoxDecoration(
         color: pillProgress > 0.05
-            ? OneUITheme.floatingColor.withValues(alpha: pillProgress)
+            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress))
             : Colors.transparent,
+        gradient: (is3d && pillProgress > 0.05)
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  OneUITheme.navbar3dBarTop.withValues(alpha: pillProgress),
+                  OneUITheme.navbar3dBarBottom.withValues(alpha: pillProgress),
+                ],
+              )
+            : null,
         borderRadius: BorderRadius.circular(22),
+        border: (is3d && pillProgress > 0.05)
+            ? Border.all(
+                color: Colors.white.withValues(alpha: 0.10 * pillProgress),
+                width: 0.8,
+              )
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -208,7 +246,7 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
           for (int i = 0; i < widget.actions!.length; i++) ...[
             widget.actions![i],
             if (i < widget.actions!.length - 1)
-              SizedBox(width: pillProgress > 0.05 ? 2.0 : 4.0),
+              SizedBox(width: pillProgress > 0.05 ? 1.0 : 2.0),
           ],
         ],
       ),
@@ -345,6 +383,9 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
+          // 0. Status Bar Scrim (Edge-to-Edge Progressive Blur & Gradient Scrim, strictly 80% of status bar)
+          const OneUIStatusBarScrim(),
+
           // 1. Big Centered Header (Strictly centered vertically in viewing area)
           if (widget.hasBigHeader && bigHeaderOpacity > 0.01)
             Positioned(

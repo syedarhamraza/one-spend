@@ -9,6 +9,7 @@ class OneUIEffectsController extends ChangeNotifier {
   // 3D Effect Toggles
   bool _card3dEffect = false;       // All cards across UI (disabled by default matching One UI settings)
   bool _floating3dEffect = true;    // Floating pills, buttons, and navbar
+  bool _navbar3dEffect = true;      // 3D tactile navbar matching One UI phone dialer screenshot
 
   bool get card3dEffect => _card3dEffect;
   set card3dEffect(bool val) {
@@ -26,19 +27,91 @@ class OneUIEffectsController extends ChangeNotifier {
     }
   }
 
+  bool get navbar3dEffect => _navbar3dEffect;
+  set navbar3dEffect(bool val) {
+    if (_navbar3dEffect != val) {
+      _navbar3dEffect = val;
+      notifyListeners();
+    }
+  }
+
   // Compatibility getter
   double get depthIntensity => 1.2;
 
-  // Dynamic Card Properties (Plain flat One UI design)
-  Color get cardColor => const Color(0xFF1B1C21);
-  Border? get cardBorder => null;
-  List<BoxShadow> get cardShadow => const [];
+  // Dynamic Card Properties
+  Color get cardColor => _card3dEffect ? const Color(0xFF202127) : const Color(0xFF1B1C21);
+  Border? get cardBorder => _card3dEffect
+      ? Border.all(
+          color: Colors.white.withValues(alpha: 0.10),
+          width: 0.85,
+        )
+      : null;
+  List<BoxShadow> get cardShadow => _card3dEffect
+      ? [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.20),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ]
+      : const [];
 
-  // Dynamic Floating Elements Properties (Lighter One UI floating gray surface)
-  Color get floatingColor => const Color(0xFF2C2D34);
-  Border? get floatingBorder => null;
-  List<BoxShadow> get floatingShadow => const [];
-  List<BoxShadow> get fabShadow => const [];
+  // Dynamic Floating Elements Properties
+  Color get floatingColor => _floating3dEffect ? const Color(0xFF24252A) : const Color(0xFF2C2D34);
+
+  Gradient? get floatingGradient => _floating3dEffect
+      ? const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF28292E),
+            Color(0xFF1F2023),
+          ],
+        )
+      : null;
+
+  Border? get floatingBorder => _floating3dEffect
+      ? Border.all(
+          color: Colors.white.withValues(alpha: 0.10),
+          width: 0.8,
+        )
+      : null;
+
+  List<BoxShadow> get floatingShadow => _floating3dEffect
+      ? [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.20),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ]
+      : const [];
+
+  List<BoxShadow> get fabShadow => _floating3dEffect
+      ? [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: OneUITheme.accentGreen.withValues(alpha: 0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ]
+      : const [];
+
   double get blurSigma => 0.0;
 
   // Backward compatibility
@@ -54,6 +127,13 @@ class OneUITheme {
   static const Color surfacePill = Color(0xFF2C2D34); // Distinct One UI Gray Floating Capsule Surface
   static const Color surfacePillActive = Color(0xFF42444E); // Active Tab Capsule
   static const Color surfacePillBorder = Colors.transparent;
+
+  // --- 3D Floating Navbar Tokens (Matching Samsung One UI Phone Dialer Screenshot 1:1) ---
+  static const Color navbar3dBarTop = Color(0xFF28292E);
+  static const Color navbar3dBarBottom = Color(0xFF1F2023);
+  static const Color navbar3dActivePill = Color(0xFF3D3F44); // Smooth flat active capsule
+  static const Color navbar3dInactiveIcon = Color(0xFFDCDCE0);
+  static const Color navbar3dInactiveText = Color(0xFFBEBEC4);
 
   // --- One UI Accent Palette ---
   static const Color accentGreen = Color(0xFF00C05A); // One UI Phone / Success Green
@@ -78,14 +158,15 @@ class OneUITheme {
   static BorderRadius get cardBorderRadius => BorderRadius.circular(radiusCard);
   static BorderRadius get innerBorderRadius => BorderRadius.circular(radiusInner);
 
-  // --- Dynamic Card & Floating Properties (Plain Flat Design) ---
-  static Color get cardColor => const Color(0xFF1B1C21);
-  static Border? get cardBorder => null;
-  static List<BoxShadow> get cardShadow => const [];
-  static Color get floatingColor => const Color(0xFF2C2D34);
-  static Border? get floatingBorder => null;
-  static List<BoxShadow> get floatingShadow => const [];
-  static List<BoxShadow> get fabShadow => const [];
+  // --- Dynamic Card & Floating Properties ---
+  static Color get cardColor => OneUIEffectsController.instance.cardColor;
+  static Border? get cardBorder => OneUIEffectsController.instance.cardBorder;
+  static List<BoxShadow> get cardShadow => OneUIEffectsController.instance.cardShadow;
+  static Color get floatingColor => OneUIEffectsController.instance.floatingColor;
+  static Gradient? get floatingGradient => OneUIEffectsController.instance.floatingGradient;
+  static Border? get floatingBorder => OneUIEffectsController.instance.floatingBorder;
+  static List<BoxShadow> get floatingShadow => OneUIEffectsController.instance.floatingShadow;
+  static List<BoxShadow> get fabShadow => OneUIEffectsController.instance.fabShadow;
   static double get blurSigma => 0.0;
 
   // Backward compatibility
@@ -98,7 +179,7 @@ class OneUITheme {
       scaffoldBackgroundColor: surfacePitch,
       primaryColor: accentBlue,
       canvasColor: surfacePitch,
-      cardColor: surfaceCard,
+      cardColor: cardColor,
       fontFamily: 'Roboto', // Clean sans-serif resembling Samsung One
       colorScheme: const ColorScheme.dark(
         surface: surfacePitch,

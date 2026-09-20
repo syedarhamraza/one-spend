@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_floating_nav_bar.dart';
+import '../widgets/one_ui_status_bar_scrim.dart';
 import 'analytics_screen.dart';
 import 'settings_screen.dart';
 import 'subscriptions_screen.dart';
@@ -18,14 +19,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [
-      const SubscriptionsScreen(),
-      const UpcomingScreen(),
-      const AnalyticsScreen(),
-      const SettingsScreen(),
-    ];
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        final pages = [
+          const SubscriptionsScreen(),
+          const UpcomingScreen(),
+          const AnalyticsScreen(),
+          const SettingsScreen(),
+        ];
 
-    return Scaffold(
+        return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
       body: Stack(
         children: [
@@ -35,7 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: pages,
           ),
 
-              // Floating Bottom Navigation Pill (1:1 with Screenshot 1 & 4)
+          // Edge-to-Edge Progressive Status Bar Scrim (Strictly 80% of status bar)
+          const OneUIStatusBarScrim(),
+
+          // Floating Bottom Navigation Pill (1:1 with Screenshot 1 & 4)
               Positioned(
                 left: 0,
                 right: 0,
@@ -74,5 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         );
+      },
+    );
   }
 }

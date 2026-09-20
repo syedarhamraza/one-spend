@@ -27,7 +27,20 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   Subscription? _selectedPopular;
 
   @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_onFieldChanged);
+    _priceController.addListener(_onFieldChanged);
+  }
+
+  void _onFieldChanged() {
+    setState(() {});
+  }
+
+  @override
   void dispose() {
+    _nameController.removeListener(_onFieldChanged);
+    _priceController.removeListener(_onFieldChanged);
     _nameController.dispose();
     _priceController.dispose();
     _descController.dispose();
@@ -123,50 +136,31 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM dd, yyyy');
 
-    return Scaffold(
-      backgroundColor: OneUITheme.surfacePitch,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // One UI Signature Collapsible Header with Back Button (Screenshots 1-4)
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: OneUICollapsibleHeaderDelegate(
-              title: 'Add Subscription',
-              hasBigHeader: false,
-              showBackButton: true,
-              onBack: () => Navigator.pop(context),
-              actions: [
-                GestureDetector(
-                  onTap: _saveSubscription,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: OneUITheme.accentGreen,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(
-                        fontSize: 13.0,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: OneUITheme.surfacePitch,
+          body: Stack(
+            children: [
+              CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  // One UI Signature Collapsible Header with Back Button (Only back button stays)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: OneUICollapsibleHeaderDelegate(
+                      title: 'Add Subscription',
+                      hasBigHeader: false,
+                      showBackButton: true,
+                      onBack: () => Navigator.pop(context),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
 
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 50),
-              child: Column(
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 110),
+                      child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Section 1: Popular Subscriptions Carousel
@@ -187,7 +181,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
                       itemCount: popularCatalog.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 10),
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
                       itemBuilder: (context, index) {
                         final pop = popularCatalog[index];
                         final isSelected = _selectedPopular?.id == pop.id;
@@ -201,7 +195,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? OneUITheme.surfacePillActive
-                                  : OneUITheme.surfaceCard,
+                                  : OneUITheme.cardColor,
                               borderRadius: BorderRadius.circular(22),
                               border: Border.all(
                                 color: isSelected
@@ -425,43 +419,97 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                       },
                     ),
                   ),
-
-                  const SizedBox(height: 28),
-
-                  // Bottom Flat Save Button
-                  Container(
-                    width: double.infinity,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      color: OneUITheme.accentGreen,
-                      borderRadius: OneUITheme.pillBorderRadius,
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: OneUITheme.pillBorderRadius,
-                      child: InkWell(
-                        onTap: _saveSubscription,
-                        borderRadius: OneUITheme.pillBorderRadius,
-                        splashColor: Colors.white.withValues(alpha: 0.2),
-                        child: const Center(
-                          child: Text(
-                            'Save Subscription',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.3,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+
+      // Cancel and Save Floating Pill matching Screenshot 1
+      Positioned(
+        left: 0,
+        right: 0,
+        bottom: 24,
+        child: Center(
+          child: _buildFloatingCancelSavePill(context),
+        ),
+      ),
+    ],
+  ),
+);
+      },
+    );
+  }
+
+  Widget _buildFloatingCancelSavePill(BuildContext context) {
+    final is3d = OneUIEffectsController.instance.floating3dEffect;
+    final canSave = _nameController.text.trim().isNotEmpty && _priceController.text.trim().isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: is3d ? null : OneUITheme.floatingColor,
+        gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
+        borderRadius: BorderRadius.circular(30),
+        border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
+        boxShadow: is3d
+            ? OneUIEffectsController.instance.floatingShadow
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () => Navigator.pop(context),
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
+              splashColor: Colors.white.withValues(alpha: 0.08),
+              highlightColor: Colors.white.withValues(alpha: 0.04),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: OneUITheme.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 18,
+              color: Colors.white.withValues(alpha: 0.12),
+            ),
+            InkWell(
+              onTap: _saveSubscription,
+              borderRadius: const BorderRadius.horizontal(right: Radius.circular(30)),
+              splashColor: Colors.white.withValues(alpha: 0.08),
+              highlightColor: Colors.white.withValues(alpha: 0.04),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                child: Text(
+                  'Save',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: canSave ? OneUITheme.textPrimary : const Color(0xFF8E8E93),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

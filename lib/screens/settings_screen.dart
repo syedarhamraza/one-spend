@@ -12,11 +12,14 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: OneUITheme.surfacePitch,
-      body: Stack(
-        children: [
-          CustomScrollView(
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: OneUITheme.surfacePitch,
+          body: Stack(
+            children: [
+              CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               // 1. One UI Signature Collapsible Header
@@ -42,6 +45,8 @@ class SettingsScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: OneUITheme.cardColor,
                           borderRadius: OneUITheme.cardBorderRadius,
+                          border: OneUITheme.cardBorder,
+                          boxShadow: OneUITheme.cardShadow,
                         ),
                         padding: const EdgeInsets.all(18),
                         child: Row(
@@ -151,7 +156,74 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
 
-                      // Card 4: Device Info & Routine Demo
+                      // Card 4: Navigation, Floating Elements & Cards 3D Appearance
+                      AnimatedBuilder(
+                        animation: OneUIEffectsController.instance,
+                        builder: (context, _) {
+                          final isNavbar3d = OneUIEffectsController.instance.navbar3dEffect;
+                          final isFloating3d = OneUIEffectsController.instance.floating3dEffect;
+                          final isCards3d = OneUIEffectsController.instance.card3dEffect;
+
+                          return OneUIGroupCard(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            items: [
+                              OneUIGroupItem(
+                                leading: _buildIconBadge(Icons.view_agenda_rounded, OneUITheme.accentBlue),
+                                title: 'Navigation bar 3D effect',
+                                subtitle: isNavbar3d
+                                    ? '3D floating pill elevation & top rim highlight'
+                                    : 'Classic flat appearance',
+                                trailing: Switch.adaptive(
+                                  value: isNavbar3d,
+                                  activeTrackColor: OneUITheme.accentBlue,
+                                  onChanged: (val) {
+                                    OneUIEffectsController.instance.navbar3dEffect = val;
+                                  },
+                                ),
+                                onTap: () {
+                                  OneUIEffectsController.instance.navbar3dEffect = !isNavbar3d;
+                                },
+                              ),
+                              OneUIGroupItem(
+                                leading: _buildIconBadge(Icons.radio_button_checked_rounded, OneUITheme.accentPurple),
+                                title: 'Floating buttons & pills 3D effect',
+                                subtitle: isFloating3d
+                                    ? '3D elevation & rim highlight on search, back & action pills'
+                                    : 'Classic flat appearance',
+                                trailing: Switch.adaptive(
+                                  value: isFloating3d,
+                                  activeTrackColor: OneUITheme.accentPurple,
+                                  onChanged: (val) {
+                                    OneUIEffectsController.instance.floating3dEffect = val;
+                                  },
+                                ),
+                                onTap: () {
+                                  OneUIEffectsController.instance.floating3dEffect = !isFloating3d;
+                                },
+                              ),
+                              OneUIGroupItem(
+                                leading: _buildIconBadge(Icons.layers_rounded, OneUITheme.accentTeal),
+                                title: 'Cards 3D depth effect',
+                                subtitle: isCards3d
+                                    ? '3D elevation, rim highlight & soft shadows on all cards'
+                                    : 'Classic flat appearance',
+                                trailing: Switch.adaptive(
+                                  value: isCards3d,
+                                  activeTrackColor: OneUITheme.accentTeal,
+                                  onChanged: (val) {
+                                    OneUIEffectsController.instance.card3dEffect = val;
+                                  },
+                                ),
+                                onTap: () {
+                                  OneUIEffectsController.instance.card3dEffect = !isCards3d;
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+
+                      // Card 5: Device Info & Routine Demo
                       OneUIGroupCard(
                         margin: const EdgeInsets.only(bottom: 12),
                         items: [
@@ -226,6 +298,8 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 

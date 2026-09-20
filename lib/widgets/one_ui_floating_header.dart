@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 
@@ -22,29 +21,35 @@ class OneUIFloatingHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          // Left back pill button (if onBack provided)
-          if (onBack != null) ...[
-            GestureDetector(
-              onTap: onBack,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: OneUIEffectsController.instance.blurSigma,
-                    sigmaY: OneUIEffectsController.instance.blurSigma,
-                  ),
-                  child: Container(
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        final is3d = OneUIEffectsController.instance.floating3dEffect;
+
+        BoxDecoration buildPillDecoration({bool isCircle = false}) {
+          return BoxDecoration(
+            color: is3d ? null : OneUITheme.floatingColor,
+            gradient: is3d ? OneUITheme.floatingGradient : null,
+            shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
+            borderRadius: isCircle ? null : BorderRadius.circular(24),
+            border: OneUITheme.floatingBorder,
+            boxShadow: OneUITheme.floatingShadow,
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              // Left back pill button (if onBack provided)
+              if (onBack != null) ...[
+                GestureDetector(
+                  onTap: onBack,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     width: 48,
                     height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xCC202126),
-                      shape: BoxShape.circle,
-                      border: OneUITheme.subtleBorder,
-                    ),
+                    decoration: buildPillDecoration(isCircle: true),
                     alignment: Alignment.center,
                     child: const Icon(
                       Icons.chevron_left_rounded,
@@ -53,27 +58,15 @@ class OneUIFloatingHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
+                const SizedBox(width: 8),
+              ],
 
-          // Center pill with Icon + Title
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: OneUIEffectsController.instance.blurSigma,
-                  sigmaY: OneUIEffectsController.instance.blurSigma,
-                ),
-                child: Container(
+              // Center pill with Icon + Title
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
                   height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xCC202126),
-                    borderRadius: BorderRadius.circular(24),
-                    border: OneUITheme.subtleBorder,
-                  ),
+                  decoration: buildPillDecoration(),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Row(
                     children: [
@@ -98,26 +91,14 @@ class OneUIFloatingHeader extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ),
 
-          // Right pill with Search & More actions (matching Screenshot 2)
-          if (customActions != null || onSearch != null || onMore != null) ...[
-            const SizedBox(width: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: OneUIEffectsController.instance.blurSigma,
-                  sigmaY: OneUIEffectsController.instance.blurSigma,
-                ),
-                child: Container(
+              // Right pill with Search & More actions (matching Screenshot 2)
+              if (customActions != null || onSearch != null || onMore != null) ...[
+                const SizedBox(width: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
                   height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xCC202126),
-                    borderRadius: BorderRadius.circular(24),
-                    border: OneUITheme.subtleBorder,
-                  ),
+                  decoration: buildPillDecoration(),
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -144,11 +125,11 @@ class OneUIFloatingHeader extends StatelessWidget {
                         ],
                   ),
                 ),
-              ),
-            ),
-          ],
-        ],
-      ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

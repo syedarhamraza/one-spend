@@ -13,7 +13,10 @@ class UpcomingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: SubscriptionStore.instance,
+      animation: Listenable.merge([
+        SubscriptionStore.instance,
+        OneUIEffectsController.instance,
+      ]),
       builder: (context, _) {
         final store = SubscriptionStore.instance;
         final list = store.upcomingDue;

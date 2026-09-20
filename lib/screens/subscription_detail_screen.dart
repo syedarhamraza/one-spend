@@ -88,17 +88,20 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('MMM dd, yyyy');
-    final formattedDate = dateFormat.format(_sub.nextBillingDate);
-    final daysRemaining = _sub.nextBillingDate.difference(DateTime.now()).inDays;
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        final dateFormat = DateFormat('MMM dd, yyyy');
+        final formattedDate = dateFormat.format(_sub.nextBillingDate);
+        final daysRemaining = _sub.nextBillingDate.difference(DateTime.now()).inDays;
 
-    final displayTitle = _isRoutineDemoMode ? 'Color filter' : _sub.name;
+        final displayTitle = _isRoutineDemoMode ? 'Color filter' : _sub.name;
 
-    return Scaffold(
-      backgroundColor: OneUITheme.surfacePitch,
-      body: Stack(
-        children: [
-          CustomScrollView(
+        return Scaffold(
+          backgroundColor: OneUITheme.surfacePitch,
+          body: Stack(
+            children: [
+              CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               // One UI Signature Collapsible Header with Back Button (Matches Screenshots 1, 2, 3, 4)
@@ -417,6 +420,8 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

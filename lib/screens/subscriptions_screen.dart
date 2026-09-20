@@ -30,7 +30,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: SubscriptionStore.instance,
+      animation: Listenable.merge([
+        SubscriptionStore.instance,
+        OneUIEffectsController.instance,
+      ]),
       builder: (context, _) {
         final store = SubscriptionStore.instance;
         final allSubs = store.subscriptions;
@@ -61,6 +64,19 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                       subtitle: '${store.totalActiveCount} active • \$${store.totalMonthlySpend.toStringAsFixed(2)} / month',
                       expandedHeight: 270.0,
                       actions: [
+                        OneUIHeaderAction(
+                          icon: Icons.add,
+                          size: 26,
+                          tooltip: 'Add subscription',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AddSubscriptionScreen(),
+                              ),
+                            );
+                          },
+                        ),
                         OneUIHeaderAction(
                           icon: Icons.search_rounded,
                           tooltip: 'Search subscriptions',
@@ -306,24 +322,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                     ),
                   ),
                 ],
-              ),
-
-              // Green Circular FAB matching Screenshot 4
-              Positioned(
-                right: 22,
-                bottom: 78,
-                child: OneUIFAB(
-                  icon: Icons.add_rounded,
-                  tooltip: 'Add Subscription',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const AddSubscriptionScreen(),
-                      ),
-                    );
-                  },
-                ),
               ),
             ],
           ),
