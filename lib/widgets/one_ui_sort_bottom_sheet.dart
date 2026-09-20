@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
@@ -68,39 +69,53 @@ class _OneUISortBottomSheetState extends State<OneUISortBottomSheet> {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + keyboardInset),
             child: Material(
               color: Colors.transparent,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: is3d ? null : const Color(0xFF212123),
-                  gradient: is3d
-                      ? const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF262628),
-                            Color(0xFF1C1C1E),
-                          ],
-                        )
-                      : null,
-                  borderRadius: BorderRadius.circular(28),
-                  border: is3d
-                      ? Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          width: 0.85,
-                        )
-                      : null,
-                  boxShadow: is3d
-                      ? [
+              child: DecoratedBox(
+                decoration: is3d
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.55),
                             blurRadius: 28,
                             offset: const Offset(0, 10),
                           ),
-                        ]
-                      : const [],
-                ),
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Column(
+                        ],
+                      )
+                    : const BoxDecoration(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: OneUITheme.blurSigma,
+                      sigmaY: OneUITheme.blurSigma,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: is3d ? null : const Color(0xC4202024),
+                        gradient: is3d
+                            ? const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color(0xB326262B),
+                                  Color(0xCC1A1A1E),
+                                ],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(28),
+                        border: is3d
+                            ? Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 0.85,
+                              )
+                            : Border.all(
+                                color: Colors.white.withValues(alpha: 0.06),
+                                width: 0.85,
+                              ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                      child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -117,61 +132,73 @@ class _OneUISortBottomSheetState extends State<OneUISortBottomSheet> {
                 const SizedBox(height: 18),
 
                 // Radio option list
-                ...SubscriptionSortOption.values.map((option) {
-                  final isSelected = _selectedOption == option;
-                  return InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedOption = option;
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(14),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
-                      child: Row(
-                        children: [
-                          // Samsung One UI Custom Blue Radio Button
-                          Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color(0xFF2C69FF) // Samsung Vivid Blue
-                                    : const Color(0xFF5E5E62), // Neutral Gray
-                                width: isSelected ? 2.0 : 1.6,
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: isSelected
-                                ? Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: const BoxDecoration(
+                Flexible(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.5,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: SubscriptionSortOption.values.map((option) {
+                          final isSelected = _selectedOption == option;
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedOption = option;
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(14),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
+                              child: Row(
+                                children: [
+                                  // Samsung One UI Custom Blue Radio Button
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF2C69FF),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? const Color(0xFF2C69FF) // Samsung Vivid Blue
+                                            : const Color(0xFF5E5E62), // Neutral Gray
+                                        width: isSelected ? 2.0 : 1.6,
+                                      ),
                                     ),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              option.label,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                color: OneUITheme.textPrimary,
-                                letterSpacing: -0.2,
+                                    alignment: Alignment.center,
+                                    child: isSelected
+                                        ? Container(
+                                            width: 10,
+                                            height: 10,
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Color(0xFF2C69FF),
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      option.label,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                        color: OneUITheme.textPrimary,
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                          );
+                        }).toList(),
                       ),
                     ),
-                  );
-                }),
+                  ),
+                ),
 
                 const SizedBox(height: 6),
                 // Horizontal subtle divider
@@ -268,12 +295,15 @@ class _OneUISortBottomSheetState extends State<OneUISortBottomSheet> {
                   ],
                 ),
               ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
-  },
-);
   }
 }

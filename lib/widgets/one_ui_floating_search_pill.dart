@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 
@@ -20,50 +21,61 @@ class OneUIFloatingSearchPill extends StatelessWidget {
 
         return GestureDetector(
           onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            height: 52,
-            decoration: BoxDecoration(
-              color: is3d ? null : OneUITheme.floatingColor,
-              gradient: is3d ? OneUITheme.floatingGradient : null,
+          child: DecoratedBox(
+            decoration: is3d
+                ? BoxDecoration(
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: OneUITheme.floatingShadow,
+                  )
+                : const BoxDecoration(),
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(26),
-              border: OneUITheme.floatingBorder,
-              boxShadow: OneUITheme.floatingShadow,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.search_rounded,
-                  color: is3d
-                      ? OneUITheme.navbar3dInactiveIcon
-                      : OneUITheme.textSecondary,
-                  size: 22,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: OneUITheme.blurSigma,
+                  sigmaY: OneUITheme.blurSigma,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    hintText,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      color: is3d
-                          ? OneUITheme.navbar3dInactiveText
-                          : OneUITheme.textSecondary,
-                    ),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutCubic,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: is3d ? null : OneUITheme.floatingColor,
+                    gradient: is3d ? OneUITheme.floatingGradient : null,
+                    borderRadius: BorderRadius.circular(26),
+                    border: OneUITheme.floatingBorder,
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.search_rounded,
+                      color: is3d
+                          ? OneUITheme.navbar3dInactiveIcon
+                          : OneUITheme.textSecondary,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        hintText,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          color: is3d
+                              ? OneUITheme.navbar3dInactiveText
+                              : OneUITheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Icon(
-                  Icons.mic_rounded,
-                  color: OneUITheme.textPrimary,
-                  size: 22,
-                ),
-              ],
+              ),
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 }

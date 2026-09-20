@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 
@@ -52,8 +53,9 @@ class _OneUIScrollToTopButtonState extends State<OneUIScrollToTopButton> {
     final offset = widget.scrollController.offset;
 
     if (offset <= widget.threshold) {
-      _hideTimer?.cancel();
       if (_isVisible) {
+        _hideTimer?.cancel();
+        _hideTimer = null;
         setState(() {
           _isVisible = false;
         });
@@ -62,14 +64,16 @@ class _OneUIScrollToTopButtonState extends State<OneUIScrollToTopButton> {
     }
 
     // Actively scrolling past threshold: show button and refresh auto-hide timer
-    _hideTimer?.cancel();
     if (!_isVisible) {
       setState(() {
         _isVisible = true;
       });
     }
 
-    // Auto-disappear when scrolling ceases
+    // Cancel existing timer and restart
+    if (_hideTimer?.isActive ?? false) {
+      _hideTimer!.cancel();
+    }
     _hideTimer = Timer(widget.hideDelay, () {
       if (mounted && _isVisible) {
         setState(() {
@@ -81,6 +85,7 @@ class _OneUIScrollToTopButtonState extends State<OneUIScrollToTopButton> {
 
   void _scrollToTop() {
     _hideTimer?.cancel();
+    _hideTimer = null;
     if (_isVisible) {
       setState(() {
         _isVisible = false;
@@ -100,36 +105,52 @@ class _OneUIScrollToTopButtonState extends State<OneUIScrollToTopButton> {
       builder: (context, _) {
         final is3d = OneUIEffectsController.instance.floating3dEffect;
 
-        return AnimatedScale(
-          scale: _isVisible ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutBack,
-          child: AnimatedOpacity(
-            opacity: _isVisible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 180),
-            child: GestureDetector(
-              onTap: _scrollToTop,
-              child: Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: is3d ? null : OneUITheme.floatingColor,
-                  gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                  border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+        return IgnorePointer(
+          ignoring: !_isVisible,
+          child: AnimatedScale(
+            scale: _isVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutBack,
+            child: AnimatedOpacity(
+              opacity: _isVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 180),
+              child: GestureDetector(
+                onTap: _scrollToTop,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(
+                        sigmaX: OneUITheme.blurSigma,
+                        sigmaY: OneUITheme.blurSigma,
+                      ),
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: is3d ? null : OneUITheme.floatingColor,
+                          gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
+                          border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.keyboard_arrow_up_rounded,
+                          color: OneUITheme.textPrimary,
+                          size: 26,
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.keyboard_arrow_up_rounded,
-                  color: OneUITheme.textPrimary,
-                  size: 26,
+                  ),
                 ),
               ),
             ),

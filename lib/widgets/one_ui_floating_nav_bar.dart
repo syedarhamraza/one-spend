@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 
@@ -35,43 +36,60 @@ class OneUIFloatingNavBar extends StatelessWidget {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(left: 18, right: 18, bottom: 8),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              height: 60,
+            child: DecoratedBox(
               decoration: is3d
                   ? BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          OneUITheme.navbar3dBarTop,
-                          OneUITheme.navbar3dBarBottom,
-                        ],
-                      ),
                       borderRadius: BorderRadius.circular(34),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.10),
-                        width: 0.8,
-                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.50),
+                          color: Colors.black.withValues(alpha: 0.45),
                           blurRadius: 18,
                           offset: const Offset(0, 8),
                         ),
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
+                          color: Colors.black.withValues(alpha: 0.20),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     )
-                  : BoxDecoration(
-                      color: OneUITheme.floatingColor,
-                      borderRadius: BorderRadius.circular(34),
-                    ),
-              padding: const EdgeInsets.all(4),
+                  : const BoxDecoration(),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(34),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: OneUITheme.blurSigma,
+                    sigmaY: OneUITheme.blurSigma,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    height: 60,
+                    decoration: is3d
+                        ? BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                OneUITheme.navbar3dBarTop,
+                                OneUITheme.navbar3dBarBottom,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(34),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              width: 0.8,
+                            ),
+                          )
+                        : BoxDecoration(
+                            color: OneUITheme.floatingColor,
+                            borderRadius: BorderRadius.circular(34),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              width: 0.8,
+                            ),
+                          ),
+                    padding: const EdgeInsets.all(4),
               child: Row(
                 children: List.generate(items.length, (index) {
                   final item = items[index];
@@ -131,6 +149,9 @@ class OneUIFloatingNavBar extends StatelessWidget {
                     ),
                   );
                 }),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_card.dart';
@@ -74,9 +75,26 @@ class AnalyticsScreen extends StatelessWidget {
         final categorySpend = store.categorySpendMap;
         final highestSub = store.highestCostSubscription;
 
-        final monthlySubsCount = store.subscriptions.where((s) => s.billingCycle == BillingCycle.monthly && s.status != SubscriptionStatus.paused).length;
-        final yearlySubsCount = store.subscriptions.where((s) => s.billingCycle == BillingCycle.yearly && s.status != SubscriptionStatus.paused).length;
-        final otherSubsCount = store.totalActiveCount - monthlySubsCount - yearlySubsCount;
+        final nonPausedSubs = store.subscriptions.where((s) => s.status != SubscriptionStatus.paused).toList();
+        final monthlySubsCount = nonPausedSubs.where((s) => s.billingCycle == BillingCycle.monthly).length;
+        final yearlySubsCount = nonPausedSubs.where((s) => s.billingCycle == BillingCycle.yearly).length;
+        final otherSubsCount = nonPausedSubs.length - monthlySubsCount - yearlySubsCount;
+
+        final dateFormat = DateFormat('MMM dd, yyyy');
+        final paymentRecords = <({String name, double price, String currency, DateTime date, Color brandColor, IconData iconData})>[];
+        for (final sub in store.subscriptions) {
+          for (final d in sub.paymentHistory) {
+            paymentRecords.add((
+              name: sub.name,
+              price: sub.price,
+              currency: sub.currency,
+              date: d,
+              brandColor: sub.brandColor,
+              iconData: sub.iconData,
+            ));
+          }
+        }
+        paymentRecords.sort((a, b) => b.date.compareTo(a.date));
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
@@ -104,13 +122,44 @@ class AnalyticsScreen extends StatelessWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Annual & Monthly Stats Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(22),
+                  child: store.subscriptions.isEmpty
+                      ? Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: OneUITheme.cardColor,
+                            borderRadius: OneUITheme.cardBorderRadius,
+                            border: OneUITheme.cardBorder,
+                            boxShadow: OneUITheme.cardShadow,
+                          ),
+                          child: const Column(
+                            children: [
+                              Icon(Icons.pie_chart_outline_rounded, size: 48, color: OneUITheme.textSecondary),
+                              SizedBox(height: 12),
+                              Text(
+                                'No spending data yet',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: OneUITheme.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Add active subscriptions to view spending analytics, insights, and payment history',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Annual & Monthly Stats Card
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(22),
                         decoration: BoxDecoration(
                           color: OneUITheme.cardColor,
                           borderRadius: OneUITheme.cardBorderRadius,
@@ -215,7 +264,7 @@ class AnalyticsScreen extends StatelessWidget {
                                   child: const Icon(Icons.auto_awesome_rounded, color: OneUITheme.accentAmber, size: 20),
                                 ),
                                 title: 'Top Single Expense',
-                                subtitle: '${highestSub.name} accounts for ${store.currency}${highestSub.monthlyCost.toStringAsFixed(2)}/mo (${totalMonthly > 0 ? ((highestSub.monthlyCost / totalMonthly) * 100).toStringAsFixed(0) : 0}% of budget)',
+                                subtitle: '${highestSub.name} accounts for ${store.currency}${highestSub.monthlyCost.toStringAsFixed(2)}/mo (${totalMonthly > 0 ? ((highestSub.monthlyCost / totalMonthly) * 100).toStringAsFixed(0) : 0}% of total spend)',
                                 subtitleColor: OneUITheme.textSecondary,
                               ),
                               OneUIGroupItem(
@@ -344,6 +393,71 @@ class AnalyticsScreen extends StatelessWidget {
                                   }).toList(),
                                 ),
                         ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Recorded Payment History (Actual Renewals)
+                      OneUISection(
+                        title: 'Recorded payment history',
+                        child: paymentRecords.isEmpty
+                            ? Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(22),
+                                decoration: BoxDecoration(
+                                  color: OneUITheme.cardColor,
+                                  borderRadius: OneUITheme.cardBorderRadius,
+                                  border: OneUITheme.cardBorder,
+                                  boxShadow: OneUITheme.cardShadow,
+                                ),
+                                child: const Column(
+                                  children: [
+                                    Icon(Icons.history_rounded, size: 36, color: OneUITheme.textSecondary),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'No renewals logged yet',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: OneUITheme.textPrimary,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'Mark subscriptions as renewed to track actual payment history over time',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 12, color: OneUITheme.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : OneUIGroupCard(
+                                items: paymentRecords.take(8).map((record) {
+                                  return OneUIGroupItem(
+                                    leading: Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        color: record.brandColor,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Icon(record.iconData, color: Colors.white, size: 19),
+                                    ),
+                                    title: record.name,
+                                    subtitle: 'Paid on ${dateFormat.format(record.date)}',
+                                    subtitleColor: OneUITheme.textSecondary,
+                                    trailing: Text(
+                                      '${record.currency}${record.price.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: OneUITheme.accentGreen,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
                       ),
                     ],
                   ),

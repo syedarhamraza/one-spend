@@ -6,7 +6,6 @@ import 'package:onespend/theme/one_ui_theme.dart';
 import 'package:onespend/widgets/one_ui_floating_nav_bar.dart';
 import 'package:onespend/widgets/one_ui_floating_action_bar.dart';
 import 'package:onespend/widgets/one_ui_group_card.dart';
-import 'package:onespend/widgets/one_ui_selection_pills.dart';
 import 'package:onespend/widgets/one_ui_selection_action_bar.dart';
 import 'package:onespend/widgets/one_ui_scroll_to_top_button.dart';
 import 'package:onespend/widgets/one_ui_sort_bottom_sheet.dart';
@@ -15,6 +14,10 @@ import 'package:onespend/widgets/one_ui_floating_menu.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
 
 void main() {
+  setUp(() {
+    OneUIFloatingModal.isModalOpen.value = false;
+  });
+
   testWidgets('OneSpend app smoke test and One UI navigation', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
@@ -147,6 +150,113 @@ void main() {
 
     store.removeSubscription('test_sub_unit');
     expect(store.subscriptions.length, initialCount);
+  });
+
+  test('SubscriptionStore date clamping, pause preservation, batchAdd, and payment history', () {
+    final store = SubscriptionStore.instance;
+
+    // 1. Test Date Rollover Clamping on renewal (e.g. Jan 31 -> Feb)
+    final jan31Sub = Subscription(
+      id: 'rollover_test',
+      name: 'Rollover Service',
+      description: 'Test Clamping',
+      price: 9.99,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.utilities,
+      brandColor: Colors.blue,
+      iconData: Icons.star,
+      nextBillingDate: DateTime(2025, 1, 31),
+    );
+    store.addSubscription(jan31Sub);
+
+    store.renewSubscription('rollover_test');
+    final renewed = store.subscriptions.firstWhere((s) => s.id == 'rollover_test');
+    // Month should advance and day should be clamped to valid days of that month (e.g. 28, not overflowing to Mar 3)
+    expect(renewed.nextBillingDate.isAfter(DateTime.now()), isTrue);
+    expect(renewed.paymentHistory.isNotEmpty, isTrue);
+
+    // 2. Test Pause/Resume Status Preservation (trial preserved after unpause)
+    final trialSub = Subscription(
+      id: 'trial_test',
+      name: 'Trial Service',
+      description: 'Trial Status',
+      price: 5.0,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.cloud,
+      brandColor: Colors.purple,
+      iconData: Icons.cloud,
+      status: SubscriptionStatus.trial,
+      nextBillingDate: DateTime.now().add(const Duration(days: 10)),
+    );
+    store.addSubscription(trialSub);
+
+    store.togglePauseSubscription('trial_test');
+    expect(store.subscriptions.firstWhere((s) => s.id == 'trial_test').status, SubscriptionStatus.paused);
+
+    store.togglePauseSubscription('trial_test');
+    expect(store.subscriptions.firstWhere((s) => s.id == 'trial_test').status, SubscriptionStatus.trial);
+
+    // 3. Test batchAdd and unique ID generation
+    final id1 = Subscription.generateUniqueId();
+    final id2 = Subscription.generateUniqueId();
+    expect(id1, isNot(equals(id2)));
+
+    final subA = trialSub.copyWith(id: id1, name: 'Batch A');
+    final subB = trialSub.copyWith(id: id2, name: 'Batch B');
+    final beforeBatch = store.subscriptions.length;
+    store.batchAdd([subA, subB]);
+    expect(store.subscriptions.length, beforeBatch + 2);
+
+    // Clean up
+    store.removeSubscription('rollover_test');
+    store.removeSubscription('trial_test');
+    store.removeSubscription(id1);
+    store.removeSubscription(id2);
+  });
+
+  testWidgets('Cancel monthly budget dialog test', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Tap Menu tab
+    await tester.tap(find.text('Menu'));
+    await tester.pumpAndSettle();
+
+    // Tap Monthly budget threshold
+    await tester.tap(find.text('Monthly budget threshold'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog is open
+    expect(find.text('Monthly Budget Limit'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    // Tap Cancel
+    await tester.tap(find.text('Cancel'));
+    await tester.pump(); // Start pop animation
+    await tester.pump(const Duration(milliseconds: 100)); // Halfway through exit
+    await tester.pump(const Duration(milliseconds: 200)); // Finished exit
+    await tester.pumpAndSettle();
+
+    // Now test from Spend screen
+    await tester.tap(find.text('Spend'));
+    await tester.pumpAndSettle();
+
+    // Tap monthly budget card
+    await tester.tap(find.text('Monthly Budget').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Set Monthly Budget'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('Samsung One UI 9 collapsible header 3-stage scroll test', (WidgetTester tester) async {
@@ -522,7 +632,7 @@ void main() {
     store.setMonthlyBudget(initialBudget);
   });
 
-  testWidgets('Samsung One UI multi-selection mode, top pills, and bottom action bar flow', (WidgetTester tester) async {
+  testWidgets('Samsung One UI in-place multi-selection mode, header transformation, and bottom action bar flow', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -530,15 +640,14 @@ void main() {
     await tester.pumpWidget(const OneSpendApp());
     await tester.pumpAndSettle();
 
-    // Verify initially floating navbar is visible and selection action bar is not
-    expect(find.byType(OneUISelectionPills), findsNothing);
+    // Verify initially selection action bar is not visible
     expect(find.byType(OneUISelectionActionBar), findsNothing);
 
     // Tap more options menu
     await tester.tap(find.byTooltip('More options'));
     await tester.pumpAndSettle();
 
-    // Verify popup menu options from Screenshot 3
+    // Verify popup menu options
     expect(find.text('Select'), findsOneWidget);
     expect(find.text('Sort'), findsOneWidget);
     expect(find.text('Filter'), findsOneWidget);
@@ -549,56 +658,75 @@ void main() {
     await tester.tap(find.text('Select'));
     await tester.pumpAndSettle();
 
-    // Verify OneUISelectionPills and OneUISelectionActionBar are now visible
-    expect(find.byType(OneUISelectionPills), findsOneWidget);
-    expect(find.byType(OneUISelectionActionBar), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('0'), findsWidgets); // Initially 0 selected
+    // Verify header transformed in-place: title shows "0 selected", back button and action icons visible
+    expect(find.text('0 selected'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsOneWidget);
+    expect(find.byTooltip('Select all'), findsOneWidget);
+    expect(find.byTooltip('Cancel selection'), findsOneWidget);
 
-    // Verify 5 actions on the bottom floating bar (Screenshot 1)
-    expect(find.text('Move'), findsOneWidget);
-    expect(find.text('Lock'), findsOneWidget);
+    // Verify OneUISelectionActionBar replaced the floating nav bar at the bottom
+    expect(find.byType(OneUISelectionActionBar), findsOneWidget);
+
+    // Verify 3 streamlined actions on the bottom floating bar (Share, Delete, More)
     expect(find.text('Share'), findsOneWidget);
     expect(find.text('Delete'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
+    // Lock and Move are cleanly organized inside More
+    expect(find.text('Move'), findsNothing);
+    expect(find.text('Lock'), findsNothing);
 
     // Tap on Netflix to select it
     await tester.tap(find.text('Netflix').first);
     await tester.pumpAndSettle();
 
-    // Counter pill now shows 1
-    expect(find.text('1'), findsWidgets);
+    // Counter now shows 1 selected
+    expect(find.text('1 selected'), findsOneWidget);
 
-    // Tap the counter pill to select all
-    await tester.tap(find.text('1').first);
+    // Tap 'Select all' in the header action pill
+    await tester.tap(find.byTooltip('Select all'));
     await tester.pumpAndSettle();
 
     final totalCount = SubscriptionStore.instance.subscriptions.length;
-    expect(find.text('$totalCount'), findsWidgets);
+    expect(find.text('$totalCount selected'), findsOneWidget);
+    expect(find.byTooltip('Deselect all'), findsOneWidget);
 
-    // Tap the counter pill again to deselect all
-    await tester.tap(find.text('$totalCount').first);
+    // Tap 'Deselect all'
+    await tester.tap(find.byTooltip('Deselect all'));
     await tester.pumpAndSettle();
-    expect(find.text('0'), findsWidgets);
+    expect(find.text('0 selected'), findsOneWidget);
 
-    // Tap Cancel pill to exit selection mode
-    await tester.tap(find.text('Cancel'));
+    // Tap Cancel selection icon in the header pill to exit selection mode
+    await tester.tap(find.byTooltip('Cancel selection'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(OneUISelectionPills), findsNothing);
     expect(find.byType(OneUISelectionActionBar), findsNothing);
+    expect(find.text('Subscriptions'), findsOneWidget);
 
-    // Now test entering selection mode via long-press on a subscription
+    // Test entering selection mode via long-press on a subscription
     await tester.longPress(find.text('Spotify').first);
     await tester.pumpAndSettle();
 
-    expect(find.byType(OneUISelectionPills), findsOneWidget);
-    expect(find.text('1'), findsWidgets);
+    expect(find.byType(OneUISelectionActionBar), findsOneWidget);
+    expect(find.text('1 selected'), findsOneWidget);
 
-    // Tap Cancel again
-    await tester.tap(find.text('Cancel'));
+    // Tap More (...) on selection bar to verify expanded menu with Move and Pause/Lock
+    await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
-    expect(find.byType(OneUISelectionPills), findsNothing);
+
+    expect(find.text('Move to category'), findsOneWidget);
+    expect(find.text('Pause / Lock'), findsOneWidget);
+    expect(find.text('Duplicate selected'), findsOneWidget);
+    expect(find.text('Export selected (CSV)'), findsOneWidget);
+
+    // Tap outside to dismiss floating menu
+    await tester.tapAt(const Offset(50, 100));
+    await tester.pumpAndSettle();
+
+    // Exit selection mode via the in-place back button
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUISelectionActionBar), findsNothing);
+    expect(find.text('Subscriptions'), findsOneWidget);
   });
 
   testWidgets('Samsung One UI Sort by bottom sheet matching Screenshot 4', (WidgetTester tester) async {
@@ -883,11 +1011,147 @@ void main() {
     animatedContainer = tester.widget(animatedContainerFinder);
     dec = animatedContainer.decoration as BoxDecoration;
     expect(dec.gradient, isNull); // flat when 3D is off
-    expect(dec.color, equals(const Color(0xFF212123)));
+    expect(dec.color, equals(const Color(0xC4202024)));
 
     // Restore 3D effect
     OneUIEffectsController.instance.floating3dEffect = true;
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('Floating components have BackdropFilter blur background', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Verify OneUITheme.blurSigma is 20.0
+    expect(OneUITheme.blurSigma, equals(20.0));
+
+    // Verify OneUIFloatingNavBar has BackdropFilter
+    final navBarBlurFinder = find.descendant(
+      of: find.byType(OneUIFloatingNavBar),
+      matching: find.byType(BackdropFilter),
+    );
+    expect(navBarBlurFinder, findsOneWidget);
+
+    // Verify BackdropFilter inside modal
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (ctx) => Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  OneUIFloatingModal.show(
+                    context: ctx,
+                    builder: (sheetCtx) => const Text('Blurred Modal Content'),
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Modal'));
+    await tester.pumpAndSettle();
+
+    final modalBlurFinder = find.descendant(
+      of: find.byType(OneUIFloatingModal),
+      matching: find.byType(BackdropFilter),
+    );
+    expect(modalBlurFinder, findsOneWidget);
+
+    // Dismiss modal cleanly
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Settings screen header search icon toggle and live search filtering', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Go to Settings / Menu tab
+    await tester.tap(find.text('Menu'));
+    await tester.pumpAndSettle();
+
+    // Verify search icon in header actions pill
+    final searchIconFinder = find.byTooltip('Search settings');
+    expect(searchIconFinder, findsOneWidget);
+
+    // Verify bottom search pill is removed (as requested by user)
+    expect(find.text('Search settings...'), findsNothing);
+
+    // Tap search icon to toggle inline search bar
+    await tester.tap(searchIconFinder);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search settings...'), findsOneWidget);
+
+    // Type query "currency"
+    await tester.enterText(find.byType(TextField), 'currency');
+    await tester.pumpAndSettle();
+
+    // Currency should be visible, other cards like Navigation bar 3D effect should be hidden
+    expect(find.text('Currency'), findsOneWidget);
+    expect(find.text('Navigation bar 3D effect'), findsNothing);
+
+    // Type a query that yields no results
+    await tester.enterText(find.byType(TextField), 'xyznonexistent');
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('No settings found for "xyznonexistent"'), findsOneWidget);
+
+    // Close search
+    await tester.tap(searchIconFinder);
+    await tester.pumpAndSettle();
+
+    // All settings restored
+    expect(find.text('Currency'), findsOneWidget);
+    expect(find.text('Navigation bar 3D effect'), findsOneWidget);
+  });
+
+  testWidgets('OneUIFieldEditorScreen modular subpage editor and floating stadium pill', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Tap Netflix to open detail screen
+    await tester.tap(find.text('Netflix').first);
+    await tester.pumpAndSettle();
+
+    // Tap "Service name" row to open modular field editor subpage
+    await tester.tap(find.text('Service name'));
+    await tester.pumpAndSettle();
+
+    // Verify OneUIFieldEditorScreen is open matching edit nickname screenshot
+    expect(find.text('Edit name'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
+
+    // Edit the text
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Netflix 4K Premium');
+    await tester.pumpAndSettle();
+
+    // Tap Save on floating stadium pill
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // Verify detail screen received the updated name
+    expect(find.text('Netflix 4K Premium'), findsWidgets);
   });
 }
 

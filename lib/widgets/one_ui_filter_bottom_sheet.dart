@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
@@ -57,39 +58,53 @@ class _OneUIFilterBottomSheetState extends State<OneUIFilterBottomSheet> {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + keyboardInset),
             child: Material(
               color: Colors.transparent,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: is3d ? null : const Color(0xFF212123),
-                  gradient: is3d
-                      ? const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF262628),
-                            Color(0xFF1C1C1E),
-                          ],
-                        )
-                      : null,
-                  borderRadius: BorderRadius.circular(28),
-                  border: is3d
-                      ? Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          width: 0.85,
-                        )
-                      : null,
-                  boxShadow: is3d
-                      ? [
+              child: DecoratedBox(
+                decoration: is3d
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.55),
                             blurRadius: 28,
                             offset: const Offset(0, 10),
                           ),
-                        ]
-                      : const [],
-                ),
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Column(
+                        ],
+                      )
+                    : const BoxDecoration(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: OneUITheme.blurSigma,
+                      sigmaY: OneUITheme.blurSigma,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: is3d ? null : const Color(0xC4202024),
+                        gradient: is3d
+                            ? const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color(0xB326262B),
+                                  Color(0xCC1A1A1E),
+                                ],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(28),
+                        border: is3d
+                            ? Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 0.85,
+                              )
+                            : Border.all(
+                                color: Colors.white.withValues(alpha: 0.06),
+                                width: 0.85,
+                              ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                      child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -200,13 +215,16 @@ class _OneUIFilterBottomSheetState extends State<OneUIFilterBottomSheet> {
                   ],
                 ),
               ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
-  },
-);
   }
 
   Widget _buildRadioRow({

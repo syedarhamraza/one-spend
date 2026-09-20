@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 
@@ -18,21 +19,63 @@ class OneUIFloatingModal extends StatelessWidget {
     this.padding,
   });
 
+  static final ValueNotifier<bool> isModalOpen = ValueNotifier<bool>(false);
+
   /// Shows a generic One UI floating modal bottom sheet
   static Future<T?> show<T>({
     required BuildContext context,
     required WidgetBuilder builder,
     bool isScrollControlled = true,
-  }) {
-    return showModalBottomSheet<T>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: isScrollControlled,
-      useRootNavigator: true,
-      builder: (ctx) => OneUIFloatingModal(
-        child: builder(ctx),
-      ),
-    );
+  }) async {
+    isModalOpen.value = true;
+    try {
+      return await showModalBottomSheet<T>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: isScrollControlled,
+        useRootNavigator: true,
+        builder: (ctx) => OneUIFloatingModal(
+          child: builder(ctx),
+        ),
+      );
+    } finally {
+      isModalOpen.value = false;
+    }
+  }
+
+  /// Shows a modal dialog with a text input field, managing its controller lifecycle safely.
+  static Future<String?> showTextInputDialog({
+    required BuildContext context,
+    required String title,
+    String? message,
+    String initialValue = '',
+    String? prefixText,
+    String cancelLabel = 'Cancel',
+    String confirmLabel = 'Save',
+    TextInputType keyboardType = TextInputType.text,
+    bool autofocus = true,
+  }) async {
+    isModalOpen.value = true;
+    try {
+      return await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        useRootNavigator: true,
+        builder: (ctx) => _OneUIFloatingTextInputModal(
+          title: title,
+          message: message,
+          initialValue: initialValue,
+          prefixText: prefixText,
+          cancelLabel: cancelLabel,
+          confirmLabel: confirmLabel,
+          keyboardType: keyboardType,
+          autofocus: autofocus,
+        ),
+      );
+    } finally {
+      isModalOpen.value = false;
+    }
   }
 
   /// Shows a One UI Signature Confirmation / Action Dialog matching Screenshot 1:1
@@ -45,13 +88,15 @@ class OneUIFloatingModal extends StatelessWidget {
     String confirmLabel = 'Delete',
     Color? confirmTextColor,
     VoidCallback? onConfirm,
-  }) {
-    return showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      builder: (ctx) => OneUIFloatingModal(
+  }) async {
+    isModalOpen.value = true;
+    try {
+      return await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        useRootNavigator: true,
+        builder: (ctx) => OneUIFloatingModal(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -147,6 +192,9 @@ class OneUIFloatingModal extends StatelessWidget {
         ),
       ),
     );
+    } finally {
+      isModalOpen.value = false;
+    }
   }
 
   @override
@@ -163,44 +211,205 @@ class OneUIFloatingModal extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + keyboardInset),
             child: Material(
               color: Colors.transparent,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                decoration: BoxDecoration(
-                  color: is3d ? null : const Color(0xFF212123),
-                  gradient: is3d
-                      ? const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF262628),
-                            Color(0xFF1C1C1E),
-                          ],
-                        )
-                      : null,
-                  borderRadius: BorderRadius.circular(28),
-                  border: is3d
-                      ? Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          width: 0.85,
-                        )
-                      : null,
-                  boxShadow: is3d
-                      ? [
+              child: DecoratedBox(
+                decoration: is3d
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.55),
                             blurRadius: 28,
                             offset: const Offset(0, 10),
                           ),
-                        ]
-                      : const [],
+                        ],
+                      )
+                    : const BoxDecoration(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: OneUITheme.blurSigma,
+                      sigmaY: OneUITheme.blurSigma,
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: is3d ? null : const Color(0xC4202024),
+                        gradient: is3d
+                            ? const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Color(0xB326262B),
+                                  Color(0xCC1A1A1E),
+                                ],
+                              )
+                            : null,
+                        borderRadius: BorderRadius.circular(28),
+                        border: is3d
+                            ? Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 0.85,
+                              )
+                            : Border.all(
+                                color: Colors.white.withValues(alpha: 0.06),
+                                width: 0.85,
+                              ),
+                      ),
+                      padding: padding ?? const EdgeInsets.all(24),
+                      child: child,
+                    ),
+                  ),
                 ),
-                padding: padding ?? const EdgeInsets.all(24),
-                child: child,
               ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _OneUIFloatingTextInputModal extends StatefulWidget {
+  final String title;
+  final String? message;
+  final String initialValue;
+  final String? prefixText;
+  final String cancelLabel;
+  final String confirmLabel;
+  final TextInputType keyboardType;
+  final bool autofocus;
+
+  const _OneUIFloatingTextInputModal({
+    required this.title,
+    this.message,
+    required this.initialValue,
+    this.prefixText,
+    required this.cancelLabel,
+    required this.confirmLabel,
+    required this.keyboardType,
+    required this.autofocus,
+  });
+
+  @override
+  State<_OneUIFloatingTextInputModal> createState() => _OneUIFloatingTextInputModalState();
+}
+
+class _OneUIFloatingTextInputModalState extends State<_OneUIFloatingTextInputModal> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OneUIFloatingModal(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          if (widget.message != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              widget.message!,
+              style: const TextStyle(
+                fontSize: 15.5,
+                color: Color(0xFFC4C4CA),
+                height: 1.35,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: OneUITheme.surfacePill,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TextField(
+              controller: _controller,
+              autofocus: widget.autofocus,
+              keyboardType: widget.keyboardType,
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                prefixText: widget.prefixText,
+                prefixStyle: const TextStyle(color: Colors.white, fontSize: 18),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    widget.cancelLabel,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 18,
+                color: Colors.white.withValues(alpha: 0.10),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context, _controller.text.trim()),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    widget.confirmLabel,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

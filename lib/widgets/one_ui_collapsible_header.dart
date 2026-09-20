@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_floating_menu.dart';
@@ -149,6 +150,7 @@ class _OneUIHeaderContent extends StatefulWidget {
 
 class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
   ScrollPosition? _position;
+  double _lastPixels = 0.0;
 
   @override
   void didChangeDependencies() {
@@ -168,8 +170,15 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
   }
 
   void _onScroll() {
-    if (mounted) {
+    if (!mounted) return;
+    final pixels = _position?.pixels ?? 0.0;
+    // During active collapse (0-175px), SliverPersistentHeader already rebuilds with shrinkOffset.
+    // Only setState when in deep scroll territory (>175px) or transitioning out of it.
+    if (pixels > 175.0 || _lastPixels > 175.0) {
+      _lastPixels = pixels;
       setState(() {});
+    } else {
+      _lastPixels = pixels;
     }
   }
 
@@ -178,41 +187,54 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     if (!widget.showBackButton) return const SizedBox.shrink();
     final is3d = OneUIEffectsController.instance.floating3dEffect;
 
+    final buttonContent = Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: pillProgress > 0.05
+            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))
+            : Colors.transparent,
+        gradient: (is3d && pillProgress > 0.05)
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0x9935353A).withValues(alpha: pillProgress * 0.60),
+                  const Color(0xB31E1E22).withValues(alpha: pillProgress * 0.70),
+                ],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(24),
+        border: (is3d && pillProgress > 0.05)
+            ? Border.all(
+                color: Colors.white.withValues(alpha: 0.15 * pillProgress),
+                width: 0.85,
+              )
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.arrow_back_ios_new_rounded,
+        size: 20,
+        color: OneUITheme.textPrimary,
+      ),
+    );
+
     return GestureDetector(
       onTap: widget.onBack ?? () => Navigator.maybePop(context),
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: pillProgress > 0.05
-              ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress))
-              : Colors.transparent,
-          gradient: (is3d && pillProgress > 0.05)
-              ? LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF2C2C2E).withValues(alpha: pillProgress),
-                    const Color(0xFF202022).withValues(alpha: pillProgress),
-                  ],
-                )
-              : null,
-          borderRadius: BorderRadius.circular(24),
-          border: (is3d && pillProgress > 0.05)
-              ? Border.all(
-                  color: Colors.white.withValues(alpha: 0.08 * pillProgress),
-                  width: 0.85,
-                )
-              : null,
-        ),
-        alignment: Alignment.center,
-        child: const Icon(
-          Icons.arrow_back_ios_new_rounded,
-          size: 20,
-          color: OneUITheme.textPrimary,
-        ),
-      ),
+      child: pillProgress > 0.05
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: OneUITheme.blurSigma * pillProgress,
+                  sigmaY: OneUITheme.blurSigma * pillProgress,
+                ),
+                child: buttonContent,
+              ),
+            )
+          : buttonContent,
     );
   }
 
@@ -222,6 +244,48 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       return const SizedBox.shrink();
     }
     final is3d = OneUIEffectsController.instance.floating3dEffect;
+
+    final pillContent = Container(
+      key: widget.actionsPillKey,
+      height: 44,
+      padding: EdgeInsets.symmetric(
+        horizontal: pillProgress > 0.05 ? 8.0 : 4.0,
+        vertical: 4.0,
+      ),
+      decoration: BoxDecoration(
+        color: pillProgress > 0.05
+            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))
+            : Colors.transparent,
+        gradient: (is3d && pillProgress > 0.05)
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  const Color(0x9935353A).withValues(alpha: pillProgress * 0.60),
+                  const Color(0xB31E1E22).withValues(alpha: pillProgress * 0.70),
+                ],
+              )
+            : null,
+        borderRadius: BorderRadius.circular(24),
+        border: (is3d && pillProgress > 0.05)
+            ? Border.all(
+                color: Colors.white.withValues(alpha: 0.15 * pillProgress),
+                width: 0.85,
+              )
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          for (int i = 0; i < widget.actions!.length; i++) ...[
+            widget.actions![i],
+            if (i < widget.actions!.length - 1)
+              const SizedBox(width: 4.0),
+          ],
+        ],
+      ),
+    );
 
     return ValueListenableBuilder<bool>(
       valueListenable: OneUIFloatingMenu.isOpen,
@@ -233,47 +297,18 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
           child: child!,
         );
       },
-      child: Container(
-        key: widget.actionsPillKey,
-        height: 44,
-        padding: EdgeInsets.symmetric(
-          horizontal: pillProgress > 0.05 ? 8.0 : 4.0,
-          vertical: 4.0,
-        ),
-        decoration: BoxDecoration(
-          color: pillProgress > 0.05
-              ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress))
-              : Colors.transparent,
-          gradient: (is3d && pillProgress > 0.05)
-              ? LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF2C2C2E).withValues(alpha: pillProgress),
-                    const Color(0xFF202022).withValues(alpha: pillProgress),
-                  ],
-                )
-              : null,
-          borderRadius: BorderRadius.circular(24),
-          border: (is3d && pillProgress > 0.05)
-              ? Border.all(
-                  color: Colors.white.withValues(alpha: 0.08 * pillProgress),
-                  width: 0.85,
-                )
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            for (int i = 0; i < widget.actions!.length; i++) ...[
-              widget.actions![i],
-              if (i < widget.actions!.length - 1)
-                const SizedBox(width: 4.0),
-            ],
-          ],
-        ),
-      ),
+      child: pillProgress > 0.05
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: OneUITheme.blurSigma * pillProgress,
+                  sigmaY: OneUITheme.blurSigma * pillProgress,
+                ),
+                child: pillContent,
+              ),
+            )
+          : pillContent,
     );
   }
 
@@ -408,7 +443,12 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
         clipBehavior: Clip.none,
         children: [
           // 0. Status Bar Scrim (Edge-to-Edge Progressive Blur & Gradient Scrim, strictly 80% of status bar)
-          const OneUIStatusBarScrim(),
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: OneUIStatusBarScrim(),
+          ),
 
           // 1. Big Centered Header (Strictly centered vertically in viewing area)
           if (widget.hasBigHeader && bigHeaderOpacity > 0.01)

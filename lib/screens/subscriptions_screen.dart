@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_card.dart';
@@ -11,7 +12,6 @@ import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_scroll_to_top_button.dart';
 import '../widgets/one_ui_selection_action_bar.dart';
-import '../widgets/one_ui_selection_pills.dart';
 import '../widgets/one_ui_sort_bottom_sheet.dart';
 import 'add_subscription_screen.dart';
 import 'subscription_detail_screen.dart';
@@ -40,6 +40,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   final Set<String> _selectedIds = {};
   final GlobalKey _actionPillKey = GlobalKey();
   final GlobalKey _moreButtonKey = GlobalKey();
+  final GlobalKey _selectionMoreButtonKey = GlobalKey();
 
   @override
   void dispose() {
@@ -90,6 +91,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _enterSelectionMode([String? initialSelectedId]) {
+    HapticFeedback.mediumImpact();
     setState(() {
       _isSelectionMode = true;
       _selectedIds.clear();
@@ -101,6 +103,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _exitSelectionMode() {
+    HapticFeedback.lightImpact();
     setState(() {
       _isSelectionMode = false;
       _selectedIds.clear();
@@ -109,6 +112,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _toggleSelectAll(List<Subscription> currentList) {
+    HapticFeedback.selectionClick();
     setState(() {
       if (_selectedIds.length == currentList.length) {
         _selectedIds.clear();
@@ -120,6 +124,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _toggleSelectItem(String id) {
+    HapticFeedback.selectionClick();
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
@@ -238,26 +243,41 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     );
   }
 
-  void _handleShareSelected() {
+  Future<void> _handleShareSelected() async {
     if (_selectedIds.isEmpty) return;
+    HapticFeedback.lightImpact();
     final subs = SubscriptionStore.instance.subscriptions.where((s) => _selectedIds.contains(s.id));
-    final buffer = StringBuffer('Subscriptions Summary:\n\n');
+    final buffer = StringBuffer('Subscriptions Summary (${_selectedIds.length} items):\n\n');
     for (var sub in subs) {
-      buffer.writeln('• ${sub.name}: ${sub.currency}${sub.price.toStringAsFixed(2)} / ${sub.billingCycle.label} (${sub.category.label})');
+      buffer.writeln('• ${sub.name}: ${sub.currency}${sub.price.toStringAsFixed(2)} / ${sub.billingCycle.label} (${sub.category.label}) - Due in ${sub.daysRemaining} days');
     }
-    Clipboard.setData(ClipboardData(text: buffer.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${_selectedIds.length} subscriptions copied to clipboard'),
-        backgroundColor: OneUITheme.surfacePill,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-    );
+    buffer.writeln('\nTracked with OneSpend');
+
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: buffer.toString().trim(),
+          subject: 'OneSpend Subscriptions (${_selectedIds.length})',
+        ),
+      );
+    } catch (_) {
+      Clipboard.setData(ClipboardData(text: buffer.toString().trim()));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_selectedIds.length} subscriptions copied to clipboard'),
+            backgroundColor: OneUITheme.surfacePill,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        );
+      }
+    }
   }
 
   void _handleDeleteSelected() {
     if (_selectedIds.isEmpty) return;
+    HapticFeedback.mediumImpact();
     final count = _selectedIds.length;
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
@@ -266,6 +286,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       cancelLabel: 'Cancel',
       confirmLabel: 'Delete',
       onConfirm: () {
+        HapticFeedback.mediumImpact();
         SubscriptionStore.instance.batchDelete(_selectedIds);
         _exitSelectionMode();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -280,157 +301,100 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     );
   }
 
+  void _handleDuplicateSelected() {
+    if (_selectedIds.isEmpty) return;
+    HapticFeedback.mediumImpact();
+    final subs = SubscriptionStore.instance.subscriptions
+        .where((s) => _selectedIds.contains(s.id))
+        .toList();
+    final duplicates = subs.map((s) => s.copyWith(
+      id: Subscription.generateUniqueId('copy'),
+      name: '${s.name} (Copy)',
+    )).toList();
+    SubscriptionStore.instance.batchAdd(duplicates);
+    final count = _selectedIds.length;
+    _exitSelectionMode();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Duplicated $count subscriptions'),
+        backgroundColor: OneUITheme.surfacePill,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
+  void _handleExportSelected() {
+    if (_selectedIds.isEmpty) return;
+    HapticFeedback.lightImpact();
+    final subs = SubscriptionStore.instance.subscriptions
+        .where((s) => _selectedIds.contains(s.id))
+        .toList();
+    final buffer = StringBuffer(
+        'id,name,price,currency,category,billingCycle,nextBillingDate,reminderDays,description,status\n');
+    for (var s in subs) {
+      buffer.writeln(
+          '${s.id},"${s.name.replaceAll('"', '""')}",${s.price},"${s.currency}","${s.category.name}","${s.billingCycle.name}","${s.nextBillingDate.toIso8601String()}",${s.reminderDays},"${s.description.replaceAll('"', '""')}","${s.status.name}"');
+    }
+    Clipboard.setData(ClipboardData(text: buffer.toString()));
+    _exitSelectionMode();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Selected subscriptions CSV copied'),
+        backgroundColor: OneUITheme.surfacePill,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
   void _handleMoreSelected() {
     if (_selectedIds.isEmpty) return;
-    OneUIFloatingModal.show(
+    HapticFeedback.lightImpact();
+    OneUIFloatingMenu.show(
       context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Options',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: OneUITheme.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 14),
-          InkWell(
-            onTap: () {
-              final subs = SubscriptionStore.instance.subscriptions
-                  .where((s) => _selectedIds.contains(s.id))
-                  .toList();
-              for (var s in subs) {
-                SubscriptionStore.instance.addSubscription(s.copyWith(
-                  id: '${DateTime.now().millisecondsSinceEpoch}_${s.id}',
-                  name: '${s.name} (Copy)',
-                ));
-              }
-              final count = _selectedIds.length;
-              _exitSelectionMode();
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Duplicated $count subscriptions'),
-                  backgroundColor: OneUITheme.surfacePill,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(14),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-              child: Row(
-                children: [
-                  Icon(Icons.copy_rounded, size: 20, color: OneUITheme.textSecondary),
-                  SizedBox(width: 16),
-                  Text(
-                    'Duplicate selected',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: OneUITheme.textPrimary),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: () {
-              final subs = SubscriptionStore.instance.subscriptions
-                  .where((s) => _selectedIds.contains(s.id))
-                  .toList();
-              final buffer = StringBuffer(
-                  'id,name,price,currency,category,billingCycle,nextBillingDate,reminderDays,description,status\n');
-              for (var s in subs) {
-                buffer.writeln(
-                    '${s.id},"${s.name}",${s.price},"${s.currency}","${s.category.name}","${s.billingCycle.name}","${s.nextBillingDate.toIso8601String()}",${s.reminderDays},"${s.description}","${s.status.name}"');
-              }
-              Clipboard.setData(ClipboardData(text: buffer.toString()));
-              _exitSelectionMode();
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Selected subscriptions CSV copied'),
-                  backgroundColor: OneUITheme.surfacePill,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(14),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-              child: Row(
-                children: [
-                  Icon(Icons.file_download_outlined, size: 20, color: OneUITheme.textSecondary),
-                  SizedBox(width: 16),
-                  Text(
-                    'Export selected as CSV',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: OneUITheme.textPrimary),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: OneUITheme.textPrimary,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      anchorKey: _selectionMoreButtonKey,
+      fallbackBottom: 84.0,
+      fallbackRight: 20.0,
+      items: [
+        OneUIFloatingMenuItem(
+          label: 'Move to category',
+          onTap: _handleMoveSelected,
+        ),
+        OneUIFloatingMenuItem(
+          label: 'Pause / Lock',
+          onTap: _handleLockSelected,
+        ),
+        OneUIFloatingMenuItem(
+          label: 'Duplicate selected',
+          onTap: _handleDuplicateSelected,
+        ),
+        OneUIFloatingMenuItem(
+          label: 'Export selected (CSV)',
+          onTap: _handleExportSelected,
+        ),
+      ],
     );
   }
 
   void _showEditBudgetDialog(BuildContext context) {
     final store = SubscriptionStore.instance;
-    final controller = TextEditingController(text: store.monthlyBudget.toStringAsFixed(0));
 
-    OneUIFloatingModal.showConfirmationDialog(
+    OneUIFloatingModal.showTextInputDialog(
       context: context,
       title: 'Set Monthly Budget',
       message: 'Enter your monthly subscription budget limit:',
-      customContent: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        decoration: BoxDecoration(
-          color: OneUITheme.surfacePill,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          decoration: InputDecoration(
-            prefixText: '${store.currency} ',
-            prefixStyle: const TextStyle(color: Colors.white, fontSize: 18),
-            border: InputBorder.none,
-          ),
-        ),
-      ),
+      initialValue: store.monthlyBudget.toStringAsFixed(0),
+      prefixText: '${store.currency} ',
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       cancelLabel: 'Cancel',
       confirmLabel: 'Save',
-      onConfirm: () {
-        final newBudget = double.tryParse(controller.text.trim()) ?? store.monthlyBudget;
+    ).then((result) {
+      if (result != null) {
+        final newBudget = double.tryParse(result) ?? store.monthlyBudget;
         store.setMonthlyBudget(newBudget);
-      },
-    );
+      }
+    });
   }
 
   void _showExportDialog(BuildContext context) {
@@ -474,24 +438,23 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   Widget _buildSelectionIndicator(bool isSelected) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
-      width: 22,
-      height: 22,
+      curve: Curves.easeOutCubic,
+      width: 24,
+      height: 24,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isSelected ? Colors.white : Colors.transparent,
-        border: isSelected
-            ? null
-            : Border.all(
-                color: Colors.white.withValues(alpha: 0.45),
-                width: 1.8,
-              ),
+        color: isSelected ? const Color(0xFF2C69FF) : Colors.transparent,
+        border: Border.all(
+          color: isSelected ? const Color(0xFF2C69FF) : Colors.white.withValues(alpha: 0.45),
+          width: 2.0,
+        ),
       ),
       alignment: Alignment.center,
       child: isSelected
           ? const Icon(
               Icons.check_rounded,
-              size: 15,
-              color: Colors.black,
+              size: 16,
+              color: Colors.white,
             )
           : null,
     );
@@ -499,36 +462,64 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
   OneUIGroupItem _buildSubscriptionItem(Subscription sub) {
     final isSelected = _selectedIds.contains(sub.id);
+    final days = sub.daysRemaining;
+    final isPaused = sub.status == SubscriptionStatus.paused;
+
+    Color badgeColor;
+    String badgeText;
+    if (isPaused) {
+      badgeColor = OneUITheme.textSecondary;
+      badgeText = 'Paused';
+    } else if (days < 0) {
+      badgeColor = OneUITheme.accentRed;
+      badgeText = 'Overdue ${-days}d';
+    } else if (days == 0) {
+      badgeColor = OneUITheme.accentRed;
+      badgeText = 'Due today';
+    } else if (days == 1) {
+      badgeColor = OneUITheme.accentRed;
+      badgeText = 'Tomorrow';
+    } else if (days <= 3) {
+      badgeColor = OneUITheme.accentRed;
+      badgeText = 'In $days days';
+    } else if (days <= 7) {
+      badgeColor = OneUITheme.accentAmber;
+      badgeText = 'In $days days';
+    } else {
+      badgeColor = OneUITheme.accentBlue;
+      badgeText = 'In $days days';
+    }
 
     return OneUIGroupItem(
-      leading: _isSelectionMode
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildSelectionIndicator(isSelected),
-                const SizedBox(width: 12),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: sub.brandColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(sub.iconData, color: Colors.white, size: 20),
-                ),
-              ],
-            )
-          : Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: sub.brandColor,
-                borderRadius: BorderRadius.circular(13),
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            child: _isSelectionMode
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _buildSelectionIndicator(isSelected),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: sub.brandColor,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.12),
+                width: 0.8,
               ),
-              alignment: Alignment.center,
-              child: Icon(sub.iconData, color: Colors.white, size: 21),
             ),
+            alignment: Alignment.center,
+            child: Icon(sub.iconData, color: Colors.white, size: 22),
+          ),
+        ],
+      ),
       title: sub.name,
       subtitle: '${sub.category.label} • ${sub.billingCycle.label}',
       subtitleColor: OneUITheme.textSecondary,
@@ -544,21 +535,30 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
               color: OneUITheme.textPrimary,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            sub.status.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: sub.status.color,
+          const SizedBox(height: 3),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              badgeText,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: badgeColor,
+              ),
             ),
           ),
         ],
       ),
       onTap: () {
         if (_isSelectionMode) {
+          HapticFeedback.selectionClick();
           _toggleSelectItem(sub.id);
         } else {
+          HapticFeedback.lightImpact();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -569,6 +569,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       },
       onLongPress: () {
         if (!_isSelectionMode) {
+          HapticFeedback.mediumImpact();
           _enterSelectionMode(sub.id);
         }
       },
@@ -610,8 +611,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             ? OneUITheme.accentGreen
             : (budgetProgress <= 1.0 ? OneUITheme.accentAmber : OneUITheme.accentRed);
 
-        final topPadding = MediaQuery.of(context).padding.top;
-
         return PopScope(
           canPop: !_isSelectionMode,
           onPopInvokedWithResult: (didPop, result) {
@@ -631,22 +630,47 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: OneUICollapsibleHeaderDelegate(
-                        title: _isSelectionMode ? '' : 'Subscriptions',
+                        title: _isSelectionMode
+                            ? '${_selectedIds.length} selected'
+                            : 'Subscriptions',
                         subtitle: _isSelectionMode
-                            ? null
+                            ? (_selectedIds.length == filteredSubs.length
+                                ? 'All selected • Tap to deselect'
+                                : 'Tap to select all')
                             : '${store.totalActiveCount} active • ${store.currency}${store.totalMonthlySpend.toStringAsFixed(2)} / month',
-                        hasBigHeader: !_isSelectionMode,
-                        expandedHeight: _isSelectionMode ? 0.0 : 270.0,
-                        collapsedHeight: _isSelectionMode ? (topPadding + 62.0) : 92.0,
+                        hasBigHeader: true,
+                        showBackButton: _isSelectionMode,
+                        onBack: _exitSelectionMode,
+                        expandedHeight: 270.0,
+                        collapsedHeight: 92.0,
                         actionsPillKey: _actionPillKey,
                         actions: _isSelectionMode
-                            ? null
+                            ? [
+                                OneUIHeaderAction(
+                                  icon: _selectedIds.length == filteredSubs.length
+                                      ? Icons.deselect_rounded
+                                      : Icons.select_all_rounded,
+                                  tooltip: _selectedIds.length == filteredSubs.length
+                                      ? 'Deselect all'
+                                      : 'Select all',
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    _toggleSelectAll(filteredSubs);
+                                  },
+                                ),
+                                OneUIHeaderAction(
+                                  icon: Icons.close_rounded,
+                                  tooltip: 'Cancel selection',
+                                  onTap: _exitSelectionMode,
+                                ),
+                              ]
                             : [
                                 OneUIHeaderAction(
                                   icon: Icons.add,
                                   size: 26,
                                   tooltip: 'Add subscription',
                                   onTap: () {
+                                    HapticFeedback.lightImpact();
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -659,6 +683,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                   icon: Icons.search_rounded,
                                   tooltip: 'Search subscriptions',
                                   onTap: () {
+                                    HapticFeedback.lightImpact();
                                     setState(() {
                                       _showSearch = !_showSearch;
                                       if (!_showSearch) {
@@ -713,100 +738,99 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                       ),
 
                     // Monthly Budget Card (Interactive)
-                    if (!_isSelectionMode)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-                          child: GestureDetector(
-                            onTap: () => _showEditBudgetDialog(context),
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: OneUITheme.cardColor,
-                                borderRadius: OneUITheme.cardBorderRadius,
-                                border: OneUITheme.cardBorder,
-                                boxShadow: OneUITheme.cardShadow,
-                              ),
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Row(
-                                        children: [
-                                          Text(
-                                            'Monthly Budget',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: OneUITheme.textSecondary,
-                                            ),
-                                          ),
-                                          SizedBox(width: 6),
-                                          Icon(Icons.edit_outlined, size: 14, color: OneUITheme.textSecondary),
-                                        ],
-                                      ),
-                                      Text(
-                                        '${store.currency}${totalSpend.toStringAsFixed(0)} / ${store.currency}${budget.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          fontSize: 13.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: OneUITheme.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: LinearProgressIndicator(
-                                      value: budgetProgress,
-                                      backgroundColor: Colors.white.withValues(alpha: 0.08),
-                                      valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                                      minHeight: 8,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: OneUITheme.accentBlue.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          'Next: ${upcomingSubs.isNotEmpty ? upcomingSubs.first.name : "None"}',
-                                          style: const TextStyle(
-                                            fontSize: 12,
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+                        child: GestureDetector(
+                          onTap: () => _showEditBudgetDialog(context),
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: OneUITheme.cardColor,
+                              borderRadius: OneUITheme.cardBorderRadius,
+                              border: OneUITheme.cardBorder,
+                              boxShadow: OneUITheme.cardShadow,
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        Text(
+                                          'Monthly Budget',
+                                          style: TextStyle(
+                                            fontSize: 14,
                                             fontWeight: FontWeight.w600,
-                                            color: OneUITheme.accentBlue,
+                                            color: OneUITheme.textSecondary,
                                           ),
                                         ),
+                                        SizedBox(width: 6),
+                                        Icon(Icons.edit_outlined, size: 14, color: OneUITheme.textSecondary),
+                                      ],
+                                    ),
+                                    Text(
+                                      '${store.currency}${totalSpend.toStringAsFixed(0)} / ${store.currency}${budget.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: OneUITheme.textPrimary,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        upcomingSubs.isNotEmpty
-                                            ? 'Due ${dateFormat.format(upcomingSubs.first.nextBillingDate)}'
-                                            : '',
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: LinearProgressIndicator(
+                                    value: budgetProgress,
+                                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                                    minHeight: 8,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: OneUITheme.accentBlue.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        'Next: ${upcomingSubs.isNotEmpty ? upcomingSubs.first.name : "None"}',
                                         style: const TextStyle(
                                           fontSize: 12,
-                                          color: OneUITheme.textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                          color: OneUITheme.accentBlue,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      upcomingSubs.isNotEmpty
+                                          ? 'Due ${dateFormat.format(upcomingSubs.first.nextBillingDate)}'
+                                          : '',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: OneUITheme.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
+                    ),
 
                     // Section: Upcoming Renewals (Top 2)
-                    if (upcomingSubs.isNotEmpty && _filterCategory == null && _searchQuery.isEmpty && !_isSelectionMode)
+                    if (upcomingSubs.isNotEmpty && _filterCategory == null && _searchQuery.isEmpty)
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -815,16 +839,32 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                             child: OneUIGroupCard(
                               items: upcomingSubs.take(2).map((sub) {
                                 final days = sub.daysRemaining;
+                                final isSelected = _selectedIds.contains(sub.id);
                                 return OneUIGroupItem(
-                                  leading: Container(
-                                    width: 42,
-                                    height: 42,
-                                    decoration: BoxDecoration(
-                                      color: sub.brandColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Icon(sub.iconData, color: Colors.white, size: 21),
+                                  leading: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      AnimatedSize(
+                                        duration: const Duration(milliseconds: 200),
+                                        curve: Curves.easeOutCubic,
+                                        child: _isSelectionMode
+                                            ? Padding(
+                                                padding: const EdgeInsets.only(right: 12),
+                                                child: _buildSelectionIndicator(isSelected),
+                                              )
+                                            : const SizedBox.shrink(),
+                                      ),
+                                      Container(
+                                        width: 42,
+                                        height: 42,
+                                        decoration: BoxDecoration(
+                                          color: sub.brandColor,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Icon(sub.iconData, color: Colors.white, size: 21),
+                                      ),
+                                    ],
                                   ),
                                   title: sub.name,
                                   subtitle: days == 0
@@ -840,12 +880,24 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                     ),
                                   ),
                                   onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => SubscriptionDetailScreen(subscription: sub),
-                                      ),
-                                    );
+                                    if (_isSelectionMode) {
+                                      HapticFeedback.selectionClick();
+                                      _toggleSelectItem(sub.id);
+                                    } else {
+                                      HapticFeedback.lightImpact();
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => SubscriptionDetailScreen(subscription: sub),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  onLongPress: () {
+                                    if (!_isSelectionMode) {
+                                      HapticFeedback.mediumImpact();
+                                      _enterSelectionMode(sub.id);
+                                    }
                                   },
                                 );
                               }).toList(),
@@ -908,13 +960,24 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                 ? Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
+                                      // Group: Overdue
+                                      if (filteredSubs.any((s) => s.daysRemaining < 0))
+                                        OneUISection(
+                                          title: 'Overdue',
+                                          child: OneUIGroupCard(
+                                            items: filteredSubs
+                                                .where((s) => s.daysRemaining < 0)
+                                                .map(_buildSubscriptionItem)
+                                                .toList(),
+                                          ),
+                                        ),
                                       // Group: Due this week
-                                      if (filteredSubs.any((s) => s.daysRemaining <= 7))
+                                      if (filteredSubs.any((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7))
                                         OneUISection(
                                           title: 'Due this week',
                                           child: OneUIGroupCard(
                                             items: filteredSubs
-                                                .where((s) => s.daysRemaining <= 7)
+                                                .where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7)
                                                 .map(_buildSubscriptionItem)
                                                 .toList(),
                                           ),
@@ -956,20 +1019,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   ],
                 ),
 
-                // Top Floating Selection Pills (Screenshot 1 & 2)
-                if (_isSelectionMode)
-                  Positioned(
-                    top: topPadding + 8,
-                    left: 16,
-                    right: 16,
-                    child: OneUISelectionPills(
-                      selectedCount: _selectedIds.length,
-                      totalCount: filteredSubs.length,
-                      onToggleSelectAll: () => _toggleSelectAll(filteredSubs),
-                      onCancel: _exitSelectionMode,
-                    ),
-                  ),
-
                 // Floating Scroll-To-Top circular button (Screenshot 2, centered just above navbar)
                 Positioned(
                   left: 0,
@@ -982,7 +1031,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   ),
                 ),
 
-                // Bottom Floating Multi-Selection Action Bar (Screenshot 1)
+                // Bottom Floating Multi-Selection Action Bar (Replaces main nav bar in-place!)
                 if (_isSelectionMode)
                   Positioned(
                     left: 0,
@@ -990,6 +1039,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                     bottom: 0,
                     child: OneUISelectionActionBar(
                       selectedCount: _selectedIds.length,
+                      moreButtonKey: _selectionMoreButtonKey,
                       onMove: _handleMoveSelected,
                       onToggleLock: _handleLockSelected,
                       onShare: _handleShareSelected,

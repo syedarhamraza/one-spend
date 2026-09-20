@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 
@@ -32,21 +33,35 @@ class OneUIFloatingMenu {
     required List<OneUIFloatingMenuItem> items,
     GlobalKey? anchorKey,
     double fallbackTop = 54.0,
+    double? fallbackBottom,
     double fallbackRight = 16.0,
     double width = 224.0,
   }) async {
-    double top = fallbackTop;
+    double? top = fallbackTop;
+    double? bottom = fallbackBottom;
     double right = fallbackRight;
+    bool isBottomAnchor = false;
 
     if (anchorKey?.currentContext != null) {
       final box = anchorKey!.currentContext!.findRenderObject() as RenderBox?;
       if (box != null && box.hasSize) {
         final origin = box.localToGlobal(Offset.zero);
         final screenSize = MediaQuery.of(context).size;
-        // Position directly over the pill container, matching top and right edge coordinates
-        top = origin.dy;
         right = (screenSize.width - (origin.dx + box.size.width)).clamp(0.0, 50.0);
+
+        if (origin.dy > screenSize.height * 0.5) {
+          isBottomAnchor = true;
+          bottom = (screenSize.height - origin.dy) + 8.0;
+          top = null;
+        } else {
+          isBottomAnchor = false;
+          top = origin.dy;
+          bottom = null;
+        }
       }
+    } else if (fallbackBottom != null) {
+      isBottomAnchor = true;
+      top = null;
     }
 
     isOpen.value = true;
@@ -61,6 +76,7 @@ class OneUIFloatingMenu {
           return _OneUIFloatingMenuContent(
             items: items,
             top: top,
+            bottom: bottom,
             right: right,
             width: width,
           );
@@ -93,7 +109,9 @@ class OneUIFloatingMenu {
             opacity: opacityAnimation,
             child: ScaleTransition(
               scale: scaleAnimation,
-              alignment: const Alignment(0.90, -0.92), // Blooms fluidly directly from the ⋮ button
+              alignment: isBottomAnchor
+                  ? const Alignment(0.90, 0.92)
+                  : const Alignment(0.90, -0.92),
               child: child,
             ),
           );
@@ -107,13 +125,15 @@ class OneUIFloatingMenu {
 
 class _OneUIFloatingMenuContent extends StatelessWidget {
   final List<OneUIFloatingMenuItem> items;
-  final double top;
+  final double? top;
+  final double? bottom;
   final double right;
   final double width;
 
   const _OneUIFloatingMenuContent({
     required this.items,
-    required this.top,
+    this.top,
+    this.bottom,
     required this.right,
     required this.width,
   });
@@ -129,18 +149,39 @@ class _OneUIFloatingMenuContent extends StatelessWidget {
           children: [
             Positioned(
               top: top,
+              bottom: bottom,
               right: right,
               width: width,
               child: Material(
                 color: Colors.transparent,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: is3d ? null : OneUITheme.floatingColor,
-                    gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
+                child: DecoratedBox(
+                  decoration: is3d
+                      ? BoxDecoration(
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        )
+                      : const BoxDecoration(),
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(26),
-                    border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(
+                        sigmaX: OneUITheme.blurSigma,
+                        sigmaY: OneUITheme.blurSigma,
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: is3d ? null : OneUITheme.floatingColor,
+                          gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
+                          borderRadius: BorderRadius.circular(26),
+                          border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,7 +223,10 @@ class _OneUIFloatingMenuContent extends StatelessWidget {
                 ),
               ),
             ),
-          ],
+          ),
+        ),
+      ),
+    ],
         );
       },
     );

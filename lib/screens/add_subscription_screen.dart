@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/subscription.dart';
@@ -27,7 +28,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   BillingCycle _selectedCycle = BillingCycle.monthly;
   SubscriptionCategory _selectedCategory = SubscriptionCategory.entertainment;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 30));
-  Color _selectedColor = const Color(0xFF2D6CE5);
+  Color _selectedColor = OneUITheme.accentBlue;
   IconData _selectedIcon = Icons.subscriptions_rounded;
   int _reminderDays = 2;
   SubscriptionStatus _selectedStatus = SubscriptionStatus.active;
@@ -56,19 +57,10 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     } else {
       _paymentController.text = 'Samsung Pay (Visa •••• 9124)';
     }
-
-    _nameController.addListener(_onFieldChanged);
-    _priceController.addListener(_onFieldChanged);
-  }
-
-  void _onFieldChanged() {
-    setState(() {});
   }
 
   @override
   void dispose() {
-    _nameController.removeListener(_onFieldChanged);
-    _priceController.removeListener(_onFieldChanged);
     _nameController.dispose();
     _priceController.dispose();
     _descController.dispose();
@@ -134,7 +126,19 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       return;
     }
 
-    final price = double.tryParse(priceStr) ?? 0.0;
+    final price = double.tryParse(priceStr);
+    if (price == null || price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter a valid price greater than zero'),
+          backgroundColor: OneUITheme.surfacePill,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      );
+      return;
+    }
+
     final paymentMethod = _paymentController.text.trim().isEmpty
         ? 'Samsung Pay (Visa •••• 9124)'
         : _paymentController.text.trim();
@@ -170,7 +174,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       );
     } else {
       final newSub = Subscription(
-        id: 'sub_${DateTime.now().millisecondsSinceEpoch}',
+        id: Subscription.generateUniqueId('sub'),
         name: name,
         description: description,
         price: price,
@@ -297,7 +301,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                                             ),
                                           ),
                                           Text(
-                                            '\$${pop.price.toStringAsFixed(0)}/mo',
+                                            '${SubscriptionStore.instance.currency}${pop.price.toStringAsFixed(0)}/mo',
                                             style: const TextStyle(
                                               fontSize: 10,
                                               color: OneUITheme.textSecondary,
@@ -631,64 +635,79 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
   Widget _buildFloatingCancelSavePill(BuildContext context) {
     final is3d = OneUIEffectsController.instance.floating3dEffect;
-    final canSave = _nameController.text.trim().isNotEmpty && _priceController.text.trim().isNotEmpty;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: is3d ? null : OneUITheme.floatingColor,
-        gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-        borderRadius: BorderRadius.circular(30),
-        border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              onTap: () => Navigator.pop(context),
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
-              splashColor: Colors.white.withValues(alpha: 0.08),
-              highlightColor: Colors.white.withValues(alpha: 0.04),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                    color: OneUITheme.textPrimary,
-                  ),
+    return AnimatedBuilder(
+      animation: Listenable.merge([_nameController, _priceController]),
+      builder: (context, _) {
+        final canSave = _nameController.text.trim().isNotEmpty && _priceController.text.trim().isNotEmpty;
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: OneUITheme.blurSigma,
+              sigmaY: OneUITheme.blurSigma,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: is3d ? null : OneUITheme.floatingColor,
+                gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
+                borderRadius: BorderRadius.circular(30),
+                border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
+                      splashColor: Colors.white.withValues(alpha: 0.08),
+                      highlightColor: Colors.white.withValues(alpha: 0.04),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                            color: OneUITheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 18,
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                    InkWell(
+                      onTap: canSave ? _saveSubscription : null,
+                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(30)),
+                      splashColor: Colors.white.withValues(alpha: 0.08),
+                      highlightColor: Colors.white.withValues(alpha: 0.04),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                        child: Text(
+                          'Save',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                            color: canSave ? OneUITheme.textPrimary : const Color(0xFF8E8E93),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            Container(
-              width: 1,
-              height: 18,
-              color: Colors.white.withValues(alpha: 0.12),
-            ),
-            InkWell(
-              onTap: _saveSubscription,
-              borderRadius: const BorderRadius.horizontal(right: Radius.circular(30)),
-              splashColor: Colors.white.withValues(alpha: 0.08),
-              highlightColor: Colors.white.withValues(alpha: 0.04),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                child: Text(
-                  'Save',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                    color: canSave ? OneUITheme.textPrimary : const Color(0xFF8E8E93),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

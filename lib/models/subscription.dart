@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -200,26 +201,29 @@ class Subscription {
     };
   }
 
+  static String generateUniqueId([String prefix = 'sub']) {
+    final now = DateTime.now();
+    final random = math.Random().nextInt(99999).toString().padLeft(5, '0');
+    return '${prefix}_${now.microsecondsSinceEpoch}_$random';
+  }
+
   factory Subscription.fromJson(Map<String, dynamic> json) {
     final historyList = (json['paymentHistory'] as List<dynamic>?)
             ?.map((e) => DateTime.tryParse(e.toString()) ?? DateTime.now())
             .toList() ??
         [];
 
-    final colorVal = json['brandColor'] as int? ?? 0xFF2D6CE5;
+    final colorVal = json['brandColor'] as int? ?? 0xFF5390F5;
     final codePoint = json['iconCodePoint'] as int? ?? Icons.subscriptions_rounded.codePoint;
+    final iconFontFamily = json['iconFontFamily'] as String? ?? 'MaterialIcons';
 
     final category = SubscriptionCategory.fromString(json['category'] as String?);
-    IconData resolvedIcon = category.icon;
-    for (final p in popularCatalog) {
-      if (p.iconData.codePoint == codePoint) {
-        resolvedIcon = p.iconData;
-        break;
-      }
-    }
+    // Use stored codePoint and fontFamily directly
+    // ignore: non_const_argument_for_const_parameter
+    final IconData resolvedIcon = IconData(codePoint, fontFamily: iconFontFamily, matchTextDirection: false);
 
     return Subscription(
-      id: json['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      id: json['id'] as String? ?? generateUniqueId('sub'),
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
@@ -391,6 +395,34 @@ class SubscriptionStore extends ChangeNotifier {
   SubscriptionSortOption _sortOption = SubscriptionSortOption.renewalAsc;
   bool _groupByDate = false;
   bool _isLoaded = false;
+  final Map<String, SubscriptionStatus> _prePauseStatus = {};
+
+  // Computed properties cache
+  double? _cachedTotalMonthlySpend;
+  int? _cachedTotalActiveCount;
+  int? _cachedTotalPausedCount;
+  List<Subscription>? _cachedUpcomingDue;
+  List<Subscription>? _cachedSortedSubscriptions;
+  Subscription? _cachedHighestCostSubscription;
+  bool _highestCostCalculated = false;
+  Map<SubscriptionCategory, double>? _cachedCategorySpendMap;
+
+  void _invalidateCache() {
+    _cachedTotalMonthlySpend = null;
+    _cachedTotalActiveCount = null;
+    _cachedTotalPausedCount = null;
+    _cachedUpcomingDue = null;
+    _cachedSortedSubscriptions = null;
+    _cachedHighestCostSubscription = null;
+    _highestCostCalculated = false;
+    _cachedCategorySpendMap = null;
+  }
+
+  @override
+  void notifyListeners() {
+    _invalidateCache();
+    super.notifyListeners();
+  }
 
   // Getters
   List<Subscription> get subscriptions => List.unmodifiable(_subscriptions);
@@ -404,28 +436,34 @@ class SubscriptionStore extends ChangeNotifier {
   bool get isLoaded => _isLoaded;
 
   double get totalMonthlySpend {
-    return _subscriptions
+    if (_cachedTotalMonthlySpend != null) return _cachedTotalMonthlySpend!;
+    final total = _subscriptions
         .where((s) => s.status != SubscriptionStatus.paused)
-        .fold(0.0, (acc, sub) => acc + sub.monthlyCost);
+        .fold<double>(0.0, (acc, sub) => acc + sub.monthlyCost);
+    return _cachedTotalMonthlySpend = total;
   }
 
   double get totalYearlySpend => totalMonthlySpend * 12;
 
   int get totalActiveCount {
-    return _subscriptions.where((s) => s.status == SubscriptionStatus.active).length;
+    if (_cachedTotalActiveCount != null) return _cachedTotalActiveCount!;
+    return _cachedTotalActiveCount = _subscriptions.where((s) => s.status == SubscriptionStatus.active).length;
   }
 
   int get totalPausedCount {
-    return _subscriptions.where((s) => s.status == SubscriptionStatus.paused).length;
+    if (_cachedTotalPausedCount != null) return _cachedTotalPausedCount!;
+    return _cachedTotalPausedCount = _subscriptions.where((s) => s.status == SubscriptionStatus.paused).length;
   }
 
   List<Subscription> get upcomingDue {
+    if (_cachedUpcomingDue != null) return _cachedUpcomingDue!;
     final list = List<Subscription>.from(_subscriptions.where((s) => s.status != SubscriptionStatus.paused));
     list.sort((a, b) => a.nextBillingDate.compareTo(b.nextBillingDate));
-    return list;
+    return _cachedUpcomingDue = list;
   }
 
   List<Subscription> get sortedSubscriptions {
+    if (_cachedSortedSubscriptions != null) return _cachedSortedSubscriptions!;
     final list = List<Subscription>.from(_subscriptions);
     switch (_sortOption) {
       case SubscriptionSortOption.renewalAsc:
@@ -447,23 +485,26 @@ class SubscriptionStore extends ChangeNotifier {
         list.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
         break;
     }
-    return list;
+    return _cachedSortedSubscriptions = list;
   }
 
   Subscription? get highestCostSubscription {
-    if (_subscriptions.isEmpty) return null;
+    if (_highestCostCalculated) return _cachedHighestCostSubscription;
+    _highestCostCalculated = true;
+    if (_subscriptions.isEmpty) return _cachedHighestCostSubscription = null;
     final active = _subscriptions.where((s) => s.status != SubscriptionStatus.paused).toList();
-    if (active.isEmpty) return null;
+    if (active.isEmpty) return _cachedHighestCostSubscription = null;
     active.sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
-    return active.first;
+    return _cachedHighestCostSubscription = active.first;
   }
 
   Map<SubscriptionCategory, double> get categorySpendMap {
+    if (_cachedCategorySpendMap != null) return _cachedCategorySpendMap!;
     final Map<SubscriptionCategory, double> map = {};
     for (var sub in _subscriptions.where((s) => s.status != SubscriptionStatus.paused)) {
       map[sub.category] = (map[sub.category] ?? 0.0) + sub.monthlyCost;
     }
-    return map;
+    return _cachedCategorySpendMap = map;
   }
 
   // --- Persistence ---
@@ -492,8 +533,10 @@ class SubscriptionStore extends ChangeNotifier {
 
       _isLoaded = true;
       notifyListeners();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('OneSpend: Failed to load data from storage: $e');
       _isLoaded = true;
+      notifyListeners();
     }
   }
 
@@ -509,12 +552,20 @@ class SubscriptionStore extends ChangeNotifier {
       await prefs.setInt(_storageKeyDefaultReminder, _defaultReminderDays);
       await prefs.setString(_storageKeySortOption, _sortOption.name);
       await prefs.setBool(_storageKeyGroupByDate, _groupByDate);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('OneSpend: Failed to save data to storage: $e');
+    }
   }
 
   // --- Actions ---
   void addSubscription(Subscription subscription) {
     _subscriptions.add(subscription);
+    notifyListeners();
+    _saveToStorage();
+  }
+
+  void batchAdd(Iterable<Subscription> newSubscriptions) {
+    _subscriptions.addAll(newSubscriptions);
     notifyListeners();
     _saveToStorage();
   }
@@ -545,26 +596,59 @@ class SubscriptionStore extends ChangeNotifier {
           newDate = sub.nextBillingDate.add(const Duration(days: 7));
           break;
         case BillingCycle.monthly:
-          newDate = DateTime(
-            sub.nextBillingDate.year,
-            sub.nextBillingDate.month + 1,
-            sub.nextBillingDate.day,
-          );
+          final targetMonth = sub.nextBillingDate.month + 1;
+          final targetYear = sub.nextBillingDate.year + (targetMonth > 12 ? 1 : 0);
+          final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+          final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+          final clampedDay = sub.nextBillingDate.day.clamp(1, lastDay);
+          newDate = DateTime(targetYear, normalizedMonth, clampedDay);
           break;
         case BillingCycle.quarterly:
-          newDate = DateTime(
-            sub.nextBillingDate.year,
-            sub.nextBillingDate.month + 3,
-            sub.nextBillingDate.day,
-          );
+          final targetMonth = sub.nextBillingDate.month + 3;
+          final targetYear = sub.nextBillingDate.year + ((targetMonth - 1) ~/ 12);
+          final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+          final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+          final clampedDay = sub.nextBillingDate.day.clamp(1, lastDay);
+          newDate = DateTime(targetYear, normalizedMonth, clampedDay);
           break;
         case BillingCycle.yearly:
-          newDate = DateTime(
-            sub.nextBillingDate.year + 1,
-            sub.nextBillingDate.month,
-            sub.nextBillingDate.day,
-          );
+          final targetYear = sub.nextBillingDate.year + 1;
+          final lastDay = DateTime(targetYear, sub.nextBillingDate.month + 1, 0).day;
+          final clampedDay = sub.nextBillingDate.day.clamp(1, lastDay);
+          newDate = DateTime(targetYear, sub.nextBillingDate.month, clampedDay);
           break;
+      }
+
+      // Catch up if multiple cycles overdue
+      while (newDate.isBefore(DateTime.now())) {
+        // Re-run the same advancement logic
+        switch (sub.billingCycle) {
+          case BillingCycle.weekly:
+            newDate = newDate.add(const Duration(days: 7));
+            break;
+          case BillingCycle.monthly:
+            final tm = newDate.month + 1;
+            final ty = newDate.year + (tm > 12 ? 1 : 0);
+            final nm = ((tm - 1) % 12) + 1;
+            final ld = DateTime(ty, nm + 1, 0).day;
+            final cd = newDate.day.clamp(1, ld);
+            newDate = DateTime(ty, nm, cd);
+            break;
+          case BillingCycle.quarterly:
+            final tm = newDate.month + 3;
+            final ty = newDate.year + ((tm - 1) ~/ 12);
+            final nm = ((tm - 1) % 12) + 1;
+            final ld = DateTime(ty, nm + 1, 0).day;
+            final cd = newDate.day.clamp(1, ld);
+            newDate = DateTime(ty, nm, cd);
+            break;
+          case BillingCycle.yearly:
+            final ty = newDate.year + 1;
+            final ld = DateTime(ty, newDate.month + 1, 0).day;
+            final cd = newDate.day.clamp(1, ld);
+            newDate = DateTime(ty, newDate.month, cd);
+            break;
+        }
       }
 
       final updatedHistory = List<DateTime>.from(sub.paymentHistory)..insert(0, DateTime.now());
@@ -581,9 +665,15 @@ class SubscriptionStore extends ChangeNotifier {
     final index = _subscriptions.indexWhere((item) => item.id == id);
     if (index != -1) {
       final sub = _subscriptions[index];
-      final newStatus = sub.status == SubscriptionStatus.paused
-          ? SubscriptionStatus.active
-          : SubscriptionStatus.paused;
+      SubscriptionStatus newStatus;
+      if (sub.status == SubscriptionStatus.paused) {
+        // Restore pre-pause status, default to active
+        newStatus = _prePauseStatus.remove(id) ?? SubscriptionStatus.active;
+      } else {
+        // Store current status before pausing
+        _prePauseStatus[id] = sub.status;
+        newStatus = SubscriptionStatus.paused;
+      }
       _subscriptions[index] = sub.copyWith(status: newStatus);
       notifyListeners();
       _saveToStorage();
@@ -602,9 +692,13 @@ class SubscriptionStore extends ChangeNotifier {
     for (int i = 0; i < _subscriptions.length; i++) {
       if (idSet.contains(_subscriptions[i].id)) {
         final sub = _subscriptions[i];
-        final newStatus = sub.status == SubscriptionStatus.paused
-            ? SubscriptionStatus.active
-            : SubscriptionStatus.paused;
+        SubscriptionStatus newStatus;
+        if (sub.status == SubscriptionStatus.paused) {
+          newStatus = _prePauseStatus.remove(sub.id) ?? SubscriptionStatus.active;
+        } else {
+          _prePauseStatus[sub.id] = sub.status;
+          newStatus = SubscriptionStatus.paused;
+        }
         _subscriptions[i] = sub.copyWith(status: newStatus);
       }
     }
@@ -684,8 +778,9 @@ class SubscriptionStore extends ChangeNotifier {
     buffer.writeln('Name,Category,Billing Cycle,Price,Currency,Next Renewal,Status,Payment Method');
     for (var sub in _subscriptions) {
       final dateStr = '${sub.nextBillingDate.year}-${sub.nextBillingDate.month.toString().padLeft(2, '0')}-${sub.nextBillingDate.day.toString().padLeft(2, '0')}';
+      String escCsv(String val) => val.replaceAll('"', '""');
       buffer.writeln(
-        '"${sub.name}","${sub.category.label}","${sub.billingCycle.label}",${sub.price},"${sub.currency}","$dateStr","${sub.status.label}","${sub.paymentMethod}"',
+        '"${escCsv(sub.name)}","${escCsv(sub.category.label)}","${escCsv(sub.billingCycle.label)}",${sub.price},"${escCsv(sub.currency)}","$dateStr","${escCsv(sub.status.label)}","${escCsv(sub.paymentMethod)}"',
       );
     }
     return buffer.toString();

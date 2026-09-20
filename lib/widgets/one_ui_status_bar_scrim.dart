@@ -19,10 +19,7 @@ class OneUIStatusBarScrim extends StatelessWidget {
     final topPadding = MediaQuery.of(context).padding.top;
     final scrimHeight = height ?? (topPadding > 0 ? topPadding * 0.90 : 32.0);
 
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
+    return SizedBox(
       height: scrimHeight,
       child: IgnorePointer(
         child: ClipRect(
@@ -39,21 +36,23 @@ class OneUIStatusBarScrim extends StatelessWidget {
               ).createShader(bounds);
             },
             blendMode: BlendMode.dstIn,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: 16.0,
-                sigmaY: 16.0,
-              ),
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xF2000000), // Pure OLED pitch black ~95%
-                      Colors.transparent,
-                    ],
-                    stops: [0.25, 1.0],
+            child: RepaintBoundary(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: 16.0,
+                  sigmaY: 16.0,
+                ),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xF2000000), // Pure OLED pitch black ~95%
+                        Colors.transparent,
+                      ],
+                      stops: [0.25, 1.0],
+                    ),
                   ),
                 ),
               ),

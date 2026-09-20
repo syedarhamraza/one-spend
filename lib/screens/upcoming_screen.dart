@@ -28,7 +28,16 @@ class UpcomingScreen extends StatelessWidget {
         final overdue = list.where((s) => s.daysRemaining < 0).toList();
 
         final next30DaysSubs = list.where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 30).toList();
-        final totalNext30Days = next30DaysSubs.fold(0.0, (acc, s) => acc + s.price);
+        final totalNext30Days = next30DaysSubs.fold(0.0, (acc, s) {
+          // Count how many times this subscription renews within 30 days
+          int occurrences = 1;
+          if (s.billingCycle == BillingCycle.weekly) {
+            // A weekly sub renews ~4 times in 30 days from its next billing date
+            final daysInWindow = 30 - s.daysRemaining;
+            occurrences = 1 + (daysInWindow ~/ 7);
+          }
+          return acc + (s.price * occurrences);
+        });
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
@@ -119,7 +128,7 @@ class UpcomingScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${next30DaysSubs.length} upcoming renewals',
+                                    '${next30DaysSubs.length} subscriptions renewing',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: OneUITheme.textSecondary,
@@ -287,25 +296,29 @@ class UpcomingScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              store.renewSubscription(sub.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Marked ${sub.name} as renewed!'),
-                  backgroundColor: OneUITheme.surfacePill,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                store.renewSubscription(sub.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Marked ${sub.name} as renewed!'),
+                    backgroundColor: OneUITheme.surfacePill,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: OneUITheme.accentGreen.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
                 ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: OneUITheme.accentGreen.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
+                child: const Icon(Icons.check_rounded, color: OneUITheme.accentGreen, size: 16),
               ),
-              child: const Icon(Icons.check_rounded, color: OneUITheme.accentGreen, size: 16),
             ),
           ),
         ],

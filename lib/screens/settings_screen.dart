@@ -5,67 +5,35 @@ import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_alternative_options_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
-import '../widgets/one_ui_floating_search_pill.dart';
 import '../widgets/one_ui_group_card.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
-  void _editProfile(BuildContext context, SubscriptionStore store) {
-    final nameController = TextEditingController(text: store.userName);
-    final emailController = TextEditingController(text: store.userEmail);
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
 
-    OneUIFloatingModal.showConfirmationDialog(
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _showSearch = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  final GlobalKey _actionPillKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _editProfile(BuildContext context, SubscriptionStore store) {
+    OneUIFloatingModal.show(
       context: context,
-      title: 'Edit Profile',
-      message: 'Update your display profile information:',
-      customContent: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: OneUITheme.surfacePill,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: nameController,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                labelStyle: TextStyle(color: OneUITheme.textSecondary),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: OneUITheme.surfacePill,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: emailController,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                labelStyle: TextStyle(color: OneUITheme.textSecondary),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-        ],
+      builder: (ctx) => _ProfileEditModal(
+        initialName: store.userName,
+        initialEmail: store.userEmail,
+        onSave: (name, email) => store.setUserProfile(name, email),
       ),
-      cancelLabel: 'Cancel',
-      confirmLabel: 'Save',
-      onConfirm: () {
-        final name = nameController.text.trim();
-        final email = emailController.text.trim();
-        if (name.isNotEmpty && email.isNotEmpty) {
-          store.setUserProfile(name, email);
-        }
-      },
     );
   }
 
@@ -188,36 +156,21 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _editBudget(BuildContext context, SubscriptionStore store) {
-    final controller = TextEditingController(text: store.monthlyBudget.toStringAsFixed(0));
-
-    OneUIFloatingModal.showConfirmationDialog(
+    OneUIFloatingModal.showTextInputDialog(
       context: context,
       title: 'Monthly Budget Limit',
       message: 'Set your monthly subscription limit threshold:',
-      customContent: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        decoration: BoxDecoration(
-          color: OneUITheme.surfacePill,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-          decoration: InputDecoration(
-            prefixText: '${store.currency} ',
-            prefixStyle: const TextStyle(color: Colors.white, fontSize: 18),
-            border: InputBorder.none,
-          ),
-        ),
-      ),
+      initialValue: store.monthlyBudget.toStringAsFixed(0),
+      prefixText: '${store.currency} ',
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       cancelLabel: 'Cancel',
       confirmLabel: 'Save',
-      onConfirm: () {
-        final newBudget = double.tryParse(controller.text.trim()) ?? store.monthlyBudget;
+    ).then((result) {
+      if (result != null) {
+        final newBudget = double.tryParse(result) ?? store.monthlyBudget;
         store.setMonthlyBudget(newBudget);
-      },
-    );
+      }
+    });
   }
 
   void _pickReminderDays(BuildContext context, SubscriptionStore store) {
@@ -388,299 +341,409 @@ class SettingsScreen extends StatelessWidget {
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   // 1. One UI Signature Collapsible Header
-                  const SliverPersistentHeader(
+                  SliverPersistentHeader(
                     pinned: true,
                     delegate: OneUICollapsibleHeaderDelegate(
                       title: 'Settings',
                       hasBigHeader: true,
                       expandedHeight: 270.0,
+                      actionsPillKey: _actionPillKey,
+                      actions: [
+                        OneUIHeaderAction(
+                          icon: Icons.search_rounded,
+                          tooltip: 'Search settings',
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            setState(() {
+                              _showSearch = !_showSearch;
+                              if (!_showSearch) {
+                                _searchQuery = '';
+                                _searchController.clear();
+                              }
+                            });
+                          },
+                        ),
+                      ],
                     ),
                   ),
 
+                  // Search bar if toggled (matching SubscriptionsScreen)
+                  if (_showSearch)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: OneUITheme.cardColor,
+                            borderRadius: OneUITheme.pillBorderRadius,
+                            border: OneUITheme.cardBorder,
+                            boxShadow: OneUITheme.cardShadow,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: TextField(
+                            controller: _searchController,
+                            autofocus: true,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: OneUITheme.textPrimary,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Search settings...',
+                              hintStyle: const TextStyle(color: OneUITheme.textSecondary),
+                              border: InputBorder.none,
+                              icon: const Icon(Icons.search_rounded, color: OneUITheme.textSecondary),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.close_rounded, size: 18, color: OneUITheme.textSecondary),
+                                      onPressed: () {
+                                        HapticFeedback.lightImpact();
+                                        setState(() {
+                                          _searchQuery = '';
+                                          _searchController.clear();
+                                        });
+                                      },
+                                    )
+                                  : null,
+                            ),
+                            onChanged: (val) {
+                              setState(() {
+                                _searchQuery = val.trim().toLowerCase();
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
                   // 2. Settings Content
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 150),
-                      child: Column(
-                        children: [
-                          // Profile Card
-                          GestureDetector(
-                            onTap: () => _editProfile(context, store),
-                            child: Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: OneUITheme.cardColor,
-                                borderRadius: OneUITheme.cardBorderRadius,
-                                border: OneUITheme.cardBorder,
-                                boxShadow: OneUITheme.cardShadow,
+                  Builder(
+                    builder: (context) {
+                      bool matches(String? text) =>
+                          text != null && text.toLowerCase().contains(_searchQuery);
+                      bool itemMatches(OneUIGroupItem item) =>
+                          _searchQuery.isEmpty ||
+                          matches(item.title) ||
+                          matches(item.subtitle);
+
+                      final showProfile = _searchQuery.isEmpty ||
+                          matches(store.userName) ||
+                          matches(store.userEmail) ||
+                          matches('profile') ||
+                          matches('account');
+
+                      final appPrefItems = <OneUIGroupItem>[
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.monetization_on_rounded, OneUITheme.accentGreen),
+                          title: 'Currency',
+                          subtitle: 'Default currency symbol: ${store.currency}',
+                          onTap: () => _pickCurrency(context, store),
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.account_balance_wallet_rounded, OneUITheme.accentBlue),
+                          title: 'Monthly budget threshold',
+                          subtitle: '${store.currency}${store.monthlyBudget.toStringAsFixed(0)} limit',
+                          onTap: () => _editBudget(context, store),
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.notifications_active_rounded, OneUITheme.accentAmber),
+                          title: 'Renewal notification alert',
+                          subtitle: '${store.defaultReminderDays} days before renewal date',
+                          onTap: () => _pickReminderDays(context, store),
+                        ),
+                      ].where(itemMatches).toList();
+
+                      final isNavbar3d = OneUIEffectsController.instance.navbar3dEffect;
+                      final isFloating3d = OneUIEffectsController.instance.floating3dEffect;
+                      final isCards3d = OneUIEffectsController.instance.card3dEffect;
+
+                      final appearanceItems = <OneUIGroupItem>[
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.view_agenda_rounded, OneUITheme.accentBlue),
+                          title: 'Navigation bar 3D effect',
+                          subtitle: isNavbar3d
+                              ? '3D floating pill elevation & top rim highlight'
+                              : 'Classic flat appearance',
+                          trailing: Switch.adaptive(
+                            value: isNavbar3d,
+                            activeTrackColor: OneUITheme.accentBlue,
+                            onChanged: (val) {
+                              OneUIEffectsController.instance.navbar3dEffect = val;
+                            },
+                          ),
+                          onTap: () {
+                            OneUIEffectsController.instance.navbar3dEffect = !isNavbar3d;
+                          },
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.radio_button_checked_rounded, OneUITheme.accentPurple),
+                          title: 'Floating buttons & pills 3D effect',
+                          subtitle: isFloating3d
+                              ? '3D elevation & rim highlight on search, back & action pills'
+                              : 'Classic flat appearance',
+                          trailing: Switch.adaptive(
+                            value: isFloating3d,
+                            activeTrackColor: OneUITheme.accentPurple,
+                            onChanged: (val) {
+                              OneUIEffectsController.instance.floating3dEffect = val;
+                            },
+                          ),
+                          onTap: () {
+                            OneUIEffectsController.instance.floating3dEffect = !isFloating3d;
+                          },
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.layers_rounded, OneUITheme.accentTeal),
+                          title: 'Cards 3D depth effect',
+                          subtitle: isCards3d
+                              ? '3D elevation, rim highlight & soft shadows on all cards'
+                              : 'Classic flat appearance',
+                          trailing: Switch.adaptive(
+                            value: isCards3d,
+                            activeTrackColor: OneUITheme.accentTeal,
+                            onChanged: (val) {
+                              OneUIEffectsController.instance.card3dEffect = val;
+                            },
+                          ),
+                          onTap: () {
+                            OneUIEffectsController.instance.card3dEffect = !isCards3d;
+                          },
+                        ),
+                      ].where(itemMatches).toList();
+
+                      final dataItems = <OneUIGroupItem>[
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.file_download_outlined, OneUITheme.accentTeal),
+                          title: 'Export backup (JSON)',
+                          subtitle: 'Export subscriptions into JSON data format',
+                          onTap: () => _exportJson(context, store),
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.restore_rounded, OneUITheme.accentBlue),
+                          title: 'Restore sample subscriptions',
+                          subtitle: 'Reload default popular catalog presets',
+                          onTap: () {
+                            store.restoreDefaultCatalog();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Restored default catalog subscriptions'),
+                                backgroundColor: OneUITheme.surfacePill,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               ),
-                              padding: const EdgeInsets.all(18),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                            );
+                          },
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.delete_sweep_rounded, OneUITheme.accentRed),
+                          title: 'Clear all subscriptions',
+                          subtitle: 'Reset and remove all tracked subscriptions',
+                          onTap: () => _clearData(context, store),
+                        ),
+                      ].where(itemMatches).toList();
+
+                      final aboutItems = <OneUIGroupItem>[
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.info_outline_rounded, const Color(0xFF1E88E5)),
+                          title: 'About OneSpend',
+                          subtitle: 'Version 1.0.0 • Samsung One UI 9 Engine',
+                          onTap: () {
+                            showAboutDialog(
+                              context: context,
+                              applicationName: 'OneSpend',
+                              applicationVersion: '1.0.0',
+                              applicationIcon: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: OneUITheme.accentBlue,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Icon(Icons.subscriptions_rounded, color: Colors.white, size: 28),
+                              ),
+                              children: const [
+                                Text('A feature-rich subscription and spend manager designed to match Samsung One UI 9 aesthetics and ergonomics.'),
+                              ],
+                            );
+                          },
+                        ),
+                      ].where(itemMatches).toList();
+
+                      final hasAnyResult = showProfile ||
+                          appPrefItems.isNotEmpty ||
+                          appearanceItems.isNotEmpty ||
+                          dataItems.isNotEmpty ||
+                          aboutItems.isNotEmpty;
+
+                      return SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 150),
+                          child: Column(
+                            children: [
+                              // Profile Card
+                              if (showProfile)
+                                GestureDetector(
+                                  onTap: () => _editProfile(context, store),
+                                  child: Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.cardColor,
+                                      borderRadius: OneUITheme.cardBorderRadius,
+                                      border: OneUITheme.cardBorder,
+                                      boxShadow: OneUITheme.cardShadow,
+                                    ),
+                                    padding: const EdgeInsets.all(18),
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          store.userName,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: -0.3,
-                                            color: OneUITheme.textPrimary,
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                store.userName,
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: -0.3,
+                                                  color: OneUITheme.textPrimary,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                '${store.userEmail} • ${store.totalActiveCount} active subscriptions',
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  color: OneUITheme.textSecondary,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        const SizedBox(height: 3),
-                                        Text(
-                                          '${store.userEmail} • ${store.totalActiveCount} active subscriptions',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            color: OneUITheme.textSecondary,
+                                        Container(
+                                          width: 52,
+                                          height: 52,
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: LinearGradient(
+                                              colors: [Color(0xFF8B0000), Color(0xFF2C0A0A)],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            store.userName.isNotEmpty
+                                                ? store.userName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
+                                                : 'SA',
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  Container(
-                                    width: 52,
-                                    height: 52,
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: LinearGradient(
-                                        colors: [Color(0xFF8B0000), Color(0xFF2C0A0A)],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      store.userName.isNotEmpty
-                                          ? store.userName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
-                                          : 'SA',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                                ),
 
-                          // Card 1: App Preferences
-                          OneUIGroupCard(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            items: [
-                              OneUIGroupItem(
-                                leading: _buildIconBadge(Icons.monetization_on_rounded, OneUITheme.accentGreen),
-                                title: 'Currency',
-                                subtitle: 'Default currency symbol: ${store.currency}',
-                                onTap: () => _pickCurrency(context, store),
-                              ),
-                              OneUIGroupItem(
-                                leading: _buildIconBadge(Icons.account_balance_wallet_rounded, OneUITheme.accentBlue),
-                                title: 'Monthly budget threshold',
-                                subtitle: '${store.currency}${store.monthlyBudget.toStringAsFixed(0)} limit',
-                                onTap: () => _editBudget(context, store),
-                              ),
-                              OneUIGroupItem(
-                                leading: _buildIconBadge(Icons.notifications_active_rounded, OneUITheme.accentAmber),
-                                title: 'Renewal notification alert',
-                                subtitle: '${store.defaultReminderDays} days before renewal date',
-                                onTap: () => _pickReminderDays(context, store),
-                              ),
-                            ],
-                          ),
+                              // Card 1: App Preferences
+                              if (appPrefItems.isNotEmpty)
+                                OneUIGroupCard(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  items: appPrefItems,
+                                ),
 
-                          // Card 2: 3D Appearance & Visual Styling
-                          AnimatedBuilder(
-                            animation: OneUIEffectsController.instance,
-                            builder: (context, _) {
-                              final isNavbar3d = OneUIEffectsController.instance.navbar3dEffect;
-                              final isFloating3d = OneUIEffectsController.instance.floating3dEffect;
-                              final isCards3d = OneUIEffectsController.instance.card3dEffect;
+                              // Card 2: 3D Appearance & Visual Styling
+                              if (appearanceItems.isNotEmpty)
+                                OneUIGroupCard(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  items: appearanceItems,
+                                ),
 
-                              return OneUIGroupCard(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                items: [
-                                  OneUIGroupItem(
-                                    leading: _buildIconBadge(Icons.view_agenda_rounded, OneUITheme.accentBlue),
-                                    title: 'Navigation bar 3D effect',
-                                    subtitle: isNavbar3d
-                                        ? '3D floating pill elevation & top rim highlight'
-                                        : 'Classic flat appearance',
-                                    trailing: Switch.adaptive(
-                                      value: isNavbar3d,
-                                      activeTrackColor: OneUITheme.accentBlue,
-                                      onChanged: (val) {
-                                        OneUIEffectsController.instance.navbar3dEffect = val;
+                              // Card 3: Data Management & Backup
+                              if (dataItems.isNotEmpty)
+                                OneUIGroupCard(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  items: dataItems,
+                                ),
+
+                              // Card 4: About OneSpend
+                              if (aboutItems.isNotEmpty)
+                                OneUIGroupCard(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  items: aboutItems,
+                                ),
+
+                              const SizedBox(height: 8),
+
+                              // "Looking for something else?" Card
+                              if (_searchQuery.isEmpty)
+                                OneUIAlternativeOptionsCard(
+                                  title: 'Looking for something else?',
+                                  actions: [
+                                    OneUIAlternativeAction(
+                                      title: 'Reset appearance settings',
+                                      onTap: () {
+                                        OneUIEffectsController.instance.navbar3dEffect = true;
+                                        OneUIEffectsController.instance.floating3dEffect = true;
+                                        OneUIEffectsController.instance.card3dEffect = true;
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: const Text('Reset appearance to default 3D effects'),
+                                            backgroundColor: OneUITheme.surfacePill,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          ),
+                                        );
                                       },
                                     ),
-                                    onTap: () {
-                                      OneUIEffectsController.instance.navbar3dEffect = !isNavbar3d;
-                                    },
-                                  ),
-                                  OneUIGroupItem(
-                                    leading: _buildIconBadge(Icons.radio_button_checked_rounded, OneUITheme.accentPurple),
-                                    title: 'Floating buttons & pills 3D effect',
-                                    subtitle: isFloating3d
-                                        ? '3D elevation & rim highlight on search, back & action pills'
-                                        : 'Classic flat appearance',
-                                    trailing: Switch.adaptive(
-                                      value: isFloating3d,
-                                      activeTrackColor: OneUITheme.accentPurple,
-                                      onChanged: (val) {
-                                        OneUIEffectsController.instance.floating3dEffect = val;
+                                    OneUIAlternativeAction(
+                                      title: 'Help & feedback',
+                                      onTap: () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: const Text('Contact support at help@onespend.app'),
+                                            backgroundColor: OneUITheme.surfacePill,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                          ),
+                                        );
                                       },
                                     ),
-                                    onTap: () {
-                                      OneUIEffectsController.instance.floating3dEffect = !isFloating3d;
-                                    },
-                                  ),
-                                  OneUIGroupItem(
-                                    leading: _buildIconBadge(Icons.layers_rounded, OneUITheme.accentTeal),
-                                    title: 'Cards 3D depth effect',
-                                    subtitle: isCards3d
-                                        ? '3D elevation, rim highlight & soft shadows on all cards'
-                                        : 'Classic flat appearance',
-                                    trailing: Switch.adaptive(
-                                      value: isCards3d,
-                                      activeTrackColor: OneUITheme.accentTeal,
-                                      onChanged: (val) {
-                                        OneUIEffectsController.instance.card3dEffect = val;
-                                      },
-                                    ),
-                                    onTap: () {
-                                      OneUIEffectsController.instance.card3dEffect = !isCards3d;
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
+                                  ],
+                                ),
 
-                          // Card 3: Data Management & Backup
-                          OneUIGroupCard(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            items: [
-                              OneUIGroupItem(
-                                leading: _buildIconBadge(Icons.file_download_outlined, OneUITheme.accentTeal),
-                                title: 'Export backup (JSON)',
-                                subtitle: 'Export subscriptions into JSON data format',
-                                onTap: () => _exportJson(context, store),
-                              ),
-                              OneUIGroupItem(
-                                leading: _buildIconBadge(Icons.restore_rounded, OneUITheme.accentBlue),
-                                title: 'Restore sample subscriptions',
-                                subtitle: 'Reload default popular catalog presets',
-                                onTap: () {
-                                  store.restoreDefaultCatalog();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text('Restored default catalog subscriptions'),
-                                      backgroundColor: OneUITheme.surfacePill,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                    ),
-                                  );
-                                },
-                              ),
-                              OneUIGroupItem(
-                                leading: _buildIconBadge(Icons.delete_sweep_rounded, OneUITheme.accentRed),
-                                title: 'Clear all subscriptions',
-                                subtitle: 'Reset and remove all tracked subscriptions',
-                                onTap: () => _clearData(context, store),
-                              ),
-                            ],
-                          ),
-
-                          // Card 4: About OneSpend
-                          OneUIGroupCard(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            items: [
-                              OneUIGroupItem(
-                                leading: _buildIconBadge(Icons.info_outline_rounded, const Color(0xFF1E88E5)),
-                                title: 'About OneSpend',
-                                subtitle: 'Version 1.0.0 • Samsung One UI 9 Engine',
-                                onTap: () {
-                                  showAboutDialog(
-                                    context: context,
-                                    applicationName: 'OneSpend',
-                                    applicationVersion: '1.0.0',
-                                    applicationIcon: Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        color: OneUITheme.accentBlue,
-                                        borderRadius: BorderRadius.circular(16),
+                              // Empty search state
+                              if (!hasAnyResult)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 48),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.search_off_rounded,
+                                        size: 48,
+                                        color: OneUITheme.textSecondary.withValues(alpha: 0.5),
                                       ),
-                                      child: const Icon(Icons.subscriptions_rounded, color: Colors.white, size: 28),
-                                    ),
-                                    children: const [
-                                      Text('A feature-rich subscription and spend manager designed to match Samsung One UI 9 aesthetics and ergonomics.'),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No settings found for "$_searchQuery"',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: OneUITheme.textSecondary,
+                                        ),
+                                      ),
                                     ],
-                                  );
-                                },
-                              ),
+                                  ),
+                                ),
                             ],
                           ),
-
-                          const SizedBox(height: 8),
-
-                          // "Looking for something else?" Card
-                          OneUIAlternativeOptionsCard(
-                            title: 'Looking for something else?',
-                            actions: [
-                              OneUIAlternativeAction(
-                                title: 'Reset appearance settings',
-                                onTap: () {
-                                  OneUIEffectsController.instance.navbar3dEffect = true;
-                                  OneUIEffectsController.instance.floating3dEffect = true;
-                                  OneUIEffectsController.instance.card3dEffect = true;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text('Reset appearance to default 3D effects'),
-                                      backgroundColor: OneUITheme.surfacePill,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                    ),
-                                  );
-                                },
-                              ),
-                              OneUIAlternativeAction(
-                                title: 'Help & feedback',
-                                onTap: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: const Text('Contact support at help@onespend.app'),
-                                      backgroundColor: OneUITheme.surfacePill,
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ],
-              ),
-
-              // Floating Search Pill
-              Positioned(
-                left: 20,
-                right: 20,
-                bottom: 74,
-                child: OneUIFloatingSearchPill(
-                  hintText: 'Search settings',
-                  onTap: () {},
-                ),
               ),
             ],
           ),
@@ -699,6 +762,163 @@ class SettingsScreen extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Icon(icon, color: Colors.white, size: 20),
+    );
+  }
+}
+
+class _ProfileEditModal extends StatefulWidget {
+  final String initialName;
+  final String initialEmail;
+  final void Function(String name, String email) onSave;
+
+  const _ProfileEditModal({
+    required this.initialName,
+    required this.initialEmail,
+    required this.onSave,
+  });
+
+  @override
+  State<_ProfileEditModal> createState() => _ProfileEditModalState();
+}
+
+class _ProfileEditModalState extends State<_ProfileEditModal> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName);
+    _emailController = TextEditingController(text: widget.initialEmail);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OneUIFloatingModal(
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Edit Profile',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Update your display profile information:',
+            style: TextStyle(
+              fontSize: 15.5,
+              color: Color(0xFFC4C4CA),
+              height: 1.35,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: OneUITheme.surfacePill,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TextField(
+              controller: _nameController,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                labelStyle: TextStyle(color: OneUITheme.textSecondary),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: OneUITheme.surfacePill,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TextField(
+              controller: _emailController,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                labelStyle: TextStyle(color: OneUITheme.textSecondary),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 18,
+                color: Colors.white.withValues(alpha: 0.10),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () {
+                    final name = _nameController.text.trim();
+                    final email = _emailController.text.trim();
+                    if (name.isNotEmpty && email.isNotEmpty) {
+                      widget.onSave(name, email);
+                    }
+                    Navigator.pop(context);
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
