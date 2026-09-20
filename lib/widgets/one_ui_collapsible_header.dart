@@ -478,51 +478,46 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
               child: _buildBigHeader(bigHeaderOpacity),
             ),
 
-          // 2. Action Bar Row & Controls (Pinned at top: topPadding + 6.0)
-          if (widget.isSelectionMode)
-            Positioned(
-              top: topPadding + 6.0,
-              left: 16.0,
-              right: 16.0,
-              height: 44.0,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (widget.selectionLeading != null) widget.selectionLeading!,
-                  const Spacer(),
-                  if (widget.selectionTrailing != null) widget.selectionTrailing!,
-                ],
-              ),
-            )
-          else ...[
-            // Pinned top-left back button
-            if (widget.showBackButton)
-              Positioned(
-                top: topPadding + 6.0,
-                left: 16.0,
-                child: _buildBackButton(context, pillProgress),
-              ),
+          // 2. Action Bar Row (Buttons & Small Title OR Selection Controls)
+          // Anchored to bottom: 4.0 of the sliver, directly above the first card!
+          Positioned(
+            bottom: 4.0,
+            left: 20.0,
+            right: 20.0,
+            height: 44.0,
+            child: widget.isSelectionMode
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (widget.selectionLeading != null) widget.selectionLeading!,
+                      const Spacer(),
+                      if (widget.selectionTrailing != null) widget.selectionTrailing!,
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Left: Back button (if enabled)
+                      if (widget.showBackButton) ...[
+                        _buildBackButton(context, pillProgress),
+                        const SizedBox(width: 10.0),
+                      ],
 
-            // Pinned top-left/center small title
-            Positioned(
-              top: topPadding + 6.0,
-              left: widget.showBackButton ? 68.0 : 20.0,
-              right: (widget.actions != null && widget.actions!.isNotEmpty) ? 140.0 : 20.0,
-              height: 44.0,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _buildSmallTitle(smallTitleOpacity),
-              ),
-            ),
+                      // Center / Left: Small Title
+                      // If no back button, starts directly at left: 20 on screen!
+                      // If back button, starts beside the back button!
+                      Expanded(
+                        child: _buildSmallTitle(smallTitleOpacity),
+                      ),
 
-            // Pinned top-right actions pill
-            if (widget.actions != null && widget.actions!.isNotEmpty)
-              Positioned(
-                top: topPadding + 6.0,
-                right: 16.0,
-                child: _buildActionPill(context, pillProgress),
-              ),
-          ],
+                      // Right: Action Buttons Pill (if actions present)
+                      if (widget.actions != null && widget.actions!.isNotEmpty) ...[
+                        const SizedBox(width: 8.0),
+                        _buildActionPill(context, pillProgress),
+                      ],
+                    ],
+                  ),
+          ),
         ],
       ),
     );
