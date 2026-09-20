@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
@@ -6,7 +7,9 @@ import '../widgets/one_ui_alternative_options_card.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_action_bar.dart';
+import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
+import 'add_subscription_screen.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -22,7 +25,6 @@ class SubscriptionDetailScreen extends StatefulWidget {
 
 class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   late Subscription _sub;
-  bool _isRoutineDemoMode = false; // Toggle to preview Screenshot 3 exact routine labels
 
   @override
   void initState() {
@@ -30,339 +32,505 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     _sub = widget.subscription;
   }
 
-  void _toggleRoutineDemo() {
+  void _syncFromStore() {
+    final updated = SubscriptionStore.instance.subscriptions.firstWhere(
+      (s) => s.id == _sub.id,
+      orElse: () => _sub,
+    );
     setState(() {
-      _isRoutineDemoMode = !_isRoutineDemoMode;
+      _sub = updated;
     });
   }
 
-  void _deleteSubscription() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: OneUITheme.surfaceCard,
-        shape: RoundedRectangleBorder(
-          borderRadius: OneUITheme.cardBorderRadius,
-        ),
-        title: const Text(
-          'Delete Subscription?',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: OneUITheme.textPrimary,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to remove ${_sub.name} from OneSpend?',
-          style: const TextStyle(color: OneUITheme.textSecondary),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: OneUITheme.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: OneUITheme.accentRed,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            ),
-            onPressed: () {
-              SubscriptionStore.instance.removeSubscription(_sub.id);
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${_sub.name} removed'),
-                  backgroundColor: OneUITheme.surfacePill,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              );
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
+  Future<void> _editSubscription() async {
+    final updated = await Navigator.push<Subscription>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddSubscriptionScreen(subscriptionToEdit: _sub),
       ),
+    );
+    if (updated != null && mounted) {
+      setState(() {
+        _sub = updated;
+      });
+    }
+  }
+
+  void _markRenewed() {
+    SubscriptionStore.instance.renewSubscription(_sub.id);
+    _syncFromStore();
+    final dateFormat = DateFormat('MMM dd, yyyy');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Renewed ${_sub.name}! Next renewal: ${dateFormat.format(_sub.nextBillingDate)}'),
+        backgroundColor: OneUITheme.surfacePill,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
+  void _togglePause() {
+    SubscriptionStore.instance.togglePauseSubscription(_sub.id);
+    _syncFromStore();
+    final isPaused = _sub.status == SubscriptionStatus.paused;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isPaused ? '${_sub.name} paused' : '${_sub.name} resumed'),
+        backgroundColor: OneUITheme.surfacePill,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
+  void _shareSubscription() {
+    final dateFormat = DateFormat('MMM dd, yyyy');
+    final formattedDate = dateFormat.format(_sub.nextBillingDate);
+    final summaryText = '''
+${_sub.name} Subscription Details:
+• Price: ${_sub.currency}${_sub.price.toStringAsFixed(2)} / ${_sub.billingCycle.label}
+• Category: ${_sub.category.label}
+• Next Renewal: $formattedDate (${_sub.daysRemaining} days remaining)
+• Status: ${_sub.status.label}
+• Payment Method: ${_sub.paymentMethod}
+• Monthly Equivalent: \$${_sub.monthlyCost.toStringAsFixed(2)}/mo
+• Annual Equivalent: \$${_sub.yearlyCost.toStringAsFixed(2)}/yr
+Tracked with OneSpend
+'''.trim();
+
+    OneUIFloatingModal.showConfirmationDialog(
+      context: context,
+      title: 'Share ${_sub.name}',
+      message: 'Preview and share subscription details:',
+      customContent: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: OneUITheme.surfacePill,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          summaryText,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.4,
+            color: OneUITheme.textSecondary,
+          ),
+        ),
+      ),
+      cancelLabel: 'Close',
+      confirmLabel: 'Copy',
+      onConfirm: () {
+        Clipboard.setData(ClipboardData(text: summaryText));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Details copied to clipboard'),
+            backgroundColor: OneUITheme.surfacePill,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        );
+      },
+    );
+  }
+
+  void _deleteSubscription() {
+    OneUIFloatingModal.showConfirmationDialog(
+      context: context,
+      title: 'Delete ${_sub.name}?',
+      message: 'Are you sure you want to remove ${_sub.name} from your active subscriptions?',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Delete',
+      onConfirm: () {
+        SubscriptionStore.instance.removeSubscription(_sub.id);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_sub.name} removed'),
+            backgroundColor: OneUITheme.surfacePill,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: OneUIEffectsController.instance,
+      animation: Listenable.merge([
+        SubscriptionStore.instance,
+        OneUIEffectsController.instance,
+      ]),
       builder: (context, _) {
         final dateFormat = DateFormat('MMM dd, yyyy');
         final formattedDate = dateFormat.format(_sub.nextBillingDate);
-        final daysRemaining = _sub.nextBillingDate.difference(DateTime.now()).inDays;
+        final daysRemaining = _sub.daysRemaining;
 
-        final displayTitle = _isRoutineDemoMode ? 'Color filter' : _sub.name;
+        String daysText;
+        if (daysRemaining < 0) {
+          daysText = 'Overdue by ${-daysRemaining} days';
+        } else if (daysRemaining == 0) {
+          daysText = 'Due today';
+        } else if (daysRemaining == 1) {
+          daysText = 'Due tomorrow';
+        } else {
+          daysText = 'in $daysRemaining days';
+        }
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
           body: Stack(
             children: [
               CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // One UI Signature Collapsible Header with Back Button (Matches Screenshots 1, 2, 3, 4)
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: OneUICollapsibleHeaderDelegate(
-                  title: displayTitle,
-                  hasBigHeader: false,
-                  showBackButton: true,
-                  onBack: () => Navigator.pop(context),
-                  actions: [
-                    // Mode switcher pill with 3D navbar capsule styling
-                    GestureDetector(
-                      onTap: _toggleRoutineDemo,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: _isRoutineDemoMode
-                              ? OneUITheme.accentTeal.withValues(alpha: 0.25)
-                              : OneUITheme.floatingColor,
-                          borderRadius: BorderRadius.circular(20),
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  // One UI Signature Collapsible Header with Back Button
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: OneUICollapsibleHeaderDelegate(
+                      title: _sub.name,
+                      hasBigHeader: false,
+                      showBackButton: true,
+                      onBack: () => Navigator.pop(context),
+                      actions: [
+                        // Edit action in header
+                        OneUIHeaderAction(
+                          icon: Icons.edit_outlined,
+                          tooltip: 'Edit subscription',
+                          onTap: _editSubscription,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _isRoutineDemoMode ? Icons.palette_rounded : Icons.tune_rounded,
-                              size: 15,
-                              color: _isRoutineDemoMode
-                                  ? OneUITheme.accentTeal
-                                  : OneUITheme.textSecondary,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              _isRoutineDemoMode ? 'Routine Spec' : 'Subscription Mode',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: -0.2,
-                                color: _isRoutineDemoMode
-                                    ? OneUITheme.accentTeal
-                                    : OneUITheme.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              // Detail Body Content matching Screenshots 1, 2, 3
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top Hero Device/Plan Card (Matches Galaxy S25 card in Screenshot 1 & 2)
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 14),
-                        decoration: BoxDecoration(
-                          color: OneUITheme.cardColor,
-                          borderRadius: OneUITheme.cardBorderRadius,
-                          border: OneUITheme.cardBorder,
-                          boxShadow: OneUITheme.cardShadow,
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            Row(
+                  // Detail Body Content
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top Hero Device/Plan Card
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 14),
+                            decoration: BoxDecoration(
+                              color: OneUITheme.cardColor,
+                              borderRadius: OneUITheme.cardBorderRadius,
+                              border: OneUITheme.cardBorder,
+                              boxShadow: OneUITheme.cardShadow,
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
                               children: [
-                                // Badge / Device icon matching Screenshot 1
-                                Container(
-                                  width: 58,
-                                  height: 58,
-                                  decoration: BoxDecoration(
-                                    color: _isRoutineDemoMode ? OneUITheme.accentTeal : _sub.brandColor,
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Icon(
-                                    _isRoutineDemoMode ? Icons.menu_book_rounded : _sub.iconData,
-                                    color: Colors.white,
-                                    size: 30,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
+                                Row(
+                                  children: [
+                                    // Brand badge icon
+                                    Container(
+                                      width: 58,
+                                      height: 58,
+                                      decoration: BoxDecoration(
+                                        color: _sub.brandColor,
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        _sub.iconData,
+                                        color: Colors.white,
+                                        size: 30,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Expanded(
-                                            child: Text(
-                                              _isRoutineDemoMode ? 'Color filter routine' : '${_sub.name} Plan',
-                                              style: const TextStyle(
-                                                fontSize: 17.5,
-                                                fontWeight: FontWeight.w700,
-                                                letterSpacing: -0.2,
-                                                color: OneUITheme.textPrimary,
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  '${_sub.name} Plan',
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w700,
+                                                    letterSpacing: -0.2,
+                                                    color: OneUITheme.textPrimary,
+                                                  ),
+                                                ),
                                               ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            '${_sub.currency}${_sub.price.toStringAsFixed(2)} • ${_sub.billingCycle.label}',
+                                            style: const TextStyle(
+                                              fontSize: 13.5,
+                                              color: OneUITheme.textSecondary,
                                             ),
                                           ),
-                                          const Icon(Icons.edit_outlined, size: 18, color: OneUITheme.textSecondary),
                                         ],
                                       ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        _isRoutineDemoMode
-                                            ? 'App display accessibility preset'
-                                            : '${_sub.currency}${_sub.price.toStringAsFixed(2)} • ${_sub.billingCycle.label}',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: OneUITheme.textSecondary,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                const Divider(height: 1),
+                                const SizedBox(height: 14),
+                                // Quick specs row
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Status', style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary)),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: _sub.status.color.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        _sub.status.label,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: _sub.status.color,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            const Divider(height: 1),
-                            const SizedBox(height: 14),
-                            // Quick specs row matching Screenshot 1 (eSIM / Model Info)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Status', style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary)),
-                                Text(
-                                  _isRoutineDemoMode ? 'Enabled' : _sub.status.label,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: _isRoutineDemoMode ? OneUITheme.accentBlue : _sub.status.color,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Next renewal', style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary)),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    _isRoutineDemoMode ? 'Instant' : '$formattedDate (in $daysRemaining days)',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: OneUITheme.accentBlue,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.end,
-                                  ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Next renewal', style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary)),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        '$formattedDate ($daysText)',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: daysRemaining <= 3 ? OneUITheme.accentRed : OneUITheme.accentBlue,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.end,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-
-                      // Section 1: "If" / Overview (Matches Screenshot 3)
-                      OneUISection(
-                        title: _isRoutineDemoMode ? 'If' : 'Overview',
-                        child: OneUIGroupCard(
-                          items: [
-                            OneUIGroupItem(
-                              leading: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.06),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Icon(Icons.grid_view_rounded, size: 20, color: OneUITheme.textPrimary),
-                              ),
-                              title: _isRoutineDemoMode ? 'App opened' : 'Subscription status',
-                              subtitle: _isRoutineDemoMode ? 'Not set' : _sub.status.label,
-                              subtitleColor: _isRoutineDemoMode ? OneUITheme.accentRed : _sub.status.color,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Section 2: "Then" / Billing cycle (Matches Screenshot 3)
-                      OneUISection(
-                        title: _isRoutineDemoMode ? 'Then' : 'Billing cycle',
-                        child: OneUIGroupCard(
-                          items: [
-                            OneUIGroupItem(
-                              leading: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.06),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Icon(Icons.palette_outlined, size: 20, color: OneUITheme.textPrimary),
-                              ),
-                              title: _isRoutineDemoMode ? 'Color filter' : '${_sub.billingCycle.label} renewal',
-                              subtitle: _isRoutineDemoMode ? 'On' : formattedDate,
-                              subtitleColor: OneUITheme.accentBlue,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Section 3: "When routine ends" / Payment & Reminders (Matches Screenshot 3)
-                      OneUISection(
-                        title: _isRoutineDemoMode ? 'When routine ends' : 'Payment & reminders',
-                        child: OneUIGroupCard(
-                          items: [
-                            OneUIGroupItem(
-                              leading: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.06),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Icon(Icons.palette_outlined, size: 20, color: OneUITheme.textPrimary),
-                              ),
-                              title: _isRoutineDemoMode ? 'Color filter' : _sub.paymentMethod,
-                              subtitle: _isRoutineDemoMode
-                                  ? 'Return to status before routine ran'
-                                  : 'Reminder: ${_sub.reminderDays} days before charge',
-                              subtitleColor: OneUITheme.textSecondary,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // "Looking for something else?" Card matching Screenshot 1
-                      OneUIAlternativeOptionsCard(
-                        title: 'Looking for something else?',
-                        actions: [
-                          OneUIAlternativeAction(
-                            title: 'Payment history',
-                            onTap: () {},
                           ),
-                          OneUIAlternativeAction(
-                            title: 'Change renewal cycle',
-                            onTap: () {},
+
+                          // Section 1: Plan & Billing Details
+                          OneUISection(
+                            title: 'Plan & Billing',
+                            child: OneUIGroupCard(
+                              items: [
+                                OneUIGroupItem(
+                                  leading: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentBlue.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.repeat_rounded, size: 20, color: OneUITheme.accentBlue),
+                                  ),
+                                  title: 'Billing cycle',
+                                  subtitle: '${_sub.billingCycle.label} (${_sub.billingCycle.occurrencesPerYear}x / year)',
+                                  subtitleColor: OneUITheme.textSecondary,
+                                  trailing: Text(
+                                    '${_sub.currency}${_sub.price.toStringAsFixed(2)}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: OneUITheme.textPrimary, fontSize: 15),
+                                  ),
+                                ),
+                                OneUIGroupItem(
+                                  leading: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentGreen.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.calendar_month_rounded, size: 20, color: OneUITheme.accentGreen),
+                                  ),
+                                  title: 'Next renewal date',
+                                  subtitle: formattedDate,
+                                  subtitleColor: OneUITheme.accentBlue,
+                                ),
+                                OneUIGroupItem(
+                                  leading: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentPurple.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.calculate_outlined, size: 20, color: OneUITheme.accentPurple),
+                                  ),
+                                  title: 'Cost breakdown',
+                                  subtitle: '\$${_sub.monthlyCost.toStringAsFixed(2)} / month • \$${_sub.yearlyCost.toStringAsFixed(2)} / year',
+                                  subtitleColor: OneUITheme.textSecondary,
+                                ),
+                              ],
+                            ),
                           ),
-                          OneUIAlternativeAction(
-                            title: 'Cancel subscription at provider',
-                            onTap: () {},
+
+                          // Section 2: Payment & Reminders
+                          OneUISection(
+                            title: 'Payment & Reminders',
+                            child: OneUIGroupCard(
+                              items: [
+                                OneUIGroupItem(
+                                  leading: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentAmber.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.payment_rounded, size: 20, color: OneUITheme.accentAmber),
+                                  ),
+                                  title: 'Payment method',
+                                  subtitle: _sub.paymentMethod,
+                                  subtitleColor: OneUITheme.textSecondary,
+                                ),
+                                OneUIGroupItem(
+                                  leading: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentTeal.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.notifications_active_rounded, size: 20, color: OneUITheme.accentTeal),
+                                  ),
+                                  title: 'Renewal notification',
+                                  subtitle: 'Alert ${_sub.reminderDays} days before renewal',
+                                  subtitleColor: OneUITheme.textSecondary,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Section 3: Notes (if present)
+                          if (_sub.notes.isNotEmpty) ...[
+                            OneUISection(
+                              title: 'Notes',
+                              child: OneUIGroupCard(
+                                items: [
+                                  OneUIGroupItem(
+                                    leading: Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: const Icon(Icons.notes_rounded, size: 20, color: OneUITheme.textPrimary),
+                                    ),
+                                    title: 'Plan Notes',
+                                    subtitle: _sub.notes,
+                                    subtitleColor: OneUITheme.textSecondary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          // Section 4: Renewal History
+                          OneUISection(
+                            title: 'Renewal History',
+                            child: OneUIGroupCard(
+                              items: [
+                                OneUIGroupItem(
+                                  leading: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentGreen.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.history_rounded, size: 20, color: OneUITheme.accentGreen),
+                                  ),
+                                  title: _sub.paymentHistory.isNotEmpty
+                                      ? 'Last renewed on ${dateFormat.format(_sub.paymentHistory.first)}'
+                                      : 'No past renewals logged',
+                                  subtitle: _sub.paymentHistory.isNotEmpty
+                                      ? '${_sub.paymentHistory.length} recorded payments in OneSpend'
+                                      : 'Tap "Mark Renewed Today" below when charged',
+                                  subtitleColor: OneUITheme.textSecondary,
+                                  trailing: const Icon(Icons.check_circle_outline_rounded, color: OneUITheme.accentGreen, size: 20),
+                                  onTap: _markRenewed,
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // "Looking for something else?" Card
+                          OneUIAlternativeOptionsCard(
+                            title: 'Looking for something else?',
+                            actions: [
+                              OneUIAlternativeAction(
+                                title: 'Mark as renewed today',
+                                onTap: _markRenewed,
+                              ),
+                              OneUIAlternativeAction(
+                                title: _sub.status == SubscriptionStatus.paused
+                                    ? 'Resume subscription'
+                                    : 'Pause subscription',
+                                onTap: _togglePause,
+                              ),
+                              OneUIAlternativeAction(
+                                title: 'Edit plan specifications',
+                                onTap: _editSubscription,
+                              ),
+                            ],
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Floating Action Bar at the Bottom (Edit, Share, Delete)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: OneUIFloatingActionBar(
+                    items: [
+                      OneUIFloatingActionBarItem(
+                        icon: Icons.edit_outlined,
+                        label: 'Edit',
+                        onTap: _editSubscription,
+                      ),
+                      OneUIFloatingActionBarItem(
+                        icon: Icons.share_outlined,
+                        label: 'Share',
+                        onTap: _shareSubscription,
+                      ),
+                      OneUIFloatingActionBarItem(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Delete',
+                        color: OneUITheme.accentRed,
+                        onTap: _deleteSubscription,
                       ),
                     ],
                   ),
@@ -370,57 +538,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
               ),
             ],
           ),
-
-          // Floating Action Bar at the Bottom (1:1 with Screenshot 3)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: OneUIFloatingActionBar(
-                items: [
-                  OneUIFloatingActionBarItem(
-                    icon: Icons.edit_outlined,
-                    label: 'Edit',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Edit ${_sub.name}'),
-                          backgroundColor: OneUITheme.surfacePill,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                      );
-                    },
-                  ),
-                  OneUIFloatingActionBarItem(
-                    icon: Icons.share_outlined,
-                    label: 'Share',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Share details of ${_sub.name}'),
-                          backgroundColor: OneUITheme.surfacePill,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                      );
-                    },
-                  ),
-                  OneUIFloatingActionBarItem(
-                    icon: Icons.delete_outline_rounded,
-                    label: 'Delete',
-                    color: OneUITheme.accentRed,
-                    onTap: _deleteSubscription,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+        );
       },
     );
   }

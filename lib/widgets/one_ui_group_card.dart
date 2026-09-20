@@ -8,6 +8,7 @@ class OneUIGroupItem {
   final Color? subtitleColor;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const OneUIGroupItem({
     this.leading,
@@ -16,6 +17,7 @@ class OneUIGroupItem {
     this.subtitleColor,
     this.trailing,
     this.onTap,
+    this.onLongPress,
   });
 }
 
@@ -70,6 +72,7 @@ class OneUIGroupCard extends StatelessWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: item.onTap,
+                          onLongPress: item.onLongPress,
                           borderRadius: BorderRadius.vertical(
                             top: index == 0 ? const Radius.circular(26) : Radius.zero,
                             bottom: isLast ? const Radius.circular(26) : Radius.zero,

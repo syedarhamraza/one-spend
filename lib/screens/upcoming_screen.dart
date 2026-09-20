@@ -20,7 +20,15 @@ class UpcomingScreen extends StatelessWidget {
       builder: (context, _) {
         final store = SubscriptionStore.instance;
         final list = store.upcomingDue;
-        final dateFormat = DateFormat('EEEE, MMM d');
+        final dateFormat = DateFormat('EEE, MMM d');
+
+        final dueThisWeek = list.where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7).toList();
+        final dueThisMonth = list.where((s) => s.daysRemaining > 7 && s.daysRemaining <= 30).toList();
+        final dueLater = list.where((s) => s.daysRemaining > 30).toList();
+        final overdue = list.where((s) => s.daysRemaining < 0).toList();
+
+        final next30DaysSubs = list.where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 30).toList();
+        final totalNext30Days = next30DaysSubs.fold(0.0, (acc, s) => acc + s.price);
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
@@ -32,19 +40,23 @@ class UpcomingScreen extends StatelessWidget {
                 pinned: true,
                 delegate: OneUICollapsibleHeaderDelegate(
                   title: 'Upcoming',
-                  subtitle: 'Next 30 days renewal timeline',
+                  subtitle: '${store.currency}${totalNext30Days.toStringAsFixed(2)} due in next 30 days',
                   hasBigHeader: true,
                   expandedHeight: 270.0,
                   actions: [
                     OneUIHeaderAction(
-                      icon: Icons.calendar_month_outlined,
-                      tooltip: 'Calendar view',
-                      onTap: () {},
-                    ),
-                    OneUIHeaderAction(
-                      icon: Icons.more_vert_rounded,
-                      tooltip: 'More options',
-                      onTap: () {},
+                      icon: Icons.notifications_none_rounded,
+                      tooltip: 'Reminders info',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Smart reminders alert ${store.defaultReminderDays} days before renewals'),
+                            backgroundColor: OneUITheme.surfacePill,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -57,10 +69,10 @@ class UpcomingScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Notification alert pill card
+                      // 30-Day Forecast Card
                       Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(18),
+                        margin: const EdgeInsets.only(bottom: 14),
                         decoration: BoxDecoration(
                           color: OneUITheme.cardColor,
                           borderRadius: OneUITheme.cardBorderRadius,
@@ -70,38 +82,65 @@ class UpcomingScreen extends StatelessWidget {
                         child: Row(
                           children: [
                             Container(
-                              width: 40,
-                              height: 40,
+                              width: 46,
+                              height: 46,
                               decoration: BoxDecoration(
                                 color: OneUITheme.accentTeal.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Icon(
-                                Icons.notifications_active_rounded,
+                                Icons.calendar_month_rounded,
                                 color: OneUITheme.accentTeal,
-                                size: 20,
+                                size: 24,
                               ),
                             ),
                             const SizedBox(width: 14),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Smart Reminders Active',
+                                  const Text(
+                                    '30-Day Forecast',
                                     style: TextStyle(
-                                      fontSize: 14.5,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: OneUITheme.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${store.currency}${totalNext30Days.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.3,
                                       color: OneUITheme.textPrimary,
                                     ),
                                   ),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    'You will receive push alerts before renewals',
-                                    style: TextStyle(
+                                    '${next30DaysSubs.length} upcoming renewals',
+                                    style: const TextStyle(
                                       fontSize: 12,
                                       color: OneUITheme.textSecondary,
                                     ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: OneUITheme.surfacePill,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.notifications_active_rounded, size: 14, color: OneUITheme.accentAmber),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${store.defaultReminderDays}d alert',
+                                    style: const TextStyle(fontSize: 11.5, color: OneUITheme.textPrimary, fontWeight: FontWeight.w600),
                                   ),
                                 ],
                               ),
@@ -110,50 +149,172 @@ class UpcomingScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Grouped Renewals Card
-                      OneUISection(
-                        title: 'Renewals calendar',
-                        child: OneUIGroupCard(
-                          items: list.map((sub) {
-                            final days = sub.nextBillingDate.difference(DateTime.now()).inDays;
-                            return OneUIGroupItem(
-                              leading: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: sub.brandColor,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(sub.iconData, color: Colors.white, size: 20),
-                              ),
-                              title: sub.name,
-                              subtitle: '${dateFormat.format(sub.nextBillingDate)} • in $days days',
-                              subtitleColor: days <= 5 ? OneUITheme.accentRed : OneUITheme.accentBlue,
-                              trailing: Text(
-                                '${sub.currency}${sub.price.toStringAsFixed(2)}',
-                                style: const TextStyle(
+                      // Overdue (if any)
+                      if (overdue.isNotEmpty) ...[
+                        OneUISection(
+                          title: 'Overdue (${overdue.length})',
+                          child: OneUIGroupCard(
+                            items: overdue.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
+                      // Due This Week
+                      if (dueThisWeek.isNotEmpty) ...[
+                        OneUISection(
+                          title: 'Due this week (${dueThisWeek.length})',
+                          child: OneUIGroupCard(
+                            items: dueThisWeek.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
+                      // Later This Month
+                      if (dueThisMonth.isNotEmpty) ...[
+                        OneUISection(
+                          title: 'Later this month (${dueThisMonth.length})',
+                          child: OneUIGroupCard(
+                            items: dueThisMonth.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
+                      // Future Renewals
+                      if (dueLater.isNotEmpty) ...[
+                        OneUISection(
+                          title: 'Future renewals (${dueLater.length})',
+                          child: OneUIGroupCard(
+                            items: dueLater.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
+                          ),
+                        ),
+                      ],
+
+                      // Empty State
+                      if (list.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: OneUITheme.cardColor,
+                            borderRadius: OneUITheme.cardBorderRadius,
+                            border: OneUITheme.cardBorder,
+                            boxShadow: OneUITheme.cardShadow,
+                          ),
+                          child: const Column(
+                            children: [
+                              Icon(Icons.event_available_rounded, size: 48, color: OneUITheme.textSecondary),
+                              SizedBox(height: 12),
+                              Text(
+                                'No upcoming renewals',
+                                style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.bold,
                                   color: OneUITheme.textPrimary,
                                 ),
                               ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => SubscriptionDetailScreen(subscription: sub),
-                                  ),
-                                );
-                              },
-                            );
-                          }).toList(),
+                              SizedBox(height: 4),
+                              Text(
+                                'Active subscriptions will appear here automatically',
+                                style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  OneUIGroupItem _buildItem(
+    BuildContext context,
+    Subscription sub,
+    DateFormat dateFormat,
+    SubscriptionStore store,
+  ) {
+    final days = sub.daysRemaining;
+    String subtitleText;
+    Color subtitleColor;
+
+    if (days < 0) {
+      subtitleText = 'Overdue by ${-days} days';
+      subtitleColor = OneUITheme.accentRed;
+    } else if (days == 0) {
+      subtitleText = 'Due today (${dateFormat.format(sub.nextBillingDate)})';
+      subtitleColor = OneUITheme.accentRed;
+    } else if (days == 1) {
+      subtitleText = 'Due tomorrow (${dateFormat.format(sub.nextBillingDate)})';
+      subtitleColor = OneUITheme.accentAmber;
+    } else if (days <= 5) {
+      subtitleText = 'in $days days (${dateFormat.format(sub.nextBillingDate)})';
+      subtitleColor = OneUITheme.accentAmber;
+    } else {
+      subtitleText = '${dateFormat.format(sub.nextBillingDate)} • in $days days';
+      subtitleColor = OneUITheme.accentBlue;
+    }
+
+    return OneUIGroupItem(
+      leading: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: sub.brandColor,
+          borderRadius: BorderRadius.circular(13),
+        ),
+        alignment: Alignment.center,
+        child: Icon(sub.iconData, color: Colors.white, size: 21),
+      ),
+      title: sub.name,
+      subtitle: subtitleText,
+      subtitleColor: subtitleColor,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${sub.currency}${sub.price.toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontSize: 15.5,
+              fontWeight: FontWeight.w700,
+              color: OneUITheme.textPrimary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              store.renewSubscription(sub.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Marked ${sub.name} as renewed!'),
+                  backgroundColor: OneUITheme.surfacePill,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: OneUITheme.accentGreen.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_rounded, color: OneUITheme.accentGreen, size: 16),
+            ),
+          ),
+        ],
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SubscriptionDetailScreen(subscription: sub),
           ),
         );
       },

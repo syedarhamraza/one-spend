@@ -1,6 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_floating_menu.dart';
 import 'one_ui_status_bar_scrim.dart';
 
 /// Reusable action item for One UI top header bar
@@ -9,6 +9,7 @@ class OneUIHeaderAction extends StatelessWidget {
   final VoidCallback onTap;
   final String? tooltip;
   final double? size;
+  final GlobalKey? actionKey;
 
   const OneUIHeaderAction({
     super.key,
@@ -16,6 +17,7 @@ class OneUIHeaderAction extends StatelessWidget {
     required this.onTap,
     this.tooltip,
     this.size,
+    this.actionKey,
   });
 
   @override
@@ -23,15 +25,16 @@ class OneUIHeaderAction extends StatelessWidget {
     return Tooltip(
       message: tooltip ?? '',
       child: GestureDetector(
+        key: actionKey,
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          width: 32,
-          height: 38,
+          width: 36,
+          height: 36,
           alignment: Alignment.center,
           child: Icon(
             icon,
-            size: size ?? 22,
+            size: size ?? 21,
             color: OneUITheme.textPrimary,
           ),
         ),
@@ -59,6 +62,7 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
   final bool showBackButton;
   final VoidCallback? onBack;
   final List<Widget>? actions;
+  final GlobalKey? actionsPillKey;
   final double expandedHeight;
   final double collapsedHeight;
 
@@ -69,6 +73,7 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
     this.showBackButton = false,
     this.onBack,
     this.actions,
+    this.actionsPillKey,
     this.expandedHeight = 270.0, // Balanced One UI viewing area with reduced bottom space
     this.collapsedHeight = 92.0,  // Compact top bar height including status bar
   });
@@ -90,6 +95,7 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
       showBackButton: showBackButton,
       onBack: onBack,
       actions: actions,
+      actionsPillKey: actionsPillKey,
       shrinkOffset: shrinkOffset,
       topPadding: topPadding,
       expandedHeight: maxExtent,
@@ -105,7 +111,8 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.showBackButton != showBackButton ||
         oldDelegate.expandedHeight != expandedHeight ||
         oldDelegate.collapsedHeight != collapsedHeight ||
-        oldDelegate.actions != actions;
+        oldDelegate.actions != actions ||
+        oldDelegate.actionsPillKey != actionsPillKey;
   }
 }
 
@@ -116,6 +123,7 @@ class _OneUIHeaderContent extends StatefulWidget {
   final bool showBackButton;
   final VoidCallback? onBack;
   final List<Widget>? actions;
+  final GlobalKey? actionsPillKey;
   final double shrinkOffset;
   final double topPadding;
   final double expandedHeight;
@@ -128,6 +136,7 @@ class _OneUIHeaderContent extends StatefulWidget {
     required this.showBackButton,
     this.onBack,
     this.actions,
+    this.actionsPillKey,
     required this.shrinkOffset,
     required this.topPadding,
     required this.expandedHeight,
@@ -184,16 +193,16 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    OneUITheme.navbar3dBarTop.withValues(alpha: pillProgress),
-                    OneUITheme.navbar3dBarBottom.withValues(alpha: pillProgress),
+                    const Color(0xFF2C2C2E).withValues(alpha: pillProgress),
+                    const Color(0xFF202022).withValues(alpha: pillProgress),
                   ],
                 )
               : null,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(24),
           border: (is3d && pillProgress > 0.05)
               ? Border.all(
-                  color: Colors.white.withValues(alpha: 0.10 * pillProgress),
-                  width: 0.8,
+                  color: Colors.white.withValues(alpha: 0.08 * pillProgress),
+                  width: 0.85,
                 )
               : null,
         ),
@@ -214,41 +223,56 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     }
     final is3d = OneUIEffectsController.instance.floating3dEffect;
 
-    return Container(
-      height: 44,
-      padding: EdgeInsets.symmetric(horizontal: pillProgress > 0.05 ? 6.0 : 0.0),
-      decoration: BoxDecoration(
-        color: pillProgress > 0.05
-            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress))
-            : Colors.transparent,
-        gradient: (is3d && pillProgress > 0.05)
-            ? LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  OneUITheme.navbar3dBarTop.withValues(alpha: pillProgress),
-                  OneUITheme.navbar3dBarBottom.withValues(alpha: pillProgress),
-                ],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(22),
-        border: (is3d && pillProgress > 0.05)
-            ? Border.all(
-                color: Colors.white.withValues(alpha: 0.10 * pillProgress),
-                width: 0.8,
-              )
-            : null,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (int i = 0; i < widget.actions!.length; i++) ...[
-            widget.actions![i],
-            if (i < widget.actions!.length - 1)
-              SizedBox(width: pillProgress > 0.05 ? 1.0 : 2.0),
+    return ValueListenableBuilder<bool>(
+      valueListenable: OneUIFloatingMenu.isOpen,
+      builder: (context, isMenuOpen, child) {
+        return AnimatedOpacity(
+          opacity: isMenuOpen ? 0.0 : 1.0,
+          duration: Duration(milliseconds: isMenuOpen ? 100 : 160),
+          curve: isMenuOpen ? Curves.easeIn : Curves.easeOut,
+          child: child!,
+        );
+      },
+      child: Container(
+        key: widget.actionsPillKey,
+        height: 44,
+        padding: EdgeInsets.symmetric(
+          horizontal: pillProgress > 0.05 ? 8.0 : 4.0,
+          vertical: 4.0,
+        ),
+        decoration: BoxDecoration(
+          color: pillProgress > 0.05
+              ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress))
+              : Colors.transparent,
+          gradient: (is3d && pillProgress > 0.05)
+              ? LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF2C2C2E).withValues(alpha: pillProgress),
+                    const Color(0xFF202022).withValues(alpha: pillProgress),
+                  ],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(24),
+          border: (is3d && pillProgress > 0.05)
+              ? Border.all(
+                  color: Colors.white.withValues(alpha: 0.08 * pillProgress),
+                  width: 0.85,
+                )
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            for (int i = 0; i < widget.actions!.length; i++) ...[
+              widget.actions![i],
+              if (i < widget.actions!.length - 1)
+                const SizedBox(width: 4.0),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

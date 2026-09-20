@@ -39,10 +39,10 @@ class OneUIEffectsController extends ChangeNotifier {
   double get depthIntensity => 1.2;
 
   // Dynamic Card Properties
-  Color get cardColor => _card3dEffect ? const Color(0xFF202127) : const Color(0xFF1B1C21);
+  Color get cardColor => _card3dEffect ? const Color(0xFF222224) : const Color(0xFF1C1C1E);
   Border? get cardBorder => _card3dEffect
       ? Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
+          color: Colors.white.withValues(alpha: 0.09),
           width: 0.85,
         )
       : null;
@@ -62,40 +62,27 @@ class OneUIEffectsController extends ChangeNotifier {
       : const [];
 
   // Dynamic Floating Elements Properties
-  Color get floatingColor => _floating3dEffect ? const Color(0xFF24252A) : const Color(0xFF2C2D34);
+  Color get floatingColor => _floating3dEffect ? const Color(0xFF262628) : const Color(0xFF2C2C2E);
 
   Gradient? get floatingGradient => _floating3dEffect
       ? const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF28292E),
-            Color(0xFF1F2023),
+            Color(0xFF2C2C2E),
+            Color(0xFF202022),
           ],
         )
       : null;
 
   Border? get floatingBorder => _floating3dEffect
       ? Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
+          color: Colors.white.withValues(alpha: 0.09),
           width: 0.8,
         )
       : null;
 
-  List<BoxShadow> get floatingShadow => _floating3dEffect
-      ? [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.20),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ]
-      : const [];
+  List<BoxShadow> get floatingShadow => const [];
 
   List<BoxShadow> get fabShadow => _floating3dEffect
       ? [
@@ -120,20 +107,20 @@ class OneUIEffectsController extends ChangeNotifier {
 
 /// Samsung One UI 9 Design System Tokens and Theme
 class OneUITheme {
-  // --- Pure OLED Black Surfaces ---
+  // --- Pure OLED Black & Neutral Charcoal Surfaces ---
   static const Color surfacePitch = Color(0xFF000000); // True AMOLED Black
-  static const Color surfaceCard = Color(0xFF1B1C21); // Flat Dark Card Surface
-  static const Color surfaceCardHighlight = Color(0xFF24252B);
-  static const Color surfacePill = Color(0xFF2C2D34); // Distinct One UI Gray Floating Capsule Surface
-  static const Color surfacePillActive = Color(0xFF42444E); // Active Tab Capsule
+  static const Color surfaceCard = Color(0xFF1C1C1E); // Neutral Dark Charcoal Card Surface
+  static const Color surfaceCardHighlight = Color(0xFF262628);
+  static const Color surfacePill = Color(0xFF2C2C2E); // Distinct One UI Gray Floating Capsule Surface
+  static const Color surfacePillActive = Color(0xFF3E3E42); // Active Tab Capsule
   static const Color surfacePillBorder = Colors.transparent;
 
   // --- 3D Floating Navbar Tokens (Matching Samsung One UI Phone Dialer Screenshot 1:1) ---
-  static const Color navbar3dBarTop = Color(0xFF28292E);
-  static const Color navbar3dBarBottom = Color(0xFF1F2023);
-  static const Color navbar3dActivePill = Color(0xFF3D3F44); // Smooth flat active capsule
-  static const Color navbar3dInactiveIcon = Color(0xFFDCDCE0);
-  static const Color navbar3dInactiveText = Color(0xFFBEBEC4);
+  static const Color navbar3dBarTop = Color(0xFF2C2C2E);
+  static const Color navbar3dBarBottom = Color(0xFF202022);
+  static const Color navbar3dActivePill = Color(0xFF3E3E42); // Smooth flat active capsule
+  static const Color navbar3dInactiveIcon = Color(0xFFD4D4D8);
+  static const Color navbar3dInactiveText = Color(0xFFB4B4B8);
 
   // --- One UI Accent Palette ---
   static const Color accentGreen = Color(0xFF00C05A); // One UI Phone / Success Green
@@ -145,7 +132,7 @@ class OneUITheme {
 
   // --- High-Legibility Typography Colors ---
   static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF9E9EA6);
+  static const Color textSecondary = Color(0xFF9E9EA4);
   static const Color textTertiary = Color(0xFF6A6A70);
 
   // --- Radii & Geometry (One UI Curved Form Factor) ---

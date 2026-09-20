@@ -3,10 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/main.dart';
 import 'package:onespend/models/subscription.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
-import 'package:onespend/widgets/one_ui_fab.dart';
 import 'package:onespend/widgets/one_ui_floating_nav_bar.dart';
 import 'package:onespend/widgets/one_ui_floating_action_bar.dart';
 import 'package:onespend/widgets/one_ui_group_card.dart';
+import 'package:onespend/widgets/one_ui_selection_pills.dart';
+import 'package:onespend/widgets/one_ui_selection_action_bar.dart';
+import 'package:onespend/widgets/one_ui_scroll_to_top_button.dart';
+import 'package:onespend/widgets/one_ui_sort_bottom_sheet.dart';
+import 'package:onespend/widgets/one_ui_filter_bottom_sheet.dart';
+import 'package:onespend/widgets/one_ui_floating_menu.dart';
+import 'package:onespend/widgets/one_ui_floating_modal.dart';
 
 void main() {
   testWidgets('OneSpend app smoke test and One UI navigation', (WidgetTester tester) async {
@@ -31,7 +37,7 @@ void main() {
     // Switch to Upcoming tab
     await tester.tap(find.text('Upcoming'));
     await tester.pumpAndSettle();
-    expect(find.text('Renewals calendar'), findsOneWidget);
+    expect(find.text('30-Day Forecast'), findsOneWidget);
 
     // Switch to Analytics tab
     await tester.tap(find.text('Analytics'));
@@ -41,29 +47,30 @@ void main() {
     // Switch to Menu / Settings tab
     await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
-    expect(find.text('Open Routine Demo (Screenshot 3)'), findsOneWidget);
+    expect(find.text('Currency'), findsOneWidget);
+    expect(find.text('Monthly budget threshold'), findsOneWidget);
+    expect(find.text('Navigation bar 3D effect'), findsOneWidget);
 
-    // Open the 1:1 Routine Demo Screen
-    await tester.ensureVisible(find.text('Open Routine Demo (Screenshot 3)'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Open Routine Demo (Screenshot 3)'));
+    // Switch back to Spend tab
+    await tester.tap(find.text('Spend'));
     await tester.pumpAndSettle();
 
-    // Verify initial detail screen elements
-    expect(find.text('Color filter'), findsWidgets);
+    // Tap a real subscription card (e.g. Netflix) to open detail screen
+    await tester.tap(find.text('Netflix').first);
+    await tester.pumpAndSettle();
+
+    // Verify authentic subscription detail screen elements
+    expect(find.text('Netflix Plan'), findsOneWidget);
+    expect(find.text('Plan & Billing'), findsOneWidget);
+    expect(find.text('Payment & Reminders'), findsOneWidget);
     expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Share'), findsOneWidget);
     expect(find.text('Delete'), findsOneWidget);
 
-    // Toggle to exact Screenshot 3 routine labels
-    await tester.tap(find.text('Subscription Mode'));
+    // Return to main list
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
-
-    expect(find.text('If'), findsOneWidget);
-    expect(find.text('Then'), findsOneWidget);
-    expect(find.text('When routine ends'), findsOneWidget);
-    expect(find.text('App opened'), findsOneWidget);
-    expect(find.text('Not set'), findsOneWidget);
+    expect(find.text('Subscriptions'), findsOneWidget);
   });
 
   testWidgets('Add Custom and Popular Subscription flow', (WidgetTester tester) async {
@@ -446,5 +453,442 @@ void main() {
     expect(size2Items.width, lessThan(180.0));
     expect(size2Items.width, greaterThan(140.0));
   });
+
+  testWidgets('Subscription full edit and renewal flow', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Tap Spotify subscription from the list
+    await tester.tap(find.text('Spotify').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Spotify Plan'), findsOneWidget);
+
+    // Tap Edit in the floating action bar
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    // Verify Edit Subscription screen is open
+    expect(find.text('Edit Subscription'), findsOneWidget);
+
+    // Enter new price (Card 2 is index 2)
+    final priceFieldFinder = find.byType(TextField).at(2);
+    await tester.enterText(priceFieldFinder, '19.99');
+    await tester.pumpAndSettle();
+
+    // Tap Save
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // Verify detail screen reflects the new price
+    expect(find.textContaining('19.99'), findsWidgets);
+
+    // Wait for update SnackBar to dismiss
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    // Tap "Mark as renewed today" under Looking for something else?
+    await tester.ensureVisible(find.text('Mark as renewed today'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark as renewed today'));
+    await tester.pumpAndSettle();
+
+    // Verify renewal SnackBar appeared
+    expect(find.textContaining('Renewed Spotify'), findsOneWidget);
+  });
+
+  test('SubscriptionStore export, renewal, and budget operations', () {
+    final store = SubscriptionStore.instance;
+    final initialBudget = store.monthlyBudget;
+
+    store.setMonthlyBudget(250.0);
+    expect(store.monthlyBudget, equals(250.0));
+
+    // Test JSON export
+    final jsonExport = store.exportDataAsJson();
+    expect(jsonExport.isNotEmpty, isTrue);
+    expect(jsonExport.contains('Netflix'), isTrue);
+
+    // Test CSV export
+    final csvExport = store.exportDataAsCsv();
+    expect(csvExport.isNotEmpty, isTrue);
+    expect(csvExport.contains('Name,Category,Billing Cycle,Price'), isTrue);
+
+    // Restore budget
+    store.setMonthlyBudget(initialBudget);
+  });
+
+  testWidgets('Samsung One UI multi-selection mode, top pills, and bottom action bar flow', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Verify initially floating navbar is visible and selection action bar is not
+    expect(find.byType(OneUISelectionPills), findsNothing);
+    expect(find.byType(OneUISelectionActionBar), findsNothing);
+
+    // Tap more options menu
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+
+    // Verify popup menu options from Screenshot 3
+    expect(find.text('Select'), findsOneWidget);
+    expect(find.text('Sort'), findsOneWidget);
+    expect(find.text('Filter'), findsOneWidget);
+    expect(find.text('Edit monthly budget'), findsOneWidget);
+    expect(find.text('Export list (CSV)'), findsOneWidget);
+
+    // Tap "Select" to enter selection mode
+    await tester.tap(find.text('Select'));
+    await tester.pumpAndSettle();
+
+    // Verify OneUISelectionPills and OneUISelectionActionBar are now visible
+    expect(find.byType(OneUISelectionPills), findsOneWidget);
+    expect(find.byType(OneUISelectionActionBar), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('0'), findsWidgets); // Initially 0 selected
+
+    // Verify 5 actions on the bottom floating bar (Screenshot 1)
+    expect(find.text('Move'), findsOneWidget);
+    expect(find.text('Lock'), findsOneWidget);
+    expect(find.text('Share'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
+    expect(find.text('More'), findsOneWidget);
+
+    // Tap on Netflix to select it
+    await tester.tap(find.text('Netflix').first);
+    await tester.pumpAndSettle();
+
+    // Counter pill now shows 1
+    expect(find.text('1'), findsWidgets);
+
+    // Tap the counter pill to select all
+    await tester.tap(find.text('1').first);
+    await tester.pumpAndSettle();
+
+    final totalCount = SubscriptionStore.instance.subscriptions.length;
+    expect(find.text('$totalCount'), findsWidgets);
+
+    // Tap the counter pill again to deselect all
+    await tester.tap(find.text('$totalCount').first);
+    await tester.pumpAndSettle();
+    expect(find.text('0'), findsWidgets);
+
+    // Tap Cancel pill to exit selection mode
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUISelectionPills), findsNothing);
+    expect(find.byType(OneUISelectionActionBar), findsNothing);
+
+    // Now test entering selection mode via long-press on a subscription
+    await tester.longPress(find.text('Spotify').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUISelectionPills), findsOneWidget);
+    expect(find.text('1'), findsWidgets);
+
+    // Tap Cancel again
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUISelectionPills), findsNothing);
+  });
+
+  testWidgets('Samsung One UI Sort by bottom sheet matching Screenshot 4', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Open popup menu and tap Sort
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sort'));
+    await tester.pumpAndSettle();
+
+    // Verify OneUISortBottomSheet elements matching Screenshot 4
+    expect(find.byType(OneUISortBottomSheet), findsOneWidget);
+    expect(find.text('Sort by'), findsOneWidget);
+    expect(find.text('Next renewal (soonest)'), findsOneWidget);
+    expect(find.text('Name (A to Z)'), findsOneWidget);
+    expect(find.text('Price (High to low)'), findsOneWidget);
+    expect(find.text('Group by date'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Done'), findsOneWidget);
+
+    // Select "Price (High to low)"
+    await tester.tap(find.text('Price (High to low)'));
+    await tester.pumpAndSettle();
+
+    // Toggle Group by date switch
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+
+    // Tap Done
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    // Verify bottom sheet closed and store updated
+    expect(find.byType(OneUISortBottomSheet), findsNothing);
+    expect(SubscriptionStore.instance.sortOption, equals(SubscriptionSortOption.priceDesc));
+    expect(SubscriptionStore.instance.groupByDate, isTrue);
+
+    // Reset sort option
+    SubscriptionStore.instance.setSortOption(SubscriptionSortOption.renewalAsc);
+    SubscriptionStore.instance.setGroupByDate(false);
+  });
+
+  testWidgets('OneUIScrollToTopButton visibility and scroll behavior', (WidgetTester tester) async {
+    final scrollController = ScrollController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Stack(
+            children: [
+              ListView.builder(
+                controller: scrollController,
+                itemCount: 100,
+                itemBuilder: (ctx, i) => SizedBox(height: 50, child: Text('Row $i')),
+              ),
+              Positioned(
+                bottom: 20,
+                right: 20,
+                child: OneUIScrollToTopButton(
+                  scrollController: scrollController,
+                  threshold: 100,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Initially at top (offset 0), up arrow has scale 0
+    final upIcon = find.byIcon(Icons.keyboard_arrow_up_rounded);
+    expect(upIcon, findsOneWidget);
+
+    // Scroll down past threshold
+    scrollController.jumpTo(250);
+    await tester.pumpAndSettle();
+
+    // Tap scroll to top button
+    await tester.tap(upIcon);
+    await tester.pumpAndSettle();
+
+    // Verify scrolled back to top
+    expect(scrollController.offset, equals(0.0));
+
+    // Scroll down again and verify it automatically disappears when scrolling stops
+    scrollController.jumpTo(300);
+    await tester.pump(const Duration(milliseconds: 100)); // active scroll
+    final animatedScaleFinder = find.byType(AnimatedScale);
+    expect(animatedScaleFinder, findsOneWidget);
+    AnimatedScale scaleWidget = tester.widget(animatedScaleFinder);
+    expect(scaleWidget.scale, equals(1.0)); // Visible while scrolling
+
+    // Wait for hideDelay (1000ms) to elapse after scrolling stops
+    await tester.pump(const Duration(milliseconds: 1100));
+    scaleWidget = tester.widget(animatedScaleFinder);
+    expect(scaleWidget.scale, equals(0.0)); // Automatically disappeared!
+  });
+
+  testWidgets('Top floating action pill has equal gaps and uniform sizes', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Find the 3 action buttons in the pill
+    final addFinder = find.byTooltip('Add subscription');
+    final searchFinder = find.byTooltip('Search subscriptions');
+    final moreFinder = find.byTooltip('More options');
+
+    expect(addFinder, findsOneWidget);
+    expect(searchFinder, findsOneWidget);
+    expect(moreFinder, findsOneWidget);
+
+    // Verify all 3 action buttons have identical sizes (36x36)
+    final sizeAdd = tester.getSize(addFinder);
+    final sizeSearch = tester.getSize(searchFinder);
+    final sizeMore = tester.getSize(moreFinder);
+
+    expect(sizeAdd.width, equals(36.0));
+    expect(sizeSearch.width, equals(36.0));
+    expect(sizeMore.width, equals(36.0));
+
+    // Verify equal gap between icon 1 and icon 2, and icon 2 and icon 3
+    final posAdd = tester.getTopLeft(addFinder);
+    final posSearch = tester.getTopLeft(searchFinder);
+    final posMore = tester.getTopLeft(moreFinder);
+
+    final gap1 = posSearch.dx - (posAdd.dx + sizeAdd.width);
+    final gap2 = posMore.dx - (posSearch.dx + sizeSearch.width);
+
+    // Gaps must be identical!
+    expect(gap1, equals(gap2));
+    expect(gap1, equals(4.0));
+  });
+
+  testWidgets('OneUIFloatingMenu displays directly on top of pill with transparent overlay', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Get position of the more options button in the floating pill
+    final moreFinder = find.byTooltip('More options');
+    expect(moreFinder, findsOneWidget);
+    final pillButtonPos = tester.getTopLeft(moreFinder);
+
+    // Tap more options to open expanded menu
+    await tester.tap(moreFinder);
+    await tester.pumpAndSettle();
+
+    // Verify expanded menu items are visible
+    expect(find.text('Select'), findsOneWidget);
+    expect(find.text('Sort'), findsOneWidget);
+    expect(find.text('Filter'), findsOneWidget);
+    expect(find.text('Edit monthly budget'), findsOneWidget);
+    expect(find.text('Export list (CSV)'), findsOneWidget);
+
+    // Verify OneUIFloatingMenu.isOpen is true and the background pill is hidden (opacity 0)
+    expect(OneUIFloatingMenu.isOpen.value, isTrue);
+    final actionPillAnimatedOpacity = find.descendant(
+      of: find.byType(SliverPersistentHeader),
+      matching: find.byType(AnimatedOpacity),
+    );
+    expect(actionPillAnimatedOpacity, findsWidgets);
+    final AnimatedOpacity pillOpacity = tester.widget(actionPillAnimatedOpacity.first);
+    expect(pillOpacity.opacity, equals(0.0));
+
+    // Verify ModalBarrier is strictly transparent (no dark background overlay!)
+    final barrierFinder = find.byType(ModalBarrier).last;
+    final ModalBarrier barrier = tester.widget(barrierFinder);
+    expect(barrier.color == null || barrier.color == Colors.transparent, isTrue);
+
+    // Verify menu item top is aligned with the floating pill (not pushed down below it)
+    final selectPos = tester.getTopLeft(find.text('Select'));
+    // The top of the menu should be within 20px of the pill's top, directly overlapping it
+    expect((selectPos.dy - pillButtonPos.dy).abs(), lessThan(30.0));
+
+    // Tap outside to dismiss
+    await tester.tapAt(const Offset(30, 200));
+    await tester.pumpAndSettle();
+
+    // Verify menu closed cleanly and action pill restores full opacity
+    expect(find.text('Select'), findsNothing);
+    expect(OneUIFloatingMenu.isOpen.value, isFalse);
+    final AnimatedOpacity restoredPillOpacity = tester.widget(actionPillAnimatedOpacity.first);
+    expect(restoredPillOpacity.opacity, equals(1.0));
+  });
+
+  testWidgets('Samsung One UI Filter by category bottom sheet from expanded menu', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Open popup menu and tap Filter
+    await tester.tap(find.byTooltip('More options'));
+    await tester.pumpAndSettle();
+    expect(find.text('Filter'), findsOneWidget);
+    await tester.tap(find.text('Filter'));
+    await tester.pumpAndSettle();
+
+    // Verify OneUIFilterBottomSheet elements
+    expect(find.byType(OneUIFilterBottomSheet), findsOneWidget);
+    expect(find.text('Filter by category'), findsOneWidget);
+    expect(find.text('All categories'), findsOneWidget);
+    expect(find.text('Entertainment'), findsOneWidget);
+    expect(find.text('Music & Audio'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Done'), findsOneWidget);
+
+    // Select "Music & Audio"
+    await tester.tap(find.text('Music & Audio'));
+    await tester.pumpAndSettle();
+
+    // Tap Done
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    // Verify bottom sheet closed and filtered list only shows Music (Spotify)
+    final musicCount = SubscriptionStore.instance.subscriptions.where((s) => s.category == SubscriptionCategory.music).length;
+    expect(find.byType(OneUIFilterBottomSheet), findsNothing);
+    expect(find.text('Music & Audio ($musicCount)'), findsOneWidget);
+    expect(find.text('Spotify'), findsWidgets);
+    expect(find.text('Netflix'), findsNothing);
+  });
+
+  testWidgets('OneUIFloatingModal renders with 4 rounded corners and floating edge insets', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (ctx) => Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  OneUIFloatingModal.show(
+                    context: ctx,
+                    builder: (sheetCtx) => const Text('Floating Modal Content'),
+                  );
+                },
+                child: const Text('Open Modal'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Modal'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIFloatingModal), findsOneWidget);
+    expect(find.text('Floating Modal Content'), findsOneWidget);
+
+    // Verify modal has 28px rounded radius and margins
+    final animatedContainerFinder = find.descendant(
+      of: find.byType(OneUIFloatingModal),
+      matching: find.byType(AnimatedContainer),
+    );
+    expect(animatedContainerFinder, findsOneWidget);
+    AnimatedContainer animatedContainer = tester.widget(animatedContainerFinder);
+    BoxDecoration dec = animatedContainer.decoration as BoxDecoration;
+    expect(dec.borderRadius, equals(BorderRadius.circular(28)));
+    expect(dec.gradient, isNotNull); // 3D on by default
+
+    // Toggle 3D effect off
+    OneUIEffectsController.instance.floating3dEffect = false;
+    await tester.pumpAndSettle();
+
+    animatedContainer = tester.widget(animatedContainerFinder);
+    dec = animatedContainer.decoration as BoxDecoration;
+    expect(dec.gradient, isNull); // flat when 3D is off
+    expect(dec.color, equals(const Color(0xFF212123)));
+
+    // Restore 3D effect
+    OneUIEffectsController.instance.floating3dEffect = true;
+    await tester.pumpAndSettle();
+  });
 }
+
 
