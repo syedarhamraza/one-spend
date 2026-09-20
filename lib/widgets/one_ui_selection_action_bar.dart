@@ -37,78 +37,79 @@ class OneUISelectionActionBar extends StatelessWidget {
 
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
-            child: DecoratedBox(
-              decoration: is3d
-                  ? BoxDecoration(
-                      borderRadius: BorderRadius.circular(34),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.50),
-                          blurRadius: 18,
-                          offset: const Offset(0, 8),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    )
-                  : const BoxDecoration(),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(34),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: OneUITheme.blurSigma,
-                    sigmaY: OneUITheme.blurSigma,
-                  ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: is3d ? null : OneUITheme.floatingColor,
-                      gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                      borderRadius: BorderRadius.circular(34),
-                      border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: DecoratedBox(
+                decoration: is3d
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(34),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.20),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      )
+                    : const BoxDecoration(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(34),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: OneUITheme.blurSigma,
+                      sigmaY: OneUITheme.blurSigma,
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // 1. Share
-                        Expanded(
-                          child: _buildActionItem(
-                            icon: Icons.share_outlined,
-                            label: 'Share',
-                            isEnabled: hasSelection,
-                            onTap: onShare,
-                          ),
-                        ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: is3d ? null : OneUITheme.floatingColor,
+                        gradient: is3d ? OneUITheme.floatingGradient : null,
+                        borderRadius: BorderRadius.circular(34),
+                        border: OneUITheme.floatingBorder,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // 1. Share
+                            _buildActionItem(
+                              icon: Icons.share_outlined,
+                              label: 'Share',
+                              isEnabled: hasSelection,
+                              onTap: onShare,
+                            ),
 
-                        // 2. Delete
-                        Expanded(
-                          child: _buildActionItem(
-                            icon: Icons.delete_outline_rounded,
-                            label: 'Delete',
-                            isEnabled: hasSelection,
-                            color: hasSelection ? OneUITheme.accentRed : null,
-                            onTap: onDelete,
-                          ),
-                        ),
+                            // 2. Delete
+                            _buildActionItem(
+                              icon: Icons.delete_outline_rounded,
+                              label: 'Delete',
+                              isEnabled: hasSelection,
+                              color: hasSelection ? OneUITheme.accentRed : null,
+                              onTap: onDelete,
+                            ),
 
-                        // 3. More (...)
-                        Expanded(
-                          child: _buildActionItem(
-                            key: moreButtonKey,
-                            icon: Icons.more_vert_rounded,
-                            label: 'More',
-                            isEnabled: hasSelection,
-                            onTap: onMore,
-                          ),
+                            // 3. More (...)
+                            _buildActionItem(
+                              key: moreButtonKey,
+                              icon: Icons.more_vert_rounded,
+                              label: 'More',
+                              isEnabled: hasSelection,
+                              onTap: onMore,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -140,9 +141,9 @@ class OneUISelectionActionBar extends StatelessWidget {
               onTap();
             }
           : null,
-      borderRadius: BorderRadius.circular(22),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      borderRadius: BorderRadius.circular(26),
+      child: SizedBox(
+        width: 68,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
@@ -152,11 +153,13 @@ class OneUISelectionActionBar extends StatelessWidget {
               size: 21,
               color: itemColor,
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11.5,
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.2,
                 color: itemColor,

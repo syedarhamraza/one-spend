@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -18,10 +20,12 @@ import 'subscription_detail_screen.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
+  final ValueChanged<bool>? onSearchModeChanged;
 
   const SubscriptionsScreen({
     super.key,
     this.onSelectionModeChanged,
+    this.onSearchModeChanged,
   });
 
   @override
@@ -32,6 +36,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   String _searchQuery = '';
   bool _showSearch = false;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   SubscriptionCategory? _filterCategory;
 
@@ -45,8 +50,33 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _enterSearchMode() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _showSearch = true;
+    });
+    widget.onSearchModeChanged?.call(true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _showSearch) {
+        _searchFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _exitSearchMode() {
+    HapticFeedback.lightImpact();
+    _searchFocusNode.unfocus();
+    setState(() {
+      _showSearch = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+    widget.onSearchModeChanged?.call(false);
   }
 
   void _showExpandedMenu(BuildContext context) {
@@ -231,11 +261,14 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   void _handleLockSelected() {
     if (_selectedIds.isEmpty) return;
     final count = _selectedIds.length;
+    final selectedSubs = SubscriptionStore.instance.subscriptions
+        .where((s) => _selectedIds.contains(s.id));
+    final anyActive = selectedSubs.any((s) => s.status != SubscriptionStatus.paused);
     SubscriptionStore.instance.batchTogglePause(_selectedIds);
     _exitSelectionMode();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Updated status for $count subscriptions'),
+        content: Text('${anyActive ? "Paused" : "Resumed"} $count subscription${count > 1 ? "s" : ""}'),
         backgroundColor: OneUITheme.surfacePill,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -351,6 +384,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   void _handleMoreSelected() {
     if (_selectedIds.isEmpty) return;
     HapticFeedback.lightImpact();
+    final selectedSubs = SubscriptionStore.instance.subscriptions
+        .where((s) => _selectedIds.contains(s.id));
+    final anyActive = selectedSubs.any((s) => s.status != SubscriptionStatus.paused);
+    final pauseOrResumeLabel = anyActive ? 'Pause' : 'Resume';
+
     OneUIFloatingMenu.show(
       context: context,
       anchorKey: _selectionMoreButtonKey,
@@ -362,7 +400,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           onTap: _handleMoveSelected,
         ),
         OneUIFloatingMenuItem(
-          label: 'Pause / Lock',
+          label: pauseOrResumeLabel,
           onTap: _handleLockSelected,
         ),
         OneUIFloatingMenuItem(
@@ -432,6 +470,249 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSelectionCountPill({
+    required int selectedCount,
+    required int totalCount,
+    required VoidCallback onToggleSelectAll,
+  }) {
+    final allSelected = selectedCount > 0 && selectedCount == totalCount;
+    final is3d = OneUIEffectsController.instance.floating3dEffect;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onToggleSelectAll();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: OneUITheme.blurSigma,
+            sigmaY: OneUITheme.blurSigma,
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: is3d ? null : OneUITheme.floatingColor,
+              gradient: is3d ? OneUITheme.floatingGradient : null,
+              borderRadius: BorderRadius.circular(24),
+              border: OneUITheme.floatingBorder,
+              boxShadow: is3d
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutCubic,
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: allSelected ? const Color(0xFF2C69FF) : Colors.transparent,
+                    border: Border.all(
+                      color: allSelected ? const Color(0xFF2C69FF) : Colors.white.withValues(alpha: 0.55),
+                      width: 2.0,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: allSelected
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 15,
+                          color: Colors.white,
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$selectedCount',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: OneUITheme.textPrimary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectionCancelPill({
+    required VoidCallback onCancel,
+  }) {
+    final is3d = OneUIEffectsController.instance.floating3dEffect;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onCancel();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: OneUITheme.blurSigma,
+            sigmaY: OneUITheme.blurSigma,
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            decoration: BoxDecoration(
+              color: is3d ? null : OneUITheme.floatingColor,
+              gradient: is3d ? OneUITheme.floatingGradient : null,
+              borderRadius: BorderRadius.circular(24),
+              border: OneUITheme.floatingBorder,
+              boxShadow: is3d
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: OneUITheme.textPrimary,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingSearchPill() {
+    final is3d = OneUIEffectsController.instance.floating3dEffect;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: OneUITheme.blurSigma,
+            sigmaY: OneUITheme.blurSigma,
+          ),
+          child: Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: is3d ? null : const Color(0xEB282638),
+              gradient: is3d
+                  ? const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xF036344E),
+                        Color(0xF0202834),
+                      ],
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(32),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.18),
+                width: 0.9,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) {
+                      _searchFocusNode.unfocus();
+                    },
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'What are you looking for?',
+                      hintStyle: TextStyle(
+                        color: Color(0xFF8E95B8),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onChanged: (val) {
+                      setState(() {
+                        _searchQuery = val;
+                      });
+                    },
+                  ),
+                ),
+                if (_searchQuery.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _searchQuery = '';
+                        _searchController.clear();
+                      });
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -521,7 +802,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         ],
       ),
       title: sub.name,
-      subtitle: '${sub.category.label} • ${sub.billingCycle.label}',
+      subtitle: _isSelectionMode ? null : '${sub.category.label} • ${sub.billingCycle.label}',
       subtitleColor: OneUITheme.textSecondary,
       trailing: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -611,59 +892,68 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             ? OneUITheme.accentGreen
             : (budgetProgress <= 1.0 ? OneUITheme.accentAmber : OneUITheme.accentRed);
 
+        final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+        final bottomPadding = MediaQuery.paddingOf(context).bottom;
+        final searchPillBottom = math.max(bottomPadding + 16, bottomInset + 14);
+
         return PopScope(
-          canPop: !_isSelectionMode,
+          canPop: !_isSelectionMode && !_showSearch,
           onPopInvokedWithResult: (didPop, result) {
-            if (!didPop && _isSelectionMode) {
-              _exitSelectionMode();
+            if (!didPop) {
+              if (_isSelectionMode) {
+                _exitSelectionMode();
+              } else if (_showSearch) {
+                _exitSearchMode();
+              }
             }
           },
           child: Scaffold(
             backgroundColor: OneUITheme.surfacePitch,
+            resizeToAvoidBottomInset: false,
             body: Stack(
               children: [
                 CustomScrollView(
                   controller: _scrollController,
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   physics: const BouncingScrollPhysics(),
                   slivers: [
                     // One UI Signature Collapsible Header
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: OneUICollapsibleHeaderDelegate(
-                        title: _isSelectionMode
-                            ? '${_selectedIds.length} selected'
-                            : 'Subscriptions',
-                        subtitle: _isSelectionMode
-                            ? (_selectedIds.length == filteredSubs.length
-                                ? 'All selected • Tap to deselect'
-                                : 'Tap to select all')
-                            : '${store.totalActiveCount} active • ${store.currency}${store.totalMonthlySpend.toStringAsFixed(2)} / month',
-                        hasBigHeader: true,
-                        showBackButton: _isSelectionMode,
-                        onBack: _exitSelectionMode,
+                        title: _showSearch
+                            ? 'Search'
+                            : (_isSelectionMode
+                                ? '${_selectedIds.length} selected'
+                                : 'Subscriptions'),
+                        subtitle: _showSearch
+                            ? null
+                            : (_isSelectionMode
+                                ? (_selectedIds.length == filteredSubs.length
+                                    ? 'All selected • Tap (O) to deselect'
+                                    : 'Tap (O) to select all')
+                                : '${store.totalActiveCount} active • ${store.currency}${store.totalMonthlySpend.toStringAsFixed(2)} / month'),
+                        hasBigHeader: !_showSearch,
+                        showBackButton: _showSearch,
+                        onBack: _showSearch ? _exitSearchMode : null,
                         expandedHeight: 270.0,
                         collapsedHeight: 92.0,
                         actionsPillKey: _actionPillKey,
-                        actions: _isSelectionMode
-                            ? [
-                                OneUIHeaderAction(
-                                  icon: _selectedIds.length == filteredSubs.length
-                                      ? Icons.deselect_rounded
-                                      : Icons.select_all_rounded,
-                                  tooltip: _selectedIds.length == filteredSubs.length
-                                      ? 'Deselect all'
-                                      : 'Select all',
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    _toggleSelectAll(filteredSubs);
-                                  },
-                                ),
-                                OneUIHeaderAction(
-                                  icon: Icons.close_rounded,
-                                  tooltip: 'Cancel selection',
-                                  onTap: _exitSelectionMode,
-                                ),
-                              ]
+                        isSelectionMode: _isSelectionMode && !_showSearch,
+                        selectionLeading: (_isSelectionMode && !_showSearch)
+                            ? _buildSelectionCountPill(
+                                selectedCount: _selectedIds.length,
+                                totalCount: filteredSubs.length,
+                                onToggleSelectAll: () => _toggleSelectAll(filteredSubs),
+                              )
+                            : null,
+                        selectionTrailing: (_isSelectionMode && !_showSearch)
+                            ? _buildSelectionCancelPill(
+                                onCancel: _exitSelectionMode,
+                              )
+                            : null,
+                        actions: (_isSelectionMode || _showSearch)
+                            ? null
                             : [
                                 OneUIHeaderAction(
                                   icon: Icons.add,
@@ -682,16 +972,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                 OneUIHeaderAction(
                                   icon: Icons.search_rounded,
                                   tooltip: 'Search subscriptions',
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    setState(() {
-                                      _showSearch = !_showSearch;
-                                      if (!_showSearch) {
-                                        _searchQuery = '';
-                                        _searchController.clear();
-                                      }
-                                    });
-                                  },
+                                  onTap: _enterSearchMode,
                                 ),
                                 OneUIHeaderAction(
                                   actionKey: _moreButtonKey,
@@ -704,44 +985,81 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                       ),
                     ),
 
-                    // Search bar if toggled
-                    if (_showSearch && !_isSelectionMode)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: OneUITheme.cardColor,
-                              borderRadius: OneUITheme.pillBorderRadius,
-                              border: OneUITheme.cardBorder,
-                              boxShadow: OneUITheme.cardShadow,
+                    // Search View (Matching One UI Screenshot 1:1)
+                    if (_showSearch) ...[
+                      if (_searchQuery.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              bottom: searchPillBottom + 56,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: TextField(
-                              controller: _searchController,
-                              autofocus: true,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                hintText: 'Search subscriptions...',
-                                hintStyle: TextStyle(color: OneUITheme.textSecondary),
-                                border: InputBorder.none,
-                                icon: Icon(Icons.search_rounded, color: OneUITheme.textSecondary),
+                            child: Center(
+                              child: Text(
+                                'No recent searches',
+                                style: TextStyle(
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: OneUITheme.textSecondary.withValues(alpha: 0.8),
+                                  letterSpacing: -0.2,
+                                ),
                               ),
-                              onChanged: (val) {
-                                setState(() {
-                                  _searchQuery = val;
-                                });
-                              },
+                            ),
+                          ),
+                        )
+                      else if (filteredSubs.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              bottom: searchPillBottom + 56,
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.search_off_rounded,
+                                    size: 48,
+                                    color: OneUITheme.textSecondary.withValues(alpha: 0.4),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No results for "$_searchQuery"',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: OneUITheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            12,
+                            16,
+                            searchPillBottom + 70,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: OneUISection(
+                              title: 'Results (${filteredSubs.length})',
+                              child: OneUIGroupCard(
+                                items: filteredSubs.map(_buildSubscriptionItem).toList(),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-
-                    // Monthly Budget Card (Interactive)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-                        child: GestureDetector(
+                    ] else ...[
+                      // Monthly Budget Card (Interactive)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+                          child: GestureDetector(
                           onTap: () => _showEditBudgetDialog(context),
                           child: Container(
                             width: double.infinity,
@@ -867,9 +1185,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                     ],
                                   ),
                                   title: sub.name,
-                                  subtitle: days == 0
-                                      ? 'Due today (${dateFormat.format(sub.nextBillingDate)})'
-                                      : 'Due in $days days (${dateFormat.format(sub.nextBillingDate)})',
+                                  subtitle: _isSelectionMode
+                                      ? null
+                                      : (days == 0
+                                          ? 'Due today (${dateFormat.format(sub.nextBillingDate)})'
+                                          : 'Due in $days days (${dateFormat.format(sub.nextBillingDate)})'),
                                   subtitleColor: days <= 5 ? OneUITheme.accentRed : OneUITheme.accentBlue,
                                   trailing: Text(
                                     '${sub.currency}${sub.price.toStringAsFixed(2)}',
@@ -1017,22 +1337,24 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                       ),
                     ),
                   ],
-                ),
+                ],
+              ),
 
-                // Floating Scroll-To-Top circular button (Screenshot 2, centered just above navbar)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: _isSelectionMode ? 82 : 92,
-                  child: Center(
-                    child: OneUIScrollToTopButton(
-                      scrollController: _scrollController,
+                // Floating Scroll-To-Top circular button (only when not searching)
+                if (!_showSearch)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: MediaQuery.of(context).padding.bottom + (_isSelectionMode ? 86 : 94),
+                    child: Center(
+                      child: OneUIScrollToTopButton(
+                        scrollController: _scrollController,
+                      ),
                     ),
                   ),
-                ),
 
                 // Bottom Floating Multi-Selection Action Bar (Replaces main nav bar in-place!)
-                if (_isSelectionMode)
+                if (_isSelectionMode && !_showSearch)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -1045,6 +1367,19 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                       onShare: _handleShareSelected,
                       onDelete: _handleDeleteSelected,
                       onMore: _handleMoreSelected,
+                    ),
+                  ),
+
+                // Floating Search Pill above keyboard (matching One UI reference screenshot)
+                if (_showSearch)
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    left: 18,
+                    right: 18,
+                    bottom: searchPillBottom,
+                    child: RepaintBoundary(
+                      child: _buildFloatingSearchPill(),
                     ),
                   ),
               ],

@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   bool _isSelectionActive = false;
+  bool _isSearchActive = false;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 _isSelectionActive = active;
               });
             },
+            onSearchModeChanged: (active) {
+              setState(() {
+                _isSearchActive = active;
+              });
+            },
           ),
           const UpcomingScreen(),
           const AnalyticsScreen(),
@@ -42,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ];
 
         final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-        final isNavHidden = (_currentIndex == 0 && _isSelectionActive) || isKeyboardOpen || OneUIFloatingModal.isModalOpen.value;
+        final isNavHidden = (_currentIndex == 0 && (_isSelectionActive || _isSearchActive)) || isKeyboardOpen || OneUIFloatingModal.isModalOpen.value;
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,

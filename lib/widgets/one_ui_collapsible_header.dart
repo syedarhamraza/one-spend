@@ -66,6 +66,9 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
   final GlobalKey? actionsPillKey;
   final double expandedHeight;
   final double collapsedHeight;
+  final bool isSelectionMode;
+  final Widget? selectionLeading;
+  final Widget? selectionTrailing;
 
   const OneUICollapsibleHeaderDelegate({
     required this.title,
@@ -77,6 +80,9 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
     this.actionsPillKey,
     this.expandedHeight = 270.0, // Balanced One UI viewing area with reduced bottom space
     this.collapsedHeight = 92.0,  // Compact top bar height including status bar
+    this.isSelectionMode = false,
+    this.selectionLeading,
+    this.selectionTrailing,
   });
 
   @override
@@ -101,6 +107,9 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
       topPadding: topPadding,
       expandedHeight: maxExtent,
       collapsedHeight: minExtent,
+      isSelectionMode: isSelectionMode,
+      selectionLeading: selectionLeading,
+      selectionTrailing: selectionTrailing,
     );
   }
 
@@ -113,7 +122,10 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.expandedHeight != expandedHeight ||
         oldDelegate.collapsedHeight != collapsedHeight ||
         oldDelegate.actions != actions ||
-        oldDelegate.actionsPillKey != actionsPillKey;
+        oldDelegate.actionsPillKey != actionsPillKey ||
+        oldDelegate.isSelectionMode != isSelectionMode ||
+        oldDelegate.selectionLeading != selectionLeading ||
+        oldDelegate.selectionTrailing != selectionTrailing;
   }
 }
 
@@ -129,6 +141,9 @@ class _OneUIHeaderContent extends StatefulWidget {
   final double topPadding;
   final double expandedHeight;
   final double collapsedHeight;
+  final bool isSelectionMode;
+  final Widget? selectionLeading;
+  final Widget? selectionTrailing;
 
   const _OneUIHeaderContent({
     required this.title,
@@ -142,6 +157,9 @@ class _OneUIHeaderContent extends StatefulWidget {
     required this.topPadding,
     required this.expandedHeight,
     required this.collapsedHeight,
+    this.isSelectionMode = false,
+    this.selectionLeading,
+    this.selectionTrailing,
   });
 
   @override
@@ -460,36 +478,45 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
               child: _buildBigHeader(bigHeaderOpacity),
             ),
 
-          // 2. Action Bar Row (Buttons & Small Title)
+          // 2. Action Bar Row (Buttons & Small Title OR Selection Controls)
           // Anchored to bottom: 4.0 of the sliver, directly above the first card!
           Positioned(
             bottom: 4.0,
             left: 20.0,
             right: 20.0,
             height: 44.0,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Left: Back button (if enabled)
-                if (widget.showBackButton) ...[
-                  _buildBackButton(context, pillProgress),
-                  const SizedBox(width: 10.0),
-                ],
+            child: widget.isSelectionMode
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (widget.selectionLeading != null) widget.selectionLeading!,
+                      const Spacer(),
+                      if (widget.selectionTrailing != null) widget.selectionTrailing!,
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Left: Back button (if enabled)
+                      if (widget.showBackButton) ...[
+                        _buildBackButton(context, pillProgress),
+                        const SizedBox(width: 10.0),
+                      ],
 
-                // Center / Left: Small Title
-                // If no back button, starts directly at left: 20 on screen!
-                // If back button, starts beside the back button!
-                Expanded(
-                  child: _buildSmallTitle(smallTitleOpacity),
-                ),
+                      // Center / Left: Small Title
+                      // If no back button, starts directly at left: 20 on screen!
+                      // If back button, starts beside the back button!
+                      Expanded(
+                        child: _buildSmallTitle(smallTitleOpacity),
+                      ),
 
-                // Right: Action Buttons Pill (if actions present)
-                if (widget.actions != null && widget.actions!.isNotEmpty) ...[
-                  const SizedBox(width: 8.0),
-                  _buildActionPill(context, pillProgress),
-                ],
-              ],
-            ),
+                      // Right: Action Buttons Pill (if actions present)
+                      if (widget.actions != null && widget.actions!.isNotEmpty) ...[
+                        const SizedBox(width: 8.0),
+                        _buildActionPill(context, pillProgress),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),

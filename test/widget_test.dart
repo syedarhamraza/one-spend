@@ -658,11 +658,13 @@ void main() {
     await tester.tap(find.text('Select'));
     await tester.pumpAndSettle();
 
-    // Verify header transformed in-place: title shows "0 selected", back button and action icons visible
+    // Verify header transformed in-place: selection count pill and Cancel button visible
     expect(find.text('0 selected'), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsOneWidget);
-    expect(find.byTooltip('Select all'), findsOneWidget);
-    expect(find.byTooltip('Cancel selection'), findsOneWidget);
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    // Verify subscription description/subtitle is hidden in selection mode
+    expect(find.text('Entertainment • Monthly'), findsNothing);
 
     // Verify OneUISelectionActionBar replaced the floating nav bar at the bottom
     expect(find.byType(OneUISelectionActionBar), findsOneWidget);
@@ -681,26 +683,30 @@ void main() {
 
     // Counter now shows 1 selected
     expect(find.text('1 selected'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
 
-    // Tap 'Select all' in the header action pill
-    await tester.tap(find.byTooltip('Select all'));
+    // Tap selection count pill to toggle Select all
+    await tester.tap(find.text('1'));
     await tester.pumpAndSettle();
 
     final totalCount = SubscriptionStore.instance.subscriptions.length;
     expect(find.text('$totalCount selected'), findsOneWidget);
-    expect(find.byTooltip('Deselect all'), findsOneWidget);
+    expect(find.text('$totalCount'), findsOneWidget);
 
-    // Tap 'Deselect all'
-    await tester.tap(find.byTooltip('Deselect all'));
+    // Tap count pill again to Deselect all
+    await tester.tap(find.text('$totalCount'));
     await tester.pumpAndSettle();
     expect(find.text('0 selected'), findsOneWidget);
+    expect(find.text('0'), findsOneWidget);
 
-    // Tap Cancel selection icon in the header pill to exit selection mode
-    await tester.tap(find.byTooltip('Cancel selection'));
+    // Tap Cancel pill to exit selection mode
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
     expect(find.byType(OneUISelectionActionBar), findsNothing);
     expect(find.text('Subscriptions'), findsOneWidget);
+    // Verify subscription subtitle is restored
+    expect(find.text('Entertainment • Monthly'), findsWidgets);
 
     // Test entering selection mode via long-press on a subscription
     await tester.longPress(find.text('Spotify').first);
@@ -708,23 +714,39 @@ void main() {
 
     expect(find.byType(OneUISelectionActionBar), findsOneWidget);
     expect(find.text('1 selected'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
 
     // Tap More (...) on selection bar to verify expanded menu with Move and Pause/Lock
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
 
     expect(find.text('Move to category'), findsOneWidget);
-    expect(find.text('Pause / Lock'), findsOneWidget);
+    expect(find.text('Pause'), findsOneWidget);
     expect(find.text('Duplicate selected'), findsOneWidget);
     expect(find.text('Export selected (CSV)'), findsOneWidget);
 
-    // Tap outside to dismiss floating menu
-    await tester.tapAt(const Offset(50, 100));
+    // Tap Pause to pause Spotify
+    await tester.tap(find.text('Pause'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paused 1 subscription'), findsOneWidget);
+
+    // Clear SnackBar so it does not block the floating bottom bar
+    ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first)).clearSnackBars();
     await tester.pumpAndSettle();
 
-    // Exit selection mode via the in-place back button
-    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    // Long press Spotify again (now it is paused)
+    await tester.longPress(find.text('Spotify').first);
     await tester.pumpAndSettle();
+
+    // Tap More on selection bar to verify it now offers 'Resume'
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    expect(find.text('Resume'), findsOneWidget);
+
+    // Tap Resume to unpause Spotify
+    await tester.tap(find.text('Resume'));
+    await tester.pumpAndSettle();
+    expect(find.text('Resumed 1 subscription'), findsOneWidget);
     expect(find.byType(OneUISelectionActionBar), findsNothing);
     expect(find.text('Subscriptions'), findsOneWidget);
   });
@@ -1152,6 +1174,63 @@ void main() {
 
     // Verify detail screen received the updated name
     expect(find.text('Netflix 4K Premium'), findsWidgets);
+  });
+
+  testWidgets('Samsung One UI floating search bar matching reference screenshot', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Tap search action in top pill
+    await tester.tap(find.byIcon(Icons.search_rounded).first);
+    await tester.pumpAndSettle();
+
+    // Verify search header and empty state
+    expect(find.text('Search'), findsOneWidget);
+    expect(find.text('No recent searches'), findsOneWidget);
+    expect(find.byIcon(Icons.mic_rounded), findsNothing);
+
+    // Verify search pill sits at bottom before keyboard
+    final initialPillY = tester.getTopLeft(find.text('What are you looking for?')).dy;
+    expect(initialPillY, greaterThan(1000.0)); // Near bottom of 1200dp logical height
+
+    // Simulate keyboard opening (600 physical px = 300 logical px)
+    tester.view.viewInsets = const FakeViewPadding(bottom: 600);
+    await tester.pumpAndSettle();
+
+    // Verify search pill moves cleanly above the keyboard (not to the top of screen!)
+    final keyboardPillY = tester.getTopLeft(find.text('What are you looking for?')).dy;
+    // Logical height is 1200, keyboard is 300, pill bottom is 314, pill top is around 830
+    expect(keyboardPillY, lessThan(initialPillY));
+    expect(keyboardPillY, greaterThan(800.0)); // Stays in bottom region above keyboard, not near top!
+
+    // Type query into floating search bar
+    await tester.enterText(find.byType(TextField), 'Spotify');
+    await tester.pumpAndSettle();
+
+    // Results should show Spotify, and 'No recent searches' should disappear
+    expect(find.text('No recent searches'), findsNothing);
+    expect(find.text('Spotify'), findsWidgets);
+
+    // Clear search using the X button
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('No recent searches'), findsOneWidget);
+
+    // Reset keyboard insets
+    tester.view.resetViewInsets();
+    await tester.pumpAndSettle();
+
+    // Exit search using back button
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Subscriptions'), findsOneWidget);
   });
 }
 

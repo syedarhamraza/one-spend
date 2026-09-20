@@ -35,7 +35,7 @@ class OneUIFloatingMenu {
     double fallbackTop = 54.0,
     double? fallbackBottom,
     double fallbackRight = 16.0,
-    double width = 224.0,
+    double width = 200.0,
   }) async {
     double? top = fallbackTop;
     double? bottom = fallbackBottom;
@@ -47,16 +47,20 @@ class OneUIFloatingMenu {
       if (box != null && box.hasSize) {
         final origin = box.localToGlobal(Offset.zero);
         final screenSize = MediaQuery.of(context).size;
-        right = (screenSize.width - (origin.dx + box.size.width)).clamp(0.0, 50.0);
 
         if (origin.dy > screenSize.height * 0.5) {
           isBottomAnchor = true;
-          bottom = (screenSize.height - origin.dy) + 8.0;
+          // Clear 14px floating gap above the bottom selection bar
+          bottom = (screenSize.height - origin.dy) + 14.0;
           top = null;
+          // Align menu right edge with the selection bar container edge (~8px past the button)
+          final barRightEdgeDistance = screenSize.width - (origin.dx + box.size.width + 8.0);
+          right = barRightEdgeDistance.clamp(16.0, screenSize.width - width - 16.0);
         } else {
           isBottomAnchor = false;
           top = origin.dy;
           bottom = null;
+          right = (screenSize.width - (origin.dx + box.size.width)).clamp(16.0, 50.0);
         }
       }
     } else if (fallbackBottom != null) {
@@ -110,7 +114,7 @@ class OneUIFloatingMenu {
             child: ScaleTransition(
               scale: scaleAnimation,
               alignment: isBottomAnchor
-                  ? const Alignment(0.90, 0.92)
+                  ? const Alignment(0.85, 0.95)
                   : const Alignment(0.90, -0.92),
               child: child,
             ),
@@ -157,7 +161,7 @@ class _OneUIFloatingMenuContent extends StatelessWidget {
                 child: DecoratedBox(
                   decoration: is3d
                       ? BoxDecoration(
-                          borderRadius: BorderRadius.circular(26),
+                          borderRadius: BorderRadius.circular(22),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.45),
@@ -168,7 +172,7 @@ class _OneUIFloatingMenuContent extends StatelessWidget {
                         )
                       : const BoxDecoration(),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(26),
+                    borderRadius: BorderRadius.circular(22),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(
                         sigmaX: OneUITheme.blurSigma,
@@ -178,10 +182,10 @@ class _OneUIFloatingMenuContent extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: is3d ? null : OneUITheme.floatingColor,
                           gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                          borderRadius: BorderRadius.circular(26),
+                          borderRadius: BorderRadius.circular(22),
                           border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -192,22 +196,22 @@ class _OneUIFloatingMenuContent extends StatelessWidget {
                             Navigator.pop(context);
                             item.onTap();
                           },
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(16),
                           splashColor: Colors.white.withValues(alpha: 0.08),
                           highlightColor: Colors.white.withValues(alpha: 0.04),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             child: Row(
                               children: [
                                 if (item.icon != null) ...[
-                                  Icon(item.icon, size: 20, color: OneUITheme.textPrimary),
-                                  const SizedBox(width: 14),
+                                  Icon(item.icon, size: 19, color: OneUITheme.textPrimary),
+                                  const SizedBox(width: 12),
                                 ],
                                 Expanded(
                                   child: Text(
                                     item.label,
                                     style: const TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14.5,
                                       fontWeight: FontWeight.w500,
                                       color: OneUITheme.textPrimary,
                                       letterSpacing: -0.2,
