@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_filter_bottom_sheet.dart';
@@ -15,6 +16,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_scroll_to_top_button.dart';
 import '../widgets/one_ui_selection_action_bar.dart';
 import '../widgets/one_ui_sort_bottom_sheet.dart';
+import '../widgets/one_ui_toast.dart';
 import 'add_subscription_screen.dart';
 import 'subscription_detail_screen.dart';
 
@@ -198,14 +200,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         SubscriptionStore.instance.batchChangeCategory(_selectedIds, cat);
                         _exitSelectionMode();
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Moved $count subscriptions to ${cat.label}'),
-                            backgroundColor: OneUITheme.surfacePill,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                        );
+                        OneUIToast.show(context, 'Moved $count subscriptions to ${cat.label}');
                       },
                       borderRadius: BorderRadius.circular(14),
                       child: Padding(
@@ -266,14 +261,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     final anyActive = selectedSubs.any((s) => s.status != SubscriptionStatus.paused);
     SubscriptionStore.instance.batchTogglePause(_selectedIds);
     _exitSelectionMode();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${anyActive ? "Paused" : "Resumed"} $count subscription${count > 1 ? "s" : ""}'),
-        backgroundColor: OneUITheme.surfacePill,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-    );
+    OneUIToast.show(context, '${anyActive ? "Paused" : "Resumed"} $count subscription${count > 1 ? "s" : ""}');
   }
 
   Future<void> _handleShareSelected() async {
@@ -296,14 +284,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     } catch (_) {
       Clipboard.setData(ClipboardData(text: buffer.toString().trim()));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_selectedIds.length} subscriptions copied to clipboard'),
-            backgroundColor: OneUITheme.surfacePill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
+        OneUIToast.show(context, '${_selectedIds.length} subscriptions copied to clipboard');
       }
     }
   }
@@ -322,14 +303,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         HapticFeedback.mediumImpact();
         SubscriptionStore.instance.batchDelete(_selectedIds);
         _exitSelectionMode();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Deleted $count subscription${count > 1 ? "s" : ""}'),
-            backgroundColor: OneUITheme.surfacePill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
+        OneUIToast.show(context, 'Deleted $count subscription${count > 1 ? "s" : ""}');
       },
     );
   }
@@ -347,14 +321,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     SubscriptionStore.instance.batchAdd(duplicates);
     final count = _selectedIds.length;
     _exitSelectionMode();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Duplicated $count subscriptions'),
-        backgroundColor: OneUITheme.surfacePill,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-    );
+    OneUIToast.show(context, 'Duplicated $count subscriptions');
   }
 
   void _handleExportSelected() {
@@ -371,14 +338,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     }
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     _exitSelectionMode();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Selected subscriptions CSV copied'),
-        backgroundColor: OneUITheme.surfacePill,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-    );
+    OneUIToast.show(context, 'Selected subscriptions CSV copied');
   }
 
   void _handleMoreSelected() {
@@ -461,14 +421,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       confirmLabel: 'Copy CSV',
       onConfirm: () {
         Clipboard.setData(ClipboardData(text: csv));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('CSV copied to clipboard'),
-            backgroundColor: OneUITheme.surfacePill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
+        OneUIToast.show(context, 'CSV copied to clipboard');
       },
     );
   }
@@ -785,19 +738,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   )
                 : const SizedBox.shrink(),
           ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: sub.brandColor,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
-                width: 0.8,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Icon(sub.iconData, color: Colors.white, size: 22),
+          OneUIBrandIcon(
+            subscription: sub,
+            size: 44,
+            borderRadius: 14,
           ),
         ],
       ),
@@ -887,10 +831,34 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
         final budget = store.monthlyBudget;
         final totalSpend = store.totalMonthlySpend;
+        final remaining = budget > totalSpend ? budget - totalSpend : 0.0;
         final budgetProgress = budget > 0 ? (totalSpend / budget).clamp(0.0, 1.0) : 0.0;
-        final Color progressColor = budgetProgress < 0.8
-            ? OneUITheme.accentGreen
-            : (budgetProgress <= 1.0 ? OneUITheme.accentAmber : OneUITheme.accentRed);
+        final isOverBudget = budget > 0 && totalSpend > budget;
+        final budgetPercent = budget > 0 ? ((totalSpend / budget) * 100).toInt() : 0;
+        final dailyAvg = totalSpend / 30.0;
+
+        Color statusBadgeBg;
+        Color statusBadgeText;
+        String statusBadgeLabel;
+        if (budget <= 0) {
+          statusBadgeBg = OneUITheme.surfacePill;
+          statusBadgeText = OneUITheme.textSecondary;
+          statusBadgeLabel = 'No limit set';
+        } else if (isOverBudget) {
+          statusBadgeBg = OneUITheme.accentRed.withValues(alpha: 0.15);
+          statusBadgeText = OneUITheme.accentRed;
+          statusBadgeLabel = '${store.currency}${(totalSpend - budget).toStringAsFixed(0)} over';
+        } else {
+          statusBadgeBg = OneUITheme.accentGreen.withValues(alpha: 0.15);
+          statusBadgeText = OneUITheme.accentGreen;
+          statusBadgeLabel = '${store.currency}${remaining.toStringAsFixed(0)} left';
+        }
+
+        final LinearGradient progressGradient = isOverBudget
+            ? const LinearGradient(colors: [OneUITheme.accentAmber, OneUITheme.accentRed])
+            : (budgetProgress > 0.8
+                ? const LinearGradient(colors: [OneUITheme.accentAmber, OneUITheme.accentOrange])
+                : const LinearGradient(colors: [Color(0xFF00C6FF), Color(0xFF0072FF)]));
 
         final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
         final bottomPadding = MediaQuery.paddingOf(context).bottom;
@@ -1055,97 +1023,212 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                           ),
                         ),
                     ] else ...[
-                      // Monthly Budget Card (Interactive)
+                      // Monthly Budget Card (One UI Device Care Style)
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
                           child: GestureDetector(
-                          onTap: () => _showEditBudgetDialog(context),
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: OneUITheme.cardColor,
-                              borderRadius: OneUITheme.cardBorderRadius,
-                              border: OneUITheme.cardBorder,
-                              boxShadow: OneUITheme.cardShadow,
-                            ),
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Row(
-                                      children: [
-                                        Text(
-                                          'Monthly Budget',
+                            onTap: () => _showEditBudgetDialog(context),
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: OneUITheme.cardColor,
+                                borderRadius: OneUITheme.cardBorderRadius,
+                                border: OneUITheme.cardBorder,
+                                boxShadow: OneUITheme.cardShadow,
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Header Row: Label & Status Badge
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Text(
+                                            'Monthly budget',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: OneUITheme.textSecondary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Icon(
+                                            Icons.mode_edit_outline_rounded,
+                                            size: 14,
+                                            color: OneUITheme.textSecondary.withValues(alpha: 0.6),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: statusBadgeBg,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          statusBadgeLabel,
                                           style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: statusBadgeText,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // Main Spend Metric & Percentage
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        '${store.currency}${totalSpend.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: -0.8,
+                                          color: OneUITheme.textPrimary,
+                                        ),
+                                      ),
+                                      if (budget > 0) ...[
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '/ ${store.currency}${budget.toStringAsFixed(0)} limit',
+                                          style: const TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w500,
                                             color: OneUITheme.textSecondary,
                                           ),
                                         ),
-                                        SizedBox(width: 6),
-                                        Icon(Icons.edit_outlined, size: 14, color: OneUITheme.textSecondary),
                                       ],
-                                    ),
-                                    Text(
-                                      '${store.currency}${totalSpend.toStringAsFixed(0)} / ${store.currency}${budget.toStringAsFixed(0)}',
-                                      style: const TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: OneUITheme.textPrimary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: LinearProgressIndicator(
-                                    value: budgetProgress,
-                                    backgroundColor: Colors.white.withValues(alpha: 0.08),
-                                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                                    minHeight: 8,
-                                  ),
-                                ),
-                                const SizedBox(height: 14),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: OneUITheme.accentBlue.withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        'Next: ${upcomingSubs.isNotEmpty ? upcomingSubs.first.name : "None"}',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: OneUITheme.accentBlue,
+                                      const Spacer(),
+                                      if (budget > 0)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                                          decoration: BoxDecoration(
+                                            color: (isOverBudget ? OneUITheme.accentRed : OneUITheme.accentBlue)
+                                                .withValues(alpha: 0.14),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Text(
+                                            '$budgetPercent%',
+                                            style: TextStyle(
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w800,
+                                              color: isOverBudget ? OneUITheme.accentRed : OneUITheme.accentBlue,
+                                            ),
+                                          ),
                                         ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  // One UI Gradient Progress Bar
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final totalWidth = constraints.maxWidth;
+                                      final fillWidth = totalWidth * budgetProgress;
+                                      return Container(
+                                        height: 8,
+                                        width: totalWidth,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.08),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Container(
+                                            width: fillWidth,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              gradient: progressGradient,
+                                              borderRadius: BorderRadius.circular(4),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: (isOverBudget
+                                                          ? OneUITheme.accentRed
+                                                          : OneUITheme.accentBlue)
+                                                      .withValues(alpha: 0.35),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(0, 1),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // Contextual Metrics Footer
+                                  Row(
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today_rounded,
+                                            size: 13,
+                                            color: OneUITheme.textSecondary.withValues(alpha: 0.8),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            '~${store.currency}${dailyAvg.toStringAsFixed(2)}/day',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: OneUITheme.textSecondary,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      upcomingSubs.isNotEmpty
-                                          ? 'Due ${dateFormat.format(upcomingSubs.first.nextBillingDate)}'
-                                          : '',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: OneUITheme.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                      const Spacer(),
+                                      if (upcomingSubs.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: OneUITheme.surfacePill,
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: Colors.white.withValues(alpha: 0.05),
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.schedule_rounded,
+                                                size: 12,
+                                                color: OneUITheme.accentBlue,
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                'Next: ${upcomingSubs.first.name} (${dateFormat.format(upcomingSubs.first.nextBillingDate)})',
+                                                style: const TextStyle(
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: OneUITheme.textPrimary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
 
                     // Section: Upcoming Renewals (Top 2)
                     if (upcomingSubs.isNotEmpty && _filterCategory == null && _searchQuery.isEmpty)
@@ -1172,15 +1255,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                               )
                                             : const SizedBox.shrink(),
                                       ),
-                                      Container(
-                                        width: 42,
-                                        height: 42,
-                                        decoration: BoxDecoration(
-                                          color: sub.brandColor,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Icon(sub.iconData, color: Colors.white, size: 21),
+                                      OneUIBrandIcon(
+                                        subscription: sub,
+                                        size: 42,
+                                        borderRadius: 14,
                                       ),
                                     ],
                                   ),

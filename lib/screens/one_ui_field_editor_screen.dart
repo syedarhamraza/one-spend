@@ -1,9 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 
 enum FieldEditorType {
@@ -125,7 +125,6 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
@@ -168,112 +167,32 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
             ],
           ),
 
-          // Floating "Cancel | Save" Pill right above keyboard (matching Screenshot 2)
+          // Floating "Cancel | Save" Pill right above keyboard (matching One UI specification)
           Positioned(
             left: 0,
             right: 0,
             bottom: bottomInset + 20,
             child: Center(
-              child: _buildFloatingActionPill(is3d),
+              child: AnimatedBuilder(
+                animation: _textController,
+                builder: (context, _) {
+                  bool canSave = true;
+                  if (widget.type == FieldEditorType.text) {
+                    canSave = _textController.text.trim().isNotEmpty;
+                  } else if (widget.type == FieldEditorType.number) {
+                    final parsed = double.tryParse(_textController.text.trim());
+                    canSave = parsed != null && parsed >= 0;
+                  }
+                  return OneUIFloatingCancelSavePill(
+                    onCancel: _onCancel,
+                    onSave: _onSave,
+                    canSave: canSave,
+                  );
+                },
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFloatingActionPill(bool is3d) {
-    return Container(
-      decoration: BoxDecoration(
-        color: is3d ? null : const Color(0xE62A2A2E),
-        gradient: is3d
-            ? const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xF038383D),
-                  Color(0xF0202024),
-                ],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: is3d ? 0.18 : 0.10),
-          width: 0.85,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.40),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.20),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Cancel button
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _onCancel,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Subtle Vertical Divider
-                Container(
-                  width: 1,
-                  height: 22,
-                  color: Colors.white.withValues(alpha: 0.15),
-                ),
-                // Save button
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _onSave,
-                    borderRadius: BorderRadius.circular(24),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: OneUITheme.accentBlue,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

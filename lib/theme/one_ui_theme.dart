@@ -194,6 +194,7 @@ class OneUITheme {
   static const Color accentTeal = Color(0xFF48B5A0); // One UI Routine Teal Badge
   static const Color accentPurple = Color(0xFF7E57C2);
   static const Color accentAmber = Color(0xFFF4A261);
+  static const Color accentOrange = Color(0xFFFB8C00);
 
   // --- High-Legibility Typography Colors ---
   static const Color textPrimary = Color(0xFFFFFFFF);

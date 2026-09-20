@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_toast.dart';
 import 'subscription_detail_screen.dart';
 
 class UpcomingScreen extends StatelessWidget {
@@ -57,14 +59,7 @@ class UpcomingScreen extends StatelessWidget {
                       icon: Icons.notifications_none_rounded,
                       tooltip: 'Reminders info',
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Smart reminders alert ${store.defaultReminderDays} days before renewals'),
-                            backgroundColor: OneUITheme.surfacePill,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                        );
+                        OneUIToast.show(context, 'Smart reminders alert ${store.defaultReminderDays} days before renewals');
                       },
                     ),
                   ],
@@ -271,15 +266,10 @@ class UpcomingScreen extends StatelessWidget {
     }
 
     return OneUIGroupItem(
-      leading: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: sub.brandColor,
-          borderRadius: BorderRadius.circular(13),
-        ),
-        alignment: Alignment.center,
-        child: Icon(sub.iconData, color: Colors.white, size: 21),
+      leading: OneUIBrandIcon(
+        subscription: sub,
+        size: 42,
+        borderRadius: 13,
       ),
       title: sub.name,
       subtitle: subtitleText,
@@ -302,14 +292,7 @@ class UpcomingScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               onTap: () {
                 store.renewSubscription(sub.id);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Marked ${sub.name} as renewed!'),
-                    backgroundColor: OneUITheme.surfacePill,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                );
+                OneUIToast.show(context, 'Marked ${sub.name} as renewed!');
               },
               child: Container(
                 padding: const EdgeInsets.all(8),

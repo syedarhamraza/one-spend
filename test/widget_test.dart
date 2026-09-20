@@ -12,10 +12,20 @@ import 'package:onespend/widgets/one_ui_sort_bottom_sheet.dart';
 import 'package:onespend/widgets/one_ui_filter_bottom_sheet.dart';
 import 'package:onespend/widgets/one_ui_floating_menu.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
+import 'package:onespend/widgets/one_ui_toast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     OneUIFloatingModal.isModalOpen.value = false;
+    SubscriptionStore.instance.resetForTesting();
+  });
+
+  tearDown(() {
+    OneUIToast.dismiss();
   });
 
   testWidgets('OneSpend app smoke test and One UI navigation', (WidgetTester tester) async {
@@ -66,7 +76,8 @@ void main() {
     expect(find.text('Netflix Plan'), findsOneWidget);
     expect(find.text('Plan & Billing'), findsOneWidget);
     expect(find.text('Payment & Reminders'), findsOneWidget);
-    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Renew'), findsOneWidget);
+    expect(find.text('Pause'), findsOneWidget);
     expect(find.text('Share'), findsOneWidget);
     expect(find.text('Delete'), findsOneWidget);
 
@@ -91,12 +102,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Add Subscription Screen with Cancel | Save floating pill
-    expect(find.text('Add Subscription'), findsOneWidget);
+    expect(find.text('Add subscription'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Save'), findsOneWidget);
-    expect(find.text('Top & Popular Subscriptions'), findsOneWidget);
-    expect(find.text('Service Name'), findsOneWidget);
-    expect(find.text('Price'), findsOneWidget);
+    expect(find.text('Popular Presets'), findsOneWidget);
+    expect(find.text('Service name'), findsOneWidget);
+    expect(find.text('Price / Cost'), findsOneWidget);
 
     // Tap a popular subscription from carousel (e.g. Spotify)
     await tester.tap(find.text('Spotify'));
@@ -113,17 +124,17 @@ void main() {
     expect(find.text('Subscriptions'), findsOneWidget);
     expect(find.text('Spotify'), findsWidgets);
 
-    // Wait for previous save SnackBar to dismiss
-    await tester.pump(const Duration(seconds: 4));
+    // Wait for save toast to dismiss
+    await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
 
     // Open Add Subscription again and test Cancel button on floating pill
     await tester.tap(addActionFinder);
     await tester.pumpAndSettle();
-    expect(find.text('Add Subscription'), findsOneWidget);
+    expect(find.text('Add subscription'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(find.text('Add Subscription'), findsNothing);
+    expect(find.text('Add subscription'), findsNothing);
     expect(find.text('Subscriptions'), findsOneWidget);
   });
 
@@ -246,7 +257,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap monthly budget card
-    await tester.tap(find.text('Monthly Budget').first);
+    await tester.tap(find.text('Monthly budget').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Set Monthly Budget'), findsOneWidget);
@@ -578,37 +589,39 @@ void main() {
 
     expect(find.text('Spotify Plan'), findsOneWidget);
 
-    // Tap Edit in the floating action bar
-    await tester.tap(find.text('Edit'));
+    // Tap "Price / Cost" to edit price using the modular subpage editor
+    await tester.tap(find.text('Price / Cost'));
     await tester.pumpAndSettle();
 
-    // Verify Edit Subscription screen is open
-    expect(find.text('Edit Subscription'), findsOneWidget);
+    // Verify OneUIFieldEditorScreen is open
+    expect(find.text('Edit price'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
 
-    // Enter new price (Card 2 is index 2)
-    final priceFieldFinder = find.byType(TextField).at(2);
+    // Enter new price
+    final priceFieldFinder = find.byType(TextField);
     await tester.enterText(priceFieldFinder, '19.99');
     await tester.pumpAndSettle();
 
-    // Tap Save
+    // Tap Save on floating stadium pill
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     // Verify detail screen reflects the new price
     expect(find.textContaining('19.99'), findsWidgets);
 
-    // Wait for update SnackBar to dismiss
-    await tester.pump(const Duration(seconds: 4));
+    // Wait for update toast to dismiss
+    await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
 
-    // Tap "Mark as renewed today" under Looking for something else?
-    await tester.ensureVisible(find.text('Mark as renewed today'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Mark as renewed today'));
+    // Tap Renew in the floating action bar at bottom
+    await tester.tap(find.text('Renew'));
     await tester.pumpAndSettle();
 
-    // Verify renewal SnackBar appeared
+    // Verify renewal toast appeared
     expect(find.textContaining('Renewed Spotify'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
   });
 
   test('SubscriptionStore export, renewal, and budget operations', () {
@@ -749,6 +762,8 @@ void main() {
     expect(find.text('Resumed 1 subscription'), findsOneWidget);
     expect(find.byType(OneUISelectionActionBar), findsNothing);
     expect(find.text('Subscriptions'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('Samsung One UI Sort by bottom sheet matching Screenshot 4', (WidgetTester tester) async {
@@ -890,6 +905,20 @@ void main() {
     // Gaps must be identical!
     expect(gap1, equals(gap2));
     expect(gap1, equals(4.0));
+
+    // Verify positions do not shift to the left when pill background appears on scroll
+    final initialMoreDx = tester.getTopLeft(moreFinder).dx;
+    final initialAddDx = tester.getTopLeft(addFinder).dx;
+
+    // Scroll into the collapse zone where pill appears (>190px)
+    await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -250));
+    await tester.pumpAndSettle();
+
+    final scrolledMoreDx = tester.getTopLeft(moreFinder).dx;
+    final scrolledAddDx = tester.getTopLeft(addFinder).dx;
+
+    expect(scrolledMoreDx, equals(initialMoreDx));
+    expect(scrolledAddDx, equals(initialAddDx));
   });
 
   testWidgets('OneUIFloatingMenu displays directly on top of pill with transparent overlay', (WidgetTester tester) async {
@@ -1174,6 +1203,8 @@ void main() {
 
     // Verify detail screen received the updated name
     expect(find.text('Netflix 4K Premium'), findsWidgets);
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('Samsung One UI floating search bar matching reference screenshot', (WidgetTester tester) async {

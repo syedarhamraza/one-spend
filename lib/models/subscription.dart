@@ -99,6 +99,9 @@ class Subscription {
   final bool isPopular;
   final String notes;
   final List<DateTime> paymentHistory;
+  final String accountUrl;
+  final String? logoUrl;
+  final String? brandPresetId;
 
   const Subscription({
     required this.id,
@@ -117,6 +120,9 @@ class Subscription {
     this.isPopular = false,
     this.notes = '',
     this.paymentHistory = const [],
+    this.accountUrl = '',
+    this.logoUrl,
+    this.brandPresetId,
   });
 
   Subscription copyWith({
@@ -136,6 +142,9 @@ class Subscription {
     bool? isPopular,
     String? notes,
     List<DateTime>? paymentHistory,
+    String? accountUrl,
+    String? logoUrl,
+    String? brandPresetId,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -154,6 +163,9 @@ class Subscription {
       isPopular: isPopular ?? this.isPopular,
       notes: notes ?? this.notes,
       paymentHistory: paymentHistory ?? this.paymentHistory,
+      accountUrl: accountUrl ?? this.accountUrl,
+      logoUrl: logoUrl ?? this.logoUrl,
+      brandPresetId: brandPresetId ?? this.brandPresetId,
     );
   }
 
@@ -198,6 +210,9 @@ class Subscription {
       'isPopular': isPopular,
       'notes': notes,
       'paymentHistory': paymentHistory.map((d) => d.toIso8601String()).toList(),
+      'accountUrl': accountUrl,
+      'logoUrl': logoUrl,
+      'brandPresetId': brandPresetId,
     };
   }
 
@@ -240,6 +255,9 @@ class Subscription {
       isPopular: json['isPopular'] as bool? ?? false,
       notes: json['notes'] as String? ?? '',
       paymentHistory: historyList,
+      accountUrl: json['accountUrl'] as String? ?? '',
+      logoUrl: json['logoUrl'] as String?,
+      brandPresetId: json['brandPresetId'] as String?,
     );
   }
 }
@@ -420,6 +438,27 @@ class SubscriptionStore extends ChangeNotifier {
 
   @override
   void notifyListeners() {
+    _invalidateCache();
+    super.notifyListeners();
+  }
+
+  void resetForTesting() {
+    _subscriptions.clear();
+    _subscriptions.addAll([
+      popularCatalog[0], // Netflix
+      popularCatalog[1], // Spotify
+      popularCatalog[2], // ChatGPT Plus
+      popularCatalog[3], // YouTube Premium
+      popularCatalog[4], // iCloud+
+    ]);
+    _monthlyBudget = 150.0;
+    _currency = '\$';
+    _userName = 'Syed Arham Raza';
+    _userEmail = 'syed@onespend.app';
+    _defaultReminderDays = 2;
+    _sortOption = SubscriptionSortOption.renewalAsc;
+    _groupByDate = false;
+    _prePauseStatus.clear();
     _invalidateCache();
     super.notifyListeners();
   }

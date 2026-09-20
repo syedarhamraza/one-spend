@@ -7,6 +7,7 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_toast.dart';
 
 class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
@@ -49,14 +50,7 @@ class AnalyticsScreen extends StatelessWidget {
       confirmLabel: 'Copy Report',
       onConfirm: () {
         Clipboard.setData(ClipboardData(text: reportText));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Analytics report copied to clipboard'),
-            backgroundColor: OneUITheme.surfacePill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
+        OneUIToast.show(context, 'Analytics report copied to clipboard');
       },
     );
   }

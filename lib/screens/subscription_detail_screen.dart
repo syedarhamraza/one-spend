@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
-import '../widgets/one_ui_alternative_options_card.dart';
+import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_action_bar.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
-import 'add_subscription_screen.dart';
+import '../widgets/one_ui_icon_picker_modal.dart';
+import '../widgets/one_ui_toast.dart';
 import 'one_ui_field_editor_screen.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
@@ -44,19 +46,43 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     });
   }
 
-  Future<void> _editSubscription() async {
+  Future<void> _openUrl(String rawUrl) async {
     HapticFeedback.lightImpact();
-    final updated = await Navigator.push<Subscription>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddSubscriptionScreen(subscriptionToEdit: _sub),
-      ),
-    );
-    if (updated != null && mounted) {
-      setState(() {
-        _sub = updated;
-      });
+    try {
+      String target = rawUrl.trim();
+      if (!target.startsWith('http://') && !target.startsWith('https://')) {
+        target = 'https://$target';
+      }
+      final uri = Uri.parse(target);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) OneUIToast.show(context, 'Could not open website');
+      }
+    } catch (_) {
+      if (mounted) OneUIToast.show(context, 'Invalid website URL');
     }
+  }
+
+  Future<void> _pickBrandIcon() async {
+    final result = await OneUIIconPickerModal.show(
+      context,
+      currentColor: _sub.brandColor,
+      currentIcon: _sub.iconData,
+      currentLogoUrl: _sub.logoUrl,
+      currentPresetId: _sub.brandPresetId,
+    );
+    if (!mounted || result == null) return;
+    setState(() {
+      _sub = _sub.copyWith(
+        brandColor: result.brandColor,
+        iconData: result.iconData,
+        logoUrl: result.logoUrl,
+        brandPresetId: result.brandPresetId,
+      );
+    });
+    SubscriptionStore.instance.updateSubscription(_sub);
+    OneUIToast.show(context, 'Updated brand icon');
   }
 
   Future<void> _editField<T>({
@@ -83,15 +109,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
       onApply(result);
       SubscriptionStore.instance.updateSubscription(_sub);
       _syncFromStore();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$title updated'),
-          backgroundColor: OneUITheme.surfacePill,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          duration: const Duration(milliseconds: 1500),
-        ),
-      );
+      OneUIToast.show(context, '$title updated');
     }
   }
 
@@ -100,14 +118,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     SubscriptionStore.instance.renewSubscription(_sub.id);
     _syncFromStore();
     final dateFormat = DateFormat('MMM dd, yyyy');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Renewed ${_sub.name}! Next renewal: ${dateFormat.format(_sub.nextBillingDate)}'),
-        backgroundColor: OneUITheme.surfacePill,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-    );
+    OneUIToast.show(context, 'Renewed ${_sub.name}! Next: ${dateFormat.format(_sub.nextBillingDate)}');
   }
 
   void _togglePause() {
@@ -115,15 +126,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     SubscriptionStore.instance.togglePauseSubscription(_sub.id);
     _syncFromStore();
     final isPaused = _sub.status == SubscriptionStatus.paused;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(isPaused ? '${_sub.name} paused' : '${_sub.name} active'),
-        backgroundColor: OneUITheme.surfacePill,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        duration: const Duration(milliseconds: 1500),
-      ),
-    );
+    OneUIToast.show(context, isPaused ? '${_sub.name} paused' : '${_sub.name} active');
   }
 
   Future<void> _shareSubscription() async {
@@ -139,7 +142,7 @@ ${_sub.name} Subscription Details:
 • Payment Method: ${_sub.paymentMethod}
 • Monthly Equivalent: ${_sub.currency}${_sub.monthlyCost.toStringAsFixed(2)}/mo
 • Annual Equivalent: ${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)}/yr
-${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpend
+${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpend
 '''.trim();
 
     try {
@@ -153,14 +156,7 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
       // Fallback for environments where share sheet is unsupported
       await Clipboard.setData(ClipboardData(text: summaryText));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Details copied to clipboard'),
-            backgroundColor: OneUITheme.surfacePill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
+        OneUIToast.show(context, 'Details copied to clipboard');
       }
     }
   }
@@ -175,18 +171,10 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
       confirmLabel: 'Delete',
       onConfirm: () {
         HapticFeedback.mediumImpact();
-        final messenger = ScaffoldMessenger.of(context);
         final name = _sub.name;
         SubscriptionStore.instance.removeSubscription(_sub.id);
         Navigator.pop(context);
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('$name removed'),
-            backgroundColor: OneUITheme.surfacePill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
+        OneUIToast.show(context, '$name removed');
       },
     );
   }
@@ -245,13 +233,6 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
                         HapticFeedback.lightImpact();
                         Navigator.pop(context);
                       },
-                      actions: [
-                        OneUIHeaderAction(
-                          icon: Icons.share_rounded,
-                          tooltip: 'Share subscription',
-                          onTap: _shareSubscription,
-                        ),
-                      ],
                     ),
                   ),
 
@@ -277,23 +258,37 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
                               children: [
                                 Row(
                                   children: [
-                                    // Brand badge icon with subtle rim
-                                    Container(
-                                      width: 58,
-                                      height: 58,
-                                      decoration: BoxDecoration(
-                                        color: _sub.brandColor,
-                                        borderRadius: BorderRadius.circular(18),
-                                        border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.15),
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Icon(
-                                        _sub.iconData,
-                                        color: Colors.white,
-                                        size: 30,
+                                    // Interactive Brand badge icon with squircle & icon picker
+                                    GestureDetector(
+                                      onTap: _pickBrandIcon,
+                                      child: Stack(
+                                        children: [
+                                          OneUIBrandIcon(
+                                            subscription: _sub,
+                                            size: 58,
+                                            borderRadius: 18,
+                                          ),
+                                          Positioned(
+                                            right: 0,
+                                            bottom: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(3),
+                                              decoration: BoxDecoration(
+                                                color: OneUITheme.surfaceCardHighlight,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white.withValues(alpha: 0.2),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: const Icon(
+                                                Icons.edit_rounded,
+                                                size: 11,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     const SizedBox(width: 16),
@@ -488,10 +483,27 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
                                   ),
                                 ),
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.calculate_outlined, OneUITheme.accentAmber),
-                                  title: 'Cost breakdown',
-                                  subtitle: '${_sub.currency}${_sub.monthlyCost.toStringAsFixed(2)} / month • ${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)} / year',
-                                  subtitleColor: OneUITheme.textSecondary,
+                                  leading: _buildCategoryIconBadge(Icons.link_rounded, OneUITheme.accentBlue),
+                                  title: 'Account / Website URL',
+                                  subtitle: _sub.accountUrl.isNotEmpty
+                                      ? _sub.accountUrl
+                                      : 'Tap to add website or account login link',
+                                  subtitleColor: _sub.accountUrl.isNotEmpty
+                                      ? OneUITheme.accentBlue
+                                      : OneUITheme.textSecondary.withValues(alpha: 0.6),
+                                  trailing: _sub.accountUrl.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.open_in_new_rounded, size: 18, color: OneUITheme.accentBlue),
+                                          onPressed: () => _openUrl(_sub.accountUrl),
+                                        )
+                                      : const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                                  onTap: () => _editField<String>(
+                                    title: 'Edit account URL',
+                                    type: FieldEditorType.text,
+                                    initialValue: _sub.accountUrl,
+                                    hintText: 'https://example.com/account',
+                                    onApply: (val) => _sub = _sub.copyWith(accountUrl: val),
+                                  ),
                                 ),
                               ],
                             ),
@@ -579,7 +591,7 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
                                       : 'No past renewals logged',
                                   subtitle: _sub.paymentHistory.isNotEmpty
                                       ? '$recordedPayments recorded payments (${_sub.currency}${totalPaid.toStringAsFixed(2)} total)'
-                                      : 'Tap below to log today\'s renewal',
+                                      : 'Tap button to log renewal',
                                   subtitleColor: OneUITheme.textSecondary,
                                   trailing: TextButton(
                                     onPressed: _markRenewed,
@@ -601,23 +613,6 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
                               ],
                             ),
                           ),
-
-                          const SizedBox(height: 12),
-
-                          // Looking for something else?
-                          OneUIAlternativeOptionsCard(
-                            title: 'Looking for something else?',
-                            actions: [
-                              OneUIAlternativeAction(
-                                title: 'Mark as renewed today',
-                                onTap: _markRenewed,
-                              ),
-                              OneUIAlternativeAction(
-                                title: isPaused ? 'Resume subscription' : 'Pause subscription',
-                                onTap: _togglePause,
-                              ),
-                            ],
-                          ),
                         ],
                       ),
                     ),
@@ -625,7 +620,7 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
                 ],
               ),
 
-              // Clean Floating Action Bar at the Bottom (Edit, Share, Delete)
+              // One UI Action Bar at the Bottom (Renew, Pause/Resume, Share, Delete)
               Positioned(
                 left: 0,
                 right: 0,
@@ -635,9 +630,14 @@ ${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpen
                   child: OneUIFloatingActionBar(
                     items: [
                       OneUIFloatingActionBarItem(
-                        icon: Icons.edit_outlined,
-                        label: 'Edit',
-                        onTap: _editSubscription,
+                        icon: Icons.refresh_rounded,
+                        label: 'Renew',
+                        onTap: _markRenewed,
+                      ),
+                      OneUIFloatingActionBarItem(
+                        icon: isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                        label: isPaused ? 'Resume' : 'Pause',
+                        onTap: _togglePause,
                       ),
                       OneUIFloatingActionBarItem(
                         icon: Icons.share_outlined,

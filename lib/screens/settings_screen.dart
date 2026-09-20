@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
-import '../widgets/one_ui_alternative_options_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_toast.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -290,14 +290,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       confirmLabel: 'Copy JSON',
       onConfirm: () {
         Clipboard.setData(ClipboardData(text: jsonStr));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('JSON copied to clipboard'),
-            backgroundColor: OneUITheme.surfacePill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
       },
     );
   }
@@ -311,14 +303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       confirmLabel: 'Clear All',
       onConfirm: () {
         store.clearAllData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('All subscriptions cleared'),
-            backgroundColor: OneUITheme.surfacePill,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-        );
+        OneUIToast.show(context, 'All subscriptions cleared');
       },
     );
   }
@@ -508,6 +493,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             OneUIEffectsController.instance.card3dEffect = !isCards3d;
                           },
                         ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.refresh_rounded, OneUITheme.accentOrange),
+                          title: 'Reset appearance effects',
+                          subtitle: 'Restore default 3D effects across the app',
+                          onTap: () {
+                            OneUIEffectsController.instance.navbar3dEffect = true;
+                            OneUIEffectsController.instance.floating3dEffect = true;
+                            OneUIEffectsController.instance.card3dEffect = true;
+                            OneUIToast.show(context, 'Reset appearance to default 3D effects');
+                          },
+                        ),
                       ].where(itemMatches).toList();
 
                       final dataItems = <OneUIGroupItem>[
@@ -523,14 +519,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           subtitle: 'Reload default popular catalog presets',
                           onTap: () {
                             store.restoreDefaultCatalog();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Restored default catalog subscriptions'),
-                                backgroundColor: OneUITheme.surfacePill,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              ),
-                            );
+                            OneUIToast.show(context, 'Restored default catalog subscriptions');
                           },
                         ),
                         OneUIGroupItem(
@@ -564,6 +553,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 Text('A feature-rich subscription and spend manager designed to match Samsung One UI 9 aesthetics and ergonomics.'),
                               ],
                             );
+                          },
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.help_outline_rounded, OneUITheme.accentPurple),
+                          title: 'Help & feedback',
+                          subtitle: 'Contact support at help@onespend.app',
+                          onTap: () {
+                            OneUIToast.show(context, 'Contact support at help@onespend.app');
                           },
                         ),
                       ].where(itemMatches).toList();
@@ -676,43 +673,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
 
                               const SizedBox(height: 8),
-
-                              // "Looking for something else?" Card
-                              if (_searchQuery.isEmpty)
-                                OneUIAlternativeOptionsCard(
-                                  title: 'Looking for something else?',
-                                  actions: [
-                                    OneUIAlternativeAction(
-                                      title: 'Reset appearance settings',
-                                      onTap: () {
-                                        OneUIEffectsController.instance.navbar3dEffect = true;
-                                        OneUIEffectsController.instance.floating3dEffect = true;
-                                        OneUIEffectsController.instance.card3dEffect = true;
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: const Text('Reset appearance to default 3D effects'),
-                                            backgroundColor: OneUITheme.surfacePill,
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                    OneUIAlternativeAction(
-                                      title: 'Help & feedback',
-                                      onTap: () {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: const Text('Contact support at help@onespend.app'),
-                                            backgroundColor: OneUITheme.surfacePill,
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
 
                               // Empty search state
                               if (!hasAnyResult)
