@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'payment_method.dart';
+export 'payment_method.dart';
 
 enum BillingCycle {
   weekly('Weekly', 52),
@@ -95,6 +97,7 @@ class Subscription {
   final DateTime nextBillingDate;
   final SubscriptionStatus status;
   final String paymentMethod;
+  final String? paymentMethodId;
   final int reminderDays;
   final bool isPopular;
   final String notes;
@@ -102,6 +105,7 @@ class Subscription {
   final String accountUrl;
   final String? logoUrl;
   final String? brandPresetId;
+  final bool autoRenew;
 
   const Subscription({
     required this.id,
@@ -116,6 +120,7 @@ class Subscription {
     required this.nextBillingDate,
     this.status = SubscriptionStatus.active,
     this.paymentMethod = 'Samsung Pay •••• 9124',
+    this.paymentMethodId,
     this.reminderDays = 2,
     this.isPopular = false,
     this.notes = '',
@@ -123,6 +128,7 @@ class Subscription {
     this.accountUrl = '',
     this.logoUrl,
     this.brandPresetId,
+    this.autoRenew = true,
   });
 
   Subscription copyWith({
@@ -138,6 +144,8 @@ class Subscription {
     DateTime? nextBillingDate,
     SubscriptionStatus? status,
     String? paymentMethod,
+    String? paymentMethodId,
+    bool clearPaymentMethodId = false,
     int? reminderDays,
     bool? isPopular,
     String? notes,
@@ -145,6 +153,7 @@ class Subscription {
     String? accountUrl,
     String? logoUrl,
     String? brandPresetId,
+    bool? autoRenew,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -159,6 +168,7 @@ class Subscription {
       nextBillingDate: nextBillingDate ?? this.nextBillingDate,
       status: status ?? this.status,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentMethodId: clearPaymentMethodId ? null : (paymentMethodId ?? this.paymentMethodId),
       reminderDays: reminderDays ?? this.reminderDays,
       isPopular: isPopular ?? this.isPopular,
       notes: notes ?? this.notes,
@@ -166,6 +176,7 @@ class Subscription {
       accountUrl: accountUrl ?? this.accountUrl,
       logoUrl: logoUrl ?? this.logoUrl,
       brandPresetId: brandPresetId ?? this.brandPresetId,
+      autoRenew: autoRenew ?? this.autoRenew,
     );
   }
 
@@ -206,6 +217,7 @@ class Subscription {
       'nextBillingDate': nextBillingDate.toIso8601String(),
       'status': status.name,
       'paymentMethod': paymentMethod,
+      'paymentMethodId': paymentMethodId,
       'reminderDays': reminderDays,
       'isPopular': isPopular,
       'notes': notes,
@@ -213,7 +225,69 @@ class Subscription {
       'accountUrl': accountUrl,
       'logoUrl': logoUrl,
       'brandPresetId': brandPresetId,
+      'autoRenew': autoRenew,
     };
+  }
+
+  static const List<IconData> _supportedIcons = [
+    Icons.movie_filter_rounded,
+    Icons.movie_rounded,
+    Icons.tv_rounded,
+    Icons.play_arrow_rounded,
+    Icons.music_note_rounded,
+    Icons.album_rounded,
+    Icons.headphones_rounded,
+    Icons.auto_awesome_rounded,
+    Icons.psychology_rounded,
+    Icons.terminal_rounded,
+    Icons.code_rounded,
+    Icons.cloud_rounded,
+    Icons.storage_rounded,
+    Icons.sports_esports_rounded,
+    Icons.videogame_asset_rounded,
+    Icons.brush_rounded,
+    Icons.palette_rounded,
+    Icons.fitness_center_rounded,
+    Icons.shopping_bag_rounded,
+    Icons.shopping_cart_rounded,
+    Icons.newspaper_rounded,
+    Icons.school_rounded,
+    Icons.wifi_rounded,
+    Icons.shield_rounded,
+    Icons.attach_money_rounded,
+    Icons.subscriptions_rounded,
+    Icons.star_rounded,
+    Icons.build_rounded,
+    Icons.account_balance_wallet_rounded,
+    Icons.work_rounded,
+    Icons.credit_card_rounded,
+    Icons.payment_rounded,
+    Icons.phone_android_rounded,
+    Icons.laptop_rounded,
+    Icons.book_rounded,
+    Icons.pets_rounded,
+    Icons.home_rounded,
+    Icons.local_cafe_rounded,
+    Icons.restaurant_rounded,
+    Icons.directions_car_rounded,
+    Icons.flight_rounded,
+    Icons.lock_rounded,
+    Icons.security_rounded,
+    Icons.email_rounded,
+    Icons.chat_rounded,
+    Icons.web_rounded,
+    Icons.apps_rounded,
+  ];
+
+  static final Map<int, IconData> _knownIcons = {
+    for (final icon in _supportedIcons) icon.codePoint: icon,
+  };
+
+  static IconData resolveIconData(int? codePoint, SubscriptionCategory category) {
+    if (codePoint != null && _knownIcons.containsKey(codePoint)) {
+      return _knownIcons[codePoint]!;
+    }
+    return category.icon;
   }
 
   static String generateUniqueId([String prefix = 'sub']) {
@@ -229,13 +303,8 @@ class Subscription {
         [];
 
     final colorVal = json['brandColor'] as int? ?? 0xFF5390F5;
-    final codePoint = json['iconCodePoint'] as int? ?? Icons.subscriptions_rounded.codePoint;
-    final iconFontFamily = json['iconFontFamily'] as String? ?? 'MaterialIcons';
-
     final category = SubscriptionCategory.fromString(json['category'] as String?);
-    // Use stored codePoint and fontFamily directly
-    // ignore: non_const_argument_for_const_parameter
-    final IconData resolvedIcon = IconData(codePoint, fontFamily: iconFontFamily, matchTextDirection: false);
+    final resolvedIcon = resolveIconData(json['iconCodePoint'] as int?, category);
 
     return Subscription(
       id: json['id'] as String? ?? generateUniqueId('sub'),
@@ -251,6 +320,7 @@ class Subscription {
           DateTime.now().add(const Duration(days: 30)),
       status: SubscriptionStatus.fromString(json['status'] as String?),
       paymentMethod: json['paymentMethod'] as String? ?? 'Samsung Pay (Visa •••• 9124)',
+      paymentMethodId: json['paymentMethodId'] as String?,
       reminderDays: json['reminderDays'] as int? ?? 2,
       isPopular: json['isPopular'] as bool? ?? false,
       notes: json['notes'] as String? ?? '',
@@ -258,6 +328,7 @@ class Subscription {
       accountUrl: json['accountUrl'] as String? ?? '',
       logoUrl: json['logoUrl'] as String?,
       brandPresetId: json['brandPresetId'] as String?,
+      autoRenew: json['autoRenew'] as bool? ?? true,
     );
   }
 }
@@ -275,6 +346,7 @@ final List<Subscription> popularCatalog = [
     iconData: Icons.tv_rounded,
     nextBillingDate: DateTime.now().add(const Duration(days: 4)),
     paymentMethod: 'Samsung Pay (Visa •••• 9124)',
+    paymentMethodId: 'pay_samsung_visa',
     reminderDays: 2,
     isPopular: true,
     notes: 'Family 4K plan shared with household',
@@ -290,6 +362,7 @@ final List<Subscription> popularCatalog = [
     iconData: Icons.music_note_rounded,
     nextBillingDate: DateTime.now().add(const Duration(days: 9)),
     paymentMethod: 'Mastercard •••• 4242',
+    paymentMethodId: 'pay_mastercard_4242',
     reminderDays: 3,
     isPopular: true,
   ),
@@ -303,7 +376,8 @@ final List<Subscription> popularCatalog = [
     brandColor: const Color(0xFF10A37F),
     iconData: Icons.psychology_rounded,
     nextBillingDate: DateTime.now().add(const Duration(days: 14)),
-    paymentMethod: 'Samsung Pay (Amex •••• 1004)',
+    paymentMethod: 'Samsung Pay (Visa •••• 9124)',
+    paymentMethodId: 'pay_samsung_visa',
     reminderDays: 1,
     isPopular: true,
   ),
@@ -318,6 +392,7 @@ final List<Subscription> popularCatalog = [
     iconData: Icons.play_arrow_rounded,
     nextBillingDate: DateTime.now().add(const Duration(days: 18)),
     paymentMethod: 'Google Pay •••• 7731',
+    paymentMethodId: 'pay_google_7731',
     reminderDays: 2,
     isPopular: true,
   ),
@@ -331,7 +406,8 @@ final List<Subscription> popularCatalog = [
     brandColor: const Color(0xFF34AADC),
     iconData: Icons.cloud_rounded,
     nextBillingDate: DateTime.now().add(const Duration(days: 22)),
-    paymentMethod: 'Apple Account Balance',
+    paymentMethod: 'Samsung Pay (Visa •••• 9124)',
+    paymentMethodId: 'pay_samsung_visa',
     reminderDays: 2,
     isPopular: true,
   ),
@@ -345,7 +421,8 @@ final List<Subscription> popularCatalog = [
     brandColor: const Color(0xFFFF4B4B),
     iconData: Icons.brush_rounded,
     nextBillingDate: DateTime.now().add(const Duration(days: 27)),
-    paymentMethod: 'Visa •••• 8812',
+    paymentMethod: 'Personal Meezan •••• 5519',
+    paymentMethodId: 'pay_meezan_5519',
     reminderDays: 3,
     isPopular: true,
   ),
@@ -360,6 +437,7 @@ final List<Subscription> popularCatalog = [
     iconData: Icons.terminal_rounded,
     nextBillingDate: DateTime.now().add(const Duration(days: 11)),
     paymentMethod: 'PayPal • syed@onespend.app',
+    paymentMethodId: 'pay_paypal_main',
     reminderDays: 2,
     isPopular: true,
   ),
@@ -392,6 +470,7 @@ class SubscriptionStore extends ChangeNotifier {
   static const String _storageKeyDefaultReminder = 'onespend_default_reminder';
   static const String _storageKeySortOption = 'onespend_sort_option';
   static const String _storageKeyGroupByDate = 'onespend_group_by_date';
+  static const String _storageKeyPaymentMethods = 'onespend_payment_methods';
 
   SubscriptionStore._internal() {
     _subscriptions.addAll([
@@ -401,10 +480,12 @@ class SubscriptionStore extends ChangeNotifier {
       popularCatalog[3], // YouTube Premium
       popularCatalog[4], // iCloud+
     ]);
+    _paymentMethods.addAll(defaultPaymentMethods);
     _loadFromStorage();
   }
 
   final List<Subscription> _subscriptions = [];
+  final List<PaymentMethod> _paymentMethods = [];
   double _monthlyBudget = 150.0;
   String _currency = '\$';
   String _userName = 'Syed Arham Raza';
@@ -451,6 +532,8 @@ class SubscriptionStore extends ChangeNotifier {
       popularCatalog[3], // YouTube Premium
       popularCatalog[4], // iCloud+
     ]);
+    _paymentMethods.clear();
+    _paymentMethods.addAll(defaultPaymentMethods);
     _monthlyBudget = 150.0;
     _currency = '\$';
     _userName = 'Syed Arham Raza';
@@ -559,6 +642,15 @@ class SubscriptionStore extends ChangeNotifier {
         }
       }
 
+      final methodsJson = prefs.getString(_storageKeyPaymentMethods);
+      if (methodsJson != null && methodsJson.isNotEmpty) {
+        final List<dynamic> decoded = jsonDecode(methodsJson) as List<dynamic>;
+        _paymentMethods.clear();
+        for (var item in decoded) {
+          _paymentMethods.add(PaymentMethod.fromJson(item as Map<String, dynamic>));
+        }
+      }
+
       _monthlyBudget = prefs.getDouble(_storageKeyBudget) ?? 150.0;
       _currency = prefs.getString(_storageKeyCurrency) ?? '\$';
       _userName = prefs.getString(_storageKeyUserName) ?? 'Syed Arham Raza';
@@ -571,6 +663,7 @@ class SubscriptionStore extends ChangeNotifier {
       _groupByDate = prefs.getBool(_storageKeyGroupByDate) ?? false;
 
       _isLoaded = true;
+      checkAndProcessAutoRenewals();
       notifyListeners();
     } catch (e) {
       debugPrint('OneSpend: Failed to load data from storage: $e');
@@ -584,6 +677,8 @@ class SubscriptionStore extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final subsJson = jsonEncode(_subscriptions.map((s) => s.toJson()).toList());
       await prefs.setString(_storageKeySubs, subsJson);
+      final methodsJson = jsonEncode(_paymentMethods.map((m) => m.toJson()).toList());
+      await prefs.setString(_storageKeyPaymentMethods, methodsJson);
       await prefs.setDouble(_storageKeyBudget, _monthlyBudget);
       await prefs.setString(_storageKeyCurrency, _currency);
       await prefs.setString(_storageKeyUserName, _userName);
@@ -594,6 +689,110 @@ class SubscriptionStore extends ChangeNotifier {
     } catch (e) {
       debugPrint('OneSpend: Failed to save data to storage: $e');
     }
+  }
+
+  // --- Payment Methods ---
+  List<PaymentMethod> get paymentMethods => List.unmodifiable(_paymentMethods);
+
+  PaymentMethod? get defaultPaymentMethod {
+    for (final m in _paymentMethods) {
+      if (m.isDefault) return m;
+    }
+    return _paymentMethods.isNotEmpty ? _paymentMethods.first : null;
+  }
+
+  PaymentMethod? getPaymentMethod(String? id) {
+    if (id == null) return null;
+    for (final m in _paymentMethods) {
+      if (m.id == id) return m;
+    }
+    return null;
+  }
+
+  void addPaymentMethod(PaymentMethod method) {
+    if (method.isDefault) {
+      for (int i = 0; i < _paymentMethods.length; i++) {
+        if (_paymentMethods[i].isDefault) {
+          _paymentMethods[i] = _paymentMethods[i].copyWith(isDefault: false);
+        }
+      }
+    }
+    _paymentMethods.add(method);
+    notifyListeners();
+    _saveToStorage();
+  }
+
+  void updatePaymentMethod(PaymentMethod method) {
+    final index = _paymentMethods.indexWhere((m) => m.id == method.id);
+    if (index != -1) {
+      if (method.isDefault) {
+        for (int i = 0; i < _paymentMethods.length; i++) {
+          if (_paymentMethods[i].id != method.id && _paymentMethods[i].isDefault) {
+            _paymentMethods[i] = _paymentMethods[i].copyWith(isDefault: false);
+          }
+        }
+      }
+      _paymentMethods[index] = method;
+      notifyListeners();
+      _saveToStorage();
+    }
+  }
+
+  void deletePaymentMethod(String methodId, {String? replacementMethodId}) {
+    // If replacement provided, migrate linked subscriptions
+    if (replacementMethodId != null && replacementMethodId.isNotEmpty) {
+      final replacement = getPaymentMethod(replacementMethodId);
+      final replacementName = replacement?.displayName ?? '';
+      for (int i = 0; i < _subscriptions.length; i++) {
+        if (_subscriptions[i].paymentMethodId == methodId) {
+          _subscriptions[i] = _subscriptions[i].copyWith(
+            paymentMethodId: replacementMethodId,
+            paymentMethod: replacementName.isNotEmpty ? replacementName : _subscriptions[i].paymentMethod,
+          );
+        }
+      }
+    } else {
+      // Non-forceful delete anyway: unassign payment method from linked subscriptions
+      for (int i = 0; i < _subscriptions.length; i++) {
+        if (_subscriptions[i].paymentMethodId == methodId) {
+          _subscriptions[i] = _subscriptions[i].copyWith(
+            clearPaymentMethodId: true,
+            paymentMethod: '',
+          );
+        }
+      }
+    }
+
+    _paymentMethods.removeWhere((m) => m.id == methodId);
+    notifyListeners();
+    _saveToStorage();
+  }
+
+  int getLinkedSubscriptionCount(String methodId) {
+    return _subscriptions.where((s) => s.paymentMethodId == methodId).length;
+  }
+
+  List<Subscription> getSubscriptionsForMethod(String methodId) {
+    return _subscriptions.where((s) => s.paymentMethodId == methodId).toList();
+  }
+
+  List<PaymentMethod> get expiringPaymentMethods {
+    return _paymentMethods.where((m) => m.isExpiringSoon || m.isExpired).toList();
+  }
+
+  void reassignSubscriptions({required String fromMethodId, required String toMethodId}) {
+    final replacement = getPaymentMethod(toMethodId);
+    final replacementName = replacement?.displayName ?? '';
+    for (int i = 0; i < _subscriptions.length; i++) {
+      if (_subscriptions[i].paymentMethodId == fromMethodId) {
+        _subscriptions[i] = _subscriptions[i].copyWith(
+          paymentMethodId: toMethodId,
+          paymentMethod: replacementName.isNotEmpty ? replacementName : _subscriptions[i].paymentMethod,
+        );
+      }
+    }
+    notifyListeners();
+    _saveToStorage();
   }
 
   // --- Actions ---
@@ -695,6 +894,29 @@ class SubscriptionStore extends ChangeNotifier {
         nextBillingDate: newDate,
         paymentHistory: updatedHistory,
       );
+      notifyListeners();
+      _saveToStorage();
+    }
+  }
+
+  /// Automatically rolls past due dates forward and records payment for subscriptions with autoRenew enabled
+  void checkAndProcessAutoRenewals() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    bool changed = false;
+
+    for (int i = 0; i < _subscriptions.length; i++) {
+      final sub = _subscriptions[i];
+      if (sub.autoRenew && sub.status != SubscriptionStatus.paused) {
+        final target = DateTime(sub.nextBillingDate.year, sub.nextBillingDate.month, sub.nextBillingDate.day);
+        if (target.isBefore(today)) {
+          renewSubscription(sub.id);
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
       notifyListeners();
       _saveToStorage();
     }

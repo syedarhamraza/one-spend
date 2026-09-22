@@ -29,11 +29,12 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
       builder: (context, _) {
         final is3d = OneUIEffectsController.instance.floating3dEffect;
 
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: is3d ? OneUIEffectsController.instance.floatingShadow : null,
-          ),
+        return Center(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: is3d ? OneUIEffectsController.instance.floatingShadow : null,
+            ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: BackdropFilter(
@@ -121,6 +122,7 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
             ),
           ),
         );

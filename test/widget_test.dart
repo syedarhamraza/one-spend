@@ -13,6 +13,8 @@ import 'package:onespend/widgets/one_ui_filter_bottom_sheet.dart';
 import 'package:onespend/widgets/one_ui_floating_menu.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
 import 'package:onespend/widgets/one_ui_toast.dart';
+import 'package:onespend/screens/popular_presets_screen.dart';
+import 'package:onespend/screens/reminder_picker_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -105,11 +107,16 @@ void main() {
     expect(find.text('Add subscription'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Save'), findsOneWidget);
-    expect(find.text('Popular Presets'), findsOneWidget);
+    expect(find.text('Choose from popular presets'), findsOneWidget);
     expect(find.text('Service name'), findsOneWidget);
     expect(find.text('Price / Cost'), findsOneWidget);
 
-    // Tap a popular subscription from carousel (e.g. Spotify)
+    // Tap popular presets option to open PopularPresetsScreen subpage
+    await tester.tap(find.text('Choose from popular presets'));
+    await tester.pumpAndSettle();
+
+    // Verify Popular Presets subpage
+    expect(find.text('Popular services'), findsOneWidget);
     await tester.tap(find.text('Spotify'));
     await tester.pumpAndSettle();
 
@@ -719,7 +726,7 @@ void main() {
     expect(find.byType(OneUISelectionActionBar), findsNothing);
     expect(find.text('Subscriptions'), findsOneWidget);
     // Verify subscription subtitle is restored
-    expect(find.text('Entertainment • Monthly'), findsWidgets);
+    expect(find.textContaining('Entertainment • Monthly'), findsWidgets);
 
     // Test entering selection mode via long-press on a subscription
     await tester.longPress(find.text('Spotify').first);
@@ -1262,6 +1269,154 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
     expect(find.text('Subscriptions'), findsOneWidget);
+  });
+
+  testWidgets('Payment Methods Management, Non-Forceful Deletion & Missing Card Status', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Navigate to Menu -> Payment methods
+    await tester.tap(find.text('Menu'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment methods'), findsOneWidget);
+    await tester.ensureVisible(find.text('Payment methods'));
+    await tester.tap(find.text('Payment methods'));
+    await tester.pumpAndSettle();
+
+    // Verify Payment methods management screen
+    expect(find.text('Payment methods'), findsWidgets);
+    expect(find.text('Primary Samsung Pay'), findsOneWidget);
+    expect(find.text('Personal Meezan Debit'), findsOneWidget);
+    expect(find.text('Standard Chartered World'), findsOneWidget);
+
+    // Verify linked subscriptions count badge exists (e.g. linked subscription)
+    expect(find.textContaining('linked subscription'), findsWidgets);
+
+    // Open options menu on a linked card (Primary Samsung Pay has subscriptions linked)
+    final moreButtons = find.byIcon(Icons.more_vert_rounded);
+    expect(moreButtons, findsWidgets);
+    await tester.tap(moreButtons.first);
+    await tester.pumpAndSettle();
+
+    // Tap Delete card in popup menu
+    expect(find.text('Delete card'), findsOneWidget);
+    await tester.tap(find.text('Delete card'));
+    await tester.pumpAndSettle();
+
+    // Verify Non-Forceful deletion dialog opens with options
+    expect(find.text('Card In Use'), findsOneWidget);
+    expect(find.text('Delete anyway'), findsOneWidget);
+
+    // Tap "Delete anyway" (non-forceful deletion)
+    await tester.tap(find.text('Delete anyway'));
+    await tester.pumpAndSettle();
+
+    // Verify card is removed
+    expect(find.text('Primary Samsung Pay'), findsNothing);
+
+    // Go back to Spend tab
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Spend'));
+    await tester.pumpAndSettle();
+
+    // Subscriptions previously tied to that card now display 'No card'
+    expect(find.text('No card'), findsWidgets);
+  });
+
+  testWidgets('Popular Presets subpage filtering and search', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PopularPresetsScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify header and tap search action to reveal floating search pill
+    expect(find.text('Popular services'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.search_rounded));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Search presets'), findsWidgets);
+
+    // Type query to filter
+    await tester.enterText(find.byType(TextField), 'Figma');
+    await tester.pumpAndSettle();
+
+    // Verify Figma item is visible in OneUIGroupCard and unrelated presets are filtered
+    expect(
+      find.descendant(of: find.byType(OneUIGroupCard), matching: find.text('Figma')),
+      findsOneWidget,
+    );
+    expect(find.text('Netflix'), findsNothing);
+  });
+
+  testWidgets('Reminder Picker subpage lead time selection', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    int? selectedResult;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () async {
+                selectedResult = await ReminderPickerScreen.open(context, initialDays: 2);
+              },
+              child: const Text('Open Reminder Picker'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Reminder Picker'));
+    await tester.pumpAndSettle();
+
+    // Verify header and preset options
+    expect(find.text('Reminder notification'), findsOneWidget);
+    expect(find.text('3 days before'), findsOneWidget);
+
+    // Select 3 days before
+    await tester.tap(find.text('3 days before'));
+    await tester.pumpAndSettle();
+
+    // Save using floating pill
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // Verify result returned was 3
+    expect(selectedResult, 3);
+  });
+
+  testWidgets('Auto-record renewals advances billing date when past due', (WidgetTester tester) async {
+    final store = SubscriptionStore.instance;
+    store.resetForTesting();
+
+    // Netflix is by default active and autoRenew is true
+    final netflix = store.subscriptions.firstWhere((s) => s.name == 'Netflix');
+    expect(netflix.autoRenew, isTrue);
+
+    // Set billing date to yesterday
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    store.updateSubscription(netflix.copyWith(nextBillingDate: yesterday));
+
+    // Running checkAndProcessAutoRenewals should advance Netflix to next month and add to paymentHistory
+    store.checkAndProcessAutoRenewals();
+    final updatedNetflix = store.subscriptions.firstWhere((s) => s.name == 'Netflix');
+    expect(updatedNetflix.nextBillingDate.isAfter(DateTime.now()), isTrue);
+    expect(updatedNetflix.paymentHistory.isNotEmpty, isTrue);
   });
 }
 

@@ -698,6 +698,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     final isSelected = _selectedIds.contains(sub.id);
     final days = sub.daysRemaining;
     final isPaused = sub.status == SubscriptionStatus.paused;
+    final store = SubscriptionStore.instance;
+    final method = store.getPaymentMethod(sub.paymentMethodId);
+    final hasNoCard = sub.paymentMethodId == null || method == null;
+    final isCardExpiring = method != null && (method.isExpiringSoon || method.isExpired);
 
     Color badgeColor;
     String badgeText;
@@ -724,6 +728,68 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       badgeText = 'In $days days';
     }
 
+    final subtitleText = hasNoCard
+        ? '${sub.category.label} • ${sub.billingCycle.label}'
+        : '${sub.category.label} • ${sub.billingCycle.label} • ${method.nickname}';
+
+    Widget? customSubtitle;
+    if (!_isSelectionMode) {
+      customSubtitle = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              subtitleText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.normal,
+                color: OneUITheme.textSecondary,
+              ),
+            ),
+          ),
+          if (hasNoCard) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: OneUITheme.accentRed.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: const Text(
+                'No card',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: OneUITheme.accentRed,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ),
+          ] else if (isCardExpiring) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: OneUITheme.accentAmber.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Text(
+                method.isExpired ? 'Card expired' : 'Card expiring soon',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: OneUITheme.accentAmber,
+                  letterSpacing: -0.1,
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     return OneUIGroupItem(
       leading: Row(
         mainAxisSize: MainAxisSize.min,
@@ -746,7 +812,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         ],
       ),
       title: sub.name,
-      subtitle: _isSelectionMode ? null : '${sub.category.label} • ${sub.billingCycle.label}',
+      customSubtitle: customSubtitle,
       subtitleColor: OneUITheme.textSecondary,
       trailing: Column(
         crossAxisAlignment: CrossAxisAlignment.end,

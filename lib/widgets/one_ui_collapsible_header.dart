@@ -10,6 +10,8 @@ class OneUIHeaderAction extends StatelessWidget {
   final VoidCallback onTap;
   final String? tooltip;
   final double? size;
+  final double? width;
+  final double? height;
   final GlobalKey? actionKey;
 
   const OneUIHeaderAction({
@@ -18,6 +20,8 @@ class OneUIHeaderAction extends StatelessWidget {
     required this.onTap,
     this.tooltip,
     this.size,
+    this.width,
+    this.height,
     this.actionKey,
   });
 
@@ -30,8 +34,8 @@ class OneUIHeaderAction extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          width: 36,
-          height: 36,
+          width: width ?? 36,
+          height: height ?? 36,
           alignment: Alignment.center,
           child: Icon(
             icon,
@@ -263,13 +267,18 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     }
     final is3d = OneUIEffectsController.instance.floating3dEffect;
 
+    final isSingleAction = widget.actions!.length == 1;
     final pillContent = Container(
       key: widget.actionsPillKey,
       height: 44,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6.0,
-        vertical: 4.0,
-      ),
+      width: isSingleAction ? 44 : null,
+      alignment: isSingleAction ? Alignment.center : null,
+      padding: isSingleAction
+          ? EdgeInsets.zero
+          : const EdgeInsets.symmetric(
+              horizontal: 6.0,
+              vertical: 4.0,
+            ),
       decoration: BoxDecoration(
         color: pillProgress > 0.05
             ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))

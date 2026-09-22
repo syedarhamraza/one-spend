@@ -5,6 +5,7 @@ class OneUIGroupItem {
   final Widget? leading;
   final String title;
   final String? subtitle;
+  final Widget? customSubtitle;
   final Color? subtitleColor;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -14,6 +15,7 @@ class OneUIGroupItem {
     this.leading,
     required this.title,
     this.subtitle,
+    this.customSubtitle,
     this.subtitleColor,
     this.trailing,
     this.onTap,
@@ -101,7 +103,10 @@ class OneUIGroupCard extends StatelessWidget {
                                           color: OneUITheme.textPrimary,
                                         ),
                                       ),
-                                      if (item.subtitle != null) ...[
+                                      if (item.customSubtitle != null) ...[
+                                        const SizedBox(height: 2),
+                                        item.customSubtitle!,
+                                      ] else if (item.subtitle != null) ...[
                                         const SizedBox(height: 2),
                                         Text(
                                           item.subtitle!,
@@ -115,6 +120,7 @@ class OneUIGroupCard extends StatelessWidget {
                                     ],
                                   ),
                                 ),
+                                const SizedBox(width: 14),
                                 if (item.trailing != null)
                                   item.trailing!
                                 else

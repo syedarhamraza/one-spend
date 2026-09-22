@@ -11,9 +11,11 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_action_bar.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
-import '../widgets/one_ui_icon_picker_modal.dart';
 import '../widgets/one_ui_toast.dart';
+import 'icon_picker_screen.dart';
 import 'one_ui_field_editor_screen.dart';
+import 'payment_methods_screen.dart';
+import 'reminder_picker_screen.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -65,12 +67,13 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   }
 
   Future<void> _pickBrandIcon() async {
-    final result = await OneUIIconPickerModal.show(
+    final result = await IconPickerScreen.open(
       context,
       currentColor: _sub.brandColor,
       currentIcon: _sub.iconData,
       currentLogoUrl: _sub.logoUrl,
       currentPresetId: _sub.brandPresetId,
+      subscriptionName: _sub.name,
     );
     if (!mounted || result == null) return;
     setState(() {
@@ -83,6 +86,37 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     });
     SubscriptionStore.instance.updateSubscription(_sub);
     OneUIToast.show(context, 'Updated brand icon');
+  }
+
+  Future<void> _pickPaymentMethod() async {
+    final result = await PaymentMethodsScreen.select(
+      context,
+      currentMethodId: _sub.paymentMethodId,
+    );
+    if (!mounted || result == null) return;
+    setState(() {
+      if (result.id == '__none__') {
+        _sub = _sub.copyWith(paymentMethodId: null, paymentMethod: '');
+      } else {
+        _sub = _sub.copyWith(paymentMethodId: result.id, paymentMethod: result.displayName);
+      }
+    });
+    SubscriptionStore.instance.updateSubscription(_sub);
+    OneUIToast.show(context, 'Payment method updated');
+  }
+
+  Future<void> _pickReminderDays() async {
+    final result = await ReminderPickerScreen.open(
+      context,
+      initialDays: _sub.reminderDays,
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _sub = _sub.copyWith(reminderDays: result);
+      });
+      SubscriptionStore.instance.updateSubscription(_sub);
+      OneUIToast.show(context, 'Reminder alert updated');
+    }
   }
 
   Future<void> _editField<T>({
@@ -199,21 +233,36 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
         final daysRemaining = _sub.daysRemaining;
         final isPaused = _sub.status == SubscriptionStatus.paused;
 
-        String daysText;
+        Color badgeColor;
+        String badgeText;
         if (isPaused) {
-          daysText = 'Subscription Paused';
+          badgeColor = OneUITheme.textSecondary;
+          badgeText = 'Paused';
         } else if (daysRemaining < 0) {
-          daysText = 'Overdue by ${-daysRemaining} days';
+          badgeColor = OneUITheme.accentRed;
+          badgeText = 'Overdue ${-daysRemaining}d';
         } else if (daysRemaining == 0) {
-          daysText = 'Due today';
+          badgeColor = OneUITheme.accentRed;
+          badgeText = 'Due today';
         } else if (daysRemaining == 1) {
-          daysText = 'Due tomorrow';
+          badgeColor = OneUITheme.accentRed;
+          badgeText = 'Tomorrow';
+        } else if (daysRemaining <= 3) {
+          badgeColor = OneUITheme.accentRed;
+          badgeText = 'In $daysRemaining days';
+        } else if (daysRemaining <= 7) {
+          badgeColor = OneUITheme.accentAmber;
+          badgeText = 'In $daysRemaining days';
         } else {
-          daysText = 'Due in $daysRemaining days';
+          badgeColor = OneUITheme.accentBlue;
+          badgeText = 'In $daysRemaining days';
         }
 
         final recordedPayments = _sub.paymentHistory.length;
         final totalPaid = recordedPayments * _sub.price;
+        final linkedCard = SubscriptionStore.instance.getPaymentMethod(_sub.paymentMethodId);
+        final hasNoCard = _sub.paymentMethodId == null || linkedCard == null;
+        final isCardExpiring = linkedCard != null && (linkedCard.isExpiringSoon || linkedCard.isExpired);
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
@@ -320,10 +369,13 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   ],
                                 ),
                                 const SizedBox(height: 16),
-                                const Divider(height: 1),
+                                Container(
+                                  height: 0.8,
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                ),
                                 const SizedBox(height: 14),
 
-                                // Quick Status Toggle & Countdown Row
+                                // Quick Status Toggle Row
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
@@ -331,54 +383,63 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          'Subscription Status',
+                                          'Subscription status',
                                           style: TextStyle(
-                                            fontSize: 12.5,
-                                            color: OneUITheme.textSecondary,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: -0.2,
+                                            color: OneUITheme.textPrimary,
                                           ),
                                         ),
                                         const SizedBox(height: 3),
                                         Row(
+                                          mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Container(
-                                              width: 8,
-                                              height: 8,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: _sub.status.color,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 6),
                                             Text(
-                                              _sub.status.label,
+                                              isPaused ? 'Paused' : 'Active',
                                               style: TextStyle(
                                                 fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                                color: _sub.status.color,
+                                                fontWeight: FontWeight.w600,
+                                                color: isPaused ? OneUITheme.textSecondary : OneUITheme.accentBlue,
+                                              ),
+                                            ),
+                                            Text(
+                                              isPaused ? ' • Billing on hold' : ' • Renews automatically',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                color: OneUITheme.textSecondary,
                                               ),
                                             ),
                                           ],
                                         ),
                                       ],
                                     ),
-                                    Switch.adaptive(
-                                      value: !isPaused,
-                                      activeTrackColor: OneUITheme.accentBlue,
-                                      onChanged: (active) => _togglePause(),
+                                    Transform.scale(
+                                      scale: 0.84,
+                                      alignment: Alignment.centerRight,
+                                      child: Switch.adaptive(
+                                        value: !isPaused,
+                                        activeTrackColor: OneUITheme.accentBlue,
+                                        onChanged: (active) {
+                                          HapticFeedback.lightImpact();
+                                          _togglePause();
+                                        },
+                                      ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 12),
 
-                                // Next Renewal Banner
+                                // Next Billing Banner
                                 Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.04),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.06),
+                                      color: Colors.white.withValues(alpha: 0.07),
+                                      width: 0.8,
                                     ),
                                   ),
                                   child: Row(
@@ -388,34 +449,59 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
-                                            Icons.event_repeat_rounded,
-                                            size: 16,
-                                            color: isPaused
-                                                ? OneUITheme.textSecondary
-                                                : (daysRemaining <= 3 ? OneUITheme.accentRed : OneUITheme.accentBlue),
+                                            Icons.calendar_today_rounded,
+                                            size: 15,
+                                            color: badgeColor,
                                           ),
                                           const SizedBox(width: 8),
                                           const Text(
                                             'Next billing',
                                             style: TextStyle(
                                               fontSize: 13,
+                                              fontWeight: FontWeight.w500,
                                               color: OneUITheme.textSecondary,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 10),
                                       Flexible(
-                                        child: Text(
-                                          isPaused ? 'Paused' : '$formattedDate ($daysText)',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: isPaused
-                                                ? OneUITheme.textSecondary
-                                                : (daysRemaining <= 3 ? OneUITheme.accentRed : OneUITheme.accentBlue),
-                                          ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                isPaused ? 'Paused' : formattedDate,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: isPaused
+                                                      ? OneUITheme.textSecondary
+                                                      : (daysRemaining <= 3 ? OneUITheme.accentRed : OneUITheme.textPrimary),
+                                                ),
+                                              ),
+                                            ),
+                                            if (!isPaused) ...[
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                                decoration: BoxDecoration(
+                                                  color: badgeColor.withValues(alpha: 0.16),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  badgeText,
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: badgeColor,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -528,30 +614,78 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   ),
                                 ),
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.payment_rounded, OneUITheme.accentAmber),
-                                  title: 'Payment method',
-                                  subtitle: _sub.paymentMethod,
-                                  subtitleColor: OneUITheme.textSecondary,
-                                  trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                                  onTap: () => _editField<String>(
-                                    title: 'Edit payment method',
-                                    type: FieldEditorType.text,
-                                    initialValue: _sub.paymentMethod,
-                                    onApply: (val) => _sub = _sub.copyWith(paymentMethod: val),
+                                  leading: _buildCategoryIconBadge(
+                                    linkedCard != null ? linkedCard.brand.icon : Icons.payment_rounded,
+                                    linkedCard != null ? linkedCard.cardColor : OneUITheme.accentAmber,
                                   ),
+                                  title: 'Payment method',
+                                  subtitle: linkedCard != null
+                                      ? linkedCard.displayName
+                                      : (_sub.paymentMethod.isNotEmpty ? _sub.paymentMethod : 'No payment method linked'),
+                                  customSubtitle: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          linkedCard != null
+                                              ? linkedCard.displayName
+                                              : (_sub.paymentMethod.isNotEmpty ? _sub.paymentMethod : 'No payment method linked'),
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.normal,
+                                            color: linkedCard != null ? OneUITheme.textPrimary : OneUITheme.accentRed,
+                                          ),
+                                        ),
+                                      ),
+                                      if (hasNoCard) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: OneUITheme.accentRed.withValues(alpha: 0.16),
+                                            borderRadius: BorderRadius.circular(5),
+                                          ),
+                                          child: const Text(
+                                            'No card',
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: OneUITheme.accentRed,
+                                            ),
+                                          ),
+                                        ),
+                                      ] else if (isCardExpiring) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: OneUITheme.accentAmber.withValues(alpha: 0.16),
+                                            borderRadius: BorderRadius.circular(5),
+                                          ),
+                                          child: Text(
+                                            linkedCard.isExpired ? 'Card expired' : 'Card expiring soon',
+                                            style: const TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: OneUITheme.accentAmber,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                                  onTap: _pickPaymentMethod,
                                 ),
                                 OneUIGroupItem(
                                   leading: _buildCategoryIconBadge(Icons.notifications_active_rounded, OneUITheme.accentTeal),
                                   title: 'Renewal notification',
-                                  subtitle: 'Alert ${_sub.reminderDays} days before renewal',
+                                  subtitle: _sub.reminderDays == 0
+                                      ? 'On renewal day (9:00 AM)'
+                                      : 'Alert ${_sub.reminderDays} days before renewal',
                                   subtitleColor: OneUITheme.textSecondary,
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                                  onTap: () => _editField<int>(
-                                    title: 'Edit reminder alert',
-                                    type: FieldEditorType.reminder,
-                                    initialValue: _sub.reminderDays,
-                                    onApply: (val) => _sub = _sub.copyWith(reminderDays: val),
-                                  ),
+                                  onTap: _pickReminderDays,
                                 ),
                               ],
                             ),
@@ -579,19 +713,38 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                             ),
                           ),
 
-                          // Section 4: Renewal History & Stats
+                          // Section 4: Renewal History & Auto-Renew
                           OneUISection(
-                            title: 'Renewal History',
+                            title: 'Renewal & Payment History',
                             child: OneUIGroupCard(
                               items: [
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.history_rounded, OneUITheme.accentGreen),
+                                  leading: _buildCategoryIconBadge(Icons.autorenew_rounded, OneUITheme.accentBlue),
+                                  title: 'Auto-record renewals',
+                                  subtitle: _sub.autoRenew
+                                      ? 'Automatically records payments & advances date on renewal'
+                                      : 'Manual mode: Log renewals yourself when paid',
+                                  subtitleColor: OneUITheme.textSecondary,
+                                  trailing: Switch.adaptive(
+                                    value: _sub.autoRenew,
+                                    activeTrackColor: OneUITheme.accentBlue,
+                                    onChanged: (val) {
+                                      HapticFeedback.lightImpact();
+                                      setState(() {
+                                        _sub = _sub.copyWith(autoRenew: val);
+                                      });
+                                      SubscriptionStore.instance.updateSubscription(_sub);
+                                    },
+                                  ),
+                                ),
+                                OneUIGroupItem(
+                                  leading: _buildCategoryIconBadge(Icons.receipt_long_rounded, OneUITheme.accentGreen),
                                   title: _sub.paymentHistory.isNotEmpty
                                       ? 'Last renewed on ${dateFormat.format(_sub.paymentHistory.first)}'
                                       : 'No past renewals logged',
                                   subtitle: _sub.paymentHistory.isNotEmpty
-                                      ? '$recordedPayments recorded payments (${_sub.currency}${totalPaid.toStringAsFixed(2)} total)'
-                                      : 'Tap button to log renewal',
+                                      ? '$recordedPayments recorded payments (${_sub.currency}${totalPaid.toStringAsFixed(2)} total spend)'
+                                      : 'Ledger tracking past payments to calculate lifetime spend',
                                   subtitleColor: OneUITheme.textSecondary,
                                   trailing: TextButton(
                                     onPressed: _markRenewed,
@@ -601,7 +754,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                     ),
                                     child: const Text(
-                                      'Renewed',
+                                      'Record',
                                       style: TextStyle(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w700,

@@ -6,6 +6,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
+import 'payment_methods_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -428,6 +429,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           title: 'Monthly budget threshold',
                           subtitle: '${store.currency}${store.monthlyBudget.toStringAsFixed(0)} limit',
                           onTap: () => _editBudget(context, store),
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.credit_card_rounded, OneUITheme.accentPurple),
+                          title: 'Payment methods',
+                          subtitle: store.paymentMethods.isEmpty
+                              ? 'Manage credit cards & payment methods'
+                              : '${store.paymentMethods.length} payment method${store.paymentMethods.length > 1 ? "s" : ""} saved',
+                          onTap: () => PaymentMethodsScreen.open(context),
                         ),
                         OneUIGroupItem(
                           leading: _buildIconBadge(Icons.notifications_active_rounded, OneUITheme.accentAmber),

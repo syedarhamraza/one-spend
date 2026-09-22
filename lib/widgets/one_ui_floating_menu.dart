@@ -83,43 +83,11 @@ class OneUIFloatingMenu {
             bottom: bottom,
             right: right,
             width: width,
+            animation: anim1,
+            isBottomAnchor: isBottomAnchor,
           );
         },
-        transitionBuilder: (ctx, anim, secondaryAnim, child) {
-          final isForward = anim.status == AnimationStatus.forward ||
-              anim.status == AnimationStatus.completed;
-
-          // Samsung One UI signature fluid deceleration curve
-          final scaleCurve = isForward
-              ? const Cubic(0.16, 1.0, 0.3, 1.0)
-              : Curves.easeInCubic;
-
-          // Rapid crisp fade in on open (solid within 110ms); gentle fade out on close
-          final opacityCurve = isForward
-              ? const Interval(0.0, 0.45, curve: Curves.easeOut)
-              : const Interval(0.15, 1.0, curve: Curves.easeIn);
-
-          final scaleAnimation = Tween<double>(
-            begin: 0.80,
-            end: 1.0,
-          ).animate(CurvedAnimation(parent: anim, curve: scaleCurve));
-
-          final opacityAnimation = Tween<double>(
-            begin: 0.0,
-            end: 1.0,
-          ).animate(CurvedAnimation(parent: anim, curve: opacityCurve));
-
-          return FadeTransition(
-            opacity: opacityAnimation,
-            child: ScaleTransition(
-              scale: scaleAnimation,
-              alignment: isBottomAnchor
-                  ? const Alignment(0.85, 0.95)
-                  : const Alignment(0.90, -0.92),
-              child: child,
-            ),
-          );
-        },
+        transitionBuilder: (ctx, anim, secondaryAnim, child) => child,
       );
     } finally {
       isOpen.value = false;
@@ -127,12 +95,14 @@ class OneUIFloatingMenu {
   }
 }
 
-class _OneUIFloatingMenuContent extends StatelessWidget {
+class _OneUIFloatingMenuContent extends StatefulWidget {
   final List<OneUIFloatingMenuItem> items;
   final double? top;
   final double? bottom;
   final double right;
   final double width;
+  final Animation<double> animation;
+  final bool isBottomAnchor;
 
   const _OneUIFloatingMenuContent({
     required this.items,
@@ -140,10 +110,58 @@ class _OneUIFloatingMenuContent extends StatelessWidget {
     this.bottom,
     required this.right,
     required this.width,
+    required this.animation,
+    required this.isBottomAnchor,
   });
 
   @override
+  State<_OneUIFloatingMenuContent> createState() => _OneUIFloatingMenuContentState();
+}
+
+class _OneUIFloatingMenuContentState extends State<_OneUIFloatingMenuContent> {
+  @override
+  void initState() {
+    super.initState();
+    widget.animation.addStatusListener(_handleStatusChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.animation.removeStatusListener(_handleStatusChanged);
+    super.dispose();
+  }
+
+  void _handleStatusChanged(AnimationStatus status) {
+    if (status == AnimationStatus.reverse) {
+      OneUIFloatingMenu.isOpen.value = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isForward = widget.animation.status == AnimationStatus.forward ||
+        widget.animation.status == AnimationStatus.completed;
+
+    // Samsung One UI signature fluid deceleration curve
+    final scaleCurve = isForward
+        ? const Cubic(0.16, 1.0, 0.3, 1.0)
+        : Curves.easeInCubic;
+
+    // Rapid crisp fade in on open (solid within 110ms); gentle fade out on close
+    final opacityCurve = isForward
+        ? const Interval(0.0, 0.45, curve: Curves.easeOut)
+        : const Interval(0.15, 1.0, curve: Curves.easeIn);
+
+    final scaleAnimation = Tween<double>(
+      begin: 0.80,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: widget.animation, curve: scaleCurve));
+
+    final opacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: widget.animation, curve: opacityCurve));
+
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
@@ -152,85 +170,94 @@ class _OneUIFloatingMenuContent extends StatelessWidget {
         return Stack(
           children: [
             Positioned(
-              top: top,
-              bottom: bottom,
-              right: right,
-              width: width,
-              child: Material(
-                color: Colors.transparent,
-                child: DecoratedBox(
-                  decoration: is3d
-                      ? BoxDecoration(
-                          borderRadius: BorderRadius.circular(22),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.45),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
+              top: widget.top,
+              bottom: widget.bottom,
+              right: widget.right,
+              width: widget.width,
+              child: FadeTransition(
+                opacity: opacityAnimation,
+                child: ScaleTransition(
+                  scale: scaleAnimation,
+                  alignment: widget.isBottomAnchor
+                      ? const Alignment(0.85, 0.95)
+                      : const Alignment(0.85, -0.85),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: DecoratedBox(
+                      decoration: is3d
+                          ? BoxDecoration(
+                              borderRadius: BorderRadius.circular(22),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            )
+                          : const BoxDecoration(),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(
+                            sigmaX: OneUITheme.blurSigma,
+                            sigmaY: OneUITheme.blurSigma,
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: is3d ? null : OneUITheme.floatingColor,
+                              gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
+                              borderRadius: BorderRadius.circular(22),
+                              border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
                             ),
-                          ],
-                        )
-                      : const BoxDecoration(),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(
-                        sigmaX: OneUITheme.blurSigma,
-                        sigmaY: OneUITheme.blurSigma,
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: is3d ? null : OneUITheme.floatingColor,
-                          gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                          borderRadius: BorderRadius.circular(22),
-                          border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (final item in items)
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            item.onTap();
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          splashColor: Colors.white.withValues(alpha: 0.08),
-                          highlightColor: Colors.white.withValues(alpha: 0.04),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            child: Row(
+                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                if (item.icon != null) ...[
-                                  Icon(item.icon, size: 19, color: OneUITheme.textPrimary),
-                                  const SizedBox(width: 12),
-                                ],
-                                Expanded(
-                                  child: Text(
-                                    item.label,
-                                    style: const TextStyle(
-                                      fontSize: 14.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: OneUITheme.textPrimary,
-                                      letterSpacing: -0.2,
+                                for (final item in widget.items)
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      item.onTap();
+                                    },
+                                    borderRadius: BorderRadius.circular(16),
+                                    splashColor: Colors.white.withValues(alpha: 0.08),
+                                    highlightColor: Colors.white.withValues(alpha: 0.04),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                      child: Row(
+                                        children: [
+                                          if (item.icon != null) ...[
+                                            Icon(item.icon, size: 19, color: OneUITheme.textPrimary),
+                                            const SizedBox(width: 12),
+                                          ],
+                                          Expanded(
+                                            child: Text(
+                                              item.label,
+                                              style: const TextStyle(
+                                                fontSize: 14.5,
+                                                fontWeight: FontWeight.w500,
+                                                color: OneUITheme.textPrimary,
+                                                letterSpacing: -0.2,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
                         ),
-                    ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    ],
+          ],
         );
       },
     );

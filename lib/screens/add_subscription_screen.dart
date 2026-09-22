@@ -9,9 +9,12 @@ import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
-import '../widgets/one_ui_icon_picker_modal.dart';
 import '../widgets/one_ui_toast.dart';
+import 'icon_picker_screen.dart';
 import 'one_ui_field_editor_screen.dart';
+import 'payment_methods_screen.dart';
+import 'popular_presets_screen.dart';
+import 'reminder_picker_screen.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
@@ -35,6 +38,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   late Color _brandColor;
   late IconData _iconData;
   late String _paymentMethod;
+  String? _paymentMethodId;
   late int _reminderDays;
   late SubscriptionStatus _status;
   late String _notes;
@@ -58,6 +62,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _brandColor = editSub.brandColor;
       _iconData = editSub.iconData;
       _paymentMethod = editSub.paymentMethod;
+      _paymentMethodId = editSub.paymentMethodId;
       _reminderDays = editSub.reminderDays;
       _status = editSub.status;
       _notes = editSub.notes;
@@ -73,7 +78,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _nextBillingDate = DateTime.now().add(const Duration(days: 30));
       _brandColor = OneUITheme.accentBlue;
       _iconData = Icons.subscriptions_rounded;
-      _paymentMethod = 'Samsung Pay (Visa •••• 9124)';
+      final defaultCard = SubscriptionStore.instance.defaultPaymentMethod;
+      _paymentMethodId = defaultCard?.id;
+      _paymentMethod = defaultCard?.displayName ?? 'Samsung Pay (Visa •••• 9124)';
       _reminderDays = 2;
       _status = SubscriptionStatus.active;
       _notes = '';
@@ -95,11 +102,16 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       if (_accountUrl.isEmpty) {
         _accountUrl = preset.defaultUrl;
       }
-      if (_price <= 0) {
-        final catalogMatch = popularCatalog.where((s) => s.name.toLowerCase() == preset.name.toLowerCase()).firstOrNull;
-        if (catalogMatch != null) {
+      final catalogMatch = popularCatalog.where((s) => s.name.toLowerCase() == preset.name.toLowerCase()).firstOrNull;
+      if (catalogMatch != null) {
+        if (_price <= 0) {
           _price = catalogMatch.price;
           _billingCycle = catalogMatch.billingCycle;
+        }
+        if (_paymentMethodId == null && catalogMatch.paymentMethodId != null) {
+          _paymentMethodId = catalogMatch.paymentMethodId;
+          final method = SubscriptionStore.instance.getPaymentMethod(_paymentMethodId);
+          if (method != null) _paymentMethod = method.displayName;
         }
       }
     });
@@ -107,12 +119,13 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   }
 
   Future<void> _pickBrandIcon() async {
-    final result = await OneUIIconPickerModal.show(
+    final result = await IconPickerScreen.open(
       context,
       currentColor: _brandColor,
       currentIcon: _iconData,
       currentLogoUrl: _logoUrl,
       currentPresetId: _brandPresetId,
+      subscriptionName: _name,
     );
     if (!mounted || result == null) return;
     setState(() {
@@ -150,103 +163,33 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     }
   }
 
-  void _selectReminderDays() {
-    HapticFeedback.lightImpact();
-    const reminderOptions = [
-      {'days': 0, 'label': 'On the day of renewal'},
-      {'days': 1, 'label': '1 day before'},
-      {'days': 2, 'label': '2 days before (Recommended)'},
-      {'days': 3, 'label': '3 days before'},
-      {'days': 5, 'label': '5 days before'},
-      {'days': 7, 'label': '1 week before'},
-      {'days': 14, 'label': '2 weeks before'},
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: OneUITheme.surfaceCard,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Renewal Reminder Alert',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: OneUITheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                decoration: BoxDecoration(
-                  color: OneUITheme.surfacePill,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  children: reminderOptions.map((opt) {
-                    final days = opt['days'] as int;
-                    final label = opt['label'] as String;
-                    final isSelected = _reminderDays == days;
-
-                    return InkWell(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          _reminderDays = days;
-                        });
-                        Navigator.pop(ctx);
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 15.5,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                color: isSelected ? OneUITheme.textPrimary : OneUITheme.textSecondary,
-                              ),
-                            ),
-                            if (isSelected)
-                              const Icon(Icons.check_circle_rounded, color: OneUITheme.accentBlue, size: 22)
-                            else
-                              Icon(Icons.radio_button_unchecked_rounded,
-                                  color: Colors.white.withValues(alpha: 0.25), size: 22),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  Future<void> _selectReminderDays() async {
+    final result = await ReminderPickerScreen.open(
+      context,
+      initialDays: _reminderDays,
     );
+    if (result != null && mounted) {
+      setState(() {
+        _reminderDays = result;
+      });
+    }
+  }
+
+  Future<void> _pickPaymentMethod() async {
+    final result = await PaymentMethodsScreen.select(
+      context,
+      currentMethodId: _paymentMethodId,
+    );
+    if (!mounted || result == null) return;
+    setState(() {
+      if (result.id == '__none__') {
+        _paymentMethodId = null;
+        _paymentMethod = '';
+      } else {
+        _paymentMethodId = result.id;
+        _paymentMethod = result.displayName;
+      }
+    });
   }
 
   void _saveSubscription() {
@@ -269,6 +212,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       nextBillingDate: _nextBillingDate,
       status: _status,
       paymentMethod: _paymentMethod.trim(),
+      paymentMethodId: _paymentMethodId,
       reminderDays: _reminderDays,
       notes: _notes.trim(),
       paymentHistory: widget.subscriptionToEdit?.paymentHistory ?? [],
@@ -309,9 +253,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             physics: const BouncingScrollPhysics(),
             slivers: [
               // One UI Signature Collapsible Header with Back Button
@@ -331,74 +277,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Popular Presets Quick Selector (when creating new)
-                      if (!isEditing) ...[
-                        const Padding(
-                          padding: EdgeInsets.only(left: 4, bottom: 8),
-                          child: Text(
-                            'Popular Presets',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: OneUITheme.textSecondary,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 52,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: OneUIBrandCatalog.presets.length,
-                            separatorBuilder: (_, _) => const SizedBox(width: 8),
-                            itemBuilder: (context, index) {
-                              final preset = OneUIBrandCatalog.presets[index];
-                              final isSelected = _brandPresetId == preset.id ||
-                                  _name.toLowerCase() == preset.name.toLowerCase();
-
-                              return GestureDetector(
-                                onTap: () => _applyPreset(preset),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? OneUITheme.surfacePillActive : OneUITheme.surfaceCard,
-                                    borderRadius: BorderRadius.circular(26),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? OneUITheme.accentBlue
-                                          : Colors.white.withValues(alpha: 0.08),
-                                      width: isSelected ? 1.2 : 0.8,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      OneUIBrandIcon(
-                                        brandPresetId: preset.id,
-                                        name: preset.name,
-                                        brandColor: preset.color,
-                                        size: 30,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        preset.name,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                                          color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-
-                      // Top Live Hero Card Preview
+                      // Top Live Hero Card Preview (First element)
                       Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(bottom: 14),
@@ -477,6 +356,36 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                           ],
                         ),
                       ),
+
+                      // Popular Presets Navigation Card (when creating new)
+                      if (!isEditing) ...[
+                        OneUIGroupCard(
+                          items: [
+                            OneUIGroupItem(
+                              leading: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: OneUITheme.accentBlue.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.auto_awesome_rounded, size: 20, color: OneUITheme.accentBlue),
+                              ),
+                              title: 'Choose from popular presets',
+                              subtitle: 'Explore Netflix, Spotify, iCloud, YouTube...',
+                              trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                              onTap: () async {
+                                final preset = await PopularPresetsScreen.open(context);
+                                if (preset != null && mounted) {
+                                  _applyPreset(preset);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // Section 1: Plan & Billing (Grouped One UI Card with Subpages)
                       OneUISection(
@@ -589,15 +498,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                             OneUIGroupItem(
                               leading: _buildCategoryIconBadge(Icons.payment_rounded, OneUITheme.accentAmber),
                               title: 'Payment method',
-                              subtitle: _paymentMethod,
-                              subtitleColor: OneUITheme.textSecondary,
+                              subtitle: _paymentMethodId != null
+                                  ? (SubscriptionStore.instance.getPaymentMethod(_paymentMethodId)?.displayName ?? (_paymentMethod.isNotEmpty ? _paymentMethod : 'Card linked'))
+                                  : 'No payment method linked',
+                              subtitleColor: _paymentMethodId != null
+                                  ? OneUITheme.textPrimary
+                                  : OneUITheme.accentRed,
                               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                              onTap: () => _editField<String>(
-                                title: 'Payment method',
-                                type: FieldEditorType.text,
-                                initialValue: _paymentMethod,
-                                onApply: (val) => _paymentMethod = val,
-                              ),
+                              onTap: _pickPaymentMethod,
                             ),
                             OneUIGroupItem(
                               leading: _buildCategoryIconBadge(Icons.notifications_active_rounded, OneUITheme.accentTeal),

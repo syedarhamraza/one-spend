@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 
 class OneUIFloatingActionBarItem {
@@ -29,11 +30,11 @@ class OneUIFloatingActionBar extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.floating3dEffect;
+        final is3d = OneUIEffectsController.instance.navbar3dEffect || OneUIEffectsController.instance.floating3dEffect;
 
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 8),
             child: DecoratedBox(
               decoration: is3d
                   ? BoxDecoration(
@@ -63,12 +64,30 @@ class OneUIFloatingActionBar extends StatelessWidget {
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
                     height: 60,
-                    decoration: BoxDecoration(
-                      color: is3d ? null : OneUITheme.floatingColor,
-                      gradient: is3d ? OneUITheme.floatingGradient : null,
-                      borderRadius: BorderRadius.circular(34),
-                      border: OneUITheme.floatingBorder,
-                    ),
+                    decoration: is3d
+                        ? BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                OneUITheme.navbar3dBarTop,
+                                OneUITheme.navbar3dBarBottom,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(34),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              width: 0.8,
+                            ),
+                          )
+                        : BoxDecoration(
+                            color: OneUITheme.floatingColor,
+                            borderRadius: BorderRadius.circular(34),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.06),
+                              width: 0.8,
+                            ),
+                          ),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     child: Material(
                       color: Colors.transparent,
@@ -77,8 +96,13 @@ class OneUIFloatingActionBar extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: items.map((item) {
                           return InkWell(
-                            onTap: item.onTap,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              item.onTap();
+                            },
                             borderRadius: BorderRadius.circular(26),
+                            splashColor: Colors.white.withValues(alpha: 0.08),
+                            highlightColor: Colors.white.withValues(alpha: 0.04),
                             child: SizedBox(
                               width: 68,
                               child: Column(
@@ -90,7 +114,7 @@ class OneUIFloatingActionBar extends StatelessWidget {
                                     size: 21,
                                     color: item.color ?? OneUITheme.textPrimary,
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 3),
                                   Text(
                                     item.label,
                                     maxLines: 1,
