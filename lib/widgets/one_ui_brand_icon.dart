@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../models/subscription.dart';
 import '../utils/one_ui_brand_catalog.dart';
 
 /// Samsung One UI Squircle Brand & Service Icon
+/// - Renders bundled vector SVG logo if matching brand exists in assets
 /// - Renders company logo if image URL is available (with safe inner padding & contain fit)
 /// - Renders curated brand preset monogram / icon
 /// - Renders dynamic monogram for custom services
@@ -28,6 +30,74 @@ class OneUIBrandIcon extends StatelessWidget {
     this.size = 44,
     this.borderRadius,
   });
+
+  static const Map<String, String> _brandSvgMap = {
+    'netflix': 'assets/logos/brands/netflix.svg',
+    'spotify': 'assets/logos/brands/spotify.svg',
+    'youtube': 'assets/logos/brands/youtube.svg',
+    'youtubepremium': 'assets/logos/brands/youtube.svg',
+    'apple': 'assets/logos/brands/apple.svg',
+    'applemusic': 'assets/logos/brands/applemusic.svg',
+    'appletv': 'assets/logos/brands/appletv.svg',
+    'appletvplus': 'assets/logos/brands/appletv.svg',
+    'appleone': 'assets/logos/brands/apple.svg',
+    'icloud': 'assets/logos/brands/icloud.svg',
+    'github': 'assets/logos/brands/github.svg',
+    'githubcopilot': 'assets/logos/brands/github.svg',
+    'notion': 'assets/logos/brands/notion.svg',
+    'figma': 'assets/logos/brands/figma.svg',
+    'google': 'assets/logos/brands/google.svg',
+    'googleone': 'assets/logos/brands/google.svg',
+    'googledrive': 'assets/logos/brands/googledrive.svg',
+    'googlecloud': 'assets/logos/brands/googlecloud.svg',
+    'crunchyroll': 'assets/logos/brands/crunchyroll.svg',
+    'duolingo': 'assets/logos/brands/duolingo.svg',
+    'dropbox': 'assets/logos/brands/dropbox.svg',
+    'discord': 'assets/logos/brands/discord.svg',
+    'discordnitro': 'assets/logos/brands/discord.svg',
+    'playstation': 'assets/logos/brands/playstation.svg',
+    'playstationplus': 'assets/logos/brands/playstation.svg',
+    'twitch': 'assets/logos/brands/twitch.svg',
+    'patreon': 'assets/logos/brands/patreon.svg',
+    'soundcloud': 'assets/logos/brands/soundcloud.svg',
+    'medium': 'assets/logos/brands/medium.svg',
+    'substack': 'assets/logos/brands/substack.svg',
+    'x': 'assets/logos/brands/x.svg',
+    'twitter': 'assets/logos/brands/x.svg',
+    'proton': 'assets/logos/brands/proton.svg',
+    'protonvpn': 'assets/logos/brands/proton.svg',
+    'protonmail': 'assets/logos/brands/proton.svg',
+    '1password': 'assets/logos/brands/1password.svg',
+    'bitwarden': 'assets/logos/brands/bitwarden.svg',
+    'evernote': 'assets/logos/brands/evernote.svg',
+    'telegram': 'assets/logos/brands/telegram.svg',
+    'telegrampremium': 'assets/logos/brands/telegram.svg',
+    'nordvpn': 'assets/logos/brands/nordvpn.svg',
+    'expressvpn': 'assets/logos/brands/expressvpn.svg',
+    'max': 'assets/logos/brands/max.svg',
+    'hbomax': 'assets/logos/brands/hbomax.svg',
+    'coursera': 'assets/logos/brands/coursera.svg',
+    'udemy': 'assets/logos/brands/udemy.svg',
+    'strava': 'assets/logos/brands/strava.svg',
+    'fitbit': 'assets/logos/brands/fitbit.svg',
+    'paramountplus': 'assets/logos/brands/paramountplus.svg',
+    'deezer': 'assets/logos/brands/deezer.svg',
+    'tidal': 'assets/logos/brands/tidal.svg',
+    'audible': 'assets/logos/brands/audible.svg',
+  };
+
+  static String? resolveBrandSvg(String name, [String? presetId]) {
+    final lowerName = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final lowerId = presetId?.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '') ?? '';
+    final candidates = [lowerId, lowerName];
+    for (final key in candidates) {
+      if (key.isEmpty) continue;
+      if (_brandSvgMap.containsKey(key)) {
+        return _brandSvgMap[key];
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +125,35 @@ class OneUIBrandIcon extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: _buildInnerContent(subName, preset, effectiveLogoUrl),
+      child: _buildInnerContent(subName, preset, effectiveLogoUrl, effectivePresetId),
     );
   }
 
-  Widget _buildInnerContent(String subName, BrandPreset? preset, String? effectiveLogoUrl) {
-    // 1. Network image logo if provided
+  Widget _buildInnerContent(
+    String subName,
+    BrandPreset? preset,
+    String? effectiveLogoUrl,
+    String? effectivePresetId,
+  ) {
+    // 1. Check for bundled SVG asset first (instant, zero network lag, vector sharp)
+    final svgAsset = resolveBrandSvg(subName, effectivePresetId);
+    if (svgAsset != null) {
+      return Center(
+        child: SvgPicture.asset(
+          svgAsset,
+          width: size * 0.54,
+          height: size * 0.54,
+          fit: BoxFit.contain,
+          colorFilter: ColorFilter.mode(
+            preset?.textColor ?? Colors.white,
+            BlendMode.srcIn,
+          ),
+          placeholderBuilder: (context) => _buildFallback(subName, preset),
+        ),
+      );
+    }
+
+    // 2. Network image logo if provided
     if (effectiveLogoUrl != null && effectiveLogoUrl.isNotEmpty) {
       return Padding(
         padding: EdgeInsets.all(size * 0.16),

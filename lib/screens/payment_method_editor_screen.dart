@@ -6,6 +6,8 @@ import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_toast.dart';
+import '../widgets/one_ui_payment_brand_icon.dart';
 
 /// Dedicated Samsung One UI Payment Method Editor Subpage.
 /// Allows adding or editing a tracked payment method with live card preview,
@@ -88,9 +90,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
     final statementDay = int.tryParse(_statementController.text.trim());
 
     if (nickname.isEmpty && last4.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a nickname or last 4 digits')),
-      );
+      OneUIToast.show(context, 'Please enter a nickname or last 4 digits');
       return;
     }
 
@@ -325,58 +325,136 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                       // Section 2: Method Type & Brand Selection
                       OneUISection(
                         title: 'Card Type & Brand',
-                        child: OneUIGroupCard(
-                          items: [
-                            OneUIGroupItem(
-                              title: 'Payment method type',
-                              subtitle: _type.label,
-                              trailing: DropdownButtonHideUnderline(
-                                child: DropdownButton<PaymentMethodType>(
-                                  value: _type,
-                                  dropdownColor: OneUITheme.cardColor,
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: OneUITheme.accentBlue,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            OneUIGroupCard(
+                              items: [
+                                OneUIGroupItem(
+                                  title: 'Payment method type',
+                                  subtitle: _type.label,
+                                  trailing: DropdownButtonHideUnderline(
+                                    child: DropdownButton<PaymentMethodType>(
+                                      value: _type,
+                                      dropdownColor: OneUITheme.cardColor,
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: OneUITheme.accentBlue,
+                                      ),
+                                      items: PaymentMethodType.values.map((t) {
+                                        return DropdownMenuItem(
+                                          value: t,
+                                          child: Text(t.label),
+                                        );
+                                      }).toList(),
+                                      onChanged: (newType) {
+                                        if (newType != null) {
+                                          setState(() => _type = newType);
+                                        }
+                                      },
+                                    ),
                                   ),
-                                  items: PaymentMethodType.values.map((t) {
-                                    return DropdownMenuItem(
-                                      value: t,
-                                      child: Text(t.label),
-                                    );
-                                  }).toList(),
-                                  onChanged: (newType) {
-                                    if (newType != null) {
-                                      setState(() => _type = newType);
-                                    }
-                                  },
                                 ),
-                              ),
+                              ],
                             ),
-                            OneUIGroupItem(
-                              title: 'Network / Provider',
-                              subtitle: _brand.label,
-                              trailing: DropdownButtonHideUnderline(
-                                child: DropdownButton<CardBrand>(
-                                  value: _brand,
-                                  dropdownColor: OneUITheme.cardColor,
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: OneUITheme.accentBlue,
+                            const SizedBox(height: 12),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: OneUITheme.cardColor,
+                                borderRadius: OneUITheme.cardBorderRadius,
+                                border: OneUITheme.cardBorder,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Network / Provider',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: OneUITheme.textSecondary,
+                                        ),
+                                      ),
+                                      Text(
+                                        _brand.label,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: OneUITheme.accentBlue,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  items: CardBrand.values.map((b) {
-                                    return DropdownMenuItem(
-                                      value: b,
-                                      child: Text(b.label),
-                                    );
-                                  }).toList(),
-                                  onChanged: (newBrand) {
-                                    if (newBrand != null) {
-                                      setState(() => _brand = newBrand);
-                                    }
-                                  },
-                                ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 52,
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      physics: const BouncingScrollPhysics(),
+                                      itemCount: CardBrand.values.length,
+                                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                                      itemBuilder: (context, index) {
+                                        final b = CardBrand.values[index];
+                                        final isSelected = b == _brand;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            HapticFeedback.selectionClick();
+                                            setState(() {
+                                              _brand = b;
+                                              if (b == CardBrand.applePay ||
+                                                  b == CardBrand.googlePay ||
+                                                  b == CardBrand.samsungPay ||
+                                                  b == CardBrand.paypal ||
+                                                  b == CardBrand.alipay ||
+                                                  b == CardBrand.wechatPay ||
+                                                  b == CardBrand.amazonPay) {
+                                                _type = PaymentMethodType.digitalWallet;
+                                              } else if (b == CardBrand.bank) {
+                                                _type = PaymentMethodType.bankTransfer;
+                                              }
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? OneUITheme.accentBlue.withValues(alpha: 0.16)
+                                                  : Colors.white.withValues(alpha: 0.05),
+                                              borderRadius: BorderRadius.circular(14),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? OneUITheme.accentBlue
+                                                    : Colors.white.withValues(alpha: 0.12),
+                                                width: isSelected ? 1.8 : 0.8,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                OneUIPaymentBrandIcon(brand: b, width: 36, height: 24),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  b.label,
+                                                  style: TextStyle(
+                                                    fontSize: 12.5,
+                                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                                    color: isSelected ? OneUITheme.textPrimary : OneUITheme.textSecondary,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -494,15 +572,20 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
             children: [
               Row(
                 children: [
-                  Icon(_brand.icon, color: Colors.white, size: 26),
-                  const SizedBox(width: 8),
+                  OneUIPaymentBrandIcon(
+                    brand: _brand,
+                    width: 44,
+                    height: 28,
+                    showShadow: true,
+                  ),
+                  const SizedBox(width: 10),
                   Text(
                     _brand.label,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: 0.5,
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ],

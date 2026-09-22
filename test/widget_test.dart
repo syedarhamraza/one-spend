@@ -15,6 +15,13 @@ import 'package:onespend/widgets/one_ui_floating_modal.dart';
 import 'package:onespend/widgets/one_ui_toast.dart';
 import 'package:onespend/screens/popular_presets_screen.dart';
 import 'package:onespend/screens/reminder_picker_screen.dart';
+import 'package:onespend/screens/payment_history_screen.dart';
+import 'package:onespend/screens/subscription_detail_screen.dart';
+import 'package:onespend/screens/upcoming_schedule_screen.dart';
+import 'package:onespend/screens/category_picker_screen.dart';
+import 'package:onespend/screens/payment_methods_screen.dart';
+import 'package:onespend/screens/payment_method_picker_screen.dart';
+import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -1279,33 +1286,39 @@ void main() {
     await tester.pumpWidget(const OneSpendApp());
     await tester.pumpAndSettle();
 
-    // Navigate to Menu -> Payment methods
+    // Verify Menu (Settings) does not have Payment methods anymore
     await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
+    expect(find.text('Payment methods'), findsNothing);
 
-    expect(find.text('Payment methods'), findsOneWidget);
-    await tester.ensureVisible(find.text('Payment methods'));
-    await tester.tap(find.text('Payment methods'));
+    // Return to Spend tab
+    await tester.tap(find.text('Spend'));
     await tester.pumpAndSettle();
 
-    // Verify Payment methods management screen
-    expect(find.text('Payment methods'), findsWidgets);
-    expect(find.text('Primary Samsung Pay'), findsOneWidget);
+    // Navigate to a subscription (e.g. Netflix) -> Payment method picker
+    await tester.tap(find.text('Netflix').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment method'), findsOneWidget);
+    await tester.tap(find.text('Payment method'));
+    await tester.pumpAndSettle();
+
+    // Verify Payment method picker subpage
+    expect(find.text('Payment method'), findsWidgets);
+    expect(find.text('Primary Samsung Pay'), findsWidgets);
     expect(find.text('Personal Meezan Debit'), findsOneWidget);
     expect(find.text('Standard Chartered World'), findsOneWidget);
 
     // Verify linked subscriptions count badge exists (e.g. linked subscription)
     expect(find.textContaining('linked subscription'), findsWidgets);
 
-    // Open options menu on a linked card (Primary Samsung Pay has subscriptions linked)
-    final moreButtons = find.byIcon(Icons.more_vert_rounded);
-    expect(moreButtons, findsWidgets);
-    await tester.tap(moreButtons.first);
+    // Hold-press (long-press) on Primary Samsung Pay to enter selection mode
+    await tester.longPress(find.text('Primary Samsung Pay').last);
     await tester.pumpAndSettle();
 
-    // Tap Delete card in popup menu
-    expect(find.text('Delete card'), findsOneWidget);
-    await tester.tap(find.text('Delete card'));
+    // Tap Delete in floating action bar
+    expect(find.text('Delete'), findsOneWidget);
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
 
     // Verify Non-Forceful deletion dialog opens with options
@@ -1319,10 +1332,8 @@ void main() {
     // Verify card is removed
     expect(find.text('Primary Samsung Pay'), findsNothing);
 
-    // Go back to Spend tab
+    // Go back to Subscription Detail
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Spend'));
     await tester.pumpAndSettle();
 
     // Subscriptions previously tied to that card now display 'No card'
@@ -1417,6 +1428,377 @@ void main() {
     final updatedNetflix = store.subscriptions.firstWhere((s) => s.name == 'Netflix');
     expect(updatedNetflix.nextBillingDate.isAfter(DateTime.now()), isTrue);
     expect(updatedNetflix.paymentHistory.isNotEmpty, isTrue);
+  });
+
+  test('Upcoming billing dates and store payment record operations', () {
+    final store = SubscriptionStore.instance;
+    store.resetForTesting();
+    final sub = store.subscriptions.first;
+
+    // Test getUpcomingBillingDates
+    final upcoming = sub.getUpcomingBillingDates(4);
+    expect(upcoming.length, 4);
+    expect(upcoming[1].isAfter(upcoming[0]), isTrue);
+    expect(upcoming[2].isAfter(upcoming[1]), isTrue);
+    expect(upcoming[3].isAfter(upcoming[2]), isTrue);
+
+    // Test markSubscriptionPaid
+    final initialHistoryCount = sub.paymentHistory.length;
+    final initialDate = sub.nextBillingDate;
+    store.markSubscriptionPaid(sub.id);
+    final paidSub = store.getSubscription(sub.id)!;
+    expect(paidSub.paymentHistory.length, initialHistoryCount + 1);
+    expect(paidSub.nextBillingDate.isAfter(initialDate), isTrue);
+
+    // Test skipSubscriptionCycle
+    final beforeSkipDate = paidSub.nextBillingDate;
+    final beforeSkipCount = paidSub.paymentHistory.length;
+    store.skipSubscriptionCycle(sub.id);
+    final skippedSub = store.getSubscription(sub.id)!;
+    expect(skippedSub.nextBillingDate.isAfter(beforeSkipDate), isTrue);
+    expect(skippedSub.paymentHistory.length, beforeSkipCount); // No new history
+
+    // Test addPaymentRecord and deletePaymentRecord
+    final manualDate = DateTime(2025, 1, 15);
+    store.addPaymentRecord(sub.id, manualDate);
+    final withManual = store.getSubscription(sub.id)!;
+    expect(withManual.paymentHistory.contains(manualDate), isTrue);
+
+    store.deletePaymentRecord(sub.id, withManual.paymentHistory.indexOf(manualDate));
+    final afterDelete = store.getSubscription(sub.id)!;
+    expect(afterDelete.paymentHistory.contains(manualDate), isFalse);
+  });
+
+  testWidgets('PaymentHistoryScreen displays lifetime spend and manages records', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final store = SubscriptionStore.instance;
+    store.resetForTesting();
+    final netflix = store.subscriptions.firstWhere((s) => s.name == 'Netflix');
+
+    // Add 2 payment history records
+    store.addPaymentRecord(netflix.id, DateTime(2026, 8, 26));
+    store.addPaymentRecord(netflix.id, DateTime(2026, 7, 26));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: PaymentHistoryScreen(subscriptionId: netflix.id),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment History'), findsOneWidget);
+    expect(find.text('Lifetime spend'), findsOneWidget);
+    expect(find.text('Payment ledger'), findsOneWidget);
+    expect(find.text('2 cycles paid'), findsOneWidget);
+    expect(find.text('Paid'), findsNWidgets(2));
+
+    // Tap delete icon on first record
+    final deleteIcons = find.byIcon(Icons.delete_outline_rounded);
+    expect(deleteIcons, findsNWidgets(2));
+    await tester.tap(deleteIcons.first);
+    await tester.pumpAndSettle();
+
+    // Confirm dialog appears
+    expect(find.text('Delete record'), findsOneWidget);
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    // Now 1 cycle paid
+    expect(find.text('1 cycle paid'), findsOneWidget);
+  });
+
+  testWidgets('Context-Aware Due Date Action Banner only renders when due or overdue', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final store = SubscriptionStore.instance;
+    store.resetForTesting();
+    final netflix = store.subscriptions.firstWhere((s) => s.name == 'Netflix');
+
+    // Case 1: Subscription has 25 days remaining (Not Due)
+    store.updateSubscription(netflix.copyWith(
+      nextBillingDate: DateTime.now().add(const Duration(days: 25)),
+    ));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: SubscriptionDetailScreen(subscription: store.getSubscription(netflix.id)!),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Due banner should NOT be present
+    expect(find.text('Mark as Paid'), findsNothing);
+    expect(find.text('Skip cycle'), findsNothing);
+    expect(find.text('Spend & Billing'), findsOneWidget);
+    expect(find.text('Upcoming schedule'), findsOneWidget);
+    expect(find.text('Payment history'), findsOneWidget);
+
+    // Case 2: Subscription is Overdue by 2 days
+    store.updateSubscription(netflix.copyWith(
+      nextBillingDate: DateTime.now().subtract(const Duration(days: 2)),
+    ));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: SubscriptionDetailScreen(subscription: store.getSubscription(netflix.id)!),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Due banner MUST be visible now
+    expect(find.text('Payment overdue (2d)'), findsOneWidget);
+    expect(find.text('Mark as Paid'), findsOneWidget);
+    expect(find.text('Skip cycle'), findsOneWidget);
+
+    // Tapping Mark as Paid
+    await tester.tap(find.text('Mark as Paid'));
+    await tester.pumpAndSettle();
+
+    // Banner is dismissed because billing date moved to next month
+    expect(find.text('Mark as Paid'), findsNothing);
+    final updated = store.getSubscription(netflix.id)!;
+    expect(updated.nextBillingDate.isAfter(DateTime.now()), isTrue);
+  });
+
+  testWidgets('UpcomingScheduleScreen displays 12 projected billing cycles and total estimate', (WidgetTester tester) async {
+    final sub = Subscription(
+      id: 'test_sub',
+      name: 'Netflix Premium',
+      description: 'Ultra HD 4 Screens',
+      price: 15.49,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.entertainment,
+      brandColor: const Color(0xFFE50914),
+      iconData: Icons.movie,
+      nextBillingDate: DateTime.now().add(const Duration(days: 7)),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: UpcomingScheduleScreen(subscription: sub),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Upcoming schedule'), findsOneWidget);
+    expect(find.text('Netflix Premium'), findsOneWidget);
+    expect(find.text('PROJECTED BILLING DATES'), findsOneWidget);
+    expect(find.text('12 occurrences'), findsOneWidget);
+    expect(find.text('Next'), findsOneWidget);
+  });
+
+  testWidgets('CategoryPickerScreen displays all One UI categories and updates selection', (WidgetTester tester) async {
+    SubscriptionCategory? selectedCat;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: Builder(
+          builder: (context) {
+            return ElevatedButton(
+              onPressed: () async {
+                selectedCat = await CategoryPickerScreen.open(
+                  context,
+                  initialCategory: SubscriptionCategory.entertainment,
+                );
+              },
+              child: const Text('Open Category Picker'),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Category Picker'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ALL CATEGORIES'), findsOneWidget);
+    expect(find.text('Productivity & AI'), findsOneWidget);
+    expect(find.text('Music & Audio'), findsOneWidget);
+
+    // Tap Music & Audio
+    await tester.tap(find.text('Music & Audio'));
+    await tester.pumpAndSettle();
+
+    // Tap Save
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(selectedCat, equals(SubscriptionCategory.music));
+  });
+
+  testWidgets('Payment method display and duplicate PayPal prevention', (WidgetTester tester) async {
+    const paypalCard = PaymentMethod(
+      id: 'test_paypal',
+      nickname: 'Business PayPal',
+      type: PaymentMethodType.paypal,
+      brand: CardBrand.paypal,
+      last4: '',
+    );
+
+    // Subtitle must NOT have duplicate "PayPal PayPal"
+    expect(paypalCard.subtitleDisplay, equals('PayPal • Digital Wallet'));
+    expect(paypalCard.maskedDisplay, equals('Digital Wallet'));
+    expect(paypalCard.displayName, equals('Business PayPal'));
+
+    const visaCard = PaymentMethod(
+      id: 'test_visa',
+      nickname: 'Personal Meezan',
+      type: PaymentMethodType.creditCard,
+      brand: CardBrand.visa,
+      last4: '4242',
+    );
+    expect(visaCard.subtitleDisplay, equals('Visa •••• 4242'));
+    expect(visaCard.displayName, equals('Personal Meezan (•••• 4242)'));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: OneUIPaymentBrandIcon(brand: CardBrand.visa),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUIPaymentBrandIcon), findsOneWidget);
+  });
+
+  testWidgets('Smart payment record deduplication prevents duplicate entries on same date', (WidgetTester tester) async {
+    final store = SubscriptionStore.instance;
+    final sub = Subscription(
+      id: 'test_dedup_sub',
+      name: 'GitHub Copilot',
+      description: 'Individual Plan',
+      price: 10.0,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.developer,
+      brandColor: const Color(0xFF24292E),
+      iconData: Icons.code,
+      nextBillingDate: DateTime.now().add(const Duration(days: 10)),
+    );
+    store.addSubscription(sub);
+
+    final today = DateTime.now();
+    final firstAdd = store.addPaymentRecord(sub.id, today);
+    expect(firstAdd, isTrue);
+
+    final historyAfterFirst = store.getSubscription(sub.id)!.paymentHistory;
+    expect(historyAfterFirst.length, equals(1));
+
+    // Attempting to add payment on same calendar day must be rejected
+    final secondAdd = store.addPaymentRecord(sub.id, today);
+    expect(secondAdd, isFalse);
+
+    final historyAfterSecond = store.getSubscription(sub.id)!.paymentHistory;
+    expect(historyAfterSecond.length, equals(1));
+
+    // Adding on a different calendar day succeeds
+    final differentDay = today.subtract(const Duration(days: 30));
+    final thirdAdd = store.addPaymentRecord(sub.id, differentDay);
+    expect(thirdAdd, isTrue);
+
+    final historyAfterThird = store.getSubscription(sub.id)!.paymentHistory;
+    expect(historyAfterThird.length, equals(2));
+  });
+
+  testWidgets('PaymentMethodsScreen multi-selection mode and floating action bar', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: const PaymentMethodsScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment methods'), findsOneWidget);
+
+    // Long-press on first card to enter multi-selection mode
+    final firstCard = find.text('Primary Samsung Pay');
+    expect(firstCard, findsOneWidget);
+    await tester.longPress(firstCard);
+    await tester.pumpAndSettle();
+
+    // In selection mode: header changes to "1" pill and bottom action bar appears
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Move subs'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
+
+    // Tap second card to select 2
+    final secondCard = find.text('Standard Chartered World');
+    await tester.tap(secondCard);
+    await tester.pumpAndSettle();
+
+    expect(find.text('2'), findsOneWidget);
+    // When > 1 selected, Edit is hidden, Move subs and Delete remain
+    expect(find.text('Edit'), findsNothing);
+    expect(find.text('Move subs'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
+
+    // Tap cancel selection pill
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment methods'), findsOneWidget);
+  });
+
+  testWidgets('PaymentMethodPickerScreen displays saved cards and handles selection', (WidgetTester tester) async {
+    PaymentMethod? picked;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: Builder(
+          builder: (context) {
+            return ElevatedButton(
+              onPressed: () async {
+                picked = await PaymentMethodPickerScreen.open(
+                  context,
+                  currentMethodId: 'pay_samsung_visa',
+                );
+              },
+              child: const Text('Open Payment Picker'),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Payment Picker'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Payment method'), findsOneWidget);
+    expect(find.text('SAVED PAYMENT CARDS'), findsOneWidget);
+    expect(find.text('OTHER OPTIONS'), findsOneWidget);
+    expect(find.text('Primary Samsung Pay'), findsWidgets);
+    expect(find.text('Standard Chartered World'), findsOneWidget);
+    expect(find.text('No payment method'), findsOneWidget);
+
+    // Select second card: Standard Chartered World
+    await tester.tap(find.text('Standard Chartered World'));
+    await tester.pumpAndSettle();
+
+    // Tap Save
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(picked, isNotNull);
+    expect(picked!.id, equals('pay_mastercard_4242'));
+    expect(picked!.nickname, equals('Standard Chartered World'));
   });
 }
 

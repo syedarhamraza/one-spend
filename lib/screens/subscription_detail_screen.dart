@@ -12,10 +12,14 @@ import '../widgets/one_ui_floating_action_bar.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
+import '../widgets/one_ui_payment_brand_icon.dart';
+import 'category_picker_screen.dart';
 import 'icon_picker_screen.dart';
 import 'one_ui_field_editor_screen.dart';
+import 'payment_history_screen.dart';
 import 'payment_methods_screen.dart';
 import 'reminder_picker_screen.dart';
+import 'upcoming_schedule_screen.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -163,6 +167,8 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     OneUIToast.show(context, isPaused ? '${_sub.name} paused' : '${_sub.name} active');
   }
 
+
+
   Future<void> _shareSubscription() async {
     HapticFeedback.lightImpact();
     final dateFormat = DateFormat('MMM dd, yyyy');
@@ -263,6 +269,12 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
         final linkedCard = SubscriptionStore.instance.getPaymentMethod(_sub.paymentMethodId);
         final hasNoCard = _sub.paymentMethodId == null || linkedCard == null;
         final isCardExpiring = linkedCard != null && (linkedCard.isExpiringSoon || linkedCard.isExpired);
+
+        final upcomingDates = _sub.getUpcomingBillingDates(6);
+        final shortFormat = DateFormat('MMM dd');
+        final upcomingSubtitle = upcomingDates.length >= 2
+            ? '${shortFormat.format(upcomingDates[0])} (${_sub.currency}${_sub.price.toStringAsFixed(2)}) • ${shortFormat.format(upcomingDates[1])} (${_sub.currency}${_sub.price.toStringAsFixed(2)})'
+            : (upcomingDates.isNotEmpty ? shortFormat.format(upcomingDates[0]) : formattedDate);
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
@@ -465,8 +477,9 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                         ],
                                       ),
                                       const SizedBox(width: 10),
-                                      Flexible(
+                                      Expanded(
                                         child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Flexible(
@@ -510,6 +523,149 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                               ],
                             ),
                           ),
+
+                          // Context-Aware Due Date Action Banner (Concept 2)
+                          if (!isPaused && daysRemaining <= 0) ...[
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 14),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: (daysRemaining < 0
+                                        ? OneUITheme.accentRed
+                                        : OneUITheme.accentBlue)
+                                    .withValues(alpha: 0.08),
+                                borderRadius: OneUITheme.cardBorderRadius,
+                                border: Border.all(
+                                  color: (daysRemaining < 0
+                                          ? OneUITheme.accentRed
+                                          : OneUITheme.accentBlue)
+                                      .withValues(alpha: 0.35),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          color: (daysRemaining < 0
+                                                  ? OneUITheme.accentRed
+                                                  : OneUITheme.accentBlue)
+                                              .withValues(alpha: 0.18),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          daysRemaining < 0
+                                              ? Icons.warning_amber_rounded
+                                              : Icons.notifications_active_rounded,
+                                          size: 20,
+                                          color: daysRemaining < 0
+                                              ? OneUITheme.accentRed
+                                              : OneUITheme.accentBlue,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              daysRemaining < 0
+                                                  ? 'Payment overdue (${-daysRemaining}d)'
+                                                  : 'Payment due today',
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: -0.2,
+                                                color: daysRemaining < 0
+                                                    ? OneUITheme.accentRed
+                                                    : OneUITheme.accentBlue,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${_sub.currency}${_sub.price.toStringAsFixed(2)} • ${linkedCard?.nickname ?? 'Linked payment method'}',
+                                              style: const TextStyle(
+                                                fontSize: 12.5,
+                                                color: OneUITheme.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () {
+                                            HapticFeedback.lightImpact();
+                                            SubscriptionStore.instance.skipSubscriptionCycle(_sub.id);
+                                            _syncFromStore();
+                                            OneUIToast.show(context, 'Cycle skipped');
+                                          },
+                                          style: OutlinedButton.styleFrom(
+                                            side: BorderSide(
+                                              color: Colors.white.withValues(alpha: 0.15),
+                                              width: 0.8,
+                                            ),
+                                            backgroundColor: Colors.white.withValues(alpha: 0.04),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(vertical: 11),
+                                          ),
+                                          child: const Text(
+                                            'Skip cycle',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: OneUITheme.textPrimary,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            HapticFeedback.mediumImpact();
+                                            SubscriptionStore.instance.markSubscriptionPaid(_sub.id);
+                                            _syncFromStore();
+                                            OneUIToast.show(context, 'Payment recorded & cycle advanced');
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: OneUITheme.accentBlue,
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(14),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(vertical: 11),
+                                          ),
+                                          child: const Text(
+                                            'Mark as Paid',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
 
                           // Section 1: Plan & Billing (Matching One UI Screenshot 3 with tap-to-edit subpages)
                           OneUISection(
@@ -606,18 +762,26 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   subtitle: _sub.category.label,
                                   subtitleColor: OneUITheme.textPrimary,
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                                  onTap: () => _editField<SubscriptionCategory>(
-                                    title: 'Edit category',
-                                    type: FieldEditorType.category,
-                                    initialValue: _sub.category,
-                                    onApply: (val) => _sub = _sub.copyWith(category: val),
-                                  ),
+                                  onTap: () async {
+                                    final newCat = await CategoryPickerScreen.open(
+                                      context,
+                                      initialCategory: _sub.category,
+                                    );
+                                    if (newCat == null || newCat == _sub.category) return;
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _sub = _sub.copyWith(category: newCat);
+                                    });
+                                    SubscriptionStore.instance.updateSubscription(_sub);
+                                    if (context.mounted) {
+                                      OneUIToast.show(context, 'Category updated to ${newCat.label}');
+                                    }
+                                  },
                                 ),
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(
-                                    linkedCard != null ? linkedCard.brand.icon : Icons.payment_rounded,
-                                    linkedCard != null ? linkedCard.cardColor : OneUITheme.accentAmber,
-                                  ),
+                                  leading: linkedCard != null
+                                      ? OneUIPaymentBrandIcon(brand: linkedCard.brand, width: 36, height: 26)
+                                      : _buildCategoryIconBadge(Icons.payment_rounded, OneUITheme.accentAmber),
                                   title: 'Payment method',
                                   subtitle: linkedCard != null
                                       ? linkedCard.displayName
@@ -713,55 +877,110 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                             ),
                           ),
 
-                          // Section 4: Renewal History & Auto-Renew
+                          // Section 4: Spend & Billing Hub (Concepts 1, 2, 3)
                           OneUISection(
-                            title: 'Renewal & Payment History',
-                            child: OneUIGroupCard(
-                              items: [
-                                OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.autorenew_rounded, OneUITheme.accentBlue),
-                                  title: 'Auto-record renewals',
-                                  subtitle: _sub.autoRenew
-                                      ? 'Automatically records payments & advances date on renewal'
-                                      : 'Manual mode: Log renewals yourself when paid',
-                                  subtitleColor: OneUITheme.textSecondary,
-                                  trailing: Switch.adaptive(
-                                    value: _sub.autoRenew,
-                                    activeTrackColor: OneUITheme.accentBlue,
-                                    onChanged: (val) {
-                                      HapticFeedback.lightImpact();
-                                      setState(() {
-                                        _sub = _sub.copyWith(autoRenew: val);
-                                      });
-                                      SubscriptionStore.instance.updateSubscription(_sub);
-                                    },
+                            title: 'Spend & Billing',
+                            child: Column(
+                              children: [
+                                // Lifetime Spend Overview Tile
+                                Container(
+                                  width: double.infinity,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: OneUITheme.cardColor,
+                                    borderRadius: OneUITheme.cardBorderRadius,
+                                    border: OneUITheme.cardBorder,
+                                    boxShadow: OneUITheme.cardShadow,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                'Lifetime spend',
+                                                style: TextStyle(
+                                                  fontSize: 12.5,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: OneUITheme.textSecondary,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                '${_sub.currency}${totalPaid.toStringAsFixed(2)}',
+                                                style: const TextStyle(
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: -0.4,
+                                                  color: OneUITheme.textPrimary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                                            decoration: BoxDecoration(
+                                              color: OneUITheme.accentBlue.withValues(alpha: 0.14),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              '$recordedPayments ${recordedPayments == 1 ? 'payment' : 'payments'}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: OneUITheme.accentBlue,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Estimated annual: ${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)}/yr',
+                                        style: const TextStyle(
+                                          fontSize: 12.5,
+                                          color: OneUITheme.textSecondary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.receipt_long_rounded, OneUITheme.accentGreen),
-                                  title: _sub.paymentHistory.isNotEmpty
-                                      ? 'Last renewed on ${dateFormat.format(_sub.paymentHistory.first)}'
-                                      : 'No past renewals logged',
-                                  subtitle: _sub.paymentHistory.isNotEmpty
-                                      ? '$recordedPayments recorded payments (${_sub.currency}${totalPaid.toStringAsFixed(2)} total spend)'
-                                      : 'Ledger tracking past payments to calculate lifetime spend',
-                                  subtitleColor: OneUITheme.textSecondary,
-                                  trailing: TextButton(
-                                    onPressed: _markRenewed,
-                                    style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      backgroundColor: OneUITheme.accentGreen.withValues(alpha: 0.15),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+
+                                // Schedule & History Group Card
+                                OneUIGroupCard(
+                                  items: [
+                                    OneUIGroupItem(
+                                      leading: _buildCategoryIconBadge(Icons.calendar_month_rounded, OneUITheme.accentBlue),
+                                      title: 'Upcoming schedule',
+                                      subtitle: upcomingSubtitle,
+                                      subtitleColor: OneUITheme.textSecondary,
+                                      trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                                      onTap: () {
+                                        HapticFeedback.lightImpact();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => UpcomingScheduleScreen(subscription: _sub),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    child: const Text(
-                                      'Record',
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: OneUITheme.accentGreen,
-                                      ),
+                                    OneUIGroupItem(
+                                      leading: _buildCategoryIconBadge(Icons.receipt_long_rounded, OneUITheme.accentGreen),
+                                      title: 'Payment history',
+                                      subtitle: _sub.paymentHistory.isNotEmpty
+                                          ? 'Last paid on ${dateFormat.format(_sub.paymentHistory.first)} • ${_sub.paymentHistory.length} records'
+                                          : 'No recorded payments yet',
+                                      subtitleColor: OneUITheme.textSecondary,
+                                      trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                                      onTap: () => PaymentHistoryScreen.open(context, _sub.id),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),

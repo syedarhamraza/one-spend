@@ -15,6 +15,7 @@ import 'one_ui_field_editor_screen.dart';
 import 'payment_methods_screen.dart';
 import 'popular_presets_screen.dart';
 import 'reminder_picker_screen.dart';
+import 'category_picker_screen.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
@@ -488,12 +489,15 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                               subtitle: _category.label,
                               subtitleColor: OneUITheme.textPrimary,
                               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                              onTap: () => _editField<SubscriptionCategory>(
-                                title: 'Category',
-                                type: FieldEditorType.category,
-                                initialValue: _category,
-                                onApply: (val) => _category = val,
-                              ),
+                              onTap: () async {
+                                final selected = await CategoryPickerScreen.open(
+                                  context,
+                                  initialCategory: _category,
+                                );
+                                if (selected != null && mounted) {
+                                  setState(() => _category = selected);
+                                }
+                              },
                             ),
                             OneUIGroupItem(
                               leading: _buildCategoryIconBadge(Icons.payment_rounded, OneUITheme.accentAmber),

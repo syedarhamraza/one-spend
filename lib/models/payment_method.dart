@@ -14,21 +14,30 @@ enum PaymentMethodType {
 }
 
 enum CardBrand {
-  visa('Visa', Icons.credit_card_rounded, Color(0xFF1A1F71)),
-  mastercard('Mastercard', Icons.credit_card_rounded, Color(0xFFEB001B)),
-  amex('American Express', Icons.credit_card_rounded, Color(0xFF006FCF)),
-  discover('Discover', Icons.credit_card_rounded, Color(0xFFFF6000)),
-  applePay('Apple Pay', Icons.apple_rounded, Color(0xFF000000)),
-  googlePay('Google Pay', Icons.g_mobiledata_rounded, Color(0xFF4285F4)),
-  samsungPay('Samsung Pay', Icons.smartphone_rounded, Color(0xFF1428A0)),
-  paypal('PayPal', Icons.paypal_rounded, Color(0xFF003087)),
-  bank('Bank / Direct Debit', Icons.account_balance_rounded, Color(0xFF00897B)),
-  other('Custom Card', Icons.credit_card_rounded, Color(0xFF424242));
+  visa('Visa', Icons.credit_card_rounded, Color(0xFF1A1F71), 'assets/logos/payments/visa.svg'),
+  mastercard('Mastercard', Icons.credit_card_rounded, Color(0xFFEB001B), 'assets/logos/payments/mastercard.svg'),
+  amex('American Express', Icons.credit_card_rounded, Color(0xFF006FCF), 'assets/logos/payments/american-express.svg'),
+  discover('Discover', Icons.credit_card_rounded, Color(0xFFFF6000), 'assets/logos/payments/discover.svg'),
+  applePay('Apple Pay', Icons.apple_rounded, Color(0xFF000000), 'assets/logos/payments/apple-pay.svg'),
+  googlePay('Google Pay', Icons.g_mobiledata_rounded, Color(0xFF4285F4), 'assets/logos/payments/google-pay.svg'),
+  samsungPay('Samsung Pay', Icons.smartphone_rounded, Color(0xFF1428A0), 'assets/logos/payments/samsung-pay.svg'),
+  paypal('PayPal', Icons.paypal_rounded, Color(0xFF003087), 'assets/logos/payments/paypal.svg'),
+  unionPay('UnionPay', Icons.credit_card_rounded, Color(0xFF007B80), 'assets/logos/payments/unionpay.svg'),
+  jcb('JCB', Icons.credit_card_rounded, Color(0xFF0E4C92), 'assets/logos/payments/jcb.svg'),
+  diners('Diners Club', Icons.credit_card_rounded, Color(0xFF004A97), 'assets/logos/payments/diners.svg'),
+  maestro('Maestro', Icons.credit_card_rounded, Color(0xFF00A2E5), 'assets/logos/payments/maestro.svg'),
+  klarna('Klarna', Icons.shopping_bag_rounded, Color(0xFFFFB3C7), 'assets/logos/payments/klarna.svg'),
+  alipay('Alipay', Icons.account_balance_wallet_rounded, Color(0xFF1677FF), 'assets/logos/payments/alipay.svg'),
+  wechatPay('WeChat Pay', Icons.chat_bubble_rounded, Color(0xFF07C160), 'assets/logos/payments/wechat-pay.svg'),
+  amazonPay('Amazon Pay', Icons.shopping_cart_rounded, Color(0xFFFF9900), 'assets/logos/payments/amazon-pay.svg'),
+  bank('Bank / Direct Debit', Icons.account_balance_rounded, Color(0xFF00897B), 'assets/logos/payments/card-generic.svg'),
+  other('Custom Card', Icons.credit_card_rounded, Color(0xFF424242), 'assets/logos/payments/card-generic.svg');
 
   final String label;
   final IconData icon;
   final Color defaultColor;
-  const CardBrand(this.label, this.icon, this.defaultColor);
+  final String? assetPath;
+  const CardBrand(this.label, this.icon, this.defaultColor, [this.assetPath]);
 }
 
 enum CardExpiryStatus {
@@ -67,13 +76,42 @@ class PaymentMethod {
     nickname: 'No payment method',
   );
 
-  /// Display string for the card digits, e.g. "•••• 9124"
+  /// Display string for the card digits or type, e.g. "•••• 9124"
   String get maskedDisplay {
     if (last4.isNotEmpty) {
       return '•••• $last4';
     }
-    if (type == PaymentMethodType.paypal) {
-      return 'PayPal';
+    if (type == PaymentMethodType.paypal || brand == CardBrand.paypal) {
+      return 'Digital Wallet';
+    }
+    return brand.label;
+  }
+
+  /// Single cohesive subtitle for cards and list views (avoids "PayPal PayPal" duplicates)
+  String get subtitleDisplay {
+    if (last4.isNotEmpty) {
+      return '${brand.label} •••• $last4';
+    }
+    if (type == PaymentMethodType.paypal || brand == CardBrand.paypal) {
+      return 'PayPal • Digital Wallet';
+    }
+    if (brand == CardBrand.applePay) {
+      return 'Apple Pay • Digital Wallet';
+    }
+    if (brand == CardBrand.googlePay) {
+      return 'Google Pay • Digital Wallet';
+    }
+    if (brand == CardBrand.samsungPay) {
+      return 'Samsung Pay • Digital Wallet';
+    }
+    if (brand == CardBrand.alipay) {
+      return 'Alipay • Digital Wallet';
+    }
+    if (brand == CardBrand.wechatPay) {
+      return 'WeChat Pay • Digital Wallet';
+    }
+    if (type == PaymentMethodType.bankTransfer || brand == CardBrand.bank) {
+      return 'Bank Account • Direct Debit';
     }
     return brand.label;
   }
@@ -83,7 +121,7 @@ class PaymentMethod {
     if (nickname.isNotEmpty) {
       return last4.isNotEmpty ? '$nickname (•••• $last4)' : nickname;
     }
-    return '${brand.label} (•••• $last4)'.trim();
+    return last4.isNotEmpty ? '${brand.label} (•••• $last4)' : brand.label;
   }
 
   /// Expiry status calculation algorithm

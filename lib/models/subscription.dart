@@ -202,6 +202,50 @@ class Subscription {
     return target.difference(today).inDays;
   }
 
+  /// Calculates the next sequential billing date based on the billing cycle
+  DateTime calculateNextDateFrom(DateTime fromDate) {
+    DateTime newDate;
+    switch (billingCycle) {
+      case BillingCycle.weekly:
+        newDate = fromDate.add(const Duration(days: 7));
+        break;
+      case BillingCycle.monthly:
+        final targetMonth = fromDate.month + 1;
+        final targetYear = fromDate.year + (targetMonth > 12 ? 1 : 0);
+        final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+        final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+        final clampedDay = fromDate.day.clamp(1, lastDay);
+        newDate = DateTime(targetYear, normalizedMonth, clampedDay);
+        break;
+      case BillingCycle.quarterly:
+        final targetMonth = fromDate.month + 3;
+        final targetYear = fromDate.year + ((targetMonth - 1) ~/ 12);
+        final normalizedMonth = ((targetMonth - 1) % 12) + 1;
+        final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
+        final clampedDay = fromDate.day.clamp(1, lastDay);
+        newDate = DateTime(targetYear, normalizedMonth, clampedDay);
+        break;
+      case BillingCycle.yearly:
+        final targetYear = fromDate.year + 1;
+        final lastDay = DateTime(targetYear, fromDate.month + 1, 0).day;
+        final clampedDay = fromDate.day.clamp(1, lastDay);
+        newDate = DateTime(targetYear, fromDate.month, clampedDay);
+        break;
+    }
+    return newDate;
+  }
+
+  /// Returns the next projected billing dates starting from nextBillingDate
+  List<DateTime> getUpcomingBillingDates([int count = 3]) {
+    final list = <DateTime>[];
+    DateTime current = nextBillingDate;
+    for (int i = 0; i < count; i++) {
+      list.add(current);
+      current = calculateNextDateFrom(current);
+    }
+    return list;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -768,6 +812,12 @@ class SubscriptionStore extends ChangeNotifier {
     _saveToStorage();
   }
 
+  Subscription? getSubscription(String id) {
+    final index = _subscriptions.indexWhere((s) => s.id == id);
+    if (index != -1) return _subscriptions[index];
+    return null;
+  }
+
   int getLinkedSubscriptionCount(String methodId) {
     return _subscriptions.where((s) => s.paymentMethodId == methodId).length;
   }
@@ -825,77 +875,83 @@ class SubscriptionStore extends ChangeNotifier {
 
   /// Rolls renewal date forward according to the billing cycle and logs to paymentHistory
   void renewSubscription(String id) {
+    markSubscriptionPaid(id);
+  }
+
+  /// Records a payment for the subscription, advances its next billing date, and updates history
+  void markSubscriptionPaid(String id, [DateTime? paymentDate]) {
     final index = _subscriptions.indexWhere((item) => item.id == id);
     if (index != -1) {
       final sub = _subscriptions[index];
-      DateTime newDate;
-      switch (sub.billingCycle) {
-        case BillingCycle.weekly:
-          newDate = sub.nextBillingDate.add(const Duration(days: 7));
-          break;
-        case BillingCycle.monthly:
-          final targetMonth = sub.nextBillingDate.month + 1;
-          final targetYear = sub.nextBillingDate.year + (targetMonth > 12 ? 1 : 0);
-          final normalizedMonth = ((targetMonth - 1) % 12) + 1;
-          final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
-          final clampedDay = sub.nextBillingDate.day.clamp(1, lastDay);
-          newDate = DateTime(targetYear, normalizedMonth, clampedDay);
-          break;
-        case BillingCycle.quarterly:
-          final targetMonth = sub.nextBillingDate.month + 3;
-          final targetYear = sub.nextBillingDate.year + ((targetMonth - 1) ~/ 12);
-          final normalizedMonth = ((targetMonth - 1) % 12) + 1;
-          final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
-          final clampedDay = sub.nextBillingDate.day.clamp(1, lastDay);
-          newDate = DateTime(targetYear, normalizedMonth, clampedDay);
-          break;
-        case BillingCycle.yearly:
-          final targetYear = sub.nextBillingDate.year + 1;
-          final lastDay = DateTime(targetYear, sub.nextBillingDate.month + 1, 0).day;
-          final clampedDay = sub.nextBillingDate.day.clamp(1, lastDay);
-          newDate = DateTime(targetYear, sub.nextBillingDate.month, clampedDay);
-          break;
+      DateTime newDate = sub.calculateNextDateFrom(sub.nextBillingDate);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      while (newDate.isBefore(today)) {
+        newDate = sub.calculateNextDateFrom(newDate);
       }
+      final dateToLog = paymentDate ?? (sub.nextBillingDate.isBefore(now) ? sub.nextBillingDate : now);
+      final updatedHistory = List<DateTime>.from(sub.paymentHistory)..insert(0, dateToLog);
+      updatedHistory.sort((a, b) => b.compareTo(a));
 
-      // Catch up if multiple cycles overdue
-      while (newDate.isBefore(DateTime.now())) {
-        // Re-run the same advancement logic
-        switch (sub.billingCycle) {
-          case BillingCycle.weekly:
-            newDate = newDate.add(const Duration(days: 7));
-            break;
-          case BillingCycle.monthly:
-            final tm = newDate.month + 1;
-            final ty = newDate.year + (tm > 12 ? 1 : 0);
-            final nm = ((tm - 1) % 12) + 1;
-            final ld = DateTime(ty, nm + 1, 0).day;
-            final cd = newDate.day.clamp(1, ld);
-            newDate = DateTime(ty, nm, cd);
-            break;
-          case BillingCycle.quarterly:
-            final tm = newDate.month + 3;
-            final ty = newDate.year + ((tm - 1) ~/ 12);
-            final nm = ((tm - 1) % 12) + 1;
-            final ld = DateTime(ty, nm + 1, 0).day;
-            final cd = newDate.day.clamp(1, ld);
-            newDate = DateTime(ty, nm, cd);
-            break;
-          case BillingCycle.yearly:
-            final ty = newDate.year + 1;
-            final ld = DateTime(ty, newDate.month + 1, 0).day;
-            final cd = newDate.day.clamp(1, ld);
-            newDate = DateTime(ty, newDate.month, cd);
-            break;
-        }
-      }
-
-      final updatedHistory = List<DateTime>.from(sub.paymentHistory)..insert(0, DateTime.now());
       _subscriptions[index] = sub.copyWith(
         nextBillingDate: newDate,
         paymentHistory: updatedHistory,
       );
       notifyListeners();
       _saveToStorage();
+    }
+  }
+
+  /// Advances next billing date to the next cycle without logging to payment history
+  void skipSubscriptionCycle(String id) {
+    final index = _subscriptions.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      final sub = _subscriptions[index];
+      DateTime newDate = sub.calculateNextDateFrom(sub.nextBillingDate);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      while (newDate.isBefore(today)) {
+        newDate = sub.calculateNextDateFrom(newDate);
+      }
+      _subscriptions[index] = sub.copyWith(nextBillingDate: newDate);
+      notifyListeners();
+      _saveToStorage();
+    }
+  }
+
+  /// Manually adds a historical payment record to a subscription.
+  /// Prevents accidental duplicate records on the same calendar day.
+  /// Returns `true` if added, or `false` if a record on the same date already exists.
+  bool addPaymentRecord(String id, DateTime date) {
+    final index = _subscriptions.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      final sub = _subscriptions[index];
+      final alreadyExists = sub.paymentHistory.any((d) =>
+          d.year == date.year && d.month == date.month && d.day == date.day);
+      if (alreadyExists) {
+        return false;
+      }
+      final updatedHistory = List<DateTime>.from(sub.paymentHistory)..add(date);
+      updatedHistory.sort((a, b) => b.compareTo(a));
+      _subscriptions[index] = sub.copyWith(paymentHistory: updatedHistory);
+      notifyListeners();
+      _saveToStorage();
+      return true;
+    }
+    return false;
+  }
+
+  /// Deletes a payment record at the specified index
+  void deletePaymentRecord(String id, int historyIndex) {
+    final index = _subscriptions.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      final sub = _subscriptions[index];
+      if (historyIndex >= 0 && historyIndex < sub.paymentHistory.length) {
+        final updatedHistory = List<DateTime>.from(sub.paymentHistory)..removeAt(historyIndex);
+        _subscriptions[index] = sub.copyWith(paymentHistory: updatedHistory);
+        notifyListeners();
+        _saveToStorage();
+      }
     }
   }
 
