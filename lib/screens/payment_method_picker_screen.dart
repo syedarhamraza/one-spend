@@ -958,7 +958,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                   curve: Curves.easeInOutCubic,
                   left: 0,
                   right: 0,
-                  bottom: _isSelectionMode ? -100 : 28,
+                  bottom: _isSelectionMode ? -120 : 0,
                   child: IgnorePointer(
                     ignoring: _isSelectionMode,
                     child: AnimatedOpacity(
@@ -967,12 +967,15 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                       opacity: _isSelectionMode ? 0.0 : 1.0,
                       child: SafeArea(
                         top: false,
-                        child: Center(
-                          child: OneUIFloatingCancelSavePill(
-                            cancelLabel: 'Cancel',
-                            saveLabel: 'Save',
-                            onCancel: () => Navigator.pop(context),
-                            onSave: () => _save(methods),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Center(
+                            child: OneUIFloatingCancelSavePill(
+                              cancelLabel: 'Cancel',
+                              saveLabel: 'Save',
+                              onCancel: () => Navigator.pop(context),
+                              onSave: () => _save(methods),
+                            ),
                           ),
                         ),
                       ),
@@ -985,42 +988,39 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                 curve: Curves.easeInOutCubic,
                 left: 0,
                 right: 0,
-                bottom: _isSelectionMode ? 28 : -100,
+                bottom: _isSelectionMode ? 0 : -120,
                 child: IgnorePointer(
                   ignoring: !_isSelectionMode,
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeInOutCubic,
                     opacity: _isSelectionMode ? 1.0 : 0.0,
-                    child: SafeArea(
-                      top: false,
-                      child: Center(
-                        child: OneUIFloatingActionBar(
-                          items: [
-                            if (_selectedIds.length == 1)
-                              OneUIFloatingActionBarItem(
-                                label: 'Edit',
-                                icon: Icons.edit_rounded,
-                                onTap: () {
-                                  final m = methods.firstWhere((item) => item.id == _selectedIds.first);
-                                  _openEditCard(m);
-                                },
-                              ),
+                    child: Center(
+                      child: OneUIFloatingActionBar(
+                        items: [
+                          if (_selectedIds.length == 1)
                             OneUIFloatingActionBarItem(
-                              label: 'Move subs',
-                              icon: Icons.swap_horiz_rounded,
-                              onTap: () => _showBatchReassignModal(
-                                methods.where((m) => _selectedIds.contains(m.id)).toList(),
-                              ),
+                              label: 'Edit',
+                              icon: Icons.edit_rounded,
+                              onTap: () {
+                                final m = methods.firstWhere((item) => item.id == _selectedIds.first);
+                                _openEditCard(m);
+                              },
                             ),
-                            OneUIFloatingActionBarItem(
-                              label: 'Delete',
-                              icon: Icons.delete_outline_rounded,
-                              color: OneUITheme.accentRed,
-                              onTap: () => _deleteSelectedCards(methods),
+                          OneUIFloatingActionBarItem(
+                            label: 'Move subs',
+                            icon: Icons.swap_horiz_rounded,
+                            onTap: () => _showBatchReassignModal(
+                              methods.where((m) => _selectedIds.contains(m.id)).toList(),
                             ),
-                          ],
-                        ),
+                          ),
+                          OneUIFloatingActionBarItem(
+                            label: 'Delete',
+                            icon: Icons.delete_outline_rounded,
+                            color: OneUITheme.accentRed,
+                            onTap: () => _deleteSelectedCards(methods),
+                          ),
+                        ],
                       ),
                     ),
                   ),

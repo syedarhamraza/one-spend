@@ -37,7 +37,7 @@ class OneUISelectionActionBar extends StatelessWidget {
 
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 8),
             child: Align(
               alignment: Alignment.bottomCenter,
               child: DecoratedBox(

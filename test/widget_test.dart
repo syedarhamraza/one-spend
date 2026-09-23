@@ -1800,6 +1800,63 @@ void main() {
     expect(picked!.id, equals('pay_mastercard_4242'));
     expect(picked!.nickname, equals('Standard Chartered World'));
   });
+
+  testWidgets('Consistent bottom spacing across floating navbars, action bars, and stadium pills', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    tester.view.padding = const FakeViewPadding(bottom: 40); // 40px gesture navigation handle
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetPadding();
+    });
+
+    // Verify OneUIFloatingNavBar padding
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: OneUIFloatingNavBar(
+            currentIndex: 0,
+            onTap: (_) {},
+            items: const [
+              OneUINavItem(activeIcon: Icons.home, inactiveIcon: Icons.home_outlined, label: 'Home'),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final navBarPadding = tester.widget<Padding>(
+      find.descendant(
+        of: find.byType(OneUIFloatingNavBar),
+        matching: find.byWidgetPredicate((w) => w is Padding && w.padding == const EdgeInsets.only(left: 18, right: 18, bottom: 8)),
+      ),
+    );
+    expect(navBarPadding, isNotNull);
+
+    // Verify OneUISelectionActionBar padding
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: OneUISelectionActionBar(
+            selectedCount: 1,
+            onShare: () {},
+            onDelete: () {},
+            onMore: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final selectionBarPadding = tester.widget<Padding>(
+      find.descendant(
+        of: find.byType(OneUISelectionActionBar),
+        matching: find.byWidgetPredicate((w) => w is Padding && w.padding == const EdgeInsets.only(bottom: 8)),
+      ),
+    );
+    expect(selectionBarPadding, isNotNull);
+  });
 }
 
 

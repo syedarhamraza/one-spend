@@ -289,12 +289,18 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottomInset > 0 ? (bottomInset + 12.0) : 24.0,
-            child: Center(
-              child: OneUIFloatingCancelSavePill(
-                onCancel: () => Navigator.pop(context),
-                onSave: _save,
-                saveLabel: 'Save',
+            bottom: bottomInset > 0 ? (bottomInset + 12.0) : 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Center(
+                  child: OneUIFloatingCancelSavePill(
+                    onCancel: () => Navigator.pop(context),
+                    onSave: _save,
+                    saveLabel: 'Save',
+                  ),
+                ),
               ),
             ),
           ),

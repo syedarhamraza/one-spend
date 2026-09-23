@@ -559,12 +559,18 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottomInset + 20,
-            child: Center(
-              child: OneUIFloatingCancelSavePill(
-                onCancel: () => Navigator.pop(context),
-                onSave: _saveSubscription,
-                canSave: canSave,
+            bottom: bottomInset > 0 ? (bottomInset + 12) : 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Center(
+                  child: OneUIFloatingCancelSavePill(
+                    onCancel: () => Navigator.pop(context),
+                    onSave: _saveSubscription,
+                    canSave: canSave,
+                  ),
+                ),
               ),
             ),
           ),

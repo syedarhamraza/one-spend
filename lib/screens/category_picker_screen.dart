@@ -218,15 +218,18 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 28,
+            bottom: 0,
             child: SafeArea(
               top: false,
-              child: Center(
-                child: OneUIFloatingCancelSavePill(
-                  cancelLabel: 'Cancel',
-                  saveLabel: 'Save',
-                  onCancel: () => Navigator.pop(context),
-                  onSave: _save,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Center(
+                  child: OneUIFloatingCancelSavePill(
+                    cancelLabel: 'Cancel',
+                    saveLabel: 'Save',
+                    onCancel: () => Navigator.pop(context),
+                    onSave: _save,
+                  ),
                 ),
               ),
             ),

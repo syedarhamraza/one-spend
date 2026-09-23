@@ -171,24 +171,30 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: bottomInset + 20,
-            child: Center(
-              child: AnimatedBuilder(
-                animation: _textController,
-                builder: (context, _) {
-                  bool canSave = true;
-                  if (widget.type == FieldEditorType.text) {
-                    canSave = _textController.text.trim().isNotEmpty;
-                  } else if (widget.type == FieldEditorType.number) {
-                    final parsed = double.tryParse(_textController.text.trim());
-                    canSave = parsed != null && parsed >= 0;
-                  }
-                  return OneUIFloatingCancelSavePill(
-                    onCancel: _onCancel,
-                    onSave: _onSave,
-                    canSave: canSave,
-                  );
-                },
+            bottom: bottomInset > 0 ? (bottomInset + 12.0) : 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _textController,
+                    builder: (context, _) {
+                      bool canSave = true;
+                      if (widget.type == FieldEditorType.text) {
+                        canSave = _textController.text.trim().isNotEmpty;
+                      } else if (widget.type == FieldEditorType.number) {
+                        final parsed = double.tryParse(_textController.text.trim());
+                        canSave = parsed != null && parsed >= 0;
+                      }
+                      return OneUIFloatingCancelSavePill(
+                        onCancel: _onCancel,
+                        onSave: _onSave,
+                        canSave: canSave,
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
