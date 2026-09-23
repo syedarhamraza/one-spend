@@ -360,7 +360,7 @@ class AnalyticsScreen extends StatelessWidget {
                                               ),
                                               const SizedBox(width: 8),
                                               Text(
-                                                '${store.currency}${amount.toStringAsFixed(2)} / mo (${(percentage * 100).toStringAsFixed(0)}%)',
+                                                '${store.currency}${amount.toStringAsFixed(2)} / mo (${(percentage * 100).round()}%)',
                                                 style: const TextStyle(
                                                   fontSize: 12.5,
                                                   fontWeight: FontWeight.bold,
@@ -373,7 +373,7 @@ class AnalyticsScreen extends StatelessWidget {
                                           ClipRRect(
                                             borderRadius: BorderRadius.circular(6),
                                             child: LinearProgressIndicator(
-                                              value: percentage,
+                                              value: percentage.clamp(0.0, 1.0),
                                               backgroundColor: Colors.white.withValues(alpha: 0.05),
                                               valueColor: AlwaysStoppedAnimation<Color>(
                                                 _getCategoryColor(category),

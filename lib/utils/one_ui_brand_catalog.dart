@@ -423,6 +423,6 @@ class OneUIBrandCatalog {
     for (int i = 0; i < name.length; i++) {
       hash = name.codeUnitAt(i) + ((hash << 5) - hash);
     }
-    return colors[hash.abs() % colors.length];
+    return colors[(hash & 0x7FFFFFFFFFFFFFFF) % colors.length];
   }
 }

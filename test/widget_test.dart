@@ -22,6 +22,7 @@ import 'package:onespend/screens/category_picker_screen.dart';
 import 'package:onespend/screens/payment_methods_screen.dart';
 import 'package:onespend/screens/payment_method_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
+import 'package:onespend/utils/one_ui_brand_catalog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -1856,6 +1857,148 @@ void main() {
       ),
     );
     expect(selectionBarPadding, isNotNull);
+  });
+
+  test('Billing anchor drift fix preserves 31st across February', () {
+    final sub = Subscription(
+      id: 'sub_drift_test',
+      name: 'Drift Test',
+      description: 'Test Anchor',
+      price: 15.0,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.cloud,
+      brandColor: Colors.blue,
+      iconData: Icons.cloud,
+      nextBillingDate: DateTime(2025, 1, 31),
+      anchorDay: 31,
+    );
+
+    // Roll forward to February: should clamp to Feb 28
+    final febDate = sub.calculateNextDateFrom(sub.nextBillingDate);
+    expect(febDate.year, equals(2025));
+    expect(febDate.month, equals(2));
+    expect(febDate.day, equals(28));
+
+    // Roll forward to March: anchorDay 31 restores March 31 without drifting to 28!
+    final marchDate = sub.calculateNextDateFrom(febDate);
+    expect(marchDate.year, equals(2025));
+    expect(marchDate.month, equals(3));
+    expect(marchDate.day, equals(31));
+
+    // Serialization preserves anchorDay
+    final json = sub.toJson();
+    expect(json['anchorDay'], equals(31));
+    final decoded = Subscription.fromJson(json);
+    expect(decoded.anchorDay, equals(31));
+  });
+
+  test('Free trial exclusion from spend, active status count, and budget clamping', () {
+    final store = SubscriptionStore.instance;
+    store.clearAllData();
+
+    final activeSub = Subscription(
+      id: 'sub_active',
+      name: 'Active Service',
+      description: 'Active',
+      price: 20.0,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.productivity,
+      brandColor: Colors.green,
+      iconData: Icons.work,
+      status: SubscriptionStatus.active,
+      nextBillingDate: DateTime.now().add(const Duration(days: 10)),
+    );
+
+    final dueSoonSub = Subscription(
+      id: 'sub_due_soon',
+      name: 'Due Soon Service',
+      description: 'Due Soon',
+      price: 10.0,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.entertainment,
+      brandColor: Colors.red,
+      iconData: Icons.movie,
+      status: SubscriptionStatus.dueSoon,
+      nextBillingDate: DateTime.now().add(const Duration(days: 1)),
+    );
+
+    final trialSub = Subscription(
+      id: 'sub_trial',
+      name: 'Trial Service',
+      description: 'Trial',
+      price: 50.0,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.cloud,
+      brandColor: Colors.purple,
+      iconData: Icons.cloud,
+      status: SubscriptionStatus.trial,
+      nextBillingDate: DateTime.now().add(const Duration(days: 20)),
+    );
+
+    store.batchAdd([activeSub, dueSoonSub, trialSub]);
+
+    // totalMonthlySpend must only sum active + dueSoon (20 + 10 = 30), NOT the $50 trial!
+    expect(store.totalMonthlySpend, equals(30.0));
+
+    // totalActiveCount counts both active and dueSoon (2 paying services)
+    expect(store.totalActiveCount, equals(2));
+
+    // highestCostSubscription must be Active Service ($20), NOT the $50 trial!
+    expect(store.highestCostSubscription?.id, equals('sub_active'));
+
+    // categorySpendMap must not include the trial category
+    expect(store.categorySpendMap[SubscriptionCategory.cloud], isNull);
+    expect(store.categorySpendMap[SubscriptionCategory.productivity], equals(20.0));
+    expect(store.categorySpendMap[SubscriptionCategory.entertainment], equals(10.0));
+
+    // Budget clamping test
+    store.setMonthlyBudget(-50.0);
+    expect(store.monthlyBudget, equals(0.0));
+
+    store.setMonthlyBudget(1500000.0);
+    expect(store.monthlyBudget, equals(999999.0));
+
+    store.setMonthlyBudget(150.0);
+    expect(store.monthlyBudget, equals(150.0));
+  });
+
+  test('Monogram hash bitwise AND handles negative hashes gracefully', () {
+    // Calling getMonogramColor on various strings should never crash or throw negative index
+    expect(() => OneUIBrandCatalog.getMonogramColor(''), returnsNormally);
+    expect(() => OneUIBrandCatalog.getMonogramColor('Netflix'), returnsNormally);
+    expect(() => OneUIBrandCatalog.getMonogramColor('A' * 1000), returnsNormally);
+    expect(() => OneUIBrandCatalog.getMonogramColor('⚡️ Special & Characters 123!'), returnsNormally);
+  });
+
+  test('PaymentMethod statement day clamping and expiry month validation', () {
+    final methodJson = {
+      'id': 'pay_test_clamp',
+      'nickname': 'Test Card',
+      'statementDay': 99, // Out of bounds
+      'expiryDate': '14/28', // Invalid month 14
+    };
+
+    final method = PaymentMethod.fromJson(methodJson);
+    expect(method.statementDay, equals(31)); // Clamped to 31
+    expect(method.expiryStatus, equals(CardExpiryStatus.valid)); // Invalid month does not crash
+  });
+
+  test('Free tier \$0.00 subscription creation and constraints', () {
+    final freeSub = Subscription(
+      id: 'sub_free',
+      name: 'Free Cloudflare Tier',
+      description: 'Free tier',
+      price: 0.0,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.developer,
+      brandColor: Colors.orange,
+      iconData: Icons.terminal,
+      nextBillingDate: DateTime.now().add(const Duration(days: 30)),
+    );
+
+    expect(freeSub.price, equals(0.0));
+    expect(freeSub.monthlyCost, equals(0.0));
+    expect(freeSub.yearlyCost, equals(0.0));
   });
 }
 

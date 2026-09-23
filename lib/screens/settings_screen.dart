@@ -167,8 +167,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       confirmLabel: 'Save',
     ).then((result) {
       if (result != null) {
-        final newBudget = double.tryParse(result) ?? store.monthlyBudget;
-        store.setMonthlyBudget(newBudget);
+        final parsed = double.tryParse(result.trim().replaceAll(',', '.'));
+        if (parsed != null && parsed >= 0) {
+          store.setMonthlyBudget(parsed.clamp(0.0, 999999.0));
+        }
       }
     });
   }
@@ -629,9 +631,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           ),
                                           alignment: Alignment.center,
                                           child: Text(
-                                            store.userName.isNotEmpty
-                                                ? store.userName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
-                                                : 'SA',
+                                            () {
+                                              final clean = store.userName.trim();
+                                              if (clean.isEmpty) return 'SA';
+                                              final parts = clean.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
+                                              if (parts.isEmpty) return 'SA';
+                                              if (parts.length == 1) {
+                                                return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
+                                              }
+                                              return (parts[0][0] + parts[1][0]).toUpperCase();
+                                            }(),
                                             style: const TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,

@@ -132,7 +132,7 @@ class PaymentMethod {
 
     final month = int.tryParse(parts[0].trim());
     var year = int.tryParse(parts[1].trim());
-    if (month == null || year == null) return CardExpiryStatus.valid;
+    if (month == null || year == null || month < 1 || month > 12) return CardExpiryStatus.valid;
 
     // Convert 2-digit YY to 4-digit YYYY
     if (year < 100) {
@@ -235,7 +235,9 @@ class PaymentMethod {
           ? Color(json['cardColor'] as int)
           : const Color(0xFF2C3440),
       isDefault: json['isDefault'] as bool? ?? false,
-      statementDay: json['statementDay'] as int?,
+      statementDay: (json['statementDay'] as int?) != null
+          ? (json['statementDay'] as int).clamp(1, 31)
+          : null,
     );
   }
 }
