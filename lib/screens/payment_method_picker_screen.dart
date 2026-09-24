@@ -635,6 +635,13 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
             ? ''
             : (widget.isManageOnly ? 'Payment methods' : 'Payment method');
 
+        final linkedSubsByMethod = <String, List<Subscription>>{};
+        for (final s in store.subscriptions) {
+          if (s.paymentMethodId != null) {
+            linkedSubsByMethod.putIfAbsent(s.paymentMethodId!, () => []).add(s);
+          }
+        }
+
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
           body: Stack(
@@ -830,7 +837,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                     m,
                                     isPicked: _selectedMethodId == m.id,
                                     isSelectedInSelection: _selectedIds.contains(m.id),
-                                    linkedSubs: store.subscriptions.where((s) => s.paymentMethodId == m.id).toList(),
+                                    linkedSubs: linkedSubsByMethod[m.id] ?? const [],
                                   ),
                               ],
                             )

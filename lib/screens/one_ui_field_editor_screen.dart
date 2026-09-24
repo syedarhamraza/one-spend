@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 
@@ -481,7 +481,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
 
       case FieldEditorType.date:
         final currentDate = _currentValue as DateTime;
-        final dateFormat = DateFormat('MMMM dd, yyyy');
+        final dateFormat = OneUIDateFormats.fullMonthDayYear;
         return Container(
           decoration: BoxDecoration(
             color: OneUITheme.cardColor,

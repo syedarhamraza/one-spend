@@ -86,9 +86,11 @@ class OneUIBrandIcon extends StatelessWidget {
     'audible': 'assets/logos/brands/audible.svg',
   };
 
+  static final RegExp _alphanumericRegex = RegExp(r'[^a-z0-9]');
+
   static String? resolveBrandSvg(String name, [String? presetId]) {
-    final lowerName = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    final lowerId = presetId?.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '') ?? '';
+    final lowerName = name.toLowerCase().replaceAll(_alphanumericRegex, '');
+    final lowerId = presetId?.toLowerCase().replaceAll(_alphanumericRegex, '') ?? '';
     final candidates = [lowerId, lowerName];
     for (final key in candidates) {
       if (key.isEmpty) continue;
@@ -125,11 +127,12 @@ class OneUIBrandIcon extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: _buildInnerContent(subName, preset, effectiveLogoUrl, effectivePresetId),
+      child: _buildInnerContent(context, subName, preset, effectiveLogoUrl, effectivePresetId),
     );
   }
 
   Widget _buildInnerContent(
+    BuildContext context,
     String subName,
     BrandPreset? preset,
     String? effectiveLogoUrl,
@@ -153,13 +156,17 @@ class OneUIBrandIcon extends StatelessWidget {
       );
     }
 
-    // 2. Network image logo if provided
+    // 2. Network image logo if provided (downsampled to device resolution to prevent raster spikes)
     if (effectiveLogoUrl != null && effectiveLogoUrl.isNotEmpty) {
+      final pixelRatio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
+      final cacheDim = (size * pixelRatio).round();
       return Padding(
         padding: EdgeInsets.all(size * 0.16),
         child: Image.network(
           effectiveLogoUrl,
           fit: BoxFit.contain,
+          cacheWidth: cacheDim,
+          cacheHeight: cacheDim,
           errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;

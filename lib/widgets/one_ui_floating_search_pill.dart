@@ -19,8 +19,9 @@ class OneUIFloatingSearchPill extends StatelessWidget {
       builder: (context, _) {
         final is3d = OneUIEffectsController.instance.floating3dEffect;
 
-        return GestureDetector(
-          onTap: onTap,
+        return RepaintBoundary(
+          child: GestureDetector(
+            onTap: onTap,
           child: DecoratedBox(
             decoration: is3d
                 ? BoxDecoration(
@@ -74,8 +75,9 @@ class OneUIFloatingSearchPill extends StatelessWidget {
             ),
           ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  },
+);
   }
 }

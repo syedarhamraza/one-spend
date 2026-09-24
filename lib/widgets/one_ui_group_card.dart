@@ -64,92 +64,115 @@ class OneUIGroupCard extends StatelessWidget {
                 boxShadow: OneUITheme.cardShadow,
               ),
               child: Column(
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final isLast = index == items.length - 1;
-
-                  return Column(
-                    children: [
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: item.onTap,
-                          onLongPress: item.onLongPress,
-                          borderRadius: BorderRadius.vertical(
-                            top: index == 0 ? const Radius.circular(26) : Radius.zero,
-                            bottom: isLast ? const Radius.circular(26) : Radius.zero,
-                          ),
-                          splashColor: Colors.white.withValues(alpha: 0.06),
-                          highlightColor: Colors.white.withValues(alpha: 0.03),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                            child: Row(
-                              children: [
-                                if (item.leading != null) ...[
-                                  item.leading!,
-                                  const SizedBox(width: 16),
-                                ],
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        item.title,
-                                        style: const TextStyle(
-                                          fontSize: 15.5,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: -0.2,
-                                          color: OneUITheme.textPrimary,
-                                        ),
-                                      ),
-                                      if (item.customSubtitle != null) ...[
-                                        const SizedBox(height: 2),
-                                        item.customSubtitle!,
-                                      ] else if (item.subtitle != null) ...[
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          item.subtitle!,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.normal,
-                                            color: item.subtitleColor ?? OneUITheme.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                if (item.trailing != null)
-                                  item.trailing!
-                                else
-                                  const Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    size: 14,
-                                    color: OneUITheme.textTertiary,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (!isLast)
-                        Divider(
-                          height: 1,
-                          thickness: 0.8,
-                          indent: item.leading != null ? 58 : 16,
-                          endIndent: 16,
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
-                    ],
-                  );
-                }),
+                children: [
+                  for (int index = 0; index < items.length; index++)
+                    OneUIGroupItemTile(
+                      item: items[index],
+                      isFirst: index == 0,
+                      isLast: index == items.length - 1,
+                    ),
+                ],
               ),
             ),
           ],
         );
       },
+    );
+  }
+}
+
+/// Individual item tile within a OneUIGroupCard.
+/// Extracted to a standalone widget to enable fine-grained element reuse and O(1) layout caching.
+class OneUIGroupItemTile extends StatelessWidget {
+  final OneUIGroupItem item;
+  final bool isFirst;
+  final bool isLast;
+
+  const OneUIGroupItemTile({
+    super.key,
+    required this.item,
+    required this.isFirst,
+    required this.isLast,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: item.onTap,
+            onLongPress: item.onLongPress,
+            borderRadius: BorderRadius.vertical(
+              top: isFirst ? const Radius.circular(26) : Radius.zero,
+              bottom: isLast ? const Radius.circular(26) : Radius.zero,
+            ),
+            splashColor: Colors.white.withValues(alpha: 0.06),
+            highlightColor: Colors.white.withValues(alpha: 0.03),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  if (item.leading != null) ...[
+                    item.leading!,
+                    const SizedBox(width: 16),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item.title,
+                          style: const TextStyle(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                            color: OneUITheme.textPrimary,
+                          ),
+                        ),
+                        if (item.customSubtitle != null) ...[
+                          const SizedBox(height: 2),
+                          item.customSubtitle!,
+                        ] else if (item.subtitle != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            item.subtitle!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.normal,
+                              color: item.subtitleColor ?? OneUITheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  if (item.trailing != null)
+                    item.trailing!
+                  else
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: OneUITheme.textTertiary,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!isLast)
+          Divider(
+            height: 1,
+            thickness: 0.8,
+            indent: item.leading != null ? 58 : 16,
+            endIndent: 16,
+            color: Colors.white.withValues(alpha: 0.08),
+          ),
+      ],
     );
   }
 }

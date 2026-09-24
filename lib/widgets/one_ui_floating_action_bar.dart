@@ -35,8 +35,9 @@ class OneUIFloatingActionBar extends StatelessWidget {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: DecoratedBox(
-              decoration: is3d
+            child: RepaintBoundary(
+              child: DecoratedBox(
+                decoration: is3d
                   ? BoxDecoration(
                       borderRadius: BorderRadius.circular(34),
                       boxShadow: [
@@ -135,6 +136,7 @@ class OneUIFloatingActionBar extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
               ),
             ),
           ),

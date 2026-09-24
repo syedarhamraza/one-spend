@@ -2,10 +2,10 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -895,38 +895,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         }).toList();
 
         final upcomingSubs = List<Subscription>.from(store.upcomingDue);
-        final dateFormat = DateFormat('MMM dd');
-
-        final budget = store.monthlyBudget;
-        final totalSpend = store.totalMonthlySpend;
-        final remaining = budget > totalSpend ? budget - totalSpend : 0.0;
-        final budgetProgress = budget > 0 ? (totalSpend / budget).clamp(0.0, 1.0) : 0.0;
-        final isOverBudget = budget > 0 && totalSpend > budget;
-        final budgetPercent = budget > 0 ? ((totalSpend / budget) * 100).round() : 0;
-        final dailyAvg = totalSpend / 30.0;
-
-        Color statusBadgeBg;
-        Color statusBadgeText;
-        String statusBadgeLabel;
-        if (budget <= 0) {
-          statusBadgeBg = OneUITheme.surfacePill;
-          statusBadgeText = OneUITheme.textSecondary;
-          statusBadgeLabel = 'No limit set';
-        } else if (isOverBudget) {
-          statusBadgeBg = OneUITheme.accentRed.withValues(alpha: 0.15);
-          statusBadgeText = OneUITheme.accentRed;
-          statusBadgeLabel = '${store.currency}${(totalSpend - budget).toStringAsFixed(0)} over';
-        } else {
-          statusBadgeBg = OneUITheme.accentGreen.withValues(alpha: 0.15);
-          statusBadgeText = OneUITheme.accentGreen;
-          statusBadgeLabel = '${store.currency}${remaining.toStringAsFixed(0)} left';
-        }
-
-        final LinearGradient progressGradient = isOverBudget
-            ? const LinearGradient(colors: [OneUITheme.accentAmber, OneUITheme.accentRed])
-            : (budgetProgress > 0.8
-                ? const LinearGradient(colors: [OneUITheme.accentAmber, OneUITheme.accentOrange])
-                : const LinearGradient(colors: [Color(0xFF00C6FF), Color(0xFF0072FF)]));
+        final dateFormat = OneUIDateFormats.monthDay;
 
         final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
         final bottomPadding = MediaQuery.paddingOf(context).bottom;
@@ -1093,208 +1062,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                     ] else ...[
                       // Monthly Budget Card (One UI Device Care Style)
                       SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-                          child: GestureDetector(
-                            onTap: () => _showEditBudgetDialog(context),
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: OneUITheme.cardColor,
-                                borderRadius: OneUITheme.cardBorderRadius,
-                                border: OneUITheme.cardBorder,
-                                boxShadow: OneUITheme.cardShadow,
-                              ),
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Header Row: Label & Status Badge
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Text(
-                                            'Monthly budget',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: OneUITheme.textSecondary,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Icon(
-                                            Icons.mode_edit_outline_rounded,
-                                            size: 14,
-                                            color: OneUITheme.textSecondary.withValues(alpha: 0.6),
-                                          ),
-                                        ],
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: statusBadgeBg,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          statusBadgeLabel,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: statusBadgeText,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 14),
-
-                                  // Main Spend Metric & Percentage
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                                    textBaseline: TextBaseline.alphabetic,
-                                    children: [
-                                      Text(
-                                        '${store.currency}${totalSpend.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: -0.8,
-                                          color: OneUITheme.textPrimary,
-                                        ),
-                                      ),
-                                      if (budget > 0) ...[
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          '/ ${store.currency}${budget.toStringAsFixed(0)} limit',
-                                          style: const TextStyle(
-                                            fontSize: 13.5,
-                                            fontWeight: FontWeight.w500,
-                                            color: OneUITheme.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                      const Spacer(),
-                                      if (budget > 0)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                                          decoration: BoxDecoration(
-                                            color: (isOverBudget ? OneUITheme.accentRed : OneUITheme.accentBlue)
-                                                .withValues(alpha: 0.14),
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          child: Text(
-                                            '$budgetPercent%',
-                                            style: TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.w800,
-                                              color: isOverBudget ? OneUITheme.accentRed : OneUITheme.accentBlue,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-
-                                  // One UI Gradient Progress Bar
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final totalWidth = constraints.maxWidth;
-                                      final fillWidth = totalWidth * budgetProgress;
-                                      return Container(
-                                        height: 8,
-                                        width: totalWidth,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.08),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Container(
-                                            width: fillWidth,
-                                            height: 8,
-                                            decoration: BoxDecoration(
-                                              gradient: progressGradient,
-                                              borderRadius: BorderRadius.circular(4),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: (isOverBudget
-                                                          ? OneUITheme.accentRed
-                                                          : OneUITheme.accentBlue)
-                                                      .withValues(alpha: 0.35),
-                                                  blurRadius: 6,
-                                                  offset: const Offset(0, 1),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 14),
-
-                                  // Contextual Metrics Footer
-                                  Row(
-                                    children: [
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_today_rounded,
-                                            size: 13,
-                                            color: OneUITheme.textSecondary.withValues(alpha: 0.8),
-                                          ),
-                                          const SizedBox(width: 5),
-                                          Text(
-                                            '~${store.currency}${dailyAvg.toStringAsFixed(2)}/day',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: OneUITheme.textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const Spacer(),
-                                      if (upcomingSubs.isNotEmpty)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: OneUITheme.surfacePill,
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(
-                                              color: Colors.white.withValues(alpha: 0.05),
-                                              width: 0.8,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.schedule_rounded,
-                                                size: 12,
-                                                color: OneUITheme.accentBlue,
-                                              ),
-                                              const SizedBox(width: 5),
-                                              Text(
-                                                'Next: ${upcomingSubs.first.name} (${dateFormat.format(upcomingSubs.first.nextBillingDate)})',
-                                                style: const TextStyle(
-                                                  fontSize: 11.5,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: OneUITheme.textPrimary,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        child: _MonthlyBudgetCard(
+                          store: store,
+                          upcomingSubs: upcomingSubs,
+                          onTap: () => _showEditBudgetDialog(context),
                         ),
                       ),
 
@@ -1373,115 +1144,143 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                       ),
 
                     // Section: Subscriptions List
-                    SliverToBoxAdapter(
-                      child: Padding(
+                    if (filteredSubs.isEmpty)
+                      SliverPadding(
                         padding: EdgeInsets.fromLTRB(16, 4, 16, _isSelectionMode ? 120 : 160),
-                        child: filteredSubs.isEmpty
-                            ? Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(
-                                  color: OneUITheme.cardColor,
-                                  borderRadius: OneUITheme.cardBorderRadius,
-                                  border: OneUITheme.cardBorder,
-                                  boxShadow: OneUITheme.cardShadow,
-                                ),
-                                child: Column(
-                                  children: [
-                                    const Icon(Icons.search_off_rounded, size: 48, color: OneUITheme.textSecondary),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      'No subscriptions found',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: OneUITheme.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      'Try adjusting your search or category filter',
-                                      style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: OneUITheme.accentBlue,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _searchQuery = '';
-                                          _searchController.clear();
-                                          _filterCategory = null;
-                                          _showSearch = false;
-                                        });
-                                      },
-                                      child: const Text('Reset filters', style: TextStyle(color: Colors.white)),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : (store.groupByDate && _filterCategory == null && _searchQuery.isEmpty)
-                                ? Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Group: Overdue
-                                      if (filteredSubs.any((s) => s.daysRemaining < 0))
-                                        OneUISection(
-                                          title: 'Overdue',
-                                          child: OneUIGroupCard(
-                                            items: filteredSubs
-                                                .where((s) => s.daysRemaining < 0)
-                                                .map(_buildSubscriptionItem)
-                                                .toList(),
-                                          ),
-                                        ),
-                                      // Group: Due this week
-                                      if (filteredSubs.any((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7))
-                                        OneUISection(
-                                          title: 'Due this week',
-                                          child: OneUIGroupCard(
-                                            items: filteredSubs
-                                                .where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7)
-                                                .map(_buildSubscriptionItem)
-                                                .toList(),
-                                          ),
-                                        ),
-                                      // Group: Due this month
-                                      if (filteredSubs.any((s) => s.daysRemaining > 7 && s.daysRemaining <= 30))
-                                        OneUISection(
-                                          title: 'Due this month',
-                                          child: OneUIGroupCard(
-                                            items: filteredSubs
-                                                .where((s) => s.daysRemaining > 7 && s.daysRemaining <= 30)
-                                                .map(_buildSubscriptionItem)
-                                                .toList(),
-                                          ),
-                                        ),
-                                      // Group: Later / Beyond 30 days
-                                      if (filteredSubs.any((s) => s.daysRemaining > 30))
-                                        OneUISection(
-                                          title: 'Later renewals',
-                                          child: OneUIGroupCard(
-                                            items: filteredSubs
-                                                .where((s) => s.daysRemaining > 30)
-                                                .map(_buildSubscriptionItem)
-                                                .toList(),
-                                          ),
-                                        ),
-                                    ],
-                                  )
-                                : OneUISection(
-                                    title: _filterCategory != null
-                                        ? '${_filterCategory!.label} (${filteredSubs.length})'
-                                        : 'All subscriptions (${filteredSubs.length})',
-                                    child: OneUIGroupCard(
-                                      items: filteredSubs.map(_buildSubscriptionItem).toList(),
-                                    ),
+                        sliver: SliverToBoxAdapter(
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(32),
+                            decoration: BoxDecoration(
+                              color: OneUITheme.cardColor,
+                              borderRadius: OneUITheme.cardBorderRadius,
+                              border: OneUITheme.cardBorder,
+                              boxShadow: OneUITheme.cardShadow,
+                            ),
+                            child: Column(
+                              children: [
+                                const Icon(Icons.search_off_rounded, size: 48, color: OneUITheme.textSecondary),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'No subscriptions found',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: OneUITheme.textPrimary,
                                   ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  'Try adjusting your search or category filter',
+                                  style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: OneUITheme.accentBlue,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchQuery = '';
+                                      _searchController.clear();
+                                      _filterCategory = null;
+                                      _showSearch = false;
+                                    });
+                                  },
+                                  child: const Text('Reset filters', style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (store.groupByDate && _filterCategory == null && _searchQuery.isEmpty) ...[
+                      // Group: Overdue
+                      if (filteredSubs.any((s) => s.daysRemaining < 0))
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: SliverToBoxAdapter(
+                            child: OneUISection(
+                              title: 'Overdue',
+                              child: OneUIGroupCard(
+                                items: filteredSubs
+                                    .where((s) => s.daysRemaining < 0)
+                                    .map(_buildSubscriptionItem)
+                                    .toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Group: Due this week
+                      if (filteredSubs.any((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7))
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: SliverToBoxAdapter(
+                            child: OneUISection(
+                              title: 'Due this week',
+                              child: OneUIGroupCard(
+                                items: filteredSubs
+                                    .where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7)
+                                    .map(_buildSubscriptionItem)
+                                    .toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Group: Due this month
+                      if (filteredSubs.any((s) => s.daysRemaining > 7 && s.daysRemaining <= 30))
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: SliverToBoxAdapter(
+                            child: OneUISection(
+                              title: 'Due this month',
+                              child: OneUIGroupCard(
+                                items: filteredSubs
+                                    .where((s) => s.daysRemaining > 7 && s.daysRemaining <= 30)
+                                    .map(_buildSubscriptionItem)
+                                    .toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Group: Later / Beyond 30 days
+                      if (filteredSubs.any((s) => s.daysRemaining > 30))
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: SliverToBoxAdapter(
+                            child: OneUISection(
+                              title: 'Later renewals',
+                              child: OneUIGroupCard(
+                                items: filteredSubs
+                                    .where((s) => s.daysRemaining > 30)
+                                    .map(_buildSubscriptionItem)
+                                    .toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: _isSelectionMode ? 120 : 160),
                       ),
-                    ),
+                    ] else ...[
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        sliver: SliverToBoxAdapter(
+                          child: OneUISection(
+                            title: _filterCategory != null
+                                ? '${_filterCategory!.label} (${filteredSubs.length})'
+                                : 'All subscriptions (${filteredSubs.length})',
+                            child: OneUIGroupCard(
+                              items: filteredSubs.map(_buildSubscriptionItem).toList(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: _isSelectionMode ? 120 : 160),
+                      ),
+                    ],
                   ],
                 ],
               ),
@@ -1536,3 +1335,254 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     );
   }
 }
+
+class _MonthlyBudgetCard extends StatelessWidget {
+  final SubscriptionStore store;
+  final List<Subscription> upcomingSubs;
+  final VoidCallback onTap;
+
+  const _MonthlyBudgetCard({
+    required this.store,
+    required this.upcomingSubs,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final budget = store.monthlyBudget;
+    final totalSpend = store.totalMonthlySpend;
+    final remaining = budget > totalSpend ? budget - totalSpend : 0.0;
+    final budgetProgress = budget > 0 ? (totalSpend / budget).clamp(0.0, 1.0) : 0.0;
+    final isOverBudget = budget > 0 && totalSpend > budget;
+    final budgetPercent = budget > 0 ? ((totalSpend / budget) * 100).round() : 0;
+    final dailyAvg = totalSpend / 30.0;
+
+    final Color statusBadgeBg;
+    final Color statusBadgeText;
+    final String statusBadgeLabel;
+    if (budget <= 0) {
+      statusBadgeBg = OneUITheme.surfacePill;
+      statusBadgeText = OneUITheme.textSecondary;
+      statusBadgeLabel = 'No limit set';
+    } else if (isOverBudget) {
+      statusBadgeBg = OneUITheme.accentRed.withValues(alpha: 0.15);
+      statusBadgeText = OneUITheme.accentRed;
+      statusBadgeLabel = '${store.currency}${(totalSpend - budget).toStringAsFixed(0)} over';
+    } else {
+      statusBadgeBg = OneUITheme.accentGreen.withValues(alpha: 0.15);
+      statusBadgeText = OneUITheme.accentGreen;
+      statusBadgeLabel = '${store.currency}${remaining.toStringAsFixed(0)} left';
+    }
+
+    final LinearGradient progressGradient = isOverBudget
+        ? const LinearGradient(colors: [OneUITheme.accentAmber, OneUITheme.accentRed])
+        : (budgetProgress > 0.8
+            ? const LinearGradient(colors: [OneUITheme.accentAmber, OneUITheme.accentOrange])
+            : const LinearGradient(colors: [Color(0xFF00C6FF), Color(0xFF0072FF)]));
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: OneUITheme.cardColor,
+            borderRadius: OneUITheme.cardBorderRadius,
+            border: OneUITheme.cardBorder,
+            boxShadow: OneUITheme.cardShadow,
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Row: Label & Status Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'Monthly budget',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: OneUITheme.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.mode_edit_outline_rounded,
+                        size: 14,
+                        color: OneUITheme.textSecondary.withValues(alpha: 0.6),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: statusBadgeBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      statusBadgeLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: statusBadgeText,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Main Spend Metric & Percentage
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '${store.currency}${totalSpend.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.8,
+                      color: OneUITheme.textPrimary,
+                    ),
+                  ),
+                  if (budget > 0) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '/ ${store.currency}${budget.toStringAsFixed(0)} limit',
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                        color: OneUITheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  if (budget > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: (isOverBudget ? OneUITheme.accentRed : OneUITheme.accentBlue)
+                            .withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$budgetPercent%',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: isOverBudget ? OneUITheme.accentRed : OneUITheme.accentBlue,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // One UI Gradient Progress Bar
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final totalWidth = constraints.maxWidth;
+                  final fillWidth = totalWidth * budgetProgress;
+                  return Container(
+                    height: 8,
+                    width: totalWidth,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        width: fillWidth,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          gradient: progressGradient,
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (isOverBudget
+                                      ? OneUITheme.accentRed
+                                      : OneUITheme.accentBlue)
+                                  .withValues(alpha: 0.35),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+
+              // Contextual Metrics Footer
+              Row(
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 13,
+                        color: OneUITheme.textSecondary.withValues(alpha: 0.8),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '~${store.currency}${dailyAvg.toStringAsFixed(2)}/day',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: OneUITheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  if (upcomingSubs.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: OneUITheme.surfacePill,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.schedule_rounded,
+                            size: 12,
+                            color: OneUITheme.accentBlue,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Next: ${upcomingSubs.first.name} (${OneUIDateFormats.monthDay.format(upcomingSubs.first.nextBillingDate)})',
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: OneUITheme.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

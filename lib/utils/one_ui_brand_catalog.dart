@@ -394,10 +394,12 @@ class OneUIBrandCatalog {
     return null;
   }
 
+  static final RegExp _whitespaceRegex = RegExp(r'\s+');
+
   static String getMonogram(String name) {
     final clean = name.trim();
     if (clean.isEmpty) return 'S';
-    final parts = clean.split(RegExp(r'\s+'));
+    final parts = clean.split(_whitespaceRegex);
     if (parts.length >= 2) {
       final first = parts[0].isNotEmpty ? parts[0][0] : '';
       final second = parts[1].isNotEmpty ? parts[1][0] : '';

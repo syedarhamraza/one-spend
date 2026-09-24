@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_brand_catalog.dart';
+import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_card.dart';
@@ -249,7 +249,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('MMM dd, yyyy');
+    final dateFormat = OneUIDateFormats.monthDayYear;
     final formattedDate = dateFormat.format(_nextBillingDate);
     final canSave = _name.trim().isNotEmpty && _name.trim().length <= 100 && _price >= 0 && _price <= 99999.99;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
