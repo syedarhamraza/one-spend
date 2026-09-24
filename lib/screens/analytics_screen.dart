@@ -8,6 +8,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
+import '../widgets/one_ui_spending_chart.dart';
 
 class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
@@ -23,6 +24,11 @@ class AnalyticsScreen extends StatelessWidget {
     buffer.writeln('Estimated Annual Cost: ${store.currency}${totalYearly.toStringAsFixed(2)}');
     buffer.writeln('Monthly Average Spend: ${store.currency}${totalMonthly.toStringAsFixed(2)}');
     buffer.writeln('Active Subscriptions: ${store.totalActiveCount}');
+    final trendSummary = store.getSpendingTrendSummary(SpendingTrendHorizon.sixMonths);
+    if (trendSummary.hasData) {
+      final sign = trendSummary.latestMoMDifference > 0 ? '+' : '';
+      buffer.writeln('MoM Trajectory: $sign${store.currency}${trendSummary.latestMoMDifference.abs().toStringAsFixed(2)} (${trendSummary.latestMoMPercentage.toStringAsFixed(1)}%)');
+    }
     buffer.writeln('\nCategory Breakdown:');
     for (var entry in categorySpend.entries) {
       final pct = totalMonthly > 0 ? ((entry.value / totalMonthly) * 100).toStringAsFixed(1) : '0';
@@ -238,6 +244,11 @@ class AnalyticsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+
+                      const SizedBox(height: 12),
+
+                      // Month-over-Month Spending Trends Line Chart Card
+                      const OneUISpendingTrendsCard(),
 
                       const SizedBox(height: 12),
 

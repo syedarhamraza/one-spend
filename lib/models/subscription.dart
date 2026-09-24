@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'payment_method.dart';
+import 'spending_trend.dart';
 export 'payment_method.dart';
+export 'spending_trend.dart';
 
 enum BillingCycle {
   weekly('Weekly', 52),
@@ -557,6 +559,7 @@ class SubscriptionStore extends ChangeNotifier {
   Subscription? _cachedHighestCostSubscription;
   bool _highestCostCalculated = false;
   Map<SubscriptionCategory, double>? _cachedCategorySpendMap;
+  final Map<SpendingTrendHorizon, List<MonthlySpendPoint>> _cachedTrends = {};
 
   void _invalidateCache() {
     _cachedTotalMonthlySpend = null;
@@ -567,6 +570,7 @@ class SubscriptionStore extends ChangeNotifier {
     _cachedHighestCostSubscription = null;
     _highestCostCalculated = false;
     _cachedCategorySpendMap = null;
+    _cachedTrends.clear();
   }
 
   @override
@@ -683,6 +687,26 @@ class SubscriptionStore extends ChangeNotifier {
       map[sub.category] = (map[sub.category] ?? 0.0) + sub.monthlyCost;
     }
     return _cachedCategorySpendMap = map;
+  }
+
+  List<MonthlySpendPoint> getSpendingTrends(SpendingTrendHorizon horizon, [DateTime? referenceDate]) {
+    if (referenceDate == null && _cachedTrends.containsKey(horizon)) {
+      return _cachedTrends[horizon]!;
+    }
+    final trends = SpendingTrendsEngine.calculateTrends(
+      subscriptions: _subscriptions,
+      horizon: horizon,
+      referenceDate: referenceDate,
+    );
+    if (referenceDate == null) {
+      _cachedTrends[horizon] = trends;
+    }
+    return trends;
+  }
+
+  TrendSummary getSpendingTrendSummary(SpendingTrendHorizon horizon, [DateTime? referenceDate]) {
+    final trends = getSpendingTrends(horizon, referenceDate);
+    return SpendingTrendsEngine.calculateSummary(trends);
   }
 
   // --- Persistence ---
