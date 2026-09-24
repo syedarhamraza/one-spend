@@ -128,7 +128,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
       brand: _brand,
       last4: last4,
       expiryDate: expiry,
-      cardColor: _cardColor,
+      cardColorValue: _cardColor.toARGB32(),
       isDefault: _isDefault,
       statementDay: statementDay,
     );
