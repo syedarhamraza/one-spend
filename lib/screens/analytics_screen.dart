@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
@@ -61,68 +61,74 @@ class AnalyticsScreen extends StatelessWidget {
     );
   }
 
+  static List<({String name, double price, String currency, DateTime date, Color brandColor, IconData iconData})> _getSortedPaymentRecords(SubscriptionStore store) {
+    final paymentRecords = <({String name, double price, String currency, DateTime date, Color brandColor, IconData iconData})>[];
+    for (final sub in store.subscriptions) {
+      for (final d in sub.paymentHistory) {
+        paymentRecords.add((
+          name: sub.name,
+          price: sub.price,
+          currency: sub.currency,
+          date: d,
+          brandColor: sub.brandColor,
+          iconData: sub.iconData,
+        ));
+      }
+    }
+    paymentRecords.sort((a, b) => b.date.compareTo(a.date));
+    return paymentRecords;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([
-        SubscriptionStore.instance,
-        OneUIEffectsController.instance,
-      ]),
-      builder: (context, _) {
-        final store = SubscriptionStore.instance;
-        final totalMonthly = store.totalMonthlySpend;
-        final totalYearly = store.totalYearlySpend;
-        final categorySpend = store.categorySpendMap;
-        final highestSub = store.highestCostSubscription;
+    final store = SubscriptionStore.instance;
 
-        final nonPausedSubs = store.subscriptions.where((s) => s.status != SubscriptionStatus.paused).toList();
-        final monthlySubsCount = nonPausedSubs.where((s) => s.billingCycle == BillingCycle.monthly).length;
-        final yearlySubsCount = nonPausedSubs.where((s) => s.billingCycle == BillingCycle.yearly).length;
-        final otherSubsCount = nonPausedSubs.length - monthlySubsCount - yearlySubsCount;
-
-        final dateFormat = DateFormat('MMM dd, yyyy');
-        final paymentRecords = <({String name, double price, String currency, DateTime date, Color brandColor, IconData iconData})>[];
-        for (final sub in store.subscriptions) {
-          for (final d in sub.paymentHistory) {
-            paymentRecords.add((
-              name: sub.name,
-              price: sub.price,
-              currency: sub.currency,
-              date: d,
-              brandColor: sub.brandColor,
-              iconData: sub.iconData,
-            ));
-          }
-        }
-        paymentRecords.sort((a, b) => b.date.compareTo(a.date));
-
-        return Scaffold(
-          backgroundColor: OneUITheme.surfacePitch,
-          body: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // One UI Signature Collapsible Header
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: OneUICollapsibleHeaderDelegate(
-                  title: 'Analytics',
-                  subtitle: 'Spending patterns and forecasts',
-                  hasBigHeader: true,
-                  expandedHeight: 270.0,
-                  actions: [
-                    OneUIHeaderAction(
-                      icon: Icons.share_outlined,
-                      tooltip: 'Share report',
-                      onTap: () => _shareReport(context, store),
-                    ),
-                  ],
+    return Scaffold(
+      backgroundColor: OneUITheme.surfacePitch,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // One UI Signature Collapsible Header
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: OneUICollapsibleHeaderDelegate(
+              title: 'Analytics',
+              subtitle: 'Spending patterns and forecasts',
+              hasBigHeader: true,
+              expandedHeight: 270.0,
+              actions: [
+                OneUIHeaderAction(
+                  icon: Icons.share_outlined,
+                  tooltip: 'Share report',
+                  onTap: () => _shareReport(context, store),
                 ),
-              ),
+              ],
+            ),
+          ),
 
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
-                  child: store.subscriptions.isEmpty
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
+              child: AnimatedBuilder(
+                animation: Listenable.merge([
+                  store,
+                  OneUIEffectsController.instance,
+                ]),
+                builder: (context, _) {
+                  final totalMonthly = store.totalMonthlySpend;
+                  final totalYearly = store.totalYearlySpend;
+                  final categorySpend = store.categorySpendMap;
+                  final highestSub = store.highestCostSubscription;
+
+                  final nonPausedSubs = store.subscriptions.where((s) => s.status != SubscriptionStatus.paused).toList();
+                  final monthlySubsCount = nonPausedSubs.where((s) => s.billingCycle == BillingCycle.monthly).length;
+                  final yearlySubsCount = nonPausedSubs.where((s) => s.billingCycle == BillingCycle.yearly).length;
+                  final otherSubsCount = nonPausedSubs.length - monthlySubsCount - yearlySubsCount;
+
+                  final dateFormat = OneUIDateFormats.monthDayYear;
+                  final paymentRecords = _getSortedPaymentRecords(store);
+
+                  return store.subscriptions.isEmpty
                       ? Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(32),
@@ -463,17 +469,17 @@ class AnalyticsScreen extends StatelessWidget {
                                   );
                                 }).toList(),
                               ),
-                      ),
-                    ],
+                            ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+              ],
+            ),
+          );
+        }
 
   Widget _buildDivider() {
     return Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.08));

@@ -13,6 +13,7 @@
 migrate_working_dir/
 
 /flutter-scalable-app
+/widget-performance-analyzer
 
 # IntelliJ related
 *.iml

@@ -36,8 +36,9 @@ class OneUIFloatingNavBar extends StatelessWidget {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(left: 18, right: 18, bottom: 8),
-            child: DecoratedBox(
-              decoration: is3d
+            child: RepaintBoundary(
+              child: DecoratedBox(
+                decoration: is3d
                   ? BoxDecoration(
                       borderRadius: BorderRadius.circular(34),
                       boxShadow: [
@@ -152,6 +153,7 @@ class OneUIFloatingNavBar extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
               ),
             ),
           ),

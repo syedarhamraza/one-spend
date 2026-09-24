@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
@@ -16,8 +17,8 @@ class UpcomingScheduleScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('EEEE, MMMM dd, yyyy');
-    final shortFormat = DateFormat('MMM dd, yyyy');
+    final dateFormat = OneUIDateFormats.fullDate;
+    final shortFormat = OneUIDateFormats.monthDayYear;
     final upcomingDates = subscription.getUpcomingBillingDates(12);
 
     final totalProjected = upcomingDates.length * subscription.price;

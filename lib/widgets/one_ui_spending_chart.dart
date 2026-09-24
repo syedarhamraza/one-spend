@@ -135,21 +135,15 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
             ? points[_selectedIndex!]
             : points.last;
 
-        return AnimatedBuilder(
-          animation: OneUIEffectsController.instance,
-          builder: (context, child) {
-            return Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-              decoration: BoxDecoration(
-                color: OneUIEffectsController.instance.cardColor,
-                borderRadius: OneUITheme.cardBorderRadius,
-                border: OneUIEffectsController.instance.cardBorder,
-                boxShadow: OneUIEffectsController.instance.cardShadow,
-              ),
-              child: child,
-            );
-          },
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+          decoration: BoxDecoration(
+            color: OneUIEffectsController.instance.cardColor,
+            borderRadius: OneUITheme.cardBorderRadius,
+            border: OneUIEffectsController.instance.cardBorder,
+            boxShadow: OneUIEffectsController.instance.cardShadow,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -435,14 +429,16 @@ class OneUILineChart extends StatelessWidget {
           onPanDown: (details) => _handleTouch(details.localPosition.dx, width),
           onPanUpdate: (details) => _handleTouch(details.localPosition.dx, width),
           onTapUp: (details) => _handleTouch(details.localPosition.dx, width),
-          child: CustomPaint(
-            size: Size(width, height),
-            painter: OneUILineChartPainter(
-              points: points,
-              selectedIndex: selectedIndex,
-              currency: currency,
-              monthlyBudget: monthlyBudget,
-              progress: animationProgress,
+          child: RepaintBoundary(
+            child: CustomPaint(
+              size: Size(width, height),
+              painter: OneUILineChartPainter(
+                points: points,
+                selectedIndex: selectedIndex,
+                currency: currency,
+                monthlyBudget: monthlyBudget,
+                progress: animationProgress,
+              ),
             ),
           ),
         );

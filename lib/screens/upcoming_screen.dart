@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -22,7 +23,7 @@ class UpcomingScreen extends StatelessWidget {
       builder: (context, _) {
         final store = SubscriptionStore.instance;
         final list = store.upcomingDue;
-        final dateFormat = DateFormat('EEE, MMM d');
+        final dateFormat = OneUIDateFormats.weekdayMonthDay;
 
         final dueThisWeek = list.where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7).toList();
         final dueThisMonth = list.where((s) => s.daysRemaining > 7 && s.daysRemaining <= 30).toList();
@@ -73,170 +74,185 @@ class UpcomingScreen extends StatelessWidget {
                 ),
               ),
 
-              // Content
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 30-Day Forecast Card
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        margin: const EdgeInsets.only(bottom: 14),
-                        decoration: BoxDecoration(
-                          color: OneUITheme.cardColor,
-                          borderRadius: OneUITheme.cardBorderRadius,
-                          border: OneUITheme.cardBorder,
-                          boxShadow: OneUITheme.cardShadow,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 46,
-                              height: 46,
-                              decoration: BoxDecoration(
-                                color: OneUITheme.accentTeal.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(
-                                Icons.calendar_month_rounded,
-                                color: OneUITheme.accentTeal,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    '30-Day Forecast',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: OneUITheme.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${store.currency}${totalNext30Days.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.3,
-                                      color: OneUITheme.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${next30DaysSubs.length} subscriptions renewing',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: OneUITheme.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: OneUITheme.surfacePill,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.notifications_active_rounded, size: 14, color: OneUITheme.accentAmber),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${store.defaultReminderDays}d alert',
-                                    style: const TextStyle(fontSize: 11.5, color: OneUITheme.textPrimary, fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Overdue (if any)
-                      if (overdue.isNotEmpty) ...[
-                        OneUISection(
-                          title: 'Overdue (${overdue.length})',
-                          child: OneUIGroupCard(
-                            items: overdue.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-
-                      // Due This Week
-                      if (dueThisWeek.isNotEmpty) ...[
-                        OneUISection(
-                          title: 'Due this week (${dueThisWeek.length})',
-                          child: OneUIGroupCard(
-                            items: dueThisWeek.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-
-                      // Later This Month
-                      if (dueThisMonth.isNotEmpty) ...[
-                        OneUISection(
-                          title: 'Later this month (${dueThisMonth.length})',
-                          child: OneUIGroupCard(
-                            items: dueThisMonth.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-
-                      // Future Renewals
-                      if (dueLater.isNotEmpty) ...[
-                        OneUISection(
-                          title: 'Future renewals (${dueLater.length})',
-                          child: OneUIGroupCard(
-                            items: dueLater.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
-                          ),
-                        ),
-                      ],
-
-                      // Empty State
-                      if (list.isEmpty)
+              // 30-Day Forecast Card
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: OneUITheme.cardColor,
+                      borderRadius: OneUITheme.cardBorderRadius,
+                      border: OneUITheme.cardBorder,
+                      boxShadow: OneUITheme.cardShadow,
+                    ),
+                    child: Row(
+                      children: [
                         Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(32),
+                          width: 46,
+                          height: 46,
                           decoration: BoxDecoration(
-                            color: OneUITheme.cardColor,
-                            borderRadius: OneUITheme.cardBorderRadius,
-                            border: OneUITheme.cardBorder,
-                            boxShadow: OneUITheme.cardShadow,
+                            color: OneUITheme.accentTeal.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Column(
+                          child: const Icon(
+                            Icons.calendar_month_rounded,
+                            color: OneUITheme.accentTeal,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.event_available_rounded, size: 48, color: OneUITheme.textSecondary),
-                              SizedBox(height: 12),
-                              Text(
-                                'No upcoming renewals',
+                              const Text(
+                                '30-Day Forecast',
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: OneUITheme.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${store.currency}${totalNext30Days.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.3,
                                   color: OneUITheme.textPrimary,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Text(
-                                'Active subscriptions will appear here automatically',
-                                style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
+                                '${next30DaysSubs.length} subscriptions renewing',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: OneUITheme.textSecondary,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                    ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: OneUITheme.surfacePill,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.notifications_active_rounded, size: 14, color: OneUITheme.accentAmber),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${store.defaultReminderDays}d alert',
+                                style: const TextStyle(fontSize: 11.5, color: OneUITheme.textPrimary, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+              ),
+
+              // Overdue (if any)
+              if (overdue.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: OneUISection(
+                      title: 'Overdue (${overdue.length})',
+                      child: OneUIGroupCard(
+                        items: overdue.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Due This Week
+              if (dueThisWeek.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: OneUISection(
+                      title: 'Due this week (${dueThisWeek.length})',
+                      child: OneUIGroupCard(
+                        items: dueThisWeek.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Later This Month
+              if (dueThisMonth.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: OneUISection(
+                      title: 'Later this month (${dueThisMonth.length})',
+                      child: OneUIGroupCard(
+                        items: dueThisMonth.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Future Renewals
+              if (dueLater.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: OneUISection(
+                      title: 'Future renewals (${dueLater.length})',
+                      child: OneUIGroupCard(
+                        items: dueLater.map((sub) => _buildItem(context, sub, dateFormat, store)).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Empty State
+              if (list.isEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: OneUITheme.cardColor,
+                        borderRadius: OneUITheme.cardBorderRadius,
+                        border: OneUITheme.cardBorder,
+                        boxShadow: OneUITheme.cardShadow,
+                      ),
+                      child: const Column(
+                        children: [
+                          Icon(Icons.event_available_rounded, size: 48, color: OneUITheme.textSecondary),
+                          SizedBox(height: 12),
+                          Text(
+                            'No upcoming renewals',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: OneUITheme.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Active subscriptions will appear here automatically',
+                            style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 140),
               ),
             ],
           ),

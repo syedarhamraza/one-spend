@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
@@ -35,7 +35,7 @@ class PaymentHistoryScreen extends StatefulWidget {
 }
 
 class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
-  final _dateFormat = DateFormat('MMMM dd, yyyy');
+  final _dateFormat = OneUIDateFormats.fullMonthDayYear;
 
   void _showAddPaymentDialog(Subscription sub) async {
     HapticFeedback.lightImpact();

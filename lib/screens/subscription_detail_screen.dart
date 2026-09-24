@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -155,8 +155,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     HapticFeedback.mediumImpact();
     SubscriptionStore.instance.renewSubscription(_sub.id);
     _syncFromStore();
-    final dateFormat = DateFormat('MMM dd, yyyy');
-    OneUIToast.show(context, 'Renewed ${_sub.name}! Next: ${dateFormat.format(_sub.nextBillingDate)}');
+    OneUIToast.show(context, 'Renewed ${_sub.name}! Next: ${OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate)}');
   }
 
   void _togglePause() {
@@ -171,8 +170,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
 
   Future<void> _shareSubscription() async {
     HapticFeedback.lightImpact();
-    final dateFormat = DateFormat('MMM dd, yyyy');
-    final formattedDate = dateFormat.format(_sub.nextBillingDate);
+    final formattedDate = OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate);
     final summaryText = '''
 ${_sub.name} Subscription Details:
 • Price: ${_sub.currency}${_sub.price.toStringAsFixed(2)} / ${_sub.billingCycle.label}
@@ -234,7 +232,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
         if (currentSub != null) {
           _sub = currentSub;
         }
-        final dateFormat = DateFormat('MMM dd, yyyy');
+        final dateFormat = OneUIDateFormats.monthDayYear;
         final formattedDate = dateFormat.format(_sub.nextBillingDate);
         final daysRemaining = _sub.daysRemaining;
         final isPaused = _sub.status == SubscriptionStatus.paused;
@@ -271,7 +269,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
         final isCardExpiring = linkedCard != null && (linkedCard.isExpiringSoon || linkedCard.isExpired);
 
         final upcomingDates = _sub.getUpcomingBillingDates(6);
-        final shortFormat = DateFormat('MMM dd');
+        final shortFormat = OneUIDateFormats.monthDay;
         final upcomingSubtitle = upcomingDates.length >= 2
             ? '${shortFormat.format(upcomingDates[0])} (${_sub.currency}${_sub.price.toStringAsFixed(2)}) • ${shortFormat.format(upcomingDates[1])} (${_sub.currency}${_sub.price.toStringAsFixed(2)})'
             : (upcomingDates.isNotEmpty ? shortFormat.format(upcomingDates[0]) : formattedDate);

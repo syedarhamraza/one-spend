@@ -194,9 +194,19 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
   void _onScroll() {
     if (!mounted) return;
     final pixels = _position?.pixels ?? 0.0;
-    // During active collapse (0-175px), SliverPersistentHeader already rebuilds with shrinkOffset.
-    // Only setState when in deep scroll territory (>175px) or transitioning out of it.
-    if (pixels > 175.0 || _lastPixels > 175.0) {
+    // For big header, pill transition zone is between 175.0 and 255.0.
+    // For compact header, pill transition zone is between 45.0 and 105.0.
+    final double lowerThreshold = widget.hasBigHeader ? 175.0 : 45.0;
+    final double upperThreshold = widget.hasBigHeader ? 255.0 : 105.0;
+
+    final wasInTransition = _lastPixels >= lowerThreshold && _lastPixels <= upperThreshold;
+    final isInTransition = pixels >= lowerThreshold && pixels <= upperThreshold;
+    final crossedUpper = (_lastPixels < upperThreshold && pixels >= upperThreshold) ||
+                         (_lastPixels >= upperThreshold && pixels < upperThreshold);
+    final crossedLower = (_lastPixels > lowerThreshold && pixels <= lowerThreshold) ||
+                         (_lastPixels <= lowerThreshold && pixels > lowerThreshold);
+
+    if (isInTransition || wasInTransition || crossedUpper || crossedLower) {
       _lastPixels = pixels;
       setState(() {});
     } else {
@@ -242,21 +252,23 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       ),
     );
 
-    return GestureDetector(
-      onTap: widget.onBack ?? () => Navigator.maybePop(context),
-      behavior: HitTestBehavior.opaque,
-      child: pillProgress > 0.05
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: OneUITheme.blurSigma * pillProgress,
-                  sigmaY: OneUITheme.blurSigma * pillProgress,
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: widget.onBack ?? () => Navigator.maybePop(context),
+        behavior: HitTestBehavior.opaque,
+        child: pillProgress > 0.05
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: OneUITheme.blurSigma * pillProgress,
+                    sigmaY: OneUITheme.blurSigma * pillProgress,
+                  ),
+                  child: buttonContent,
                 ),
-                child: buttonContent,
-              ),
-            )
-          : buttonContent,
+              )
+            : buttonContent,
+      ),
     );
   }
 
@@ -314,28 +326,30 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       ),
     );
 
-    return ValueListenableBuilder<bool>(
-      valueListenable: OneUIFloatingMenu.isOpen,
-      builder: (context, isMenuOpen, child) {
-        return AnimatedOpacity(
-          opacity: isMenuOpen ? 0.0 : 1.0,
-          duration: Duration(milliseconds: isMenuOpen ? 100 : 160),
-          curve: isMenuOpen ? Curves.easeIn : Curves.easeOut,
-          child: child!,
-        );
-      },
-      child: pillProgress > 0.05
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: OneUITheme.blurSigma * pillProgress,
-                  sigmaY: OneUITheme.blurSigma * pillProgress,
+    return RepaintBoundary(
+      child: ValueListenableBuilder<bool>(
+        valueListenable: OneUIFloatingMenu.isOpen,
+        builder: (context, isMenuOpen, child) {
+          return AnimatedOpacity(
+            opacity: isMenuOpen ? 0.0 : 1.0,
+            duration: Duration(milliseconds: isMenuOpen ? 100 : 160),
+            curve: isMenuOpen ? Curves.easeIn : Curves.easeOut,
+            child: child!,
+          );
+        },
+        child: pillProgress > 0.05
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: OneUITheme.blurSigma * pillProgress,
+                    sigmaY: OneUITheme.blurSigma * pillProgress,
+                  ),
+                  child: pillContent,
                 ),
-                child: pillContent,
-              ),
-            )
-          : pillContent,
+              )
+            : pillContent,
+      ),
     );
   }
 
