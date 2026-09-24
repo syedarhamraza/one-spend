@@ -22,6 +22,7 @@ import 'package:onespend/screens/category_picker_screen.dart';
 import 'package:onespend/screens/payment_methods_screen.dart';
 import 'package:onespend/screens/payment_method_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
+import 'package:onespend/widgets/one_ui_spending_chart.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1999,6 +2000,146 @@ void main() {
     expect(freeSub.price, equals(0.0));
     expect(freeSub.monthlyCost, equals(0.0));
     expect(freeSub.yearlyCost, equals(0.0));
+  });
+
+  test('SpendingTrendsEngine calculates 6M, 12M, and Forecast trajectory accurately', () {
+    final ref = DateTime(2026, 9, 24);
+    final store = SubscriptionStore.instance;
+
+    // 6 Months horizon
+    final points6M = store.getSpendingTrends(SpendingTrendHorizon.sixMonths, ref);
+    expect(points6M.length, equals(6));
+    expect(points6M.last.month.year, equals(2026));
+    expect(points6M.last.month.month, equals(9));
+    expect(points6M.first.month.month, equals(4)); // Apr to Sep
+
+    // Summary calculation
+    final summary6M = store.getSpendingTrendSummary(SpendingTrendHorizon.sixMonths, ref);
+    expect(summary6M.hasData, isTrue);
+    expect(summary6M.averageMonthlySpend, greaterThan(0));
+    expect(summary6M.peakMonth, isNotNull);
+    expect(summary6M.lowestMonth, isNotNull);
+
+    // 12 Months horizon
+    final points1Y = store.getSpendingTrends(SpendingTrendHorizon.oneYear, ref);
+    expect(points1Y.length, equals(12));
+    expect(points1Y.last.month.month, equals(9));
+    expect(points1Y.first.month.month, equals(10)); // Oct 2025 to Sep 2026
+    expect(points1Y.first.month.year, equals(2025));
+
+    // Forecast horizon
+    final pointsForecast = store.getSpendingTrends(SpendingTrendHorizon.forecastSixMonths, ref);
+    expect(pointsForecast.length, equals(6));
+    expect(pointsForecast.first.month.month, equals(9)); // Sep
+    expect(pointsForecast.last.month.month, equals(2));  // Feb 2027
+    expect(pointsForecast.last.month.year, equals(2027));
+    expect(pointsForecast.first.isProjected, isTrue);
+  });
+
+  test('SpendingTrendsEngine respects paymentHistory charges and MoM calculation', () {
+    final ref = DateTime(2026, 9, 24);
+    final testSub = Subscription(
+      id: 'sub_trend_test',
+      name: 'Custom Service',
+      description: 'Test service',
+      price: 50.0,
+      billingCycle: BillingCycle.monthly,
+      category: SubscriptionCategory.utilities,
+      brandColor: Colors.blue,
+      iconData: Icons.bolt,
+      nextBillingDate: DateTime(2026, 9, 10),
+      paymentHistory: [
+        DateTime(2026, 8, 10), // Logged in August
+        DateTime(2026, 7, 10), // Logged in July
+      ],
+    );
+
+    final points = SpendingTrendsEngine.calculateTrends(
+      subscriptions: [testSub],
+      horizon: SpendingTrendHorizon.sixMonths,
+      referenceDate: ref,
+    );
+
+    // August point (index 4) should have $50
+    final augPoint = points.firstWhere((p) => p.month.month == 8 && p.month.year == 2026);
+    expect(augPoint.amount, equals(50.0));
+    expect(augPoint.renewalCount, equals(1));
+    expect(augPoint.categoryBreakdown[SubscriptionCategory.utilities], equals(50.0));
+
+    // MoM comparison between July ($50) and August ($50) should be 0%
+    expect(augPoint.momDifference, equals(0.0));
+    expect(augPoint.momPercentage, equals(0.0));
+    expect(augPoint.isNeutral, isTrue);
+  });
+
+  testWidgets('OneUISpendingTrendsCard renders and interacts smoothly in AnalyticsScreen', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Navigate to Analytics tab
+    await tester.tap(find.text('Analytics'));
+    await tester.pumpAndSettle();
+
+    // Verify Spending trajectory card header and components
+    expect(find.text('Spending trajectory'), findsOneWidget);
+    expect(find.text('6M'), findsOneWidget);
+    expect(find.text('1Y'), findsOneWidget);
+    expect(find.text('Forecast'), findsOneWidget);
+    expect(find.byType(OneUILineChart), findsOneWidget);
+    expect(find.text('Monthly Avg'), findsWidgets);
+
+    // Switch to 1Y horizon
+    await tester.tap(find.text('1Y'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUILineChart), findsOneWidget);
+
+    // Switch to Forecast horizon
+    await tester.tap(find.text('Forecast'));
+    await tester.pumpAndSettle();
+    expect(find.text('Projected'), findsWidgets);
+
+    // Test chart scrubbing / touch gesture
+    final chartFinder = find.byType(OneUILineChart);
+    final chartTopLeft = tester.getTopLeft(chartFinder);
+    await tester.tapAt(chartTopLeft + const Offset(40, 40));
+    await tester.pumpAndSettle();
+
+    // Verify share report dialog includes MoM trajectory
+    await tester.tap(find.byTooltip('Share report'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('MoM Trajectory'), findsOneWidget);
+    expect(find.text('Copy Report'), findsOneWidget);
+
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('OneUISpendingTrendsCard displays empty state when all subscriptions removed', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    // Render standalone card with empty list
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Padding(
+            padding: EdgeInsets.all(16),
+            child: OneUISpendingTrendsCard(
+              subscriptions: [],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No spending trajectory yet'), findsOneWidget);
   });
 }
 
