@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'core/di/injection.dart';
 import 'screens/home_screen.dart';
 import 'theme/one_ui_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await configureDependencies();
 
   // Set system UI to immersive One UI pitch-black dark mode
   SystemChrome.setSystemUIOverlayStyle(

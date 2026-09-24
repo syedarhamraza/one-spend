@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
-import 'subscription.dart';
+import '../features/subscriptions/domain/entities/subscription.dart';
+import '../features/subscriptions/domain/entities/subscription_enums.dart';
 
 /// Supported time horizons for the spending trends chart
 enum SpendingTrendHorizon {

@@ -1,0 +1,58 @@
+import '../../domain/entities/payment_method.dart';
+
+/// Pre-seeded sample payment methods
+final List<PaymentMethod> defaultPaymentMethods = [
+  const PaymentMethod(
+    id: 'pay_samsung_visa',
+    nickname: 'Primary Samsung Pay',
+    type: PaymentMethodType.digitalWallet,
+    brand: CardBrand.samsungPay,
+    last4: '9124',
+    expiryDate: '12/28',
+    cardColorValue: 0xFF1428A0,
+    isDefault: true,
+    statementDay: 15,
+  ),
+  const PaymentMethod(
+    id: 'pay_mastercard_4242',
+    nickname: 'Standard Chartered World',
+    type: PaymentMethodType.creditCard,
+    brand: CardBrand.mastercard,
+    last4: '4242',
+    expiryDate: '05/27',
+    cardColorValue: 0xFF8B0000,
+    isDefault: false,
+    statementDay: 20,
+  ),
+  const PaymentMethod(
+    id: 'pay_google_7731',
+    nickname: 'Google Wallet Visa',
+    type: PaymentMethodType.digitalWallet,
+    brand: CardBrand.googlePay,
+    last4: '7731',
+    expiryDate: '08/26',
+    cardColorValue: 0xFF1E3C72,
+    isDefault: false,
+  ),
+  const PaymentMethod(
+    id: 'pay_meezan_5519',
+    nickname: 'Personal Meezan Debit',
+    type: PaymentMethodType.debitCard,
+    brand: CardBrand.visa,
+    last4: '5519',
+    expiryDate: '10/26',
+    cardColorValue: 0xFF004D40,
+    isDefault: false,
+    statementDay: 1,
+  ),
+  const PaymentMethod(
+    id: 'pay_paypal_main',
+    nickname: 'Business PayPal',
+    type: PaymentMethodType.paypal,
+    brand: CardBrand.paypal,
+    last4: '',
+    expiryDate: '',
+    cardColorValue: 0xFF003087,
+    isDefault: false,
+  ),
+];
