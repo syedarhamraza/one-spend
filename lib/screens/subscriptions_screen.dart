@@ -389,8 +389,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       confirmLabel: 'Save',
     ).then((result) {
       if (result != null) {
-        final newBudget = double.tryParse(result) ?? store.monthlyBudget;
-        store.setMonthlyBudget(newBudget);
+        final parsed = double.tryParse(result.trim().replaceAll(',', '.'));
+        if (parsed != null && parsed >= 0) {
+          store.setMonthlyBudget(parsed.clamp(0.0, 999999.0));
+        }
       }
     });
   }
@@ -900,7 +902,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         final remaining = budget > totalSpend ? budget - totalSpend : 0.0;
         final budgetProgress = budget > 0 ? (totalSpend / budget).clamp(0.0, 1.0) : 0.0;
         final isOverBudget = budget > 0 && totalSpend > budget;
-        final budgetPercent = budget > 0 ? ((totalSpend / budget) * 100).toInt() : 0;
+        final budgetPercent = budget > 0 ? ((totalSpend / budget) * 100).round() : 0;
         final dailyAvg = totalSpend / 30.0;
 
         Color statusBadgeBg;

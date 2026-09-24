@@ -76,13 +76,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _currency = SubscriptionStore.instance.currency;
       _billingCycle = BillingCycle.monthly;
       _category = SubscriptionCategory.entertainment;
-      _nextBillingDate = DateTime.now().add(const Duration(days: 30));
+      final now = DateTime.now();
+      _nextBillingDate = DateTime(now.year, now.month + 1, now.day);
       _brandColor = OneUITheme.accentBlue;
       _iconData = Icons.subscriptions_rounded;
       final defaultCard = SubscriptionStore.instance.defaultPaymentMethod;
       _paymentMethodId = defaultCard?.id;
       _paymentMethod = defaultCard?.displayName ?? 'Samsung Pay (Visa •••• 9124)';
-      _reminderDays = 2;
+      _reminderDays = SubscriptionStore.instance.defaultReminderDays;
       _status = SubscriptionStatus.active;
       _notes = '';
       _accountUrl = '';
@@ -195,7 +196,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
 
   void _saveSubscription() {
     final name = _name.trim();
-    if (name.isEmpty || _price <= 0) {
+    if (name.isEmpty || _price < 0 || _price > 99999.99) {
       OneUIToast.show(context, 'Please enter a valid service name and price');
       return;
     }
@@ -220,6 +221,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       accountUrl: _accountUrl.trim(),
       logoUrl: _logoUrl,
       brandPresetId: _brandPresetId,
+      anchorDay: widget.subscriptionToEdit?.anchorDay ?? _nextBillingDate.day,
     );
 
     if (isEditing) {
@@ -249,7 +251,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM dd, yyyy');
     final formattedDate = dateFormat.format(_nextBillingDate);
-    final canSave = _name.trim().isNotEmpty && _price > 0;
+    final canSave = _name.trim().isNotEmpty && _name.trim().length <= 100 && _price >= 0 && _price <= 99999.99;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(

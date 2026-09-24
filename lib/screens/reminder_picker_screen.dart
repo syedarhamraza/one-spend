@@ -251,6 +251,10 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
                                   child: TextField(
                                     controller: _customController,
                                     keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(2),
+                                    ],
                                     textAlign: TextAlign.end,
                                     style: const TextStyle(
                                       fontSize: 16,
@@ -269,7 +273,7 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
                                     onChanged: (val) {
                                       final parsed = int.tryParse(val.trim());
                                       if (parsed != null) {
-                                        setState(() => _selectedDays = parsed);
+                                        setState(() => _selectedDays = parsed.clamp(0, 60));
                                       }
                                     },
                                   ),

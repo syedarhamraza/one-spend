@@ -106,6 +106,7 @@ class Subscription {
   final String? logoUrl;
   final String? brandPresetId;
   final bool autoRenew;
+  final int? anchorDay;
 
   const Subscription({
     required this.id,
@@ -129,6 +130,7 @@ class Subscription {
     this.logoUrl,
     this.brandPresetId,
     this.autoRenew = true,
+    this.anchorDay,
   });
 
   Subscription copyWith({
@@ -154,6 +156,7 @@ class Subscription {
     String? logoUrl,
     String? brandPresetId,
     bool? autoRenew,
+    int? anchorDay,
   }) {
     return Subscription(
       id: id ?? this.id,
@@ -177,6 +180,7 @@ class Subscription {
       logoUrl: logoUrl ?? this.logoUrl,
       brandPresetId: brandPresetId ?? this.brandPresetId,
       autoRenew: autoRenew ?? this.autoRenew,
+      anchorDay: anchorDay ?? this.anchorDay,
     );
   }
 
@@ -205,31 +209,33 @@ class Subscription {
   /// Calculates the next sequential billing date based on the billing cycle
   DateTime calculateNextDateFrom(DateTime fromDate) {
     DateTime newDate;
+    final anchor = anchorDay ?? nextBillingDate.day;
     switch (billingCycle) {
       case BillingCycle.weekly:
-        newDate = fromDate.add(const Duration(days: 7));
+        // Use calendar arithmetic instead of Duration(days: 7) to avoid DST hour shift
+        newDate = DateTime(fromDate.year, fromDate.month, fromDate.day + 7, fromDate.hour, fromDate.minute);
         break;
       case BillingCycle.monthly:
         final targetMonth = fromDate.month + 1;
         final targetYear = fromDate.year + (targetMonth > 12 ? 1 : 0);
         final normalizedMonth = ((targetMonth - 1) % 12) + 1;
         final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
-        final clampedDay = fromDate.day.clamp(1, lastDay);
-        newDate = DateTime(targetYear, normalizedMonth, clampedDay);
+        final clampedDay = anchor.clamp(1, lastDay);
+        newDate = DateTime(targetYear, normalizedMonth, clampedDay, fromDate.hour, fromDate.minute);
         break;
       case BillingCycle.quarterly:
         final targetMonth = fromDate.month + 3;
         final targetYear = fromDate.year + ((targetMonth - 1) ~/ 12);
         final normalizedMonth = ((targetMonth - 1) % 12) + 1;
         final lastDay = DateTime(targetYear, normalizedMonth + 1, 0).day;
-        final clampedDay = fromDate.day.clamp(1, lastDay);
-        newDate = DateTime(targetYear, normalizedMonth, clampedDay);
+        final clampedDay = anchor.clamp(1, lastDay);
+        newDate = DateTime(targetYear, normalizedMonth, clampedDay, fromDate.hour, fromDate.minute);
         break;
       case BillingCycle.yearly:
         final targetYear = fromDate.year + 1;
         final lastDay = DateTime(targetYear, fromDate.month + 1, 0).day;
-        final clampedDay = fromDate.day.clamp(1, lastDay);
-        newDate = DateTime(targetYear, fromDate.month, clampedDay);
+        final clampedDay = anchor.clamp(1, lastDay);
+        newDate = DateTime(targetYear, fromDate.month, clampedDay, fromDate.hour, fromDate.minute);
         break;
     }
     return newDate;
@@ -270,6 +276,7 @@ class Subscription {
       'logoUrl': logoUrl,
       'brandPresetId': brandPresetId,
       'autoRenew': autoRenew,
+      'anchorDay': anchorDay ?? nextBillingDate.day,
     };
   }
 
@@ -373,6 +380,7 @@ class Subscription {
       logoUrl: json['logoUrl'] as String?,
       brandPresetId: json['brandPresetId'] as String?,
       autoRenew: json['autoRenew'] as bool? ?? true,
+      anchorDay: json['anchorDay'] as int?,
     );
   }
 }
@@ -604,7 +612,7 @@ class SubscriptionStore extends ChangeNotifier {
   double get totalMonthlySpend {
     if (_cachedTotalMonthlySpend != null) return _cachedTotalMonthlySpend!;
     final total = _subscriptions
-        .where((s) => s.status != SubscriptionStatus.paused)
+        .where((s) => s.status != SubscriptionStatus.paused && s.status != SubscriptionStatus.trial)
         .fold<double>(0.0, (acc, sub) => acc + sub.monthlyCost);
     return _cachedTotalMonthlySpend = total;
   }
@@ -613,7 +621,9 @@ class SubscriptionStore extends ChangeNotifier {
 
   int get totalActiveCount {
     if (_cachedTotalActiveCount != null) return _cachedTotalActiveCount!;
-    return _cachedTotalActiveCount = _subscriptions.where((s) => s.status == SubscriptionStatus.active).length;
+    return _cachedTotalActiveCount = _subscriptions
+        .where((s) => s.status == SubscriptionStatus.active || s.status == SubscriptionStatus.dueSoon)
+        .length;
   }
 
   int get totalPausedCount {
@@ -658,7 +668,9 @@ class SubscriptionStore extends ChangeNotifier {
     if (_highestCostCalculated) return _cachedHighestCostSubscription;
     _highestCostCalculated = true;
     if (_subscriptions.isEmpty) return _cachedHighestCostSubscription = null;
-    final active = _subscriptions.where((s) => s.status != SubscriptionStatus.paused).toList();
+    final active = _subscriptions
+        .where((s) => s.status != SubscriptionStatus.paused && s.status != SubscriptionStatus.trial)
+        .toList();
     if (active.isEmpty) return _cachedHighestCostSubscription = null;
     active.sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
     return _cachedHighestCostSubscription = active.first;
@@ -667,7 +679,7 @@ class SubscriptionStore extends ChangeNotifier {
   Map<SubscriptionCategory, double> get categorySpendMap {
     if (_cachedCategorySpendMap != null) return _cachedCategorySpendMap!;
     final Map<SubscriptionCategory, double> map = {};
-    for (var sub in _subscriptions.where((s) => s.status != SubscriptionStatus.paused)) {
+    for (var sub in _subscriptions.where((s) => s.status != SubscriptionStatus.paused && s.status != SubscriptionStatus.trial)) {
       map[sub.category] = (map[sub.category] ?? 0.0) + sub.monthlyCost;
     }
     return _cachedCategorySpendMap = map;
@@ -1035,7 +1047,7 @@ class SubscriptionStore extends ChangeNotifier {
   }
 
   void setMonthlyBudget(double amount) {
-    _monthlyBudget = amount;
+    _monthlyBudget = amount.clamp(0.0, 999999.0);
     notifyListeners();
     _saveToStorage();
   }

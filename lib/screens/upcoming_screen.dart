@@ -29,14 +29,21 @@ class UpcomingScreen extends StatelessWidget {
         final dueLater = list.where((s) => s.daysRemaining > 30).toList();
         final overdue = list.where((s) => s.daysRemaining < 0).toList();
 
-        final next30DaysSubs = list.where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 30).toList();
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final windowEnd = today.add(const Duration(days: 30));
+
+        final next30DaysSubs = list.where((s) => s.daysRemaining <= 30).toList();
         final totalNext30Days = next30DaysSubs.fold(0.0, (acc, s) {
-          // Count how many times this subscription renews within 30 days
-          int occurrences = 1;
-          if (s.billingCycle == BillingCycle.weekly) {
-            // A weekly sub renews ~4 times in 30 days from its next billing date
-            final daysInWindow = 30 - s.daysRemaining;
-            occurrences = 1 + (daysInWindow ~/ 7);
+          int occurrences = 0;
+          DateTime d = DateTime(s.nextBillingDate.year, s.nextBillingDate.month, s.nextBillingDate.day);
+          if (d.isBefore(today)) {
+            occurrences++;
+            d = s.calculateNextDateFrom(d);
+          }
+          while (!d.isAfter(windowEnd) && occurrences < 15) {
+            occurrences++;
+            d = s.calculateNextDateFrom(d);
           }
           return acc + (s.price * occurrences);
         });

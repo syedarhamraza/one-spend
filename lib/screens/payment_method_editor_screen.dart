@@ -87,11 +87,37 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
     final nickname = _nicknameController.text.trim();
     final last4 = _last4Controller.text.trim();
     final expiry = _expiryController.text.trim();
-    final statementDay = int.tryParse(_statementController.text.trim());
+    final statementText = _statementController.text.trim();
+    final statementDay = int.tryParse(statementText);
 
     if (nickname.isEmpty && last4.isEmpty) {
       OneUIToast.show(context, 'Please enter a nickname or last 4 digits');
       return;
+    }
+
+    if (last4.isNotEmpty && !RegExp(r'^\d{4}$').hasMatch(last4)) {
+      OneUIToast.show(context, 'Last 4 digits must contain exactly 4 numbers');
+      return;
+    }
+
+    if (expiry.isNotEmpty) {
+      final parts = expiry.split('/');
+      if (parts.length != 2 || parts[0].length != 2 || parts[1].length != 2) {
+        OneUIToast.show(context, 'Expiry must be in MM/YY format');
+        return;
+      }
+      final month = int.tryParse(parts[0]);
+      if (month == null || month < 1 || month > 12) {
+        OneUIToast.show(context, 'Expiry month must be between 01 and 12');
+        return;
+      }
+    }
+
+    if (statementText.isNotEmpty) {
+      if (statementDay == null || statementDay < 1 || statementDay > 31) {
+        OneUIToast.show(context, 'Statement day must be between 1 and 31');
+        return;
+      }
     }
 
     HapticFeedback.mediumImpact();
@@ -227,6 +253,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 child: TextField(
                                   controller: _nicknameController,
                                   textAlign: TextAlign.end,
+                                  inputFormatters: [LengthLimitingTextInputFormatter(50)],
                                   onChanged: (val) => setState(() {}),
                                   style: const TextStyle(
                                     fontSize: 14.5,
@@ -255,6 +282,10 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 child: TextField(
                                   controller: _last4Controller,
                                   keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(4),
+                                  ],
                                   maxLength: 4,
                                   textAlign: TextAlign.end,
                                   onChanged: (val) => setState(() {}),
@@ -489,6 +520,10 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 child: TextField(
                                   controller: _statementController,
                                   keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(2),
+                                  ],
                                   maxLength: 2,
                                   textAlign: TextAlign.end,
                                   onChanged: (val) => setState(() {}),

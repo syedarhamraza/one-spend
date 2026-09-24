@@ -105,7 +105,9 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
         result = _textController.text.trim();
         break;
       case FieldEditorType.number:
-        result = double.tryParse(_textController.text.trim()) ?? (widget.initialValue as double? ?? 0.0);
+        final normalized = _textController.text.trim().replaceAll(',', '.');
+        final parsed = double.tryParse(normalized);
+        result = parsed != null ? parsed.clamp(0.0, 99999.99) : (widget.initialValue as double? ?? 0.0);
         break;
       case FieldEditorType.category:
       case FieldEditorType.billingCycle:
@@ -182,10 +184,13 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
                     builder: (context, _) {
                       bool canSave = true;
                       if (widget.type == FieldEditorType.text) {
-                        canSave = _textController.text.trim().isNotEmpty;
+                        final text = _textController.text.trim();
+                        canSave = text.isNotEmpty && text.length <= 100;
+                      } else if (widget.type == FieldEditorType.notes) {
+                        canSave = _textController.text.length <= 500;
                       } else if (widget.type == FieldEditorType.number) {
-                        final parsed = double.tryParse(_textController.text.trim());
-                        canSave = parsed != null && parsed >= 0;
+                        final parsed = double.tryParse(_textController.text.trim().replaceAll(',', '.'));
+                        canSave = parsed != null && parsed >= 0 && parsed <= 99999.99;
                       }
                       return OneUIFloatingCancelSavePill(
                         onCancel: _onCancel,
@@ -217,6 +222,8 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
           child: TextField(
             controller: _textController,
             autofocus: true,
+            maxLength: 100,
+            buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -285,6 +292,8 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
             autofocus: true,
             maxLines: 6,
             minLines: 3,
+            maxLength: 500,
+            buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
             style: const TextStyle(
               fontSize: 16,
               color: OneUITheme.textPrimary,
