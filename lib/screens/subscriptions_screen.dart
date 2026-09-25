@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -1284,6 +1285,16 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   ],
                 ],
               ),
+
+                // Bottom Gradient Vignette (Fades scrolling items into pitch black behind floating bars)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: OneUIBottomVignette(
+                    isVisible: !_showSearch,
+                  ),
+                ),
 
                 // Floating Scroll-To-Top circular button (only when not searching)
                 if (!_showSearch)

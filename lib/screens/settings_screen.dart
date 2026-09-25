@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
@@ -442,6 +443,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       final isNavbar3d = OneUIEffectsController.instance.navbar3dEffect;
                       final isFloating3d = OneUIEffectsController.instance.floating3dEffect;
                       final isCards3d = OneUIEffectsController.instance.card3dEffect;
+                      final isBottomVignette = OneUIEffectsController.instance.bottomVignetteEffect;
 
                       final appearanceItems = <OneUIGroupItem>[
                         OneUIGroupItem(
@@ -496,14 +498,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           },
                         ),
                         OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.gradient_rounded, OneUITheme.accentBlue),
+                          title: 'Bottom gradient vignette',
+                          subtitle: isBottomVignette
+                              ? 'Smooth pitch-black fade behind floating navigation'
+                              : 'Classic flat appearance',
+                          trailing: Switch.adaptive(
+                            value: isBottomVignette,
+                            activeTrackColor: OneUITheme.accentBlue,
+                            onChanged: (val) {
+                              OneUIEffectsController.instance.bottomVignetteEffect = val;
+                            },
+                          ),
+                          onTap: () {
+                            OneUIEffectsController.instance.bottomVignetteEffect = !isBottomVignette;
+                          },
+                        ),
+                        OneUIGroupItem(
                           leading: _buildIconBadge(Icons.refresh_rounded, OneUITheme.accentOrange),
                           title: 'Reset appearance effects',
-                          subtitle: 'Restore default 3D effects across the app',
+                          subtitle: 'Restore default visual effects across the app',
                           onTap: () {
                             OneUIEffectsController.instance.navbar3dEffect = true;
                             OneUIEffectsController.instance.floating3dEffect = true;
                             OneUIEffectsController.instance.card3dEffect = true;
-                            OneUIToast.show(context, 'Reset appearance to default 3D effects');
+                            OneUIEffectsController.instance.bottomVignetteEffect = true;
+                            OneUIToast.show(context, 'Reset appearance to default effects');
                           },
                         ),
                       ].where(itemMatches).toList();
@@ -713,6 +733,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                 ],
+              ),
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: OneUIBottomVignette(),
               ),
             ],
           ),

@@ -23,6 +23,7 @@ import 'package:onespend/screens/payment_methods_screen.dart';
 import 'package:onespend/screens/payment_method_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_spending_chart.dart';
+import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -2141,6 +2142,89 @@ void main() {
 
     expect(find.text('No spending trajectory yet'), findsOneWidget);
   });
+
+  testWidgets('Samsung One UI Bottom Gradient Vignette renders on all main tabs and isolates GPU repaints', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Verify OneUIBottomVignette is present on Spend tab
+    expect(find.byType(OneUIBottomVignette), findsWidgets);
+
+    // Verify OneUIBottomVignette contains IgnorePointer and RepaintBoundary for GPU isolation
+    final vignetteFinder = find.byType(OneUIBottomVignette).first;
+    expect(find.descendant(of: vignetteFinder, matching: find.byType(IgnorePointer)), findsOneWidget);
+    expect(find.descendant(of: vignetteFinder, matching: find.byType(RepaintBoundary)), findsOneWidget);
+
+    // Switch to Upcoming tab and verify vignette exists
+    await tester.tap(find.text('Upcoming'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUIBottomVignette), findsWidgets);
+
+    // Switch to Analytics tab and verify vignette exists
+    await tester.tap(find.text('Analytics'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUIBottomVignette), findsWidgets);
+
+    // Switch to Menu (Settings) tab and verify vignette exists
+    await tester.tap(find.text('Menu'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUIBottomVignette), findsWidgets);
+  });
+
+  testWidgets('OneUIBottomVignette respects OneUIEffectsController toggle and Settings appearance switch', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    OneUIEffectsController.instance.bottomVignetteEffect = true;
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Navigate to Menu tab
+    await tester.tap(find.text('Menu'));
+    await tester.pumpAndSettle();
+
+    // Verify Settings displays 'Bottom gradient vignette'
+    expect(find.text('Bottom gradient vignette'), findsOneWidget);
+    expect(OneUIEffectsController.instance.bottomVignetteEffect, isTrue);
+
+    // Toggle switch off
+    await tester.tap(find.text('Bottom gradient vignette'));
+    await tester.pumpAndSettle();
+
+    expect(OneUIEffectsController.instance.bottomVignetteEffect, isFalse);
+
+    // Reset appearance effects
+    await tester.tap(find.text('Reset appearance effects'));
+    await tester.pumpAndSettle();
+
+    expect(OneUIEffectsController.instance.bottomVignetteEffect, isTrue);
+  });
+
+  testWidgets('OneUIBottomVignette is layered behind OneUIScrollToTopButton and floating navigation pill', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Verify both OneUIBottomVignette and OneUIFloatingNavBar exist simultaneously
+    expect(find.byType(OneUIBottomVignette), findsWidgets);
+    expect(find.byType(OneUIFloatingNavBar), findsOneWidget);
+
+    // Scroll down to reveal OneUIScrollToTopButton
+    await tester.drag(find.text('Netflix').first, const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIScrollToTopButton), findsOneWidget);
+  });
 }
+
 
 

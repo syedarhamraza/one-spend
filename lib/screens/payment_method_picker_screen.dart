@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_action_bar.dart';
@@ -989,6 +990,15 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                     ),
                   ),
                 ),
+
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: OneUIBottomVignette(
+                  isVisible: _isSelectionMode,
+                ),
+              ),
 
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 250),
