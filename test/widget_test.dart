@@ -370,7 +370,7 @@ void main() {
     expect(find.text('Cards 3D depth effect'), findsOneWidget);
     expect(OneUIEffectsController.instance.card3dEffect, isFalse);
     expect(OneUITheme.cardBorder, isNull);
-    expect(OneUITheme.cardShadow.first.blurRadius, 10); // Baseline ambient shadow in normal mode
+    expect(OneUITheme.cardShadow, isEmpty);
 
     // Scroll into view and toggle Cards 3D depth effect ON
     await tester.ensureVisible(find.text('Cards 3D depth effect'));
@@ -389,7 +389,7 @@ void main() {
 
     expect(OneUIEffectsController.instance.card3dEffect, isFalse);
     expect(OneUITheme.cardBorder, isNull);
-    expect(OneUITheme.cardShadow.first.blurRadius, 10);
+    expect(OneUITheme.cardShadow, isEmpty);
   });
 
   testWidgets('Cards 3D depth effect updates all cards across screens simultaneously', (WidgetTester tester) async {
@@ -430,7 +430,7 @@ void main() {
     for (var c in cardContainersBefore) {
       final dec = c.decoration as BoxDecoration;
       expect(dec.border, isNull);
-      expect((dec.boxShadow ?? const []).first.blurRadius, 10);
+      expect(dec.boxShadow ?? const [], isEmpty);
     }
 
     // Scroll down and toggle Cards 3D effect ON
@@ -2227,7 +2227,7 @@ void main() {
     expect(find.byType(OneUIScrollToTopButton), findsOneWidget);
   });
 
-  testWidgets('Floating pill, navbar, and card shadows are elevated in both 3D and Flat modes so they never dissolve', (WidgetTester tester) async {
+  testWidgets('Floating pill and navbar shadows are elevated in both 3D and Flat modes so they never dissolve', (WidgetTester tester) async {
     // 3D Mode Check
     OneUIEffectsController.instance.floating3dEffect = true;
     OneUIEffectsController.instance.navbar3dEffect = true;
@@ -2237,8 +2237,8 @@ void main() {
     expect(shadow3d, isNotEmpty);
     expect(shadow3d.length, 2);
     expect(shadow3d.first.blurRadius, 18);
-    expect(shadow3d.first.spreadRadius, 1.0);
-    expect(shadow3d.first.offset.dy, 2); // Soft 2px offset, not 8px blob
+    expect(shadow3d.first.spreadRadius, 0.5);
+    expect(shadow3d.first.offset.dy, 4);
 
     final navShadow3d = OneUITheme.navbarShadow;
     expect(navShadow3d, isNotEmpty);
@@ -2259,20 +2259,18 @@ void main() {
     final shadowFlat = OneUITheme.floatingShadow;
     expect(shadowFlat, isNotEmpty);
     expect(shadowFlat.length, 2);
-    expect(shadowFlat.first.blurRadius, 16);
+    expect(shadowFlat.first.blurRadius, 14);
     expect(shadowFlat.first.spreadRadius, 0.5);
-    expect(shadowFlat.first.offset.dy, 2); // Ambient 2px offset matching Samsung One UI screenshot
+    expect(shadowFlat.first.offset.dy, 3); // Soft ambient offset matching Samsung One UI reference
 
     final navShadowFlat = OneUITheme.navbarShadow;
     expect(navShadowFlat, isNotEmpty);
     expect(navShadowFlat.first.offset.dy, lessThan(0)); // Upward ambient lift in flat mode!
     expect(navShadowFlat.first.spreadRadius, 0.5);
 
-    // Baseline ambient card shadow exists in normal/flat mode so cards separate from black OLED background
+    // Cards remain flat in normal/flat mode
     final cardShadowFlat = OneUITheme.cardShadow;
-    expect(cardShadowFlat, isNotEmpty);
-    expect(cardShadowFlat.first.blurRadius, 10);
-    expect(cardShadowFlat.first.spreadRadius, 0.5);
+    expect(cardShadowFlat, isEmpty);
 
     // Reset back to defaults
     OneUIEffectsController.instance.floating3dEffect = true;
@@ -2313,7 +2311,7 @@ void main() {
     final shadows = (selectionBox.decoration as BoxDecoration).boxShadow!;
     expect(shadows, isNotEmpty);
     for (final s in shadows) {
-      expect(s.offset.dy, lessThanOrEqualTo(2.0), reason: 'Shadow offset must be ambient (<= 2px), never a heavy 8px downward blob');
+      expect(s.offset.dy, lessThanOrEqualTo(4.0), reason: 'Shadow offset must be ambient (<= 4px), never a heavy 8px downward blob');
     }
   });
 

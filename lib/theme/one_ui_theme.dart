@@ -106,16 +106,7 @@ class OneUIEffectsController extends ChangeNotifier {
   }
   
   List<BoxShadow> get cardShadow {
-    if (!_card3dEffect) {
-      return _cachedCardShadow ??= [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.30),
-          blurRadius: 10,
-          offset: const Offset(0, 3),
-          spreadRadius: 0.5,
-        ),
-      ];
-    }
+    if (!_card3dEffect) return const [];
     return _cachedCardShadow ??= [
       BoxShadow(
         color: Colors.black.withValues(alpha: 0.45),
@@ -160,29 +151,28 @@ class OneUIEffectsController extends ChangeNotifier {
     if (!_floating3dEffect) {
       return _cachedFloatingShadow ??= [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.35),
-          blurRadius: 16,
-          offset: const Offset(0, 2),
+          color: Colors.black.withValues(alpha: 0.28),
+          blurRadius: 14,
+          offset: const Offset(0, 3),
           spreadRadius: 0.5,
         ),
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.20),
-          blurRadius: 6,
+          color: Colors.black.withValues(alpha: 0.14),
+          blurRadius: 5,
           offset: const Offset(0, 1),
-          spreadRadius: 0.5,
         ),
       ];
     }
     return _cachedFloatingShadow ??= [
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.45),
+        color: Colors.black.withValues(alpha: 0.38),
         blurRadius: 18,
-        offset: const Offset(0, 2),
-        spreadRadius: 1.0,
+        offset: const Offset(0, 4),
+        spreadRadius: 0.5,
       ),
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.25),
-        blurRadius: 8,
+        color: Colors.black.withValues(alpha: 0.18),
+        blurRadius: 6,
         offset: const Offset(0, 1),
         spreadRadius: 0.5,
       ),

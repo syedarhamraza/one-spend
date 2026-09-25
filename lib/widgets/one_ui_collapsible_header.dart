@@ -517,10 +517,9 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       }
     }
 
-    return ClipRect(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
           // 0. Status Bar Scrim (Edge-to-Edge Progressive Blur & Gradient Scrim, strictly 80% of status bar)
           const Positioned(
             top: 0,
@@ -580,7 +579,6 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
                   ),
           ),
         ],
-      ),
-    );
+      );
   }
 }
