@@ -10,6 +10,7 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 import 'icon_picker_screen.dart';
 import 'one_ui_field_editor_screen.dart';
 import 'payment_methods_screen.dart';
@@ -555,6 +556,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                 ),
               ),
             ],
+          ),
+
+          // Progressive OLED Bottom Vignette Scrim
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: OneUIBottomVignette(),
           ),
 
           // Standardized Floating "Cancel | Save" Pill

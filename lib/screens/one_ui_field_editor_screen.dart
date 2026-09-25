@@ -5,6 +5,7 @@ import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 
 enum FieldEditorType {
   text,
@@ -167,6 +168,14 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
                 ),
               ),
             ],
+          ),
+
+          // Progressive OLED Bottom Vignette Scrim
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: OneUIBottomVignette(),
           ),
 
           // Floating "Cancel | Save" Pill right above keyboard (matching One UI specification)

@@ -8,6 +8,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 
 /// Dedicated Samsung One UI Payment Method Editor Subpage.
 /// Allows adding or editing a tracked payment method with live card preview,
@@ -553,6 +554,14 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                 ),
               ),
             ],
+          ),
+
+          // Progressive OLED Bottom Vignette Scrim
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: OneUIBottomVignette(),
           ),
 
           // Floating Cancel | Save Pill

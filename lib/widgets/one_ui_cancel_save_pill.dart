@@ -33,7 +33,7 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
-              boxShadow: is3d ? OneUIEffectsController.instance.floatingShadow : null,
+              boxShadow: OneUITheme.floatingShadow,
             ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(30),

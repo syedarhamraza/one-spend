@@ -37,23 +37,10 @@ class OneUIFloatingActionBar extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: RepaintBoundary(
               child: DecoratedBox(
-                decoration: is3d
-                  ? BoxDecoration(
-                      borderRadius: BorderRadius.circular(34),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          blurRadius: 18,
-                          offset: const Offset(0, 8),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.20),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    )
-                  : const BoxDecoration(),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(34),
+                  boxShadow: OneUITheme.navbarShadow,
+                ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(34),
                 child: BackdropFilter(

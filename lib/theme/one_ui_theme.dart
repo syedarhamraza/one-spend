@@ -77,6 +77,8 @@ class OneUIEffectsController extends ChangeNotifier {
   List<BoxShadow>? _cachedCardShadow;
   Gradient? _cachedFloatingGradient;
   Border? _cachedFloatingBorder;
+  List<BoxShadow>? _cachedFloatingShadow;
+  List<BoxShadow>? _cachedNavbarShadow;
   List<BoxShadow>? _cachedFabShadow;
 
   void _invalidateCache() {
@@ -84,6 +86,8 @@ class OneUIEffectsController extends ChangeNotifier {
     _cachedCardShadow = null;
     _cachedFloatingGradient = null;
     _cachedFloatingBorder = null;
+    _cachedFloatingShadow = null;
+    _cachedNavbarShadow = null;
     _cachedFabShadow = null;
   }
 
@@ -143,21 +147,70 @@ class OneUIEffectsController extends ChangeNotifier {
   }
 
   List<BoxShadow> get floatingShadow {
-    if (!_floating3dEffect) return const [];
-    return _cachedFloatingBorder != null
-        ? [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ]
-        : const [];
+    if (!_floating3dEffect) {
+      return _cachedFloatingShadow ??= [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.45),
+          blurRadius: 14,
+          offset: const Offset(0, 4),
+          spreadRadius: 1.0,
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.25),
+          blurRadius: 6,
+          offset: const Offset(0, 1),
+          spreadRadius: 0.5,
+        ),
+      ];
+    }
+    return _cachedFloatingShadow ??= [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.60),
+        blurRadius: 22,
+        offset: const Offset(0, 8),
+        spreadRadius: 1.0,
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.35),
+        blurRadius: 10,
+        offset: const Offset(0, 2),
+        spreadRadius: 1.5,
+      ),
+    ];
+  }
+
+  List<BoxShadow> get navbarShadow {
+    final is3d = _navbar3dEffect || _floating3dEffect;
+    if (!is3d) {
+      return _cachedNavbarShadow ??= [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.45),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+          spreadRadius: 1.0,
+        ),
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.25),
+          blurRadius: 6,
+          offset: const Offset(0, 1),
+          spreadRadius: 0.5,
+        ),
+      ];
+    }
+    return _cachedNavbarShadow ??= [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.60),
+        blurRadius: 24,
+        offset: const Offset(0, 8),
+        spreadRadius: 1.0,
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.35),
+        blurRadius: 10,
+        offset: const Offset(0, 2),
+        spreadRadius: 1.5,
+      ),
+    ];
   }
 
   List<BoxShadow> get fabShadow {
@@ -231,6 +284,7 @@ class OneUITheme {
   static Gradient? get floatingGradient => OneUIEffectsController.instance.floatingGradient;
   static Border? get floatingBorder => OneUIEffectsController.instance.floatingBorder;
   static List<BoxShadow> get floatingShadow => OneUIEffectsController.instance.floatingShadow;
+  static List<BoxShadow> get navbarShadow => OneUIEffectsController.instance.navbarShadow;
   static List<BoxShadow> get fabShadow => OneUIEffectsController.instance.fabShadow;
   static double get blurSigma => OneUIEffectsController.instance.blurSigma;
   static bool get bottomVignetteEffect => OneUIEffectsController.instance.bottomVignetteEffect;

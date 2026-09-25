@@ -23,12 +23,10 @@ class OneUIFloatingSearchPill extends StatelessWidget {
           child: GestureDetector(
             onTap: onTap,
           child: DecoratedBox(
-            decoration: is3d
-                ? BoxDecoration(
-                    borderRadius: BorderRadius.circular(26),
-                    boxShadow: OneUITheme.floatingShadow,
-                  )
-                : const BoxDecoration(),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(26),
+              boxShadow: OneUITheme.floatingShadow,
+            ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(26),
               child: BackdropFilter(

@@ -13,6 +13,7 @@ import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 import 'category_picker_screen.dart';
 import 'icon_picker_screen.dart';
 import 'one_ui_field_editor_screen.dart';
@@ -988,6 +989,14 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                     ),
                   ),
                 ],
+              ),
+
+              // Progressive OLED Bottom Vignette Scrim
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: OneUIBottomVignette(),
               ),
 
               // One UI Action Bar at the Bottom (Renew, Pause/Resume, Share, Delete)

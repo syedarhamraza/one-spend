@@ -6,6 +6,7 @@ import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_icon_picker_modal.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 
 /// Dedicated Samsung One UI Icon Picker Subpage.
 /// Replaces the bottom modal sheet with a full One UI subpage with live preview,
@@ -327,6 +328,14 @@ class _IconPickerScreenState extends State<IconPickerScreen>
                 ),
               ),
             ],
+          ),
+
+          // Progressive OLED Bottom Vignette Scrim
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: OneUIBottomVignette(),
           ),
 
           // Floating Cancel | Save Pill

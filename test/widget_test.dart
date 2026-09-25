@@ -24,6 +24,7 @@ import 'package:onespend/screens/payment_method_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_spending_chart.dart';
 import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
+import 'package:onespend/widgets/one_ui_cancel_save_pill.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -2223,6 +2224,107 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(OneUIScrollToTopButton), findsOneWidget);
+  });
+
+  testWidgets('Floating pill and navbar shadows are elevated in both 3D and Flat modes so they never dissolve', (WidgetTester tester) async {
+    // 3D Mode Check
+    OneUIEffectsController.instance.floating3dEffect = true;
+    OneUIEffectsController.instance.navbar3dEffect = true;
+
+    final shadow3d = OneUITheme.floatingShadow;
+    expect(shadow3d, isNotEmpty);
+    expect(shadow3d.length, 2);
+    expect(shadow3d.first.blurRadius, 22);
+    expect(shadow3d.first.spreadRadius, 1.0);
+    expect(shadow3d.last.spreadRadius, 1.5);
+
+    final navShadow3d = OneUITheme.navbarShadow;
+    expect(navShadow3d, isNotEmpty);
+    expect(navShadow3d.length, 2);
+    expect(navShadow3d.first.spreadRadius, 1.0);
+
+    // Flat Mode Check
+    OneUIEffectsController.instance.floating3dEffect = false;
+    OneUIEffectsController.instance.navbar3dEffect = false;
+
+    final shadowFlat = OneUITheme.floatingShadow;
+    expect(shadowFlat, isNotEmpty);
+    expect(shadowFlat.length, 2);
+    expect(shadowFlat.first.blurRadius, 14);
+    expect(shadowFlat.first.spreadRadius, 1.0);
+
+    final navShadowFlat = OneUITheme.navbarShadow;
+    expect(navShadowFlat, isNotEmpty);
+    expect(navShadowFlat.first.spreadRadius, 1.0);
+
+    // Reset back to defaults
+    OneUIEffectsController.instance.floating3dEffect = true;
+    OneUIEffectsController.instance.navbar3dEffect = true;
+  });
+
+  testWidgets('OneUIBottomVignette is present on subpages with floating bottom action bars and pills', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    // 1. SubscriptionDetailScreen
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: SubscriptionDetailScreen(
+        subscription: Subscription(
+          id: 'test_sub_1',
+          name: 'Netflix',
+          description: 'Standard Plan',
+          price: 15.99,
+          billingCycle: BillingCycle.monthly,
+          nextBillingDate: DateTime.now().add(const Duration(days: 10)),
+          category: SubscriptionCategory.entertainment,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    expect(find.byType(OneUIFloatingActionBar), findsOneWidget);
+
+    // 2. PaymentMethodPickerScreen (Normal mode)
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const PaymentMethodPickerScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    expect(find.byType(OneUIFloatingCancelSavePill), findsOneWidget);
+
+    // 3. CategoryPickerScreen
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const CategoryPickerScreen(initialCategory: SubscriptionCategory.entertainment),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    expect(find.byType(OneUIFloatingCancelSavePill), findsOneWidget);
+
+    // 4. ReminderPickerScreen
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const ReminderPickerScreen(initialDays: 2),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    expect(find.byType(OneUIFloatingCancelSavePill), findsOneWidget);
+
+    // 5. PopularPresetsScreen
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const PopularPresetsScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
   });
 }
 

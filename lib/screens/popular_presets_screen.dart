@@ -9,6 +9,7 @@ import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 
 /// Samsung One UI Popular Services & Presets Subpage.
 /// Replaces the horizontal scroll in AddSubscriptionScreen with a clean,
@@ -69,13 +70,7 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: OneUITheme.floatingShadow,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(32),
@@ -297,6 +292,14 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
               ),
             ),
           ],
+        ),
+
+        // Progressive OLED Bottom Vignette Scrim
+        const Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: OneUIBottomVignette(),
         ),
 
         // Floating Search Pill above keyboard
