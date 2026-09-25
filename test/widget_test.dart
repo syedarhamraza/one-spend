@@ -27,13 +27,22 @@ import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
 import 'package:onespend/widgets/one_ui_cancel_save_pill.dart';
 import 'package:onespend/widgets/one_ui_selection_pills.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/native.dart';
+import 'package:onespend/core/database/app_database.dart';
+import 'package:onespend/core/di/injection.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() {
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  });
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    setupDependencies(database: AppDatabase.forTesting(NativeDatabase.memory()));
     OneUIFloatingModal.isModalOpen.value = false;
     SubscriptionStore.instance.resetForTesting();
   });
