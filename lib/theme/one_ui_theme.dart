@@ -9,10 +9,11 @@ class OneUIEffectsController extends ChangeNotifier {
     _loadSettings();
   }
 
-  // 3D Effect Toggles
+  // 3D & Vignette Effect Toggles
   bool _card3dEffect = false;       // All cards across UI (disabled by default matching One UI settings)
   bool _floating3dEffect = true;    // Floating pills, buttons, and navbar
   bool _navbar3dEffect = true;      // 3D tactile navbar matching One UI phone dialer screenshot
+  bool _bottomVignetteEffect = true;// Edge-to-edge progressive bottom gradient vignette
 
   Future<void> _loadSettings() async {
     try {
@@ -20,6 +21,7 @@ class OneUIEffectsController extends ChangeNotifier {
       _card3dEffect = prefs.getBool('card3dEffect') ?? false;
       _floating3dEffect = prefs.getBool('floating3dEffect') ?? true;
       _navbar3dEffect = prefs.getBool('navbar3dEffect') ?? true;
+      _bottomVignetteEffect = prefs.getBool('bottomVignetteEffect') ?? true;
       _invalidateCache();
       notifyListeners();
     } catch (_) {}
@@ -55,6 +57,16 @@ class OneUIEffectsController extends ChangeNotifier {
     if (_navbar3dEffect != val) {
       _navbar3dEffect = val;
       _saveSetting('navbar3dEffect', val);
+      _invalidateCache();
+      notifyListeners();
+    }
+  }
+
+  bool get bottomVignetteEffect => _bottomVignetteEffect;
+  set bottomVignetteEffect(bool val) {
+    if (_bottomVignetteEffect != val) {
+      _bottomVignetteEffect = val;
+      _saveSetting('bottomVignetteEffect', val);
       _invalidateCache();
       notifyListeners();
     }
@@ -221,6 +233,7 @@ class OneUITheme {
   static List<BoxShadow> get floatingShadow => OneUIEffectsController.instance.floatingShadow;
   static List<BoxShadow> get fabShadow => OneUIEffectsController.instance.fabShadow;
   static double get blurSigma => OneUIEffectsController.instance.blurSigma;
+  static bool get bottomVignetteEffect => OneUIEffectsController.instance.bottomVignetteEffect;
 
   // Backward compatibility
   static Border? get subtleBorder => null;

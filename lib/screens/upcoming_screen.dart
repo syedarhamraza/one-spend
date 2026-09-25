@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -51,7 +52,9 @@ class UpcomingScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
-          body: CustomScrollView(
+          body: Stack(
+            children: [
+              CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               // One UI Signature Collapsible Header
@@ -256,7 +259,15 @@ class UpcomingScreen extends StatelessWidget {
               ),
             ],
           ),
-        );
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: OneUIBottomVignette(),
+          ),
+        ],
+      ),
+    );
       },
     );
   }
