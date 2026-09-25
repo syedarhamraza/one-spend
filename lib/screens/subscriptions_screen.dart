@@ -443,64 +443,70 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         onToggleSelectAll();
       },
       behavior: HitTestBehavior.opaque,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: OneUITheme.blurSigma,
-            sigmaY: OneUITheme.blurSigma,
-          ),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            height: 42,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: is3d ? null : OneUITheme.floatingColor,
-              gradient: is3d ? OneUITheme.floatingGradient : null,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: is3d ? 0.15 : 0.10),
-                width: 0.85,
-              ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: OneUITheme.floatingShadow,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: OneUITheme.blurSigma,
+              sigmaY: OneUITheme.blurSigma,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: allSelected ? const Color(0xFF2C69FF) : Colors.transparent,
-                    border: Border.all(
-                      color: allSelected ? const Color(0xFF2C69FF) : Colors.white.withValues(alpha: 0.55),
-                      width: 2.0,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: is3d ? null : OneUITheme.floatingColor,
+                gradient: is3d ? OneUITheme.floatingGradient : null,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: is3d ? 0.12 : 0.08),
+                  width: 0.85,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: allSelected ? const Color(0xFF2C69FF) : Colors.transparent,
+                      border: Border.all(
+                        color: allSelected ? const Color(0xFF2C69FF) : Colors.white.withValues(alpha: 0.55),
+                        width: 2.0,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: allSelected
+                        ? const Icon(
+                            Icons.check_rounded,
+                            size: 15,
+                            color: Colors.white,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$selectedCount',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: OneUITheme.textPrimary,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                  alignment: Alignment.center,
-                  child: allSelected
-                      ? const Icon(
-                          Icons.check_rounded,
-                          size: 15,
-                          color: Colors.white,
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '$selectedCount',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: OneUITheme.textPrimary,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -519,35 +525,41 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         onCancel();
       },
       behavior: HitTestBehavior.opaque,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: OneUITheme.blurSigma,
-            sigmaY: OneUITheme.blurSigma,
-          ),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            height: 42,
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            decoration: BoxDecoration(
-              color: is3d ? null : OneUITheme.floatingColor,
-              gradient: is3d ? OneUITheme.floatingGradient : null,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: is3d ? 0.15 : 0.10),
-                width: 0.85,
-              ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: OneUITheme.floatingShadow,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: OneUITheme.blurSigma,
+              sigmaY: OneUITheme.blurSigma,
             ),
-            alignment: Alignment.center,
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: OneUITheme.textPrimary,
-                letterSpacing: -0.2,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              decoration: BoxDecoration(
+                color: is3d ? null : OneUITheme.floatingColor,
+                gradient: is3d ? OneUITheme.floatingGradient : null,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: is3d ? 0.12 : 0.08),
+                  width: 0.85,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: OneUITheme.textPrimary,
+                  letterSpacing: -0.2,
+                ),
               ),
             ),
           ),

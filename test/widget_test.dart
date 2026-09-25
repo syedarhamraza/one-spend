@@ -2238,7 +2238,7 @@ void main() {
     expect(shadow3d.length, 2);
     expect(shadow3d.first.blurRadius, 18);
     expect(shadow3d.first.spreadRadius, 1.0);
-    expect(shadow3d.last.spreadRadius, 1.0);
+    expect(shadow3d.first.offset.dy, 2); // Soft 2px offset, not 8px blob
 
     final navShadow3d = OneUITheme.navbarShadow;
     expect(navShadow3d, isNotEmpty);
@@ -2259,8 +2259,9 @@ void main() {
     final shadowFlat = OneUITheme.floatingShadow;
     expect(shadowFlat, isNotEmpty);
     expect(shadowFlat.length, 2);
-    expect(shadowFlat.first.blurRadius, 14);
+    expect(shadowFlat.first.blurRadius, 16);
     expect(shadowFlat.first.spreadRadius, 0.5);
+    expect(shadowFlat.first.offset.dy, 2); // Ambient 2px offset matching Samsung One UI screenshot
 
     final navShadowFlat = OneUITheme.navbarShadow;
     expect(navShadowFlat, isNotEmpty);
@@ -2279,7 +2280,7 @@ void main() {
     OneUIEffectsController.instance.card3dEffect = true;
   });
 
-  testWidgets('Top selection capsules render without downward blob shadow in selection mode', (WidgetTester tester) async {
+  testWidgets('Top selection capsules render with ambient floating shadow matching Samsung One UI reference screenshot', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -2303,16 +2304,17 @@ void main() {
     expect(find.text('1'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
 
-    // Verify there is no DecoratedBox with OneUITheme.floatingShadow on the selection pills
+    // Verify selection pills have ambient floatingShadow with soft offset <= 2 (no 8px blob)
     final decoratedBoxes = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox));
-    final hasFloatingShadowOnSelection = decoratedBoxes.any((box) {
+    final selectionBox = decoratedBoxes.firstWhere((box) {
       final decoration = box.decoration;
-      if (decoration is BoxDecoration && decoration.boxShadow != null) {
-        return decoration.boxShadow == OneUITheme.floatingShadow;
-      }
-      return false;
+      return decoration is BoxDecoration && decoration.boxShadow == OneUITheme.floatingShadow;
     });
-    expect(hasFloatingShadowOnSelection, isFalse, reason: 'Top selection capsules must not have downward floatingShadow blob');
+    final shadows = (selectionBox.decoration as BoxDecoration).boxShadow!;
+    expect(shadows, isNotEmpty);
+    for (final s in shadows) {
+      expect(s.offset.dy, lessThanOrEqualTo(2.0), reason: 'Shadow offset must be ambient (<= 2px), never a heavy 8px downward blob');
+    }
   });
 
   testWidgets('OneUIBottomVignette is present on subpages with floating bottom action bars and pills', (WidgetTester tester) async {

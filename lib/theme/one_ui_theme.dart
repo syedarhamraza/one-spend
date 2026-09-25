@@ -133,8 +133,8 @@ class OneUIEffectsController extends ChangeNotifier {
 
   // Dynamic Floating Elements Properties
   Color get floatingColor => _floating3dEffect
-      ? const Color(0x9E26262B) // ~62% translucent smoked glass
-      : const Color(0xB3222226); // ~70% flat translucent
+      ? const Color(0xEB26262B) // ~92% smoked glass
+      : const Color(0xF2242428); // ~95% solid One UI pill charcoal matching screenshot
 
   Gradient? get floatingGradient {
     if (!_floating3dEffect) return null;
@@ -160,8 +160,8 @@ class OneUIEffectsController extends ChangeNotifier {
     if (!_floating3dEffect) {
       return _cachedFloatingShadow ??= [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.40),
-          blurRadius: 14,
+          color: Colors.black.withValues(alpha: 0.35),
+          blurRadius: 16,
           offset: const Offset(0, 2),
           spreadRadius: 0.5,
         ),
@@ -175,16 +175,16 @@ class OneUIEffectsController extends ChangeNotifier {
     }
     return _cachedFloatingShadow ??= [
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.55),
+        color: Colors.black.withValues(alpha: 0.45),
         blurRadius: 18,
-        offset: const Offset(0, 4),
+        offset: const Offset(0, 2),
         spreadRadius: 1.0,
       ),
       BoxShadow(
-        color: Colors.black.withValues(alpha: 0.30),
+        color: Colors.black.withValues(alpha: 0.25),
         blurRadius: 8,
         offset: const Offset(0, 1),
-        spreadRadius: 1.0,
+        spreadRadius: 0.5,
       ),
     ];
   }

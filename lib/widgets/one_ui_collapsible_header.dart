@@ -224,7 +224,7 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       height: 44,
       decoration: BoxDecoration(
         color: pillProgress > 0.05
-            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))
+            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.95))
             : Colors.transparent,
         gradient: (is3d && pillProgress > 0.05)
             ? LinearGradient(
@@ -257,14 +257,33 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
         onTap: widget.onBack ?? () => Navigator.maybePop(context),
         behavior: HitTestBehavior.opaque,
         child: pillProgress > 0.05
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: OneUITheme.blurSigma * pillProgress,
-                    sigmaY: OneUITheme.blurSigma * pillProgress,
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35 * pillProgress),
+                      blurRadius: 16,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0.5,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.20 * pillProgress),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
+                      spreadRadius: 0.5,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: OneUITheme.blurSigma * pillProgress,
+                      sigmaY: OneUITheme.blurSigma * pillProgress,
+                    ),
+                    child: buttonContent,
                   ),
-                  child: buttonContent,
                 ),
               )
             : buttonContent,
@@ -293,7 +312,7 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
             ),
       decoration: BoxDecoration(
         color: pillProgress > 0.05
-            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))
+            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.95))
             : Colors.transparent,
         gradient: (is3d && pillProgress > 0.05)
             ? LinearGradient(
@@ -338,14 +357,33 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
           );
         },
         child: pillProgress > 0.05
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: OneUITheme.blurSigma * pillProgress,
-                    sigmaY: OneUITheme.blurSigma * pillProgress,
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35 * pillProgress),
+                      blurRadius: 16,
+                      offset: const Offset(0, 2),
+                      spreadRadius: 0.5,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.20 * pillProgress),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
+                      spreadRadius: 0.5,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: OneUITheme.blurSigma * pillProgress,
+                      sigmaY: OneUITheme.blurSigma * pillProgress,
+                    ),
+                    child: pillContent,
                   ),
-                  child: pillContent,
                 ),
               )
             : pillContent,
