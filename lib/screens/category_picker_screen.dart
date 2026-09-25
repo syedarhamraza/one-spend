@@ -5,6 +5,7 @@ import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 
 /// Dedicated Samsung One UI Category Picker Subpage.
 /// Matches the design language of ReminderPickerScreen with hero status banner,
@@ -212,6 +213,14 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                 ),
               ),
             ],
+          ),
+
+          // Progressive OLED Bottom Vignette Scrim
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: OneUIBottomVignette(),
           ),
 
           // Bottom Floating Stadium Save Pill

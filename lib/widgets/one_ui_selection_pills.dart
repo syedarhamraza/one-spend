@@ -34,12 +34,10 @@ class OneUISelectionPills extends StatelessWidget {
             GestureDetector(
               onTap: onToggleSelectAll,
               child: DecoratedBox(
-                decoration: is3d
-                    ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: OneUITheme.floatingShadow,
-                      )
-                    : const BoxDecoration(),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: OneUITheme.floatingShadow,
+                ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
                   child: BackdropFilter(
@@ -98,12 +96,10 @@ class OneUISelectionPills extends StatelessWidget {
             GestureDetector(
               onTap: onCancel,
               child: DecoratedBox(
-                decoration: is3d
-                    ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: OneUITheme.floatingShadow,
-                      )
-                    : const BoxDecoration(),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: OneUITheme.floatingShadow,
+                ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
                   child: BackdropFilter(

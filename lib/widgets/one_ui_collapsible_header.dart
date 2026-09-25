@@ -257,14 +257,28 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
         onTap: widget.onBack ?? () => Navigator.maybePop(context),
         behavior: HitTestBehavior.opaque,
         child: pillProgress > 0.05
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: OneUITheme.blurSigma * pillProgress,
-                    sigmaY: OneUITheme.blurSigma * pillProgress,
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    for (final s in OneUITheme.floatingShadow)
+                      BoxShadow(
+                        color: s.color.withValues(alpha: s.color.a * pillProgress),
+                        blurRadius: s.blurRadius,
+                        offset: s.offset,
+                        spreadRadius: s.spreadRadius,
+                      ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: OneUITheme.blurSigma * pillProgress,
+                      sigmaY: OneUITheme.blurSigma * pillProgress,
+                    ),
+                    child: buttonContent,
                   ),
-                  child: buttonContent,
                 ),
               )
             : buttonContent,
@@ -338,14 +352,28 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
           );
         },
         child: pillProgress > 0.05
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: OneUITheme.blurSigma * pillProgress,
-                    sigmaY: OneUITheme.blurSigma * pillProgress,
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    for (final s in OneUITheme.floatingShadow)
+                      BoxShadow(
+                        color: s.color.withValues(alpha: s.color.a * pillProgress),
+                        blurRadius: s.blurRadius,
+                        offset: s.offset,
+                        spreadRadius: s.spreadRadius,
+                      ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: OneUITheme.blurSigma * pillProgress,
+                      sigmaY: OneUITheme.blurSigma * pillProgress,
+                    ),
+                    child: pillContent,
                   ),
-                  child: pillContent,
                 ),
               )
             : pillContent,
@@ -479,10 +507,9 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       }
     }
 
-    return ClipRect(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
           // 0. Status Bar Scrim (Edge-to-Edge Progressive Blur & Gradient Scrim, strictly 80% of status bar)
           const Positioned(
             top: 0,
@@ -542,7 +569,6 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
                   ),
           ),
         ],
-      ),
-    );
+      );
   }
 }

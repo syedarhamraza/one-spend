@@ -121,9 +121,16 @@ class _OneUIScrollToTopButtonState extends State<OneUIScrollToTopButton> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.45),
-                        blurRadius: 12,
+                        color: Colors.black.withValues(alpha: 0.55),
+                        blurRadius: 14,
                         offset: const Offset(0, 4),
+                        spreadRadius: 1.0,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 6,
+                        offset: const Offset(0, 1),
+                        spreadRadius: 1.0,
                       ),
                     ],
                   ),

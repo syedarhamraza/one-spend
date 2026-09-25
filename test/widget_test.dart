@@ -24,6 +24,8 @@ import 'package:onespend/screens/payment_method_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_spending_chart.dart';
 import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
+import 'package:onespend/widgets/one_ui_cancel_save_pill.dart';
+import 'package:onespend/widgets/one_ui_selection_pills.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1832,7 +1834,7 @@ void main() {
     final navBarPadding = tester.widget<Padding>(
       find.descendant(
         of: find.byType(OneUIFloatingNavBar),
-        matching: find.byWidgetPredicate((w) => w is Padding && w.padding == const EdgeInsets.only(left: 18, right: 18, bottom: 8)),
+        matching: find.byWidgetPredicate((w) => w is Padding && w.padding == const EdgeInsets.only(bottom: 8)),
       ),
     );
     expect(navBarPadding, isNotNull);
@@ -2223,6 +2225,159 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(OneUIScrollToTopButton), findsOneWidget);
+  });
+
+  testWidgets('Floating pill and navbar shadows are elevated in both 3D and Flat modes so they never dissolve', (WidgetTester tester) async {
+    // 3D Mode Check
+    OneUIEffectsController.instance.floating3dEffect = true;
+    OneUIEffectsController.instance.navbar3dEffect = true;
+    OneUIEffectsController.instance.card3dEffect = true;
+
+    final shadow3d = OneUITheme.floatingShadow;
+    expect(shadow3d, isNotEmpty);
+    expect(shadow3d.length, 2);
+    expect(shadow3d.first.blurRadius, 20);
+    expect(shadow3d.first.spreadRadius, 1.0);
+    expect(shadow3d.first.offset.dy, 4);
+
+    final navShadow3d = OneUITheme.navbarShadow;
+    expect(navShadow3d, isNotEmpty);
+    expect(navShadow3d.length, 2);
+    expect(navShadow3d.first.offset.dy, lessThan(0)); // Upward lift
+    expect(navShadow3d.first.spreadRadius, 1.0);
+
+    final cardShadow3d = OneUITheme.cardShadow;
+    expect(cardShadow3d, isNotEmpty);
+    expect(cardShadow3d.first.blurRadius, 16);
+    expect(cardShadow3d.first.offset.dy, 6);
+
+    // Flat Mode Check
+    OneUIEffectsController.instance.floating3dEffect = false;
+    OneUIEffectsController.instance.navbar3dEffect = false;
+    OneUIEffectsController.instance.card3dEffect = false;
+
+    final shadowFlat = OneUITheme.floatingShadow;
+    expect(shadowFlat, isNotEmpty);
+    expect(shadowFlat.length, 2);
+    expect(shadowFlat.first.blurRadius, 16);
+    expect(shadowFlat.first.spreadRadius, 1.0);
+    expect(shadowFlat.first.offset.dy, 3); // Soft ambient offset matching Samsung One UI reference
+
+    final navShadowFlat = OneUITheme.navbarShadow;
+    expect(navShadowFlat, isNotEmpty);
+    expect(navShadowFlat.first.offset.dy, lessThan(0)); // Upward ambient lift in flat mode!
+    expect(navShadowFlat.first.spreadRadius, 0.5);
+
+    // Cards remain flat in normal/flat mode
+    final cardShadowFlat = OneUITheme.cardShadow;
+    expect(cardShadowFlat, isEmpty);
+
+    // Reset back to defaults
+    OneUIEffectsController.instance.floating3dEffect = true;
+    OneUIEffectsController.instance.navbar3dEffect = true;
+    OneUIEffectsController.instance.card3dEffect = true;
+  });
+
+  testWidgets('Top selection capsules render with ambient floating shadow matching Samsung One UI reference screenshot', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: Scaffold(
+          body: OneUISelectionPills(
+            selectedCount: 1,
+            totalCount: 5,
+            onToggleSelectAll: () {},
+            onCancel: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify pills render with text and circle
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    // Verify selection pills have ambient floatingShadow with soft offset <= 2 (no 8px blob)
+    final decoratedBoxes = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox));
+    final selectionBox = decoratedBoxes.firstWhere((box) {
+      final decoration = box.decoration;
+      return decoration is BoxDecoration && decoration.boxShadow == OneUITheme.floatingShadow;
+    });
+    final shadows = (selectionBox.decoration as BoxDecoration).boxShadow!;
+    expect(shadows, isNotEmpty);
+    for (final s in shadows) {
+      expect(s.offset.dy, lessThanOrEqualTo(4.0), reason: 'Shadow offset must be ambient (<= 4px), never a heavy 8px downward blob');
+    }
+  });
+
+  testWidgets('OneUIBottomVignette is present on subpages with floating bottom action bars and pills', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    // 1. SubscriptionDetailScreen
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: SubscriptionDetailScreen(
+        subscription: Subscription(
+          id: 'test_sub_1',
+          name: 'Netflix',
+          description: 'Standard Plan',
+          price: 15.99,
+          billingCycle: BillingCycle.monthly,
+          nextBillingDate: DateTime.now().add(const Duration(days: 10)),
+          category: SubscriptionCategory.entertainment,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    expect(find.byType(OneUIFloatingActionBar), findsOneWidget);
+
+    // 2. PaymentMethodPickerScreen (Normal mode)
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const PaymentMethodPickerScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    expect(find.byType(OneUIFloatingCancelSavePill), findsOneWidget);
+
+    // 3. CategoryPickerScreen
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const CategoryPickerScreen(initialCategory: SubscriptionCategory.entertainment),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    expect(find.byType(OneUIFloatingCancelSavePill), findsOneWidget);
+
+    // 4. ReminderPickerScreen
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const ReminderPickerScreen(initialDays: 2),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    expect(find.byType(OneUIFloatingCancelSavePill), findsOneWidget);
+
+    // 5. PopularPresetsScreen
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const PopularPresetsScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
   });
 }
 
