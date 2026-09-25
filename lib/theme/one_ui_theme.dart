@@ -124,8 +124,8 @@ class OneUIEffectsController extends ChangeNotifier {
 
   // Dynamic Floating Elements Properties
   Color get floatingColor => _floating3dEffect
-      ? const Color(0xEB26262B) // ~92% smoked glass
-      : const Color(0xF2242428); // ~95% solid One UI pill charcoal matching screenshot
+      ? const Color(0x9E26262B) // ~62% translucent smoked glass
+      : const Color(0xB3222226); // ~70% flat translucent
 
   Gradient? get floatingGradient {
     if (!_floating3dEffect) return null;

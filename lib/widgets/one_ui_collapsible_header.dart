@@ -224,7 +224,7 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       height: 44,
       decoration: BoxDecoration(
         color: pillProgress > 0.05
-            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.95))
+            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))
             : Colors.transparent,
         gradient: (is3d && pillProgress > 0.05)
             ? LinearGradient(
@@ -261,18 +261,13 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.35 * pillProgress),
-                      blurRadius: 16,
-                      offset: const Offset(0, 2),
-                      spreadRadius: 0.5,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.20 * pillProgress),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                      spreadRadius: 0.5,
-                    ),
+                    for (final s in OneUITheme.floatingShadow)
+                      BoxShadow(
+                        color: s.color.withValues(alpha: s.color.a * pillProgress),
+                        blurRadius: s.blurRadius,
+                        offset: s.offset,
+                        spreadRadius: s.spreadRadius,
+                      ),
                   ],
                 ),
                 child: ClipRRect(
@@ -312,7 +307,7 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
             ),
       decoration: BoxDecoration(
         color: pillProgress > 0.05
-            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.95))
+            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))
             : Colors.transparent,
         gradient: (is3d && pillProgress > 0.05)
             ? LinearGradient(
@@ -361,18 +356,13 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.35 * pillProgress),
-                      blurRadius: 16,
-                      offset: const Offset(0, 2),
-                      spreadRadius: 0.5,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.20 * pillProgress),
-                      blurRadius: 6,
-                      offset: const Offset(0, 1),
-                      spreadRadius: 0.5,
-                    ),
+                    for (final s in OneUITheme.floatingShadow)
+                      BoxShadow(
+                        color: s.color.withValues(alpha: s.color.a * pillProgress),
+                        blurRadius: s.blurRadius,
+                        offset: s.offset,
+                        spreadRadius: s.spreadRadius,
+                      ),
                   ],
                 ),
                 child: ClipRRect(
