@@ -562,14 +562,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               context: context,
                               applicationName: 'OneSpend',
                               applicationVersion: '1.0.0',
-                              applicationIcon: Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: OneUITheme.accentBlue,
-                                  borderRadius: BorderRadius.circular(16),
+                              applicationIcon: ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: Image.asset(
+                                  'assets/logos/app_logo.png',
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.cover,
                                 ),
-                                child: const Icon(Icons.subscriptions_rounded, color: Colors.white, size: 28),
                               ),
                               children: const [
                                 Text('A feature-rich subscription and spend manager designed to match Samsung One UI 9 aesthetics and ergonomics.'),
