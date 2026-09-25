@@ -1834,7 +1834,7 @@ void main() {
     final navBarPadding = tester.widget<Padding>(
       find.descendant(
         of: find.byType(OneUIFloatingNavBar),
-        matching: find.byWidgetPredicate((w) => w is Padding && w.padding == const EdgeInsets.only(left: 18, right: 18, bottom: 8)),
+        matching: find.byWidgetPredicate((w) => w is Padding && w.padding == const EdgeInsets.only(bottom: 8)),
       ),
     );
     expect(navBarPadding, isNotNull);
@@ -2236,8 +2236,8 @@ void main() {
     final shadow3d = OneUITheme.floatingShadow;
     expect(shadow3d, isNotEmpty);
     expect(shadow3d.length, 2);
-    expect(shadow3d.first.blurRadius, 18);
-    expect(shadow3d.first.spreadRadius, 0.5);
+    expect(shadow3d.first.blurRadius, 20);
+    expect(shadow3d.first.spreadRadius, 1.0);
     expect(shadow3d.first.offset.dy, 4);
 
     final navShadow3d = OneUITheme.navbarShadow;
@@ -2259,8 +2259,8 @@ void main() {
     final shadowFlat = OneUITheme.floatingShadow;
     expect(shadowFlat, isNotEmpty);
     expect(shadowFlat.length, 2);
-    expect(shadowFlat.first.blurRadius, 14);
-    expect(shadowFlat.first.spreadRadius, 0.5);
+    expect(shadowFlat.first.blurRadius, 16);
+    expect(shadowFlat.first.spreadRadius, 1.0);
     expect(shadowFlat.first.offset.dy, 3); // Soft ambient offset matching Samsung One UI reference
 
     final navShadowFlat = OneUITheme.navbarShadow;

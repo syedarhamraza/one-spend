@@ -53,10 +53,7 @@ class OneUISelectionPills extends StatelessWidget {
                         color: is3d ? null : OneUITheme.floatingColor,
                         gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: is3d ? 0.12 : 0.08),
-                          width: 0.85,
-                        ),
+                        border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -118,10 +115,7 @@ class OneUISelectionPills extends StatelessWidget {
                         color: is3d ? null : OneUITheme.floatingColor,
                         gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: is3d ? 0.12 : 0.08),
-                          width: 0.85,
-                        ),
+                        border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
                       ),
                       alignment: Alignment.center,
                       child: const Text(

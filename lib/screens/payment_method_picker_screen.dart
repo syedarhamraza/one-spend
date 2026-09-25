@@ -516,10 +516,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                 color: is3d ? null : OneUITheme.floatingColor,
                 gradient: is3d ? OneUITheme.floatingGradient : null,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: is3d ? 0.12 : 0.08),
-                  width: 0.85,
-                ),
+                border: OneUITheme.floatingBorder,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -600,10 +597,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                 color: is3d ? null : OneUITheme.floatingColor,
                 gradient: is3d ? OneUITheme.floatingGradient : null,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: is3d ? 0.12 : 0.08),
-                  width: 0.85,
-                ),
+                border: OneUITheme.floatingBorder,
               ),
               alignment: Alignment.center,
               child: const Text(

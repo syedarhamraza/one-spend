@@ -82,22 +82,10 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
           child: Container(
             height: 56,
             decoration: BoxDecoration(
-              color: is3d ? null : const Color(0xEB282638),
-              gradient: is3d
-                  ? const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xF036344E),
-                        Color(0xF0202834),
-                      ],
-                    )
-                  : null,
+              color: is3d ? null : OneUITheme.floatingColor,
+              gradient: is3d ? OneUITheme.floatingGradient : null,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 0.9,
-              ),
+              border: OneUITheme.floatingBorder,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Row(

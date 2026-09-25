@@ -31,116 +31,105 @@ class OneUIFloatingNavBar extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.navbar3dEffect;
+        final is3d = OneUIEffectsController.instance.navbar3dEffect ||
+            OneUIEffectsController.instance.floating3dEffect;
 
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(left: 18, right: 18, bottom: 8),
-            child: RepaintBoundary(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(34),
-                  boxShadow: OneUITheme.navbarShadow,
-                ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(34),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: OneUITheme.blurSigma,
-                    sigmaY: OneUITheme.blurSigma,
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: RepaintBoundary(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(34),
+                    boxShadow: OneUITheme.navbarShadow,
                   ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    height: 60,
-                    decoration: is3d
-                        ? BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                OneUITheme.navbar3dBarTop,
-                                OneUITheme.navbar3dBarBottom,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(34),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              width: 0.8,
-                            ),
-                          )
-                        : BoxDecoration(
-                            color: OneUITheme.floatingColor,
-                            borderRadius: BorderRadius.circular(34),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.06),
-                              width: 0.8,
-                            ),
-                          ),
-                    padding: const EdgeInsets.all(4),
-              child: Row(
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final isSelected = index == currentIndex;
-
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => onTap(index),
-                      behavior: HitTestBehavior.opaque,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(34),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(
+                        sigmaX: OneUITheme.blurSigma,
+                        sigmaY: OneUITheme.blurSigma,
+                      ),
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
+                        duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOutCubic,
-                        height: double.infinity,
-                        margin: const EdgeInsets.symmetric(horizontal: 0),
+                        height: 60,
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? (is3d
-                                  ? OneUITheme.navbar3dActivePill
-                                  : OneUITheme.surfacePillActive)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(26),
+                          color: is3d ? null : OneUITheme.floatingColor,
+                          gradient: is3d ? OneUITheme.floatingGradient : null,
+                          borderRadius: BorderRadius.circular(34),
+                          border: OneUITheme.floatingBorder,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isSelected ? item.activeIcon : item.inactiveIcon,
-                              size: 21,
-                              color: isSelected
-                                  ? OneUITheme.textPrimary
-                                  : (is3d
-                                      ? OneUITheme.navbar3dInactiveIcon
-                                      : OneUITheme.textSecondary),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              item.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                                letterSpacing: -0.2,
-                                color: isSelected
-                                    ? OneUITheme.textPrimary
-                                    : (is3d
-                                        ? OneUITheme.navbar3dInactiveText
-                                        : OneUITheme.textSecondary),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(items.length, (index) {
+                            final item = items[index];
+                            final isSelected = index == currentIndex;
+
+                            return SizedBox(
+                              width: 74,
+                              child: GestureDetector(
+                                onTap: () => onTap(index),
+                                behavior: HitTestBehavior.opaque,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeOutCubic,
+                                  height: double.infinity,
+                                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? (is3d
+                                            ? OneUITheme.navbar3dActivePill
+                                            : OneUITheme.surfacePillActive)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(26),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        isSelected ? item.activeIcon : item.inactiveIcon,
+                                        size: 21,
+                                        color: isSelected
+                                            ? OneUITheme.textPrimary
+                                            : (is3d
+                                                ? OneUITheme.navbar3dInactiveIcon
+                                                : OneUITheme.textSecondary),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        item.label,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                          letterSpacing: -0.2,
+                                          color: isSelected
+                                              ? OneUITheme.textPrimary
+                                              : (is3d
+                                                  ? OneUITheme.navbar3dInactiveText
+                                                  : OneUITheme.textSecondary),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            );
+                          }),
                         ),
                       ),
                     ),
-                  );
-                }),
-                    ),
                   ),
                 ),
-              ),
               ),
             ),
           ),

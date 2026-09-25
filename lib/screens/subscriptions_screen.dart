@@ -464,10 +464,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 color: is3d ? null : OneUITheme.floatingColor,
                 gradient: is3d ? OneUITheme.floatingGradient : null,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: is3d ? 0.12 : 0.08),
-                  width: 0.85,
-                ),
+                border: OneUITheme.floatingBorder,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -546,10 +543,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 color: is3d ? null : OneUITheme.floatingColor,
                 gradient: is3d ? OneUITheme.floatingGradient : null,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: is3d ? 0.12 : 0.08),
-                  width: 0.85,
-                ),
+                border: OneUITheme.floatingBorder,
               ),
               alignment: Alignment.center,
               child: const Text(
@@ -586,22 +580,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           child: Container(
             height: 56,
             decoration: BoxDecoration(
-              color: is3d ? null : const Color(0xEB282638),
-              gradient: is3d
-                  ? const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xF036344E),
-                        Color(0xF0202834),
-                      ],
-                    )
-                  : null,
+              color: is3d ? null : OneUITheme.floatingColor,
+              gradient: is3d ? OneUITheme.floatingGradient : null,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-                width: 0.9,
-              ),
+              border: OneUITheme.floatingBorder,
             ),
             padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Row(
@@ -1061,7 +1043,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                           store: store,
                           upcomingSubs: upcomingSubs,
                           onTap: () => _showEditBudgetDialog(context),
-                          isSelectionMode: _isSelectionMode,
                         ),
                       ),
 
@@ -1346,13 +1327,11 @@ class _MonthlyBudgetCard extends StatelessWidget {
   final SubscriptionStore store;
   final List<Subscription> upcomingSubs;
   final VoidCallback onTap;
-  final bool isSelectionMode;
 
   const _MonthlyBudgetCard({
     required this.store,
     required this.upcomingSubs,
     required this.onTap,
-    this.isSelectionMode = false,
   });
 
   @override
@@ -1389,7 +1368,7 @@ class _MonthlyBudgetCard extends StatelessWidget {
             : const LinearGradient(colors: [Color(0xFF00C6FF), Color(0xFF0072FF)]));
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, isSelectionMode ? 14 : 4, 16, 14),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
       child: GestureDetector(
         onTap: onTap,
         child: Container(

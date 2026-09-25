@@ -52,30 +52,12 @@ class OneUIFloatingActionBar extends StatelessWidget {
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeOutCubic,
                     height: 60,
-                    decoration: is3d
-                        ? BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                OneUITheme.navbar3dBarTop,
-                                OneUITheme.navbar3dBarBottom,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(34),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              width: 0.8,
-                            ),
-                          )
-                        : BoxDecoration(
-                            color: OneUITheme.floatingColor,
-                            borderRadius: BorderRadius.circular(34),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.06),
-                              width: 0.8,
-                            ),
-                          ),
+                    decoration: BoxDecoration(
+                      color: is3d ? null : OneUITheme.floatingColor,
+                      gradient: is3d ? OneUITheme.floatingGradient : null,
+                      borderRadius: BorderRadius.circular(34),
+                      border: OneUITheme.floatingBorder,
+                    ),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     child: Material(
                       color: Colors.transparent,
