@@ -62,7 +62,7 @@ class OneUIFloatingNavBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(34),
                           border: OneUITheme.floatingBorder,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
