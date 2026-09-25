@@ -495,30 +495,28 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
         onToggleSelectAll();
       },
       behavior: HitTestBehavior.opaque,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: OneUITheme.floatingShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: OneUITheme.blurSigma,
-              sigmaY: OneUITheme.blurSigma,
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: is3d ? null : OneUITheme.floatingColor,
-                gradient: is3d ? OneUITheme.floatingGradient : null,
-                borderRadius: BorderRadius.circular(24),
-                border: OneUITheme.floatingBorder,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: OneUITheme.blurSigma,
+            sigmaY: OneUITheme.blurSigma,
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: is3d ? null : OneUITheme.floatingColor,
+              gradient: is3d ? OneUITheme.floatingGradient : null,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: is3d ? 0.15 : 0.10),
+                width: 0.85,
               ),
-              child: Row(
+            ),
+            child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -563,7 +561,6 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -576,37 +573,34 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
         onCancel();
       },
       behavior: HitTestBehavior.opaque,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: OneUITheme.floatingShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: OneUITheme.blurSigma,
-              sigmaY: OneUITheme.blurSigma,
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: is3d ? null : OneUITheme.floatingColor,
-                gradient: is3d ? OneUITheme.floatingGradient : null,
-                borderRadius: BorderRadius.circular(24),
-                border: OneUITheme.floatingBorder,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: OneUITheme.blurSigma,
+            sigmaY: OneUITheme.blurSigma,
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: is3d ? null : OneUITheme.floatingColor,
+              gradient: is3d ? OneUITheme.floatingGradient : null,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: is3d ? 0.15 : 0.10),
+                width: 0.85,
               ),
-              alignment: Alignment.center,
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
-                  color: OneUITheme.textPrimary,
-                ),
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+                color: OneUITheme.textPrimary,
               ),
             ),
           ),

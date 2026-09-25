@@ -33,59 +33,56 @@ class OneUISelectionPills extends StatelessWidget {
             // Left Pill: Select Counter & Select All toggle
             GestureDetector(
               onTap: onToggleSelectAll,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: OneUITheme.floatingShadow,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: OneUITheme.blurSigma,
-                      sigmaY: OneUITheme.blurSigma,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: OneUITheme.blurSigma,
+                    sigmaY: OneUITheme.blurSigma,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: is3d ? null : OneUITheme.floatingColor,
+                      gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: is3d ? 0.15 : 0.10),
+                        width: 0.85,
+                      ),
                     ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: is3d ? null : OneUITheme.floatingColor,
-                        gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                        borderRadius: BorderRadius.circular(24),
-                        border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isAllSelected ? OneUITheme.accentBlue : Colors.transparent,
-                              border: Border.all(
-                                color: isAllSelected ? OneUITheme.accentBlue : OneUITheme.textSecondary,
-                                width: 1.8,
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: isAllSelected
-                                ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                                : null,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '$selectedCount',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: OneUITheme.textPrimary,
-                              letterSpacing: -0.2,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isAllSelected ? OneUITheme.accentBlue : Colors.transparent,
+                            border: Border.all(
+                              color: isAllSelected ? OneUITheme.accentBlue : OneUITheme.textSecondary,
+                              width: 1.8,
                             ),
                           ),
-                        ],
-                      ),
+                          alignment: Alignment.center,
+                          child: isAllSelected
+                              ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                              : null,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$selectedCount',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: OneUITheme.textPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -95,37 +92,34 @@ class OneUISelectionPills extends StatelessWidget {
             // Right Pill: Cancel button
             GestureDetector(
               onTap: onCancel,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: OneUITheme.floatingShadow,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: OneUITheme.blurSigma,
-                      sigmaY: OneUITheme.blurSigma,
-                    ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: is3d ? null : OneUITheme.floatingColor,
-                        gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                        borderRadius: BorderRadius.circular(24),
-                        border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: OneUITheme.blurSigma,
+                    sigmaY: OneUITheme.blurSigma,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: is3d ? null : OneUITheme.floatingColor,
+                      gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: is3d ? 0.15 : 0.10),
+                        width: 0.85,
                       ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w600,
-                          color: OneUITheme.textPrimary,
-                          letterSpacing: -0.2,
-                        ),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w600,
+                        color: OneUITheme.textPrimary,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),

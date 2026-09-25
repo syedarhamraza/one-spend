@@ -25,6 +25,7 @@ import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_spending_chart.dart';
 import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
 import 'package:onespend/widgets/one_ui_cancel_save_pill.dart';
+import 'package:onespend/widgets/one_ui_selection_pills.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -369,7 +370,7 @@ void main() {
     expect(find.text('Cards 3D depth effect'), findsOneWidget);
     expect(OneUIEffectsController.instance.card3dEffect, isFalse);
     expect(OneUITheme.cardBorder, isNull);
-    expect(OneUITheme.cardShadow, isEmpty);
+    expect(OneUITheme.cardShadow.first.blurRadius, 10); // Baseline ambient shadow in normal mode
 
     // Scroll into view and toggle Cards 3D depth effect ON
     await tester.ensureVisible(find.text('Cards 3D depth effect'));
@@ -388,7 +389,7 @@ void main() {
 
     expect(OneUIEffectsController.instance.card3dEffect, isFalse);
     expect(OneUITheme.cardBorder, isNull);
-    expect(OneUITheme.cardShadow, isEmpty);
+    expect(OneUITheme.cardShadow.first.blurRadius, 10);
   });
 
   testWidgets('Cards 3D depth effect updates all cards across screens simultaneously', (WidgetTester tester) async {
@@ -429,7 +430,7 @@ void main() {
     for (var c in cardContainersBefore) {
       final dec = c.decoration as BoxDecoration;
       expect(dec.border, isNull);
-      expect(dec.boxShadow ?? const [], isEmpty);
+      expect((dec.boxShadow ?? const []).first.blurRadius, 10);
     }
 
     // Scroll down and toggle Cards 3D effect ON
@@ -2226,40 +2227,92 @@ void main() {
     expect(find.byType(OneUIScrollToTopButton), findsOneWidget);
   });
 
-  testWidgets('Floating pill and navbar shadows are elevated in both 3D and Flat modes so they never dissolve', (WidgetTester tester) async {
+  testWidgets('Floating pill, navbar, and card shadows are elevated in both 3D and Flat modes so they never dissolve', (WidgetTester tester) async {
     // 3D Mode Check
     OneUIEffectsController.instance.floating3dEffect = true;
     OneUIEffectsController.instance.navbar3dEffect = true;
+    OneUIEffectsController.instance.card3dEffect = true;
 
     final shadow3d = OneUITheme.floatingShadow;
     expect(shadow3d, isNotEmpty);
     expect(shadow3d.length, 2);
-    expect(shadow3d.first.blurRadius, 22);
+    expect(shadow3d.first.blurRadius, 18);
     expect(shadow3d.first.spreadRadius, 1.0);
-    expect(shadow3d.last.spreadRadius, 1.5);
+    expect(shadow3d.last.spreadRadius, 1.0);
 
     final navShadow3d = OneUITheme.navbarShadow;
     expect(navShadow3d, isNotEmpty);
     expect(navShadow3d.length, 2);
+    expect(navShadow3d.first.offset.dy, lessThan(0)); // Upward lift
     expect(navShadow3d.first.spreadRadius, 1.0);
+
+    final cardShadow3d = OneUITheme.cardShadow;
+    expect(cardShadow3d, isNotEmpty);
+    expect(cardShadow3d.first.blurRadius, 16);
+    expect(cardShadow3d.first.offset.dy, 6);
 
     // Flat Mode Check
     OneUIEffectsController.instance.floating3dEffect = false;
     OneUIEffectsController.instance.navbar3dEffect = false;
+    OneUIEffectsController.instance.card3dEffect = false;
 
     final shadowFlat = OneUITheme.floatingShadow;
     expect(shadowFlat, isNotEmpty);
     expect(shadowFlat.length, 2);
     expect(shadowFlat.first.blurRadius, 14);
-    expect(shadowFlat.first.spreadRadius, 1.0);
+    expect(shadowFlat.first.spreadRadius, 0.5);
 
     final navShadowFlat = OneUITheme.navbarShadow;
     expect(navShadowFlat, isNotEmpty);
-    expect(navShadowFlat.first.spreadRadius, 1.0);
+    expect(navShadowFlat.first.offset.dy, lessThan(0)); // Upward ambient lift in flat mode!
+    expect(navShadowFlat.first.spreadRadius, 0.5);
+
+    // Baseline ambient card shadow exists in normal/flat mode so cards separate from black OLED background
+    final cardShadowFlat = OneUITheme.cardShadow;
+    expect(cardShadowFlat, isNotEmpty);
+    expect(cardShadowFlat.first.blurRadius, 10);
+    expect(cardShadowFlat.first.spreadRadius, 0.5);
 
     // Reset back to defaults
     OneUIEffectsController.instance.floating3dEffect = true;
     OneUIEffectsController.instance.navbar3dEffect = true;
+    OneUIEffectsController.instance.card3dEffect = true;
+  });
+
+  testWidgets('Top selection capsules render without downward blob shadow in selection mode', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: OneUITheme.darkTheme,
+        home: Scaffold(
+          body: OneUISelectionPills(
+            selectedCount: 1,
+            totalCount: 5,
+            onToggleSelectAll: () {},
+            onCancel: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify pills render with text and circle
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+
+    // Verify there is no DecoratedBox with OneUITheme.floatingShadow on the selection pills
+    final decoratedBoxes = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox));
+    final hasFloatingShadowOnSelection = decoratedBoxes.any((box) {
+      final decoration = box.decoration;
+      if (decoration is BoxDecoration && decoration.boxShadow != null) {
+        return decoration.boxShadow == OneUITheme.floatingShadow;
+      }
+      return false;
+    });
+    expect(hasFloatingShadowOnSelection, isFalse, reason: 'Top selection capsules must not have downward floatingShadow blob');
   });
 
   testWidgets('OneUIBottomVignette is present on subpages with floating bottom action bars and pills', (WidgetTester tester) async {
