@@ -58,7 +58,7 @@ class OneUIGroupCard extends StatelessWidget {
             Container(
               margin: margin ?? const EdgeInsets.only(bottom: 14),
               decoration: BoxDecoration(
-                color: OneUITheme.cardColor,
+                color: OneUIEffectsController.instance.resolveCardBackground(),
                 borderRadius: OneUITheme.cardBorderRadius,
                 border: OneUITheme.cardBorder,
                 boxShadow: OneUITheme.cardShadow,

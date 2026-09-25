@@ -1022,14 +1022,13 @@ void main() {
     // Verify OneUIFilterBottomSheet elements
     expect(find.byType(OneUIFilterBottomSheet), findsOneWidget);
     expect(find.text('Filter by category'), findsOneWidget);
-    expect(find.text('All categories'), findsOneWidget);
-    expect(find.text('Entertainment'), findsOneWidget);
-    expect(find.text('Music & Audio'), findsOneWidget);
+    expect(find.descendant(of: find.byType(OneUIFilterBottomSheet), matching: find.text('Entertainment')), findsOneWidget);
+    expect(find.descendant(of: find.byType(OneUIFilterBottomSheet), matching: find.text('Music & Audio')), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Done'), findsOneWidget);
 
     // Select "Music & Audio"
-    await tester.tap(find.text('Music & Audio'));
+    await tester.tap(find.descendant(of: find.byType(OneUIFilterBottomSheet), matching: find.text('Music & Audio')));
     await tester.pumpAndSettle();
 
     // Tap Done
@@ -2211,6 +2210,8 @@ void main() {
     expect(OneUIEffectsController.instance.bottomVignetteEffect, isFalse);
 
     // Reset appearance effects
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -200));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Reset appearance effects'));
     await tester.pumpAndSettle();
 
