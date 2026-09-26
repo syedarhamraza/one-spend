@@ -19,7 +19,7 @@ class OneUISection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 12, bottom: 10, top: 22),
+          padding: const EdgeInsets.only(left: 16, bottom: 6, top: 14),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -27,10 +27,10 @@ class OneUISection extends StatelessWidget {
                 child: Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                    color: OneUITheme.textPrimary,
+                    letterSpacing: -0.2,
+                    color: Color(0xFFD4D4D8),
                   ),
                 ),
               ),

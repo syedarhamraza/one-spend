@@ -45,20 +45,21 @@ class OneUIGroupCard extends StatelessWidget {
           children: [
             if (headerTitle != null)
               Padding(
-                padding: const EdgeInsets.only(left: 14, bottom: 8, top: 18),
+                padding: const EdgeInsets.only(left: 16, bottom: 6, top: 14),
                 child: Text(
                   headerTitle!,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: OneUITheme.textPrimary,
+                    letterSpacing: -0.2,
+                    color: Color(0xFFD4D4D8),
                   ),
                 ),
               ),
             Container(
               margin: margin ?? const EdgeInsets.only(bottom: 14),
               decoration: BoxDecoration(
-                color: OneUITheme.cardColor,
+                color: OneUIEffectsController.instance.resolveCardBackground(),
                 borderRadius: OneUITheme.cardBorderRadius,
                 border: OneUITheme.cardBorder,
                 boxShadow: OneUITheme.cardShadow,
@@ -127,22 +128,24 @@ class OneUIGroupItemTile extends StatelessWidget {
                         Text(
                           item.title,
                           style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.w400,
+                            height: 1.25,
                             letterSpacing: -0.2,
                             color: OneUITheme.textPrimary,
                           ),
                         ),
                         if (item.customSubtitle != null) ...[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           item.customSubtitle!,
                         ] else if (item.subtitle != null) ...[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
                             item.subtitle!,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.normal,
+                              height: 1.25,
                               color: item.subtitleColor ?? OneUITheme.textSecondary,
                             ),
                           ),

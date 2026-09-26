@@ -7,7 +7,6 @@ import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
-import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_filter_bottom_sheet.dart';
@@ -17,7 +16,9 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_scroll_to_top_button.dart';
 import '../widgets/one_ui_selection_action_bar.dart';
 import '../widgets/one_ui_sort_bottom_sheet.dart';
+import '../widgets/one_ui_subscription_card.dart';
 import '../widgets/one_ui_toast.dart';
+import '../widgets/one_ui_upcoming_carousel.dart';
 import 'add_subscription_screen.dart';
 import 'subscription_detail_screen.dart';
 
@@ -648,201 +649,53 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     );
   }
 
-  Widget _buildSelectionIndicator(bool isSelected) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isSelected ? const Color(0xFF2C69FF) : Colors.transparent,
-        border: Border.all(
-          color: isSelected ? const Color(0xFF2C69FF) : Colors.white.withValues(alpha: 0.45),
-          width: 2.0,
-        ),
-      ),
-      alignment: Alignment.center,
-      child: isSelected
-          ? const Icon(
-              Icons.check_rounded,
-              size: 16,
-              color: Colors.white,
-            )
-          : null,
-    );
-  }
 
-  OneUIGroupItem _buildSubscriptionItem(Subscription sub) {
-    final isSelected = _selectedIds.contains(sub.id);
-    final days = sub.daysRemaining;
-    final isPaused = sub.status == SubscriptionStatus.paused;
-    final store = SubscriptionStore.instance;
-    final method = store.getPaymentMethod(sub.paymentMethodId);
-    final hasNoCard = sub.paymentMethodId == null || method == null;
-    final isCardExpiring = method != null && (method.isExpiringSoon || method.isExpired);
+  Widget _buildSubscriptionSection({
+    required String title,
+    required List<Subscription> subs,
+  }) {
+    return OneUISection(
+      title: title,
+      child: OneUIGroupCard(
+        items: subs.map((sub) {
+          final store = SubscriptionStore.instance;
+          final method = store.getPaymentMethod(sub.paymentMethodId);
+          final hasNoCard = sub.paymentMethodId == null || method == null;
+          final isCardExpiring = method != null && (method.isExpiringSoon || method.isExpired);
 
-    Color badgeColor;
-    String badgeText;
-    if (isPaused) {
-      badgeColor = OneUITheme.textSecondary;
-      badgeText = 'Paused';
-    } else if (days < 0) {
-      badgeColor = OneUITheme.accentRed;
-      badgeText = 'Overdue ${-days}d';
-    } else if (days == 0) {
-      badgeColor = OneUITheme.accentRed;
-      badgeText = 'Due today';
-    } else if (days == 1) {
-      badgeColor = OneUITheme.accentRed;
-      badgeText = 'Tomorrow';
-    } else if (days <= 3) {
-      badgeColor = OneUITheme.accentRed;
-      badgeText = 'In $days days';
-    } else if (days <= 7) {
-      badgeColor = OneUITheme.accentAmber;
-      badgeText = 'In $days days';
-    } else {
-      badgeColor = OneUITheme.accentBlue;
-      badgeText = 'In $days days';
-    }
-
-    final subtitleText = hasNoCard
-        ? '${sub.category.label} • ${sub.billingCycle.label}'
-        : '${sub.category.label} • ${sub.billingCycle.label} • ${method.nickname}';
-
-    Widget? customSubtitle;
-    if (!_isSelectionMode) {
-      customSubtitle = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: Text(
-              subtitleText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.normal,
-                color: OneUITheme.textSecondary,
-              ),
-            ),
-          ),
-          if (hasNoCard) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: OneUITheme.accentRed.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: const Text(
-                'No card',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: OneUITheme.accentRed,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ),
-          ] else if (isCardExpiring) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: OneUITheme.accentAmber.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Text(
-                method.isExpired ? 'Card expired' : 'Card expiring soon',
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: OneUITheme.accentAmber,
-                  letterSpacing: -0.1,
-                ),
-              ),
-            ),
-          ],
-        ],
-      );
-    }
-
-    return OneUIGroupItem(
-      leading: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            child: _isSelectionMode
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: _buildSelectionIndicator(isSelected),
-                  )
-                : const SizedBox.shrink(),
-          ),
-          OneUIBrandIcon(
+          return OneUISubscriptionCard.toGroupItem(
             subscription: sub,
-            size: 44,
-            borderRadius: 14,
-          ),
-        ],
-      ),
-      title: sub.name,
-      customSubtitle: customSubtitle,
-      subtitleColor: OneUITheme.textSecondary,
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '${sub.currency}${sub.price.toStringAsFixed(2)}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: OneUITheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color: badgeColor.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              badgeText,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: badgeColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-      onTap: () {
-        if (_isSelectionMode) {
-          HapticFeedback.selectionClick();
-          _toggleSelectItem(sub.id);
-        } else {
-          HapticFeedback.lightImpact();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => SubscriptionDetailScreen(subscription: sub),
-            ),
+            isSelectionMode: _isSelectionMode,
+            isSelected: _selectedIds.contains(sub.id),
+            onToggleSelect: _toggleSelectItem,
+            paymentMethodNickname: method?.nickname,
+            cardBrand: method?.brand,
+            cardBrandIcon: method?.brand.icon,
+            isCardExpiring: isCardExpiring,
+            hasNoCard: hasNoCard,
+            onTap: () {
+              if (_isSelectionMode) {
+                HapticFeedback.selectionClick();
+                _toggleSelectItem(sub.id);
+              } else {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SubscriptionDetailScreen(subscription: sub),
+                  ),
+                );
+              }
+            },
+            onLongPress: () {
+              if (!_isSelectionMode) {
+                HapticFeedback.mediumImpact();
+                _enterSelectionMode(sub.id);
+              }
+            },
           );
-        }
-      },
-      onLongPress: () {
-        if (!_isSelectionMode) {
-          HapticFeedback.mediumImpact();
-          _enterSelectionMode(sub.id);
-        }
-      },
+        }).toList(),
+      ),
     );
   }
 
@@ -872,7 +725,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         }).toList();
 
         final upcomingSubs = List<Subscription>.from(store.upcomingDue);
-        final dateFormat = OneUIDateFormats.monthDay;
 
         final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
         final bottomPadding = MediaQuery.paddingOf(context).bottom;
@@ -1028,11 +880,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                             searchPillBottom + 70,
                           ),
                           sliver: SliverToBoxAdapter(
-                            child: OneUISection(
+                            child: _buildSubscriptionSection(
                               title: 'Results (${filteredSubs.length})',
-                              child: OneUIGroupCard(
-                                items: filteredSubs.map(_buildSubscriptionItem).toList(),
-                              ),
+                              subs: filteredSubs,
                             ),
                           ),
                         ),
@@ -1046,77 +896,36 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         ),
                       ),
 
-                    // Section: Upcoming Renewals (Top 2)
+                    // Section: Upcoming Renewals (Adaptive Carousel / Spotlight / Grouped List)
                     if (upcomingSubs.isNotEmpty && _filterCategory == null && _searchQuery.isEmpty)
                       SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: OneUISection(
-                            title: 'Upcoming renewals',
-                            child: OneUIGroupCard(
-                              items: upcomingSubs.take(2).map((sub) {
-                                final days = sub.daysRemaining;
-                                final isSelected = _selectedIds.contains(sub.id);
-                                return OneUIGroupItem(
-                                  leading: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      AnimatedSize(
-                                        duration: const Duration(milliseconds: 200),
-                                        curve: Curves.easeOutCubic,
-                                        child: _isSelectionMode
-                                            ? Padding(
-                                                padding: const EdgeInsets.only(right: 12),
-                                                child: _buildSelectionIndicator(isSelected),
-                                              )
-                                            : const SizedBox.shrink(),
-                                      ),
-                                      OneUIBrandIcon(
-                                        subscription: sub,
-                                        size: 42,
-                                        borderRadius: 14,
-                                      ),
-                                    ],
-                                  ),
-                                  title: sub.name,
-                                  subtitle: _isSelectionMode
-                                      ? null
-                                      : (days == 0
-                                          ? 'Due today (${dateFormat.format(sub.nextBillingDate)})'
-                                          : 'Due in $days days (${dateFormat.format(sub.nextBillingDate)})'),
-                                  subtitleColor: days <= 5 ? OneUITheme.accentRed : OneUITheme.accentBlue,
-                                  trailing: Text(
-                                    '${sub.currency}${sub.price.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: OneUITheme.textPrimary,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    if (_isSelectionMode) {
-                                      HapticFeedback.selectionClick();
-                                      _toggleSelectItem(sub.id);
-                                    } else {
-                                      HapticFeedback.lightImpact();
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => SubscriptionDetailScreen(subscription: sub),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  onLongPress: () {
-                                    if (!_isSelectionMode) {
-                                      HapticFeedback.mediumImpact();
-                                      _enterSelectionMode(sub.id);
-                                    }
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ),
+                        child: OneUIUpcomingRenewalsSection(
+                          upcomingSubscriptions: upcomingSubs,
+                          onTapSubscription: (sub) {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SubscriptionDetailScreen(subscription: sub),
+                              ),
+                            );
+                          },
+                          onLongPressSubscription: (sub) {
+                            HapticFeedback.mediumImpact();
+                            _enterSelectionMode(sub.id);
+                          },
+                          onMarkPaid: (sub) {
+                            final nextDate = sub.calculateNextDateFrom(sub.nextBillingDate);
+                            final updated = sub.copyWith(nextBillingDate: nextDate);
+                            store.updateSubscription(updated);
+                            OneUIToast.show(
+                              context,
+                              'Marked ${sub.name} as paid (${OneUIDateFormats.monthDay.format(nextDate)})',
+                            );
+                          },
+                          isSelectionMode: _isSelectionMode,
+                          selectedIds: _selectedIds,
+                          onToggleSelect: _toggleSelectItem,
                         ),
                       ),
 
@@ -1178,14 +987,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           sliver: SliverToBoxAdapter(
-                            child: OneUISection(
+                            child: _buildSubscriptionSection(
                               title: 'Overdue',
-                              child: OneUIGroupCard(
-                                items: filteredSubs
-                                    .where((s) => s.daysRemaining < 0)
-                                    .map(_buildSubscriptionItem)
-                                    .toList(),
-                              ),
+                              subs: filteredSubs.where((s) => s.daysRemaining < 0).toList(),
                             ),
                           ),
                         ),
@@ -1194,14 +998,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           sliver: SliverToBoxAdapter(
-                            child: OneUISection(
+                            child: _buildSubscriptionSection(
                               title: 'Due this week',
-                              child: OneUIGroupCard(
-                                items: filteredSubs
-                                    .where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7)
-                                    .map(_buildSubscriptionItem)
-                                    .toList(),
-                              ),
+                              subs: filteredSubs
+                                  .where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7)
+                                  .toList(),
                             ),
                           ),
                         ),
@@ -1210,14 +1011,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           sliver: SliverToBoxAdapter(
-                            child: OneUISection(
+                            child: _buildSubscriptionSection(
                               title: 'Due this month',
-                              child: OneUIGroupCard(
-                                items: filteredSubs
-                                    .where((s) => s.daysRemaining > 7 && s.daysRemaining <= 30)
-                                    .map(_buildSubscriptionItem)
-                                    .toList(),
-                              ),
+                              subs: filteredSubs
+                                  .where((s) => s.daysRemaining > 7 && s.daysRemaining <= 30)
+                                  .toList(),
                             ),
                           ),
                         ),
@@ -1226,14 +1024,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           sliver: SliverToBoxAdapter(
-                            child: OneUISection(
+                            child: _buildSubscriptionSection(
                               title: 'Later renewals',
-                              child: OneUIGroupCard(
-                                items: filteredSubs
-                                    .where((s) => s.daysRemaining > 30)
-                                    .map(_buildSubscriptionItem)
-                                    .toList(),
-                              ),
+                              subs: filteredSubs.where((s) => s.daysRemaining > 30).toList(),
                             ),
                           ),
                         ),
@@ -1244,13 +1037,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         sliver: SliverToBoxAdapter(
-                          child: OneUISection(
+                          child: _buildSubscriptionSection(
                             title: _filterCategory != null
                                 ? '${_filterCategory!.label} (${filteredSubs.length})'
                                 : 'All subscriptions (${filteredSubs.length})',
-                            child: OneUIGroupCard(
-                              items: filteredSubs.map(_buildSubscriptionItem).toList(),
-                            ),
+                            subs: filteredSubs,
                           ),
                         ),
                       ),

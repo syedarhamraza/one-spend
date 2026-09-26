@@ -7,6 +7,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
+import 'subscription_card_customizer_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -446,6 +447,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       final isBottomVignette = OneUIEffectsController.instance.bottomVignetteEffect;
 
                       final appearanceItems = <OneUIGroupItem>[
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.tune_rounded, OneUITheme.accentPurple),
+                          title: 'Card details & indicators',
+                          subtitle: 'Price format, cycle progress bar, and metadata chips',
+                          trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionCardCustomizerScreen(),
+                              ),
+                            );
+                          },
+                        ),
                         OneUIGroupItem(
                           leading: _buildIconBadge(Icons.view_agenda_rounded, OneUITheme.accentBlue),
                           title: 'Navigation bar 3D effect',

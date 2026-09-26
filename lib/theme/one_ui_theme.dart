@@ -1,7 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Interactive Dynamic Controller for 3D Elevation, Shadows, and Frosted Glass Blur
+/// Card background color & surface style
+enum SubscriptionCardBackground {
+  oneUiDark,       // Classic One UI charcoal surface (0xFF1C1C1E)
+  pureBlack,       // Deep pitch black OLED surface (0xFF090A0D)
+  brandTinted,     // Translucent background wash matching the brand color
+  midnightNavy,    // Sleek modern slate navy (0xFF151B27)
+  deepAmethyst,    // Luxurious deep violet slate (0xFF1E172E)
+  frostedGlass,    // Translucent frosted glass with backdrop blur
+  custom,          // User selected custom background color
+}
+
+/// Main card layout architecture
+enum SubscriptionCardLayout {
+  oneUiFluent,      // Native One UI grouped list with soft dividers
+  bentoElevated,    // Distinct standalone elevated cards with ambient shadow
+  compact,          // High-density minimal rows for rapid scanning
+}
+
+/// Brand color expression on the card
+enum SubscriptionBrandAccent {
+  leftStrip,        // Sleek 3.5px vertical indicator bar on left
+  ambientGlow,      // Gentle translucent gradient wash in card background
+  borderHighlight,  // Delicate 1px brand-tinted border
+  neutral,          // Classic dark card without brand tint
+}
+
+/// Price presentation mode
+enum SubscriptionPriceMode {
+  billedAmount,     // Billed amount prominent ($120/yr), monthly secondary ($10/mo)
+  monthlyEquivalent,// Monthly equivalent prominent ($10/mo), billed secondary ($120/yr)
+  rawAmount,        // Simple raw price only
+}
+
+/// Renewal date badge format
+enum SubscriptionRenewalBadgeMode {
+  countdown,        // "Due in 4 days" / "Due today"
+  exactDate,        // "Sep 29" / "Oct 4"
+  combined,         // "In 4 days (Sep 29)"
+}
+
+/// Payment badge placement style on subscription cards
+enum PaymentBadgeStyle {
+  cornerBadge,      // 20x13 card logo anchored on corner of brand icon (prevents text clipping)
+  inlineSubtitle,   // Inline inside subtitle text next to card nickname
+}
+
+/// Upcoming renewals presentation style
+enum UpcomingSectionStyle {
+  carousel,         // Horizontal swipeable reel with calendar chips
+  groupedList,      // Standard One UI grouped list card
+  spotlight,        // Single hero card with 1-tap "Mark Paid"
+}
+
+/// Interactive Dynamic Controller for 3D Elevation, Shadows, Frosted Glass Blur, and Card Styles
 class OneUIEffectsController extends ChangeNotifier {
   static final OneUIEffectsController instance = OneUIEffectsController._internal();
   factory OneUIEffectsController() => instance;
@@ -15,6 +68,25 @@ class OneUIEffectsController extends ChangeNotifier {
   bool _navbar3dEffect = true;      // 3D tactile navbar matching One UI phone dialer screenshot
   bool _bottomVignetteEffect = true;// Edge-to-edge progressive bottom gradient vignette
 
+  // Card Studio Customizations
+  SubscriptionCardBackground _cardBackground = SubscriptionCardBackground.oneUiDark;
+  int _customCardBackgroundColorValue = 0xFF1C2230;
+  SubscriptionCardLayout _cardLayout = SubscriptionCardLayout.oneUiFluent;
+  SubscriptionBrandAccent _brandAccent = SubscriptionBrandAccent.neutral;
+  SubscriptionPriceMode _priceMode = SubscriptionPriceMode.rawAmount;
+  SubscriptionRenewalBadgeMode _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
+  PaymentBadgeStyle _paymentBadgeStyle = PaymentBadgeStyle.cornerBadge;
+  UpcomingSectionStyle _upcomingStyle = UpcomingSectionStyle.groupedList;
+  bool _showCycleProgress = true;
+  bool _showPaymentMethodChip = false;
+  bool _showCategoryChip = true;
+  bool _showDailyEquivalent = false;
+
+  /// Explicit initialization hook (useful for test suites and hot restarts)
+  Future<void> init() async {
+    await _loadSettings();
+  }
+
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -22,6 +94,69 @@ class OneUIEffectsController extends ChangeNotifier {
       _floating3dEffect = prefs.getBool('floating3dEffect') ?? true;
       _navbar3dEffect = prefs.getBool('navbar3dEffect') ?? true;
       _bottomVignetteEffect = prefs.getBool('bottomVignetteEffect') ?? true;
+
+      final bgStr = prefs.getString('cardBackground');
+      if (bgStr != null) {
+        _cardBackground = SubscriptionCardBackground.values.firstWhere(
+          (e) => e.name == bgStr,
+          orElse: () => SubscriptionCardBackground.oneUiDark,
+        );
+      }
+      _customCardBackgroundColorValue = prefs.getInt('customCardBackgroundColorValue') ?? 0xFF1C2230;
+
+      final layoutStr = prefs.getString('cardLayout');
+      if (layoutStr != null) {
+        _cardLayout = SubscriptionCardLayout.values.firstWhere(
+          (e) => e.name == layoutStr,
+          orElse: () => SubscriptionCardLayout.oneUiFluent,
+        );
+      }
+
+      final accentStr = prefs.getString('brandAccent');
+      if (accentStr != null) {
+        _brandAccent = SubscriptionBrandAccent.values.firstWhere(
+          (e) => e.name == accentStr,
+          orElse: () => SubscriptionBrandAccent.leftStrip,
+        );
+      }
+
+      final priceStr = prefs.getString('priceMode');
+      if (priceStr != null) {
+        _priceMode = SubscriptionPriceMode.values.firstWhere(
+          (e) => e.name == priceStr,
+          orElse: () => SubscriptionPriceMode.rawAmount,
+        );
+      }
+
+      final badgeStr = prefs.getString('renewalBadgeMode');
+      if (badgeStr != null) {
+        _renewalBadgeMode = SubscriptionRenewalBadgeMode.values.firstWhere(
+          (e) => e.name == badgeStr,
+          orElse: () => SubscriptionRenewalBadgeMode.countdown,
+        );
+      }
+
+      final badgeStyleStr = prefs.getString('paymentBadgeStyle');
+      if (badgeStyleStr != null) {
+        _paymentBadgeStyle = PaymentBadgeStyle.values.firstWhere(
+          (e) => e.name == badgeStyleStr,
+          orElse: () => PaymentBadgeStyle.cornerBadge,
+        );
+      }
+
+      final upcomingStr = prefs.getString('upcomingStyle');
+      if (upcomingStr != null) {
+        _upcomingStyle = UpcomingSectionStyle.values.firstWhere(
+          (e) => e.name == upcomingStr,
+          orElse: () => UpcomingSectionStyle.groupedList,
+        );
+      }
+
+      _showCycleProgress = prefs.getBool('showCycleProgress') ?? true;
+      _showPaymentMethodChip = prefs.getBool('showPaymentMethodChip') ?? false;
+      _showCategoryChip = prefs.getBool('showCategoryChip') ?? true;
+      _showDailyEquivalent = prefs.getBool('showDailyEquivalent') ?? false;
+
       _invalidateCache();
       notifyListeners();
     } catch (_) {}
@@ -30,6 +165,188 @@ class OneUIEffectsController extends ChangeNotifier {
   Future<void> _saveSetting(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
+  }
+
+  Future<void> _saveStringSetting(String key, String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, value);
+  }
+
+  Future<void> _saveIntSetting(String key, int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(key, value);
+  }
+
+  // Card Studio Getters & Setters
+  SubscriptionCardBackground get cardBackground => _cardBackground;
+  set cardBackground(SubscriptionCardBackground val) {
+    if (_cardBackground != val) {
+      _cardBackground = val;
+      _saveStringSetting('cardBackground', val.name);
+      notifyListeners();
+    }
+  }
+
+  Color get customCardBackgroundColor => Color(_customCardBackgroundColorValue);
+  int get customCardBackgroundColorValue => _customCardBackgroundColorValue;
+  set customCardBackgroundColor(Color val) {
+    final colorVal = val.toARGB32();
+    if (_customCardBackgroundColorValue != colorVal) {
+      _customCardBackgroundColorValue = colorVal;
+      _saveIntSetting('customCardBackgroundColorValue', colorVal);
+      notifyListeners();
+    }
+  }
+
+  SubscriptionCardLayout get cardLayout => _cardLayout;
+  set cardLayout(SubscriptionCardLayout val) {
+    if (_cardLayout != val) {
+      _cardLayout = val;
+      _saveStringSetting('cardLayout', val.name);
+      notifyListeners();
+    }
+  }
+
+  SubscriptionBrandAccent get brandAccent => _brandAccent;
+  set brandAccent(SubscriptionBrandAccent val) {
+    if (_brandAccent != val) {
+      _brandAccent = val;
+      _saveStringSetting('brandAccent', val.name);
+      notifyListeners();
+    }
+  }
+
+  SubscriptionPriceMode get priceMode => _priceMode;
+  set priceMode(SubscriptionPriceMode val) {
+    if (_priceMode != val) {
+      _priceMode = val;
+      _saveStringSetting('priceMode', val.name);
+      notifyListeners();
+    }
+  }
+
+  SubscriptionRenewalBadgeMode get renewalBadgeMode => _renewalBadgeMode;
+  set renewalBadgeMode(SubscriptionRenewalBadgeMode val) {
+    if (_renewalBadgeMode != val) {
+      _renewalBadgeMode = val;
+      _saveStringSetting('renewalBadgeMode', val.name);
+      notifyListeners();
+    }
+  }
+
+  UpcomingSectionStyle get upcomingStyle => _upcomingStyle;
+  set upcomingStyle(UpcomingSectionStyle val) {
+    if (_upcomingStyle != val) {
+      _upcomingStyle = val;
+      _saveStringSetting('upcomingStyle', val.name);
+      notifyListeners();
+    }
+  }
+
+  bool get showCycleProgress => _showCycleProgress;
+  set showCycleProgress(bool val) {
+    if (_showCycleProgress != val) {
+      _showCycleProgress = val;
+      _saveSetting('showCycleProgress', val);
+      notifyListeners();
+    }
+  }
+
+  bool get showPaymentMethodChip => _showPaymentMethodChip;
+  set showPaymentMethodChip(bool val) {
+    if (_showPaymentMethodChip != val) {
+      _showPaymentMethodChip = val;
+      _saveSetting('showPaymentMethodChip', val);
+      notifyListeners();
+    }
+  }
+
+  bool get showCategoryChip => _showCategoryChip;
+  set showCategoryChip(bool val) {
+    if (_showCategoryChip != val) {
+      _showCategoryChip = val;
+      _saveSetting('showCategoryChip', val);
+      notifyListeners();
+    }
+  }
+
+  bool get showDailyEquivalent => _showDailyEquivalent;
+  set showDailyEquivalent(bool val) {
+    if (_showDailyEquivalent != val) {
+      _showDailyEquivalent = val;
+      _saveSetting('showDailyEquivalent', val);
+      notifyListeners();
+    }
+  }
+
+  PaymentBadgeStyle get paymentBadgeStyle => _paymentBadgeStyle;
+  set paymentBadgeStyle(PaymentBadgeStyle val) {
+    if (_paymentBadgeStyle != val) {
+      _paymentBadgeStyle = val;
+      _saveStringSetting('paymentBadgeStyle', val.name);
+      notifyListeners();
+    }
+  }
+
+  UpcomingSectionStyle get upcomingSectionStyle => _upcomingStyle;
+  set upcomingSectionStyle(UpcomingSectionStyle val) => upcomingStyle = val;
+
+  /// Resets all subscription card styling & studio preferences back to default Samsung One UI specs
+  void resetCardStyle() {
+    _cardBackground = SubscriptionCardBackground.oneUiDark;
+    _customCardBackgroundColorValue = 0xFF1C2230;
+    _cardLayout = SubscriptionCardLayout.oneUiFluent;
+    _brandAccent = SubscriptionBrandAccent.neutral;
+    _priceMode = SubscriptionPriceMode.rawAmount;
+    _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
+    _paymentBadgeStyle = PaymentBadgeStyle.cornerBadge;
+    _upcomingStyle = UpcomingSectionStyle.groupedList;
+    _showCycleProgress = true;
+    _showPaymentMethodChip = false;
+    _showCategoryChip = true;
+    _showDailyEquivalent = false;
+
+    _saveStringSetting('cardBackground', _cardBackground.name);
+    _saveIntSetting('customCardBackgroundColorValue', _customCardBackgroundColorValue);
+    _saveStringSetting('cardLayout', _cardLayout.name);
+    _saveStringSetting('brandAccent', _brandAccent.name);
+    _saveStringSetting('priceMode', _priceMode.name);
+    _saveStringSetting('renewalBadgeMode', _renewalBadgeMode.name);
+    _saveStringSetting('paymentBadgeStyle', _paymentBadgeStyle.name);
+    _saveStringSetting('upcomingStyle', _upcomingStyle.name);
+    _saveSetting('showCycleProgress', _showCycleProgress);
+    _saveSetting('showPaymentMethodChip', _showPaymentMethodChip);
+    _saveSetting('showCategoryChip', _showCategoryChip);
+    _saveSetting('showDailyEquivalent', _showDailyEquivalent);
+
+    _invalidateCache();
+    notifyListeners();
+  }
+
+  /// Resolves the effective background color for a subscription card
+  Color resolveCardBackground({
+    SubscriptionCardBackground? backgroundType,
+    Color? brandColor,
+  }) {
+    final bg = backgroundType ?? _cardBackground;
+    final bColor = brandColor ?? const Color(0xFF5390F5);
+
+    switch (bg) {
+      case SubscriptionCardBackground.oneUiDark:
+        return cardColor;
+      case SubscriptionCardBackground.pureBlack:
+        return const Color(0xFF090A0D);
+      case SubscriptionCardBackground.brandTinted:
+        return Color.alphaBlend(bColor.withValues(alpha: 0.13), const Color(0xFF131417));
+      case SubscriptionCardBackground.midnightNavy:
+        return const Color(0xFF151B27);
+      case SubscriptionCardBackground.deepAmethyst:
+        return const Color(0xFF1E172E);
+      case SubscriptionCardBackground.frostedGlass:
+        return const Color(0xFF22242B).withValues(alpha: 0.72);
+      case SubscriptionCardBackground.custom:
+        return Color(_customCardBackgroundColorValue);
+    }
   }
 
   bool get card3dEffect => _card3dEffect;
@@ -292,6 +609,20 @@ class OneUITheme {
   static List<BoxShadow> get fabShadow => OneUIEffectsController.instance.fabShadow;
   static double get blurSigma => OneUIEffectsController.instance.blurSigma;
   static bool get bottomVignetteEffect => OneUIEffectsController.instance.bottomVignetteEffect;
+
+  // --- Card Studio Properties ---
+  static SubscriptionCardBackground get cardBackground => OneUIEffectsController.instance.cardBackground;
+  static Color get customCardBackgroundColor => OneUIEffectsController.instance.customCardBackgroundColor;
+  static SubscriptionCardLayout get cardLayout => OneUIEffectsController.instance.cardLayout;
+  static SubscriptionBrandAccent get brandAccent => OneUIEffectsController.instance.brandAccent;
+  static SubscriptionPriceMode get priceMode => OneUIEffectsController.instance.priceMode;
+  static SubscriptionRenewalBadgeMode get renewalBadgeMode => OneUIEffectsController.instance.renewalBadgeMode;
+  static PaymentBadgeStyle get paymentBadgeStyle => OneUIEffectsController.instance.paymentBadgeStyle;
+  static UpcomingSectionStyle get upcomingStyle => OneUIEffectsController.instance.upcomingStyle;
+  static bool get showCycleProgress => OneUIEffectsController.instance.showCycleProgress;
+  static bool get showPaymentMethodChip => OneUIEffectsController.instance.showPaymentMethodChip;
+  static bool get showCategoryChip => OneUIEffectsController.instance.showCategoryChip;
+  static bool get showDailyEquivalent => OneUIEffectsController.instance.showDailyEquivalent;
 
   // Backward compatibility
   static Border? get subtleBorder => null;
