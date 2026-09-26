@@ -462,25 +462,21 @@ class OneUIBrandCatalog {
     String? presetId,
     String? name,
   }) {
-    // 1. Check known preset by ID
+    // 1. Check if the subscription is using an unmodified known brand preset color
+    // (This allows dark brands like Apple One #000000, Slack #4A154B, Copilot #24292F
+    // to have their special branded glow colors when uncustomized)
+    BrandPreset? preset;
     if (presetId != null && presetId.isNotEmpty) {
-      final preset = findById(presetId);
-      if (preset != null) {
-        if (preset.glowColor != null) return preset.glowColor!;
-        if (preset.color.computeLuminance() >= 0.05) return preset.color;
-      }
+      preset = findById(presetId);
+    }
+    preset ??= (name != null && name.trim().isNotEmpty) ? findPreset(name) : null;
+
+    if (preset != null && color.toARGB32() == preset.color.toARGB32()) {
+      if (preset.glowColor != null) return preset.glowColor!;
+      if (preset.color.computeLuminance() >= 0.05) return preset.color;
     }
 
-    // 2. Check known preset by Name
-    if (name != null && name.trim().isNotEmpty) {
-      final preset = findPreset(name);
-      if (preset != null) {
-        if (preset.glowColor != null) return preset.glowColor!;
-        if (preset.color.computeLuminance() >= 0.05) return preset.color;
-      }
-    }
-
-    // 3. Check exact match against IconPickerScreen swatch colors
+    // 2. Check exact match against IconPickerScreen swatch colors
     for (final entry in swatchGlowColors.entries) {
       if (entry.key.toARGB32() == color.toARGB32()) {
         return entry.value;

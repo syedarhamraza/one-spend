@@ -125,6 +125,34 @@ void main() {
       expect(boostedGlow.computeLuminance(), greaterThan(0.08));
     });
 
+    test('When a subscription like Netflix has its color customized to Green, glow turns Green instead of staying Red', () {
+      // Default Netflix (Red)
+      final defaultNetflixGlow = OneUIBrandCatalog.getGlowColor(
+        color: const Color(0xFFE50914),
+        presetId: 'netflix',
+        name: 'Netflix',
+      );
+      expect(defaultNetflixGlow, equals(const Color(0xFFE50914)));
+
+      // Customized Netflix with Spotify Green
+      const greenColor = Color(0xFF1DB954);
+      final customizedNetflixGlow = OneUIBrandCatalog.getGlowColor(
+        color: greenColor,
+        presetId: 'netflix',
+        name: 'Netflix',
+      );
+      expect(customizedNetflixGlow, equals(greenColor));
+
+      // Customized Netflix with One UI Blue
+      const blueColor = Color(0xFF0066FF);
+      final customizedBlueNetflixGlow = OneUIBrandCatalog.getGlowColor(
+        color: blueColor,
+        presetId: 'netflix',
+        name: 'Netflix',
+      );
+      expect(customizedBlueNetflixGlow, equals(blueColor));
+    });
+
     testWidgets('SubscriptionDetailScreen renders under-card RadialGradient with resolved glow', (WidgetTester tester) async {
       final testSub = Subscription(
         id: 'test_sub',
