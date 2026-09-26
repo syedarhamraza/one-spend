@@ -246,7 +246,9 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: OneUIBottomVignette(),
+                child: OneUIBottomVignette(
+                  hasFloatingElements: false,
+                ),
               ),
             ],
           ),
@@ -422,7 +424,9 @@ class _SubscriptionCardOptionScreenState<T> extends State<SubscriptionCardOption
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: OneUIBottomVignette(),
+                child: OneUIBottomVignette(
+                  hasFloatingElements: false,
+                ),
               ),
             ],
           ),

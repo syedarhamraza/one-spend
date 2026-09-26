@@ -282,12 +282,14 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
           ],
         ),
 
-        // Progressive OLED Bottom Vignette Scrim
-        const Positioned(
+        // Progressive OLED Bottom Vignette Scrim (decreased when browsing, normal when search pill opens)
+        Positioned(
           left: 0,
           right: 0,
           bottom: 0,
-          child: OneUIBottomVignette(),
+          child: OneUIBottomVignette(
+            hasFloatingElements: _showSearch,
+          ),
         ),
 
         // Floating Search Pill above keyboard

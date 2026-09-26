@@ -24,6 +24,7 @@ import 'package:onespend/screens/payment_method_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_spending_chart.dart';
 import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
+import 'package:onespend/widgets/one_ui_status_bar_scrim.dart';
 import 'package:onespend/widgets/one_ui_cancel_save_pill.dart';
 import 'package:onespend/widgets/one_ui_selection_pills.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
@@ -2506,6 +2507,83 @@ void main() {
     // Verify reverts cleanly to "No recent searches"
     expect(find.text('No recent searches'), findsOneWidget);
     expect(find.text('Recent searches'), findsNothing);
+  });
+
+  testWidgets('OneUIBottomVignette decreases height and gradient when hasFloatingElements is false', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    // 1. With floating elements (normal mode)
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: OneUIBottomVignette(hasFloatingElements: true),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final animatedContainerNormal = tester.widget<AnimatedContainer>(
+      find.descendant(of: find.byType(OneUIBottomVignette), matching: find.byType(AnimatedContainer)),
+    );
+    final normalBoxDec = animatedContainerNormal.decoration as BoxDecoration;
+    expect(normalBoxDec.gradient, OneUIBottomVignette.normalGradient);
+
+    // 2. Without floating elements (decreased mode)
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: OneUIBottomVignette(hasFloatingElements: false),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final animatedContainerDecreased = tester.widget<AnimatedContainer>(
+      find.descendant(of: find.byType(OneUIBottomVignette), matching: find.byType(AnimatedContainer)),
+    );
+    final decBoxDec = animatedContainerDecreased.decoration as BoxDecoration;
+    expect(decBoxDec.gradient, OneUIBottomVignette.decreasedGradient);
+  });
+
+  testWidgets('PopularPresetsScreen toggles OneUIBottomVignette hasFloatingElements between search modes', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const PopularPresetsScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    // In browsing mode, hasFloatingElements is false (decreased)
+    var vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isFalse);
+
+    // Enter search mode
+    await tester.tap(find.byIcon(Icons.search_rounded).first);
+    await tester.pumpAndSettle();
+
+    // Now hasFloatingElements is true (normal mode behind search pill)
+    vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isTrue);
+  });
+
+  testWidgets('OneUIStatusBarScrim renders with extended height, progressive blur, and GPU isolation', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: OneUIStatusBarScrim(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIStatusBarScrim), findsOneWidget);
+    final scrimFinder = find.byType(OneUIStatusBarScrim);
+    expect(find.descendant(of: scrimFinder, matching: find.byType(IgnorePointer)), findsOneWidget);
+    expect(find.descendant(of: scrimFinder, matching: find.byType(RepaintBoundary)), findsOneWidget);
+    expect(find.descendant(of: scrimFinder, matching: find.byType(BackdropFilter)), findsOneWidget);
   });
 }
 
