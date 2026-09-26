@@ -29,6 +29,7 @@ void main() {
       expect(ctrl.showCycleProgress, isTrue);
       expect(ctrl.showPaymentMethodChip, isFalse);
       expect(ctrl.showCategoryChip, isTrue);
+      expect(ctrl.showBillingCycle, isFalse);
       expect(ctrl.showDailyEquivalent, isFalse);
       expect(ctrl.upcomingSectionStyle, equals(UpcomingSectionStyle.groupedList));
     });
@@ -40,12 +41,14 @@ void main() {
       ctrl.showCycleProgress = false;
       ctrl.showPaymentMethodChip = true;
       ctrl.showCategoryChip = false;
+      ctrl.showBillingCycle = true;
 
       expect(ctrl.priceMode, equals(SubscriptionPriceMode.monthlyEquivalent));
       expect(ctrl.showDailyEquivalent, isTrue);
       expect(ctrl.showCycleProgress, isFalse);
       expect(ctrl.showPaymentMethodChip, isTrue);
       expect(ctrl.showCategoryChip, isFalse);
+      expect(ctrl.showBillingCycle, isTrue);
     });
 
     test('resetCardStyle restores data display settings to default', () {
@@ -55,6 +58,7 @@ void main() {
       ctrl.showCycleProgress = false;
       ctrl.showPaymentMethodChip = true;
       ctrl.showCategoryChip = false;
+      ctrl.showBillingCycle = true;
 
       ctrl.resetCardStyle();
 
@@ -63,6 +67,7 @@ void main() {
       expect(ctrl.showCycleProgress, isTrue);
       expect(ctrl.showPaymentMethodChip, isFalse);
       expect(ctrl.showCategoryChip, isTrue);
+      expect(ctrl.showBillingCycle, isFalse);
     });
   });
 
@@ -128,6 +133,7 @@ void main() {
       expect(find.text('Card details'), findsOneWidget);
       expect(find.text('Payment method'), findsOneWidget);
       expect(find.text('Category'), findsOneWidget);
+      expect(find.text('Billing cycle'), findsOneWidget);
       // Payment method is initially false by default, so Corner payment badge is hidden
       expect(find.text('Corner payment badge'), findsNothing);
 
@@ -143,6 +149,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.showCategoryChip, isFalse);
 
+      // Toggle Billing cycle (from default false to true)
+      await tester.tap(find.text('Billing cycle'));
+      await tester.pumpAndSettle();
+      expect(OneUIEffectsController.instance.showBillingCycle, isTrue);
+
       // Toggle Corner payment badge
       await tester.tap(find.text('Corner payment badge'));
       await tester.pumpAndSettle();
@@ -157,6 +168,7 @@ void main() {
       // Verify restored defaults
       expect(OneUIEffectsController.instance.showPaymentMethodChip, isFalse);
       expect(OneUIEffectsController.instance.showCategoryChip, isTrue);
+      expect(OneUIEffectsController.instance.showBillingCycle, isFalse);
       expect(OneUIEffectsController.instance.paymentBadgeStyle, equals(PaymentBadgeStyle.cornerBadge));
       expect(find.text('Corner payment badge'), findsNothing);
     });
@@ -274,6 +286,54 @@ void main() {
 
       expect(find.text('\$10.99'), findsOneWidget);
       expect(find.text('\$0.36/day'), findsOneWidget);
+    });
+
+    testWidgets('OneUISubscriptionCard hides billing cycle from desc by default and shows when enabled', (WidgetTester tester) async {
+      final sampleSub = Subscription(
+        id: 'sub_cycle_test',
+        name: 'Netflix',
+        description: 'Movies',
+        price: 15.99,
+        billingCycle: BillingCycle.monthly,
+        category: SubscriptionCategory.entertainment,
+        nextBillingDate: DateTime.now().add(const Duration(days: 5)),
+        brandColor: const Color(0xFFE50914),
+      );
+
+      // Default (showCategoryChip: true, showBillingCycle: false)
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OneUISubscriptionCard(
+              subscription: sampleSub,
+              overrideShowCategoryChip: true,
+              overrideShowBillingCycle: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Only category "Entertainment" should be in the description, NOT "Monthly"
+      expect(find.text('Entertainment'), findsOneWidget);
+      expect(find.textContaining('Monthly'), findsNothing);
+
+      // When overrideShowBillingCycle is true
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OneUISubscriptionCard(
+              subscription: sampleSub,
+              overrideShowCategoryChip: true,
+              overrideShowBillingCycle: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Now "Entertainment • Monthly" is present
+      expect(find.text('Entertainment • Monthly'), findsOneWidget);
     });
 
     testWidgets('OneUISubscriptionCard renders official CardBrand logo (Visa, Mastercard)', (WidgetTester tester) async {

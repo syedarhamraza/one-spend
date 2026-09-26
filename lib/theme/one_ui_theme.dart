@@ -80,6 +80,7 @@ class OneUIEffectsController extends ChangeNotifier {
   bool _showCycleProgress = true;
   bool _showPaymentMethodChip = false;
   bool _showCategoryChip = true;
+  bool _showBillingCycle = false;
   bool _showDailyEquivalent = false;
 
   /// Explicit initialization hook (useful for test suites and hot restarts)
@@ -155,6 +156,7 @@ class OneUIEffectsController extends ChangeNotifier {
       _showCycleProgress = prefs.getBool('showCycleProgress') ?? true;
       _showPaymentMethodChip = prefs.getBool('showPaymentMethodChip') ?? false;
       _showCategoryChip = prefs.getBool('showCategoryChip') ?? true;
+      _showBillingCycle = prefs.getBool('showBillingCycle') ?? false;
       _showDailyEquivalent = prefs.getBool('showDailyEquivalent') ?? false;
 
       _invalidateCache();
@@ -270,6 +272,15 @@ class OneUIEffectsController extends ChangeNotifier {
     }
   }
 
+  bool get showBillingCycle => _showBillingCycle;
+  set showBillingCycle(bool val) {
+    if (_showBillingCycle != val) {
+      _showBillingCycle = val;
+      _saveSetting('showBillingCycle', val);
+      notifyListeners();
+    }
+  }
+
   bool get showDailyEquivalent => _showDailyEquivalent;
   set showDailyEquivalent(bool val) {
     if (_showDailyEquivalent != val) {
@@ -304,6 +315,7 @@ class OneUIEffectsController extends ChangeNotifier {
     _showCycleProgress = true;
     _showPaymentMethodChip = false;
     _showCategoryChip = true;
+    _showBillingCycle = false;
     _showDailyEquivalent = false;
 
     _saveStringSetting('cardBackground', _cardBackground.name);
@@ -317,6 +329,7 @@ class OneUIEffectsController extends ChangeNotifier {
     _saveSetting('showCycleProgress', _showCycleProgress);
     _saveSetting('showPaymentMethodChip', _showPaymentMethodChip);
     _saveSetting('showCategoryChip', _showCategoryChip);
+    _saveSetting('showBillingCycle', _showBillingCycle);
     _saveSetting('showDailyEquivalent', _showDailyEquivalent);
 
     _invalidateCache();

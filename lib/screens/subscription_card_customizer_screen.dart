@@ -186,6 +186,14 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                       onTap: () => ctrl.showCategoryChip = !ctrl.showCategoryChip,
                                     ),
                                     OneUIGroupItem(
+                                      title: 'Billing cycle',
+                                      trailing: _buildOneUISwitch(
+                                        value: ctrl.showBillingCycle,
+                                        onChanged: (val) => ctrl.showBillingCycle = val,
+                                      ),
+                                      onTap: () => ctrl.showBillingCycle = !ctrl.showBillingCycle,
+                                    ),
+                                    OneUIGroupItem(
                                       title: 'Daily equivalent cost',
                                       trailing: _buildOneUISwitch(
                                         value: ctrl.showDailyEquivalent,
