@@ -156,6 +156,27 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                       ),
                                       onTap: () => ctrl.showPaymentMethodChip = !ctrl.showPaymentMethodChip,
                                     ),
+                                    if (ctrl.showPaymentMethodChip)
+                                      OneUIGroupItem(
+                                        title: 'Corner payment badge',
+                                        subtitle: ctrl.paymentBadgeStyle == PaymentBadgeStyle.cornerBadge
+                                            ? 'Pinned on app icon'
+                                            : 'In subtitle text',
+                                        trailing: _buildOneUISwitch(
+                                          value: ctrl.paymentBadgeStyle == PaymentBadgeStyle.cornerBadge,
+                                          onChanged: (val) {
+                                            ctrl.paymentBadgeStyle = val
+                                                ? PaymentBadgeStyle.cornerBadge
+                                                : PaymentBadgeStyle.inlineSubtitle;
+                                          },
+                                        ),
+                                        onTap: () {
+                                          ctrl.paymentBadgeStyle =
+                                              ctrl.paymentBadgeStyle == PaymentBadgeStyle.cornerBadge
+                                                  ? PaymentBadgeStyle.inlineSubtitle
+                                                  : PaymentBadgeStyle.cornerBadge;
+                                        },
+                                      ),
                                     OneUIGroupItem(
                                       title: 'Category',
                                       trailing: _buildOneUISwitch(
@@ -163,23 +184,6 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                         onChanged: (val) => ctrl.showCategoryChip = val,
                                       ),
                                       onTap: () => ctrl.showCategoryChip = !ctrl.showCategoryChip,
-                                    ),
-                                    OneUIGroupItem(
-                                      title: 'Corner payment badge',
-                                      trailing: _buildOneUISwitch(
-                                        value: ctrl.paymentBadgeStyle == PaymentBadgeStyle.cornerBadge,
-                                        onChanged: (val) {
-                                          ctrl.paymentBadgeStyle = val
-                                              ? PaymentBadgeStyle.cornerBadge
-                                              : PaymentBadgeStyle.inlineSubtitle;
-                                        },
-                                      ),
-                                      onTap: () {
-                                        ctrl.paymentBadgeStyle =
-                                            ctrl.paymentBadgeStyle == PaymentBadgeStyle.cornerBadge
-                                                ? PaymentBadgeStyle.inlineSubtitle
-                                                : PaymentBadgeStyle.cornerBadge;
-                                      },
                                     ),
                                     OneUIGroupItem(
                                       title: 'Daily equivalent cost',
@@ -191,17 +195,18 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                const Padding(
-                                  padding: EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 6),
-                                  child: Text(
-                                    'When Corner payment badge is on, card logos are pinned on the app icon to prevent text clipping on smaller screens.',
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      color: OneUITheme.textSecondary,
-                                      height: 1.35,
+                                if (ctrl.showPaymentMethodChip)
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 6),
+                                    child: Text(
+                                      'When Corner payment badge is on, card logos are pinned on the app icon to prevent text clipping on smaller screens.',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        color: OneUITheme.textSecondary,
+                                        height: 1.35,
+                                      ),
                                     ),
                                   ),
-                                ),
                               ],
                             ),
                           ),

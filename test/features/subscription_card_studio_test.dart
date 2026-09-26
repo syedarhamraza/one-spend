@@ -128,12 +128,15 @@ void main() {
       expect(find.text('Card details'), findsOneWidget);
       expect(find.text('Payment method'), findsOneWidget);
       expect(find.text('Category'), findsOneWidget);
-      expect(find.text('Corner payment badge'), findsOneWidget);
+      // Payment method is initially false by default, so Corner payment badge is hidden
+      expect(find.text('Corner payment badge'), findsNothing);
 
       // Toggle Payment method (from default false to true)
       await tester.tap(find.text('Payment method'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.showPaymentMethodChip, isTrue);
+      // Now Corner payment badge is visible
+      expect(find.text('Corner payment badge'), findsOneWidget);
 
       // Toggle Category (from default true to false)
       await tester.tap(find.text('Category'));
@@ -155,6 +158,7 @@ void main() {
       expect(OneUIEffectsController.instance.showPaymentMethodChip, isFalse);
       expect(OneUIEffectsController.instance.showCategoryChip, isTrue);
       expect(OneUIEffectsController.instance.paymentBadgeStyle, equals(PaymentBadgeStyle.cornerBadge));
+      expect(find.text('Corner payment badge'), findsNothing);
     });
 
     testWidgets('Corner badge and Card expiring badge are visible on OneUISubscriptionCard', (WidgetTester tester) async {
