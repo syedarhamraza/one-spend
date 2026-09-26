@@ -24,10 +24,10 @@ void main() {
       expect(ctrl.cardBackground, equals(SubscriptionCardBackground.oneUiDark));
       expect(ctrl.cardLayout, equals(SubscriptionCardLayout.oneUiFluent));
       expect(ctrl.brandAccent, equals(SubscriptionBrandAccent.neutral));
-      expect(ctrl.priceMode, equals(SubscriptionPriceMode.billedAmount));
+      expect(ctrl.priceMode, equals(SubscriptionPriceMode.rawAmount));
       expect(ctrl.renewalBadgeMode, equals(SubscriptionRenewalBadgeMode.countdown));
       expect(ctrl.showCycleProgress, isTrue);
-      expect(ctrl.showPaymentMethodChip, isTrue);
+      expect(ctrl.showPaymentMethodChip, isFalse);
       expect(ctrl.showCategoryChip, isTrue);
       expect(ctrl.showDailyEquivalent, isFalse);
       expect(ctrl.upcomingSectionStyle, equals(UpcomingSectionStyle.groupedList));
@@ -38,13 +38,13 @@ void main() {
       ctrl.priceMode = SubscriptionPriceMode.monthlyEquivalent;
       ctrl.showDailyEquivalent = true;
       ctrl.showCycleProgress = false;
-      ctrl.showPaymentMethodChip = false;
+      ctrl.showPaymentMethodChip = true;
       ctrl.showCategoryChip = false;
 
       expect(ctrl.priceMode, equals(SubscriptionPriceMode.monthlyEquivalent));
       expect(ctrl.showDailyEquivalent, isTrue);
       expect(ctrl.showCycleProgress, isFalse);
-      expect(ctrl.showPaymentMethodChip, isFalse);
+      expect(ctrl.showPaymentMethodChip, isTrue);
       expect(ctrl.showCategoryChip, isFalse);
     });
 
@@ -53,15 +53,15 @@ void main() {
       ctrl.priceMode = SubscriptionPriceMode.monthlyEquivalent;
       ctrl.showDailyEquivalent = true;
       ctrl.showCycleProgress = false;
-      ctrl.showPaymentMethodChip = false;
+      ctrl.showPaymentMethodChip = true;
       ctrl.showCategoryChip = false;
 
       ctrl.resetCardStyle();
 
-      expect(ctrl.priceMode, equals(SubscriptionPriceMode.billedAmount));
+      expect(ctrl.priceMode, equals(SubscriptionPriceMode.rawAmount));
       expect(ctrl.showDailyEquivalent, isFalse);
       expect(ctrl.showCycleProgress, isTrue);
-      expect(ctrl.showPaymentMethodChip, isTrue);
+      expect(ctrl.showPaymentMethodChip, isFalse);
       expect(ctrl.showCategoryChip, isTrue);
     });
   });
@@ -82,9 +82,9 @@ void main() {
       // Verify Screen Header
       expect(find.text('Card details & indicators'), findsWidgets);
 
-      // Verify Price display row with current subtitle
+      // Verify Price display row with current default subtitle (Amount only)
       expect(find.text('Price display'), findsOneWidget);
-      expect(find.text('Actual billed amount'), findsOneWidget);
+      expect(find.text('Amount only'), findsOneWidget);
 
       // Tap Price display to navigate to option subpage
       await tester.tap(find.text('Price display'));
@@ -94,22 +94,22 @@ void main() {
       expect(find.byType(SubscriptionCardOptionScreen<SubscriptionPriceMode>), findsOneWidget);
       expect(find.byType(OneUISubscriptionCard), findsOneWidget);
       expect(find.text('Monthly normalized'), findsOneWidget);
-      expect(find.text('Amount only'), findsOneWidget);
+      expect(find.text('Actual billed amount'), findsOneWidget);
 
       // Tap Monthly normalized
       await tester.tap(find.text('Monthly normalized'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.monthlyEquivalent));
 
-      // Tap Amount only on the same subpage
-      await tester.tap(find.text('Amount only'));
+      // Tap Actual billed amount on the same subpage
+      await tester.tap(find.text('Actual billed amount'));
       await tester.pumpAndSettle();
-      expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.rawAmount));
+      expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.billedAmount));
 
       // Back navigation returns to main customizer
       await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
       await tester.pumpAndSettle();
-      expect(find.text('Amount only'), findsOneWidget); // subtitle updated on main screen
+      expect(find.text('Actual billed amount'), findsOneWidget); // subtitle updated on main screen
     });
 
     testWidgets('Toggles card detail switches and reset action interactively', (WidgetTester tester) async {
@@ -130,12 +130,12 @@ void main() {
       expect(find.text('Category'), findsOneWidget);
       expect(find.text('Corner payment badge'), findsOneWidget);
 
-      // Toggle Payment method
+      // Toggle Payment method (from default false to true)
       await tester.tap(find.text('Payment method'));
       await tester.pumpAndSettle();
-      expect(OneUIEffectsController.instance.showPaymentMethodChip, isFalse);
+      expect(OneUIEffectsController.instance.showPaymentMethodChip, isTrue);
 
-      // Toggle Category
+      // Toggle Category (from default true to false)
       await tester.tap(find.text('Category'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.showCategoryChip, isFalse);
@@ -152,7 +152,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify restored defaults
-      expect(OneUIEffectsController.instance.showPaymentMethodChip, isTrue);
+      expect(OneUIEffectsController.instance.showPaymentMethodChip, isFalse);
       expect(OneUIEffectsController.instance.showCategoryChip, isTrue);
       expect(OneUIEffectsController.instance.paymentBadgeStyle, equals(PaymentBadgeStyle.cornerBadge));
     });
@@ -178,6 +178,7 @@ void main() {
               paymentMethodNickname: 'Chase Visa',
               cardBrand: CardBrand.visa,
               isCardExpiring: true,
+              overrideShowPaymentMethodChip: true,
               overridePaymentBadgeStyle: PaymentBadgeStyle.cornerBadge,
             ),
           ),
@@ -198,6 +199,7 @@ void main() {
               paymentMethodNickname: 'Chase Visa',
               cardBrand: CardBrand.visa,
               isCardExpiring: true,
+              overrideShowPaymentMethodChip: true,
               overridePaymentBadgeStyle: PaymentBadgeStyle.inlineSubtitle,
             ),
           ),

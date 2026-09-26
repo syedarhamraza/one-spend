@@ -277,7 +277,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
 
 /// Dedicated subpage for selecting a card setting option (e.g. Price display or Renewal badge format)
 /// with a live preview card at the top matching One UI reference screenshots.
-class SubscriptionCardOptionScreen<T> extends StatelessWidget {
+class SubscriptionCardOptionScreen<T> extends StatefulWidget {
   final String title;
   final T currentValue;
   final List<({T value, String label})> options;
@@ -290,6 +290,19 @@ class SubscriptionCardOptionScreen<T> extends StatelessWidget {
     required this.options,
     required this.onSelected,
   });
+
+  @override
+  State<SubscriptionCardOptionScreen<T>> createState() => _SubscriptionCardOptionScreenState<T>();
+}
+
+class _SubscriptionCardOptionScreenState<T> extends State<SubscriptionCardOptionScreen<T>> {
+  late T _selectedValue;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedValue = widget.currentValue;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -319,7 +332,7 @@ class SubscriptionCardOptionScreen<T> extends StatelessWidget {
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: OneUICollapsibleHeaderDelegate(
-                      title: title,
+                      title: widget.title,
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {
@@ -349,8 +362,8 @@ class SubscriptionCardOptionScreen<T> extends StatelessWidget {
 
                           // Radio options card (Samsung One UI Left-Aligned Radios)
                           OneUIGroupCard(
-                            items: options.map((opt) {
-                              final isSelected = opt.value == currentValue;
+                            items: widget.options.map((opt) {
+                              final isSelected = opt.value == _selectedValue;
                               return OneUIGroupItem(
                                 leading: Container(
                                   width: 22,
@@ -378,7 +391,10 @@ class SubscriptionCardOptionScreen<T> extends StatelessWidget {
                                 trailing: const SizedBox.shrink(),
                                 onTap: () {
                                   HapticFeedback.selectionClick();
-                                  onSelected(opt.value);
+                                  setState(() {
+                                    _selectedValue = opt.value;
+                                  });
+                                  widget.onSelected(opt.value);
                                 },
                               );
                             }).toList(),

@@ -73,12 +73,12 @@ class OneUIEffectsController extends ChangeNotifier {
   int _customCardBackgroundColorValue = 0xFF1C2230;
   SubscriptionCardLayout _cardLayout = SubscriptionCardLayout.oneUiFluent;
   SubscriptionBrandAccent _brandAccent = SubscriptionBrandAccent.neutral;
-  SubscriptionPriceMode _priceMode = SubscriptionPriceMode.billedAmount;
+  SubscriptionPriceMode _priceMode = SubscriptionPriceMode.rawAmount;
   SubscriptionRenewalBadgeMode _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
   PaymentBadgeStyle _paymentBadgeStyle = PaymentBadgeStyle.cornerBadge;
   UpcomingSectionStyle _upcomingStyle = UpcomingSectionStyle.groupedList;
   bool _showCycleProgress = true;
-  bool _showPaymentMethodChip = true;
+  bool _showPaymentMethodChip = false;
   bool _showCategoryChip = true;
   bool _showDailyEquivalent = false;
 
@@ -124,7 +124,7 @@ class OneUIEffectsController extends ChangeNotifier {
       if (priceStr != null) {
         _priceMode = SubscriptionPriceMode.values.firstWhere(
           (e) => e.name == priceStr,
-          orElse: () => SubscriptionPriceMode.billedAmount,
+          orElse: () => SubscriptionPriceMode.rawAmount,
         );
       }
 
@@ -153,7 +153,7 @@ class OneUIEffectsController extends ChangeNotifier {
       }
 
       _showCycleProgress = prefs.getBool('showCycleProgress') ?? true;
-      _showPaymentMethodChip = prefs.getBool('showPaymentMethodChip') ?? true;
+      _showPaymentMethodChip = prefs.getBool('showPaymentMethodChip') ?? false;
       _showCategoryChip = prefs.getBool('showCategoryChip') ?? true;
       _showDailyEquivalent = prefs.getBool('showDailyEquivalent') ?? false;
 
@@ -297,12 +297,12 @@ class OneUIEffectsController extends ChangeNotifier {
     _customCardBackgroundColorValue = 0xFF1C2230;
     _cardLayout = SubscriptionCardLayout.oneUiFluent;
     _brandAccent = SubscriptionBrandAccent.neutral;
-    _priceMode = SubscriptionPriceMode.billedAmount;
+    _priceMode = SubscriptionPriceMode.rawAmount;
     _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
     _paymentBadgeStyle = PaymentBadgeStyle.cornerBadge;
     _upcomingStyle = UpcomingSectionStyle.groupedList;
     _showCycleProgress = true;
-    _showPaymentMethodChip = true;
+    _showPaymentMethodChip = false;
     _showCategoryChip = true;
     _showDailyEquivalent = false;
 
