@@ -84,8 +84,20 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
     if (widget.type == FieldEditorType.text ||
         widget.type == FieldEditorType.number ||
         widget.type == FieldEditorType.notes) {
-      final initialString = widget.initialValue?.toString() ?? '';
-      _textController = TextEditingController(text: initialString);
+      if (widget.type == FieldEditorType.number && widget.initialValue is num) {
+        final num val = widget.initialValue as num;
+        final initialString = val == val.roundToDouble()
+            ? val.toInt().toString()
+            : val.toString();
+        _textController = TextEditingController(text: initialString);
+      } else {
+        final initialString = widget.initialValue?.toString() ?? '';
+        _textController = TextEditingController(text: initialString);
+      }
+      _textController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _textController.text.length,
+      );
     } else {
       _textController = TextEditingController();
     }
@@ -108,7 +120,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
       case FieldEditorType.number:
         final normalized = _textController.text.trim().replaceAll(',', '.');
         final parsed = double.tryParse(normalized);
-        result = parsed != null ? parsed.clamp(0.0, 99999.99) : (widget.initialValue as double? ?? 0.0);
+        result = parsed != null ? parsed.clamp(0.0, 999999.0) : (widget.initialValue as double? ?? 0.0);
         break;
       case FieldEditorType.category:
       case FieldEditorType.billingCycle:
@@ -199,7 +211,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
                         canSave = _textController.text.length <= 500;
                       } else if (widget.type == FieldEditorType.number) {
                         final parsed = double.tryParse(_textController.text.trim().replaceAll(',', '.'));
-                        canSave = parsed != null && parsed >= 0 && parsed <= 99999.99;
+                        canSave = parsed != null && parsed >= 0 && parsed <= 999999.0;
                       }
                       return OneUIFloatingCancelSavePill(
                         onCancel: _onCancel,
