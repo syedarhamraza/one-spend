@@ -66,7 +66,7 @@ class OneUIEffectsController extends ChangeNotifier {
   SubscriptionCardBackground _cardBackground = SubscriptionCardBackground.oneUiDark;
   int _customCardBackgroundColorValue = 0xFF1C2230;
   SubscriptionCardLayout _cardLayout = SubscriptionCardLayout.oneUiFluent;
-  SubscriptionBrandAccent _brandAccent = SubscriptionBrandAccent.leftStrip;
+  SubscriptionBrandAccent _brandAccent = SubscriptionBrandAccent.neutral;
   SubscriptionPriceMode _priceMode = SubscriptionPriceMode.billedAmount;
   SubscriptionRenewalBadgeMode _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
   UpcomingSectionStyle _upcomingStyle = UpcomingSectionStyle.groupedList;
@@ -272,10 +272,10 @@ class OneUIEffectsController extends ChangeNotifier {
     _cardBackground = SubscriptionCardBackground.oneUiDark;
     _customCardBackgroundColorValue = 0xFF1C2230;
     _cardLayout = SubscriptionCardLayout.oneUiFluent;
-    _brandAccent = SubscriptionBrandAccent.leftStrip;
+    _brandAccent = SubscriptionBrandAccent.neutral;
     _priceMode = SubscriptionPriceMode.billedAmount;
     _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
-    _upcomingStyle = UpcomingSectionStyle.carousel;
+    _upcomingStyle = UpcomingSectionStyle.groupedList;
     _showCycleProgress = true;
     _showPaymentMethodChip = true;
     _showCategoryChip = true;

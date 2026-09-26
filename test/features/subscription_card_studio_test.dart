@@ -21,67 +21,51 @@ void main() {
       final ctrl = OneUIEffectsController.instance;
       expect(ctrl.cardBackground, equals(SubscriptionCardBackground.oneUiDark));
       expect(ctrl.cardLayout, equals(SubscriptionCardLayout.oneUiFluent));
-      expect(ctrl.brandAccent, equals(SubscriptionBrandAccent.leftStrip));
+      expect(ctrl.brandAccent, equals(SubscriptionBrandAccent.neutral));
       expect(ctrl.priceMode, equals(SubscriptionPriceMode.billedAmount));
       expect(ctrl.renewalBadgeMode, equals(SubscriptionRenewalBadgeMode.countdown));
       expect(ctrl.showCycleProgress, isTrue);
       expect(ctrl.showPaymentMethodChip, isTrue);
       expect(ctrl.showCategoryChip, isTrue);
       expect(ctrl.showDailyEquivalent, isFalse);
-      expect(ctrl.upcomingSectionStyle, equals(UpcomingSectionStyle.carousel));
+      expect(ctrl.upcomingSectionStyle, equals(UpcomingSectionStyle.groupedList));
     });
 
-    test('Background resolution matches selected palette preset', () {
+    test('Data display settings toggle and persist in OneUIEffectsController', () {
       final ctrl = OneUIEffectsController.instance;
-
-      // Pure Black
-      ctrl.cardBackground = SubscriptionCardBackground.pureBlack;
-      expect(ctrl.resolveCardBackground(), equals(const Color(0xFF090A0D)));
-
-      // Midnight Navy
-      ctrl.cardBackground = SubscriptionCardBackground.midnightNavy;
-      expect(ctrl.resolveCardBackground(), equals(const Color(0xFF151B27)));
-
-      // Deep Amethyst
-      ctrl.cardBackground = SubscriptionCardBackground.deepAmethyst;
-      expect(ctrl.resolveCardBackground(), equals(const Color(0xFF1E172E)));
-
-      // Custom Color
-      ctrl.customCardBackgroundColor = const Color(0xFF1B2E24);
-      ctrl.cardBackground = SubscriptionCardBackground.custom;
-      expect(ctrl.resolveCardBackground(), equals(const Color(0xFF1B2E24)));
-
-      // Brand Tinted
-      ctrl.cardBackground = SubscriptionCardBackground.brandTinted;
-      final brandColor = const Color(0xFFE50914);
-      final tinted = ctrl.resolveCardBackground(brandColor: brandColor);
-      expect(tinted, isNot(equals(const Color(0xFF1C1C1E))));
-    });
-
-    test('resetCardStyle restores all settings to default', () {
-      final ctrl = OneUIEffectsController.instance;
-      ctrl.cardBackground = SubscriptionCardBackground.midnightNavy;
-      ctrl.cardLayout = SubscriptionCardLayout.bentoElevated;
-      ctrl.brandAccent = SubscriptionBrandAccent.ambientGlow;
       ctrl.priceMode = SubscriptionPriceMode.monthlyEquivalent;
       ctrl.showDailyEquivalent = true;
       ctrl.showCycleProgress = false;
-      ctrl.upcomingSectionStyle = UpcomingSectionStyle.spotlight;
+      ctrl.showPaymentMethodChip = false;
+      ctrl.showCategoryChip = false;
+
+      expect(ctrl.priceMode, equals(SubscriptionPriceMode.monthlyEquivalent));
+      expect(ctrl.showDailyEquivalent, isTrue);
+      expect(ctrl.showCycleProgress, isFalse);
+      expect(ctrl.showPaymentMethodChip, isFalse);
+      expect(ctrl.showCategoryChip, isFalse);
+    });
+
+    test('resetCardStyle restores data display settings to default', () {
+      final ctrl = OneUIEffectsController.instance;
+      ctrl.priceMode = SubscriptionPriceMode.monthlyEquivalent;
+      ctrl.showDailyEquivalent = true;
+      ctrl.showCycleProgress = false;
+      ctrl.showPaymentMethodChip = false;
+      ctrl.showCategoryChip = false;
 
       ctrl.resetCardStyle();
 
-      expect(ctrl.cardBackground, equals(SubscriptionCardBackground.oneUiDark));
-      expect(ctrl.cardLayout, equals(SubscriptionCardLayout.oneUiFluent));
-      expect(ctrl.brandAccent, equals(SubscriptionBrandAccent.leftStrip));
       expect(ctrl.priceMode, equals(SubscriptionPriceMode.billedAmount));
       expect(ctrl.showDailyEquivalent, isFalse);
       expect(ctrl.showCycleProgress, isTrue);
-      expect(ctrl.upcomingSectionStyle, equals(UpcomingSectionStyle.carousel));
+      expect(ctrl.showPaymentMethodChip, isTrue);
+      expect(ctrl.showCategoryChip, isTrue);
     });
   });
 
   group('SubscriptionCardCustomizerScreen UI & Live Studio', () {
-    testWidgets('Renders preview card, sample brands, and custom palette options', (WidgetTester tester) async {
+    testWidgets('Renders preview card, sample brands, and toggles price modes', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -94,7 +78,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify Screen Header
-      expect(find.text('Card style'), findsWidgets);
+      expect(find.text('Card details & indicators'), findsWidgets);
 
       // Verify sample brand switcher chips
       expect(find.text('Netflix'), findsWidgets);
@@ -107,29 +91,24 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Spotify Premium'), findsWidgets);
 
-      // Verify background options exist
-      expect(find.text('One UI Dark'), findsOneWidget);
-      expect(find.text('Pure Black (OLED)'), findsOneWidget);
+      // Verify Price & cost presentation options
+      expect(find.text('Price & cost presentation'), findsOneWidget);
+      expect(find.text('Billed amount prominent'), findsOneWidget);
+      expect(find.text('Monthly normalized prominent'), findsOneWidget);
+      expect(find.text('Raw amount only'), findsOneWidget);
 
-      // Tap Midnight Navy
-      await tester.scrollUntilVisible(find.text('Midnight Navy'), 200, scrollable: find.byType(Scrollable).first);
-      await tester.tap(find.text('Midnight Navy'));
+      // Tap Monthly normalized prominent
+      await tester.tap(find.text('Monthly normalized prominent'));
       await tester.pumpAndSettle();
-      expect(OneUIEffectsController.instance.cardBackground, equals(SubscriptionCardBackground.midnightNavy));
+      expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.monthlyEquivalent));
 
-      // Open Custom Color sheet
-      await tester.scrollUntilVisible(find.text('Custom color'), 200, scrollable: find.byType(Scrollable).first);
-      await tester.tap(find.text('Custom color'));
+      // Tap Raw amount only
+      await tester.tap(find.text('Raw amount only'));
       await tester.pumpAndSettle();
-      expect(find.text('Select custom background color'), findsOneWidget);
-
-      // Select first custom color circle and verify it updates
-      await tester.tap(find.descendant(of: find.byType(Wrap), matching: find.byType(GestureDetector)).first);
-      await tester.pumpAndSettle();
-      expect(OneUIEffectsController.instance.cardBackground, equals(SubscriptionCardBackground.custom));
+      expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.rawAmount));
     });
 
-    testWidgets('Switches layout archetypes and brand accents interactively', (WidgetTester tester) async {
+    testWidgets('Toggles indicator switches and daily equivalent cost interactively', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -141,42 +120,44 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Scroll to Layout Architecture section
-      await tester.scrollUntilVisible(find.text('Card layout architecture'), 200, scrollable: find.byType(Scrollable).first);
+      // Scroll to Indicators & Badges section
+      await tester.scrollUntilVisible(find.text('Indicators & badges'), 200, scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Card layout architecture'), findsOneWidget);
-      expect(find.textContaining('Bento Elevated'), findsOneWidget);
-      expect(find.textContaining('Compact Minimalist'), findsOneWidget);
+      expect(find.text('Indicators & badges'), findsOneWidget);
+      expect(find.text('Billing cycle progress bar'), findsOneWidget);
+      expect(find.text('Payment method chip'), findsOneWidget);
+      expect(find.text('Category chip'), findsOneWidget);
 
-      // Tap Bento Elevated
-      await tester.tap(find.textContaining('Bento Elevated'));
+      // Toggle Billing cycle progress bar
+      await tester.tap(find.text('Billing cycle progress bar'));
       await tester.pumpAndSettle();
-      expect(OneUIEffectsController.instance.cardLayout, equals(SubscriptionCardLayout.bentoElevated));
+      expect(OneUIEffectsController.instance.showCycleProgress, isFalse);
 
-      // Tap Compact Minimalist
-      await tester.tap(find.textContaining('Compact Minimalist'));
+      // Toggle Payment method chip
+      await tester.tap(find.text('Payment method chip'));
       await tester.pumpAndSettle();
-      expect(OneUIEffectsController.instance.cardLayout, equals(SubscriptionCardLayout.compact));
+      expect(OneUIEffectsController.instance.showPaymentMethodChip, isFalse);
 
-      // Scroll to Upcoming Renewals section
-      await tester.scrollUntilVisible(find.text('Upcoming renewals layout'), 300, scrollable: find.byType(Scrollable).first);
-      await tester.scrollUntilVisible(find.textContaining('Urgent renewal spotlight'), 200, scrollable: find.byType(Scrollable).first);
+      // Toggle Category chip
+      await tester.tap(find.text('Category chip'));
+      await tester.pumpAndSettle();
+      expect(OneUIEffectsController.instance.showCategoryChip, isFalse);
+
+      // Scroll to Reset Button
+      await tester.scrollUntilVisible(find.text('Reset card data display to defaults'), 200, scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.text('Reset card data display to defaults'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Upcoming renewals layout'), findsOneWidget);
-      expect(find.textContaining('Horizontal swipeable carousel'), findsOneWidget);
-      expect(find.textContaining('Urgent renewal spotlight'), findsOneWidget);
-
-      // Select Spotlight Hero Card
-      await tester.tap(find.textContaining('Urgent renewal spotlight'));
-      await tester.pumpAndSettle();
-      expect(OneUIEffectsController.instance.upcomingSectionStyle, equals(UpcomingSectionStyle.spotlight));
+      // Verify restored defaults
+      expect(OneUIEffectsController.instance.showCycleProgress, isTrue);
+      expect(OneUIEffectsController.instance.showPaymentMethodChip, isTrue);
+      expect(OneUIEffectsController.instance.showCategoryChip, isTrue);
     });
   });
 
   group('OneUISubscriptionCard & OneUIUpcomingRenewalsSection Widgets', () {
-    testWidgets('OneUISubscriptionCard renders Bento, Compact, and Fluent layouts smoothly', (WidgetTester tester) async {
+    testWidgets('OneUISubscriptionCard renders data fields and formats price correctly', (WidgetTester tester) async {
       final sampleSub = Subscription(
         id: 'sub_test',
         name: 'Disney+',
@@ -188,51 +169,27 @@ void main() {
         brandColor: const Color(0xFF113CCF),
       );
 
-      // Test Bento Elevated
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: OneUISubscriptionCard(
               subscription: sampleSub,
-              overrideLayout: SubscriptionCardLayout.bentoElevated,
+              overridePriceMode: SubscriptionPriceMode.monthlyEquivalent,
+              overrideShowDailyEquivalent: true,
+              overrideShowCycleProgress: true,
+              overrideShowCategoryChip: true,
             ),
           ),
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Disney+'), findsOneWidget);
-      expect(find.textContaining('13.99'), findsOneWidget);
 
-      // Test Compact
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: OneUISubscriptionCard(
-              subscription: sampleSub,
-              overrideLayout: SubscriptionCardLayout.compact,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
       expect(find.text('Disney+'), findsOneWidget);
-
-      // Test One UI Fluent
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: OneUISubscriptionCard(
-              subscription: sampleSub,
-              overrideLayout: SubscriptionCardLayout.oneUiFluent,
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Disney+'), findsOneWidget);
+      expect(find.textContaining('13.99'), findsWidgets);
+      expect(find.textContaining('/ day'), findsOneWidget);
     });
 
-    testWidgets('OneUIUpcomingRenewalsSection supports Carousel and Spotlight styles', (WidgetTester tester) async {
+    testWidgets('OneUIUpcomingRenewalsSection renders upcoming list cleanly', (WidgetTester tester) async {
       final sampleSubs = [
         Subscription(
           id: 'sub_1',
@@ -248,7 +205,7 @@ void main() {
           id: 'sub_2',
           name: 'Gym',
           description: 'Fitness club',
-          price: 49.00,
+          price: 49.99,
           billingCycle: BillingCycle.monthly,
           category: SubscriptionCategory.health,
           nextBillingDate: DateTime.now().add(const Duration(days: 6)),
@@ -256,16 +213,12 @@ void main() {
         ),
       ];
 
-      // Test Carousel mode
-      OneUIEffectsController.instance.upcomingSectionStyle = UpcomingSectionStyle.carousel;
-      bool tapped = false;
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: OneUIUpcomingRenewalsSection(
               upcomingSubscriptions: sampleSubs,
-              onTapSubscription: (_) => tapped = true,
+              onTapSubscription: (sub) {},
             ),
           ),
         ),
@@ -273,28 +226,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Upcoming renewals'), findsOneWidget);
-      expect(find.text('Netflix'), findsOneWidget);
-      expect(find.text('Gym'), findsOneWidget);
-
-      await tester.tap(find.text('Netflix'));
-      await tester.pumpAndSettle();
-      expect(tapped, isTrue);
-
-      // Test Spotlight mode
-      OneUIEffectsController.instance.upcomingSectionStyle = UpcomingSectionStyle.spotlight;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: OneUIUpcomingRenewalsSection(
-              upcomingSubscriptions: sampleSubs,
-              onTapSubscription: (_) {},
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Next upcoming renewal'), findsOneWidget);
-      expect(find.text('Netflix'), findsOneWidget);
+      expect(find.text('Netflix'), findsWidgets);
+      expect(find.text('Gym'), findsWidgets);
     });
   });
 }

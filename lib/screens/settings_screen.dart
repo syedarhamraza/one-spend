@@ -448,9 +448,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                       final appearanceItems = <OneUIGroupItem>[
                         OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.style_rounded, OneUITheme.accentPurple),
-                          title: 'Subscription card style',
-                          subtitle: 'Layouts, background colors, brand accents & live preview',
+                          leading: _buildIconBadge(Icons.tune_rounded, OneUITheme.accentPurple),
+                          title: 'Card details & indicators',
+                          subtitle: 'Price format, cycle progress bar, and metadata chips',
                           trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                           onTap: () {
                             HapticFeedback.lightImpact();
