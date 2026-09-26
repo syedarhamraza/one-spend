@@ -99,17 +99,17 @@ class OneUIBudgetCard extends StatelessWidget {
         borderRadius: OneUITheme.cardBorderRadius,
         child: Stack(
           children: [
-            // 1. Soft, balanced Samsung Blue ambient glow positioned BENEATH the card
+            // 1. Soft, understated Samsung Blue ambient glow positioned BENEATH the card
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     center: const Alignment(0.0, -0.2),
-                    radius: 1.1,
+                    radius: 1.05,
                     colors: [
-                      const Color(0xFF0381FE).withValues(alpha: 0.36), // Soft balanced blue core
-                      const Color(0xFF0381FE).withValues(alpha: 0.16), // Gentle ambient fade
-                      const Color(0xFF0381FE).withValues(alpha: 0.04), // Faint outer breath
+                      const Color(0xFF0381FE).withValues(alpha: 0.26), // Understated soft blue core
+                      const Color(0xFF0381FE).withValues(alpha: 0.11), // Subtle ambient fade
+                      const Color(0xFF0381FE).withValues(alpha: 0.02), // Faint outer halo
                       Colors.transparent,
                     ],
                     stops: const [0.0, 0.50, 0.85, 1.0],
@@ -122,7 +122,7 @@ class OneUIBudgetCard extends StatelessWidget {
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Material(
-                color: const Color(0xFF191A1E).withValues(alpha: 0.64), // Balanced dark glass
+                color: const Color(0xFF1B1C20).withValues(alpha: 0.68), // Understated dark glass
                 child: InkWell(
                   onTap: () {
                     HapticFeedback.lightImpact();
