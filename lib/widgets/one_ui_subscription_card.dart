@@ -6,10 +6,11 @@ import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import 'one_ui_brand_icon.dart';
 import 'one_ui_group_card.dart';
+import 'one_ui_payment_brand_icon.dart';
 
 /// Unified Samsung One UI Subscription Card Widget
 /// Adapts dynamically to layout archetypes (One UI Fluent Grouped, Bento Elevated, Compact),
-/// background surface colors, brand accents, cycle progress bars, and metadata chips.
+/// background surface colors, brand accents, and metadata chips.
 class OneUISubscriptionCard extends StatelessWidget {
   final Subscription subscription;
   final VoidCallback? onTap;
@@ -18,6 +19,7 @@ class OneUISubscriptionCard extends StatelessWidget {
   final bool isSelected;
   final ValueChanged<String>? onToggleSelect;
   final String? paymentMethodNickname;
+  final CardBrand? cardBrand;
   final IconData? cardBrandIcon;
   final bool isCardExpiring;
   final bool hasNoCard;
@@ -43,6 +45,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     this.isSelected = false,
     this.onToggleSelect,
     this.paymentMethodNickname,
+    this.cardBrand,
     this.cardBrandIcon,
     this.isCardExpiring = false,
     this.hasNoCard = false,
@@ -137,7 +140,6 @@ class OneUISubscriptionCard extends StatelessWidget {
 
     final isGlow = brandAccent == SubscriptionBrandAccent.ambientGlow;
     final isBorderHighlight = brandAccent == SubscriptionBrandAccent.borderHighlight;
-    final progress = _calculateCycleProgress(sub);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -239,6 +241,7 @@ class OneUISubscriptionCard extends StatelessWidget {
                                       showCatChip: showCatChip,
                                       showPaymentChip: showPaymentChip,
                                       paymentMethodNickname: paymentMethodNickname,
+                                      cardBrand: cardBrand,
                                       cardBrandIcon: cardBrandIcon,
                                       isCardExpiring: isCardExpiring,
                                       hasNoCard: hasNoCard,
@@ -259,54 +262,6 @@ class OneUISubscriptionCard extends StatelessWidget {
                             ),
                           ],
                         ),
-
-                        // Cycle Progress Bar
-                        if (showProgress) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: progress,
-                                    minHeight: 3.5,
-                                    backgroundColor: Colors.white.withValues(alpha: 0.08),
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      sub.daysRemaining <= 3
-                                          ? OneUITheme.accentRed
-                                          : (brandAccent != SubscriptionBrandAccent.neutral
-                                              ? brandColor
-                                              : OneUITheme.accentBlue),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${(progress * 100).toInt()}%',
-                                style: const TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: OneUITheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-
-                        // Daily Equivalent
-                        if (showDaily) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            '~${sub.currency}${(sub.monthlyCost / 30).toStringAsFixed(2)} / day',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: OneUITheme.textSecondary.withValues(alpha: 0.8),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -461,6 +416,7 @@ class OneUISubscriptionCard extends StatelessWidget {
       isSelected: isSelected,
       onToggleSelect: onToggleSelect,
       paymentMethodNickname: paymentMethodNickname,
+      cardBrand: cardBrand,
       cardBrandIcon: cardBrandIcon,
       isCardExpiring: isCardExpiring,
       hasNoCard: hasNoCard,
@@ -504,6 +460,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     bool isSelected = false,
     ValueChanged<String>? onToggleSelect,
     String? paymentMethodNickname,
+    CardBrand? cardBrand,
     IconData? cardBrandIcon,
     bool isCardExpiring = false,
     bool hasNoCard = false,
@@ -516,61 +473,24 @@ class OneUISubscriptionCard extends StatelessWidget {
     bool? overrideShowDailyEquivalent,
   }) {
     final ctrl = OneUIEffectsController.instance;
-    final brandAccent = overrideBrandAccent ?? ctrl.brandAccent;
     final priceMode = overridePriceMode ?? ctrl.priceMode;
     final badgeMode = overrideRenewalBadgeMode ?? ctrl.renewalBadgeMode;
-    final showProgress = overrideShowCycleProgress ?? ctrl.showCycleProgress;
     final showPaymentChip = overrideShowPaymentMethodChip ?? ctrl.showPaymentMethodChip;
     final showCatChip = overrideShowCategoryChip ?? ctrl.showCategoryChip;
-    final showDaily = overrideShowDailyEquivalent ?? ctrl.showDailyEquivalent;
 
     final sub = subscription;
-    final brandColor = sub.brandColor;
-    final progress = _calculateCycleProgress(sub);
 
     Widget? subtitleWidget;
     if (!isSelectionMode) {
-      subtitleWidget = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildMetadataChipsRow(
-            sub,
-            showCatChip: showCatChip,
-            showPaymentChip: showPaymentChip,
-            paymentMethodNickname: paymentMethodNickname,
-            cardBrandIcon: cardBrandIcon,
-            isCardExpiring: isCardExpiring,
-            hasNoCard: hasNoCard,
-          ),
-          if (showProgress) ...[
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 2.5,
-                backgroundColor: Colors.white.withValues(alpha: 0.08),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  sub.daysRemaining <= 3
-                      ? OneUITheme.accentRed
-                      : (brandAccent != SubscriptionBrandAccent.neutral ? brandColor : OneUITheme.accentBlue),
-                ),
-              ),
-            ),
-          ],
-          if (showDaily) ...[
-            const SizedBox(height: 4),
-            Text(
-              '~${sub.currency}${(sub.monthlyCost / 30).toStringAsFixed(2)} / day',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.normal,
-                color: OneUITheme.textSecondary,
-              ),
-            ),
-          ],
-        ],
+      subtitleWidget = _buildMetadataChipsRow(
+        sub,
+        showCatChip: showCatChip,
+        showPaymentChip: showPaymentChip,
+        paymentMethodNickname: paymentMethodNickname,
+        cardBrand: cardBrand,
+        cardBrandIcon: cardBrandIcon,
+        isCardExpiring: isCardExpiring,
+        hasNoCard: hasNoCard,
       );
     }
 
@@ -632,71 +552,37 @@ class OneUISubscriptionCard extends StatelessWidget {
   }) {
     final currency = sub.currency;
     final price = sub.price;
-    final cycle = sub.billingCycle;
 
+    String text;
     switch (priceMode) {
       case SubscriptionPriceMode.monthlyEquivalent:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$currency${sub.monthlyCost.toStringAsFixed(2)}/mo',
-              style: TextStyle(
-                fontSize: isCompact ? 14 : 16,
-                fontWeight: FontWeight.w700,
-                color: OneUITheme.textPrimary,
-              ),
-            ),
-            if (cycle != BillingCycle.monthly && !isCompact) ...[
-              const SizedBox(height: 1),
-              Text(
-                'Billed $currency${price.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w500,
-                  color: OneUITheme.textSecondary,
-                ),
-              ),
-            ],
-          ],
-        );
-      case SubscriptionPriceMode.rawAmount:
-        return Text(
-          '$currency${price.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: isCompact ? 14 : 16,
-            fontWeight: FontWeight.w700,
-            color: OneUITheme.textPrimary,
-          ),
-        );
+        text = '$currency${sub.monthlyCost.toStringAsFixed(2)}/mo';
+        break;
       case SubscriptionPriceMode.billedAmount:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$currency${price.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: isCompact ? 14 : 16,
-                fontWeight: FontWeight.w700,
-                color: OneUITheme.textPrimary,
-              ),
-            ),
-            if (cycle != BillingCycle.monthly && !isCompact) ...[
-              const SizedBox(height: 1),
-              Text(
-                '($currency${sub.monthlyCost.toStringAsFixed(2)}/mo)',
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w500,
-                  color: OneUITheme.textSecondary,
-                ),
-              ),
-            ],
-          ],
-        );
+        final cycleSuffix = switch (sub.billingCycle) {
+          BillingCycle.monthly => '/mo',
+          BillingCycle.yearly => '/yr',
+          BillingCycle.weekly => '/wk',
+          BillingCycle.quarterly => '/qtr',
+        };
+        text = '$currency${price.toStringAsFixed(2)}$cycleSuffix';
+        break;
+      case SubscriptionPriceMode.rawAmount:
+        text = '$currency${price.toStringAsFixed(2)}';
+        break;
     }
+
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: isCompact ? 14 : 16,
+        fontWeight: FontWeight.w700,
+        color: OneUITheme.textPrimary,
+        letterSpacing: -0.2,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
   }
 
   static Widget _buildRenewalBadge(
@@ -764,15 +650,35 @@ class OneUISubscriptionCard extends StatelessWidget {
     required bool showCatChip,
     required bool showPaymentChip,
     String? paymentMethodNickname,
+    CardBrand? cardBrand,
     IconData? cardBrandIcon,
     bool isCardExpiring = false,
     bool hasNoCard = false,
   }) {
-    final hasCard = !hasNoCard && paymentMethodNickname != null && paymentMethodNickname.isNotEmpty;
+    final hasCard = !hasNoCard &&
+        ((paymentMethodNickname != null && paymentMethodNickname.isNotEmpty) || cardBrand != null);
 
     final categoryText = showCatChip
         ? '${sub.category.label} • ${sub.billingCycle.label}'
         : sub.billingCycle.label;
+
+    Widget? brandWidget;
+    if (cardBrand != null) {
+      brandWidget = OneUIPaymentBrandIcon(
+        brand: cardBrand,
+        width: 22,
+        height: 14.5,
+        borderRadius: 2.5,
+      );
+    } else {
+      brandWidget = Icon(
+        cardBrandIcon ?? Icons.credit_card_rounded,
+        size: 13,
+        color: isCardExpiring
+            ? OneUITheme.accentAmber
+            : OneUITheme.textSecondary.withValues(alpha: 0.9),
+      );
+    }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -789,18 +695,12 @@ class OneUISubscriptionCard extends StatelessWidget {
                   WidgetSpan(
                     alignment: PlaceholderAlignment.middle,
                     child: Padding(
-                      padding: const EdgeInsets.only(right: 3.5),
-                      child: Icon(
-                        cardBrandIcon ?? Icons.credit_card_rounded,
-                        size: 13,
-                        color: isCardExpiring
-                            ? OneUITheme.accentAmber
-                            : OneUITheme.textSecondary.withValues(alpha: 0.9),
-                      ),
+                      padding: const EdgeInsets.only(right: 4),
+                      child: brandWidget,
                     ),
                   ),
                   TextSpan(
-                    text: paymentMethodNickname,
+                    text: paymentMethodNickname ?? cardBrand?.label ?? '',
                     style: TextStyle(
                       color: isCardExpiring ? OneUITheme.accentAmber : OneUITheme.textSecondary,
                       fontWeight: isCardExpiring ? FontWeight.w600 : FontWeight.normal,
@@ -879,29 +779,5 @@ class OneUISubscriptionCard extends StatelessWidget {
             )
           : null,
     );
-  }
-
-  static double _calculateCycleProgress(Subscription sub) {
-    final now = DateTime.now();
-    final next = sub.nextBillingDate;
-    int cycleDays;
-    switch (sub.billingCycle) {
-      case BillingCycle.weekly:
-        cycleDays = 7;
-        break;
-      case BillingCycle.monthly:
-        cycleDays = 30;
-        break;
-      case BillingCycle.quarterly:
-        cycleDays = 90;
-        break;
-      case BillingCycle.yearly:
-        cycleDays = 365;
-        break;
-    }
-    final daysRemaining = next.difference(now).inDays;
-    if (daysRemaining <= 0) return 1.0;
-    final elapsed = (cycleDays - daysRemaining).clamp(0, cycleDays);
-    return (elapsed / cycleDays).clamp(0.0, 1.0);
   }
 }

@@ -6,6 +6,7 @@ import 'package:onespend/theme/one_ui_theme.dart';
 import 'package:onespend/widgets/one_ui_subscription_card.dart';
 import 'package:onespend/widgets/one_ui_upcoming_carousel.dart';
 import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
+import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -65,8 +66,8 @@ void main() {
     });
   });
 
-  group('SubscriptionCardCustomizerScreen UI & Live Studio', () {
-    testWidgets('Renders preview card, sample brands, and toggles price modes', (WidgetTester tester) async {
+  group('SubscriptionCardCustomizerScreen UI & Settings', () {
+    testWidgets('Toggles price modes with clean to-the-point headings', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -81,35 +82,24 @@ void main() {
       // Verify Screen Header
       expect(find.text('Card details & indicators'), findsWidgets);
 
-      // Verify sample brand switcher chips
-      expect(find.text('Netflix'), findsWidgets);
-      expect(find.text('Spotify Premium'), findsWidgets);
-      expect(find.text('YouTube Premium'), findsWidgets);
-      expect(find.text('Apple iCloud+ 2TB'), findsWidgets);
+      // Verify Price display section and clean titles (no descriptions)
+      expect(find.text('Price display'), findsOneWidget);
+      expect(find.text('Actual billed amount'), findsOneWidget);
+      expect(find.text('Monthly normalized'), findsOneWidget);
+      expect(find.text('Amount only'), findsOneWidget);
 
-      // Tap Spotify chip to switch preview sample
-      await tester.tap(find.text('Spotify Premium'));
-      await tester.pumpAndSettle();
-      expect(find.text('Spotify Premium'), findsWidgets);
-
-      // Verify Price & cost presentation options
-      expect(find.text('Price & cost presentation'), findsOneWidget);
-      expect(find.text('Billed amount prominent'), findsOneWidget);
-      expect(find.text('Monthly normalized prominent'), findsOneWidget);
-      expect(find.text('Raw amount only'), findsOneWidget);
-
-      // Tap Monthly normalized prominent
-      await tester.tap(find.text('Monthly normalized prominent'));
+      // Tap Monthly normalized
+      await tester.tap(find.text('Monthly normalized'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.monthlyEquivalent));
 
-      // Tap Raw amount only
-      await tester.tap(find.text('Raw amount only'));
+      // Tap Amount only
+      await tester.tap(find.text('Amount only'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.rawAmount));
     });
 
-    testWidgets('Toggles indicator switches and daily equivalent cost interactively', (WidgetTester tester) async {
+    testWidgets('Toggles card detail switches and reset action interactively', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -121,37 +111,26 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Scroll to Indicators & Badges section
-      await tester.scrollUntilVisible(find.text('Indicators & badges'), 200, scrollable: find.byType(Scrollable).first);
-      await tester.pumpAndSettle();
+      // Verify Card details section and clean headings (no descriptions)
+      expect(find.text('Card details'), findsOneWidget);
+      expect(find.text('Payment method'), findsOneWidget);
+      expect(find.text('Category'), findsOneWidget);
 
-      expect(find.text('Indicators & badges'), findsOneWidget);
-      expect(find.text('Billing cycle progress bar'), findsOneWidget);
-      expect(find.text('Payment method chip'), findsOneWidget);
-      expect(find.text('Category chip'), findsOneWidget);
-
-      // Toggle Billing cycle progress bar
-      await tester.tap(find.text('Billing cycle progress bar'));
-      await tester.pumpAndSettle();
-      expect(OneUIEffectsController.instance.showCycleProgress, isFalse);
-
-      // Toggle Payment method chip
-      await tester.tap(find.text('Payment method chip'));
+      // Toggle Payment method
+      await tester.tap(find.text('Payment method'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.showPaymentMethodChip, isFalse);
 
-      // Toggle Category chip
-      await tester.tap(find.text('Category chip'));
+      // Toggle Category
+      await tester.tap(find.text('Category'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.showCategoryChip, isFalse);
 
-      // Scroll to Reset Button
-      await tester.scrollUntilVisible(find.text('Reset card data display to defaults'), 200, scrollable: find.byType(Scrollable).first);
-      await tester.tap(find.text('Reset card data display to defaults'));
+      // Tap Reset Button
+      await tester.tap(find.text('Reset to defaults'));
       await tester.pumpAndSettle();
 
       // Verify restored defaults
-      expect(OneUIEffectsController.instance.showCycleProgress, isTrue);
       expect(OneUIEffectsController.instance.showPaymentMethodChip, isTrue);
       expect(OneUIEffectsController.instance.showCategoryChip, isTrue);
     });
@@ -176,8 +155,6 @@ void main() {
             body: OneUISubscriptionCard(
               subscription: sampleSub,
               overridePriceMode: SubscriptionPriceMode.monthlyEquivalent,
-              overrideShowDailyEquivalent: true,
-              overrideShowCycleProgress: true,
               overrideShowCategoryChip: true,
             ),
           ),
@@ -186,11 +163,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Disney+'), findsOneWidget);
-      expect(find.textContaining('13.99'), findsWidgets);
-      expect(find.textContaining('/ day'), findsOneWidget);
+      expect(find.textContaining('13.99/mo'), findsOneWidget);
     });
 
-    testWidgets('OneUISubscriptionCard renders inline payment method icon and nickname', (WidgetTester tester) async {
+    testWidgets('OneUISubscriptionCard renders official CardBrand logo (Visa, Mastercard)', (WidgetTester tester) async {
       final sampleSub = Subscription(
         id: 'sub_pay_test',
         name: 'Spotify Premium',
@@ -208,7 +184,7 @@ void main() {
             body: OneUISubscriptionCard(
               subscription: sampleSub,
               paymentMethodNickname: 'Chase Visa',
-              cardBrandIcon: Icons.credit_card_rounded,
+              cardBrand: CardBrand.visa,
               overrideShowPaymentMethodChip: true,
               overrideShowCategoryChip: true,
             ),
@@ -218,7 +194,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Spotify Premium'), findsOneWidget);
-      expect(find.byIcon(Icons.credit_card_rounded), findsOneWidget);
+      expect(find.byType(OneUIPaymentBrandIcon), findsOneWidget);
       expect(find.textContaining('Chase Visa'), findsOneWidget);
     });
 
