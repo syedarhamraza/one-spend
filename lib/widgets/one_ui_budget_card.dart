@@ -273,31 +273,37 @@ class OneUIBudgetCard extends StatelessWidget {
                                                     begin: Alignment.centerLeft,
                                                     end: Alignment.centerRight,
                                                     colors: [
-                                                      // Several Blues (0% to ~50%)
+                                                      // Several Blues (0% to ~45%)
                                                       Color(0xFF0044B2), // Deep Royal Blue
+                                                      Color(0xFF0066FF), // Vivid Electric Blue
                                                       Color(0xFF0381FE), // Samsung Signature Blue
-                                                      Color(0xFF29B6F6), // Vibrant Sky Blue
-                                                      Color(0xFF00C4D4), // Electric Cyan-Blue
-                                                      // Several Oranges (~50% to ~85%)
-                                                      Color(0xFFFFC107), // Golden Amber
-                                                      Color(0xFFFFA000), // Deep Amber
-                                                      Color(0xFFFB8500), // Vivid One UI Orange
-                                                      Color(0xFFFF5722), // Fiery Sunset Orange
-                                                      // Several Reds (~85% to 100%)
-                                                      Color(0xFFFF3B30), // Bright Crimson
-                                                      Color(0xFFE50914), // Pure Red
-                                                      Color(0xFFD32F2F), // Deep Signal Red
+                                                      Color(0xFF4791FF), // Soft Bright Azure
+
+                                                      // Smooth Warm Transition (avoids green tint entirely)
+                                                      Color(0xFFE59078), // Warm Apricot Transition
+
+                                                      // Several Oranges (~55% to ~82%)
+                                                      Color(0xFFFF9E00), // Rich Golden Orange
+                                                      Color(0xFFFF8500), // Vivid One UI Orange
+                                                      Color(0xFFFF6200), // Deep Tangerine Orange
+                                                      Color(0xFFFF4500), // Sunset Fiery Orange
+
+                                                      // Several Reds (~82% to 100%)
+                                                      Color(0xFFFF2A2A), // Bright Warning Crimson
+                                                      Color(0xFFE50914), // Pure Vibrant Red
+                                                      Color(0xFFDC2626), // Deep Signal Red
                                                       Color(0xFF8B0000), // Dark Ruby Red
                                                     ],
                                                     stops: [
                                                       0.0,
-                                                      0.18,
-                                                      0.34,
-                                                      0.46,
-                                                      0.56,
-                                                      0.66,
+                                                      0.15,
+                                                      0.30,
+                                                      0.42,
+                                                      0.50,
+                                                      0.58,
+                                                      0.68,
                                                       0.76,
-                                                      0.84,
+                                                      0.83,
                                                       0.89,
                                                       0.93,
                                                       0.97,
