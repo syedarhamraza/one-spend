@@ -7,6 +7,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
+import 'one_ui_field_editor_screen.dart';
 import 'subscription_card_customizer_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -157,24 +158,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _editBudget(BuildContext context, SubscriptionStore store) {
-    OneUIFloatingModal.showTextInputDialog(
+  Future<void> _editBudget(SubscriptionStore store) async {
+    final result = await OneUIFieldEditorScreen.open<double>(
       context: context,
       title: 'Monthly Budget Limit',
-      message: 'Set your monthly subscription limit threshold:',
-      initialValue: store.monthlyBudget.toStringAsFixed(0),
+      subtitle: 'Set your monthly subscription limit threshold:',
+      type: FieldEditorType.number,
+      initialValue: store.monthlyBudget,
       prefixText: '${store.currency} ',
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      cancelLabel: 'Cancel',
-      confirmLabel: 'Save',
-    ).then((result) {
-      if (result != null) {
-        final parsed = double.tryParse(result.trim().replaceAll(',', '.'));
-        if (parsed != null && parsed >= 0) {
-          store.setMonthlyBudget(parsed.clamp(0.0, 999999.0));
-        }
-      }
-    });
+      hintText: '0',
+      currency: store.currency,
+    );
+
+    if (result != null && mounted) {
+      store.setMonthlyBudget(result.clamp(0.0, 999999.0));
+      OneUIToast.show(
+        context,
+        'Budget updated to ${store.currency}${store.monthlyBudget.toStringAsFixed(0)}',
+      );
+    }
   }
 
   void _pickReminderDays(BuildContext context, SubscriptionStore store) {
@@ -431,7 +433,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           leading: _buildIconBadge(Icons.account_balance_wallet_rounded, OneUITheme.accentBlue),
                           title: 'Monthly budget threshold',
                           subtitle: '${store.currency}${store.monthlyBudget.toStringAsFixed(0)} limit',
-                          onTap: () => _editBudget(context, store),
+                          onTap: () => _editBudget(store),
                         ),
                         OneUIGroupItem(
                           leading: _buildIconBadge(Icons.notifications_active_rounded, OneUITheme.accentAmber),

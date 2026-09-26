@@ -11,7 +11,8 @@ import '../utils/one_ui_date_formats.dart';
 /// - Prominent spend typography ($83.96 in 32pt bold) with inline dimmed limit
 /// - Single top-right status capsule with subtle 15% opacity tint
 /// - Thick, rounded 12dp One UI progress track with state-based color transitions
-/// - Ambient blue glow placed beneath the card, softly visible through a translucent, blurred frosted glass surface
+/// - Prominent ambient Samsung Blue glow layered beneath the card, radiating through a translucent frosted glass surface
+/// - Completely flat design with zero 3D rim bevels or drop shadows
 /// - Samsung Device Care key-value rows with clean typography and zero icons
 /// - Multi-line right-aligned Next Renewal block preventing any title truncation
 class OneUIBudgetCard extends StatelessWidget {
@@ -94,296 +95,338 @@ class OneUIBudgetCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          borderRadius: OneUITheme.cardBorderRadius,
-          boxShadow: OneUITheme.cardShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: OneUITheme.cardBorderRadius,
-          child: Stack(
-            children: [
-              // 1. Subtle blue ambient glow positioned BENEATH the card surface (no border glow)
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: const Alignment(0.0, -0.3),
-                      radius: 1.15,
-                      colors: [
-                        const Color(0xFF0381FE).withValues(alpha: 0.22),
-                        const Color(0xFF0381FE).withValues(alpha: 0.06),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.55, 1.0],
-                    ),
+      child: ClipRRect(
+        borderRadius: OneUITheme.cardBorderRadius,
+        child: Stack(
+          children: [
+            // 1. Soft, understated Samsung Blue ambient glow positioned BENEATH the card
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0.0, -0.2),
+                    radius: 1.05,
+                    colors: [
+                      const Color(0xFF0381FE).withValues(alpha: 0.26), // Understated soft blue core
+                      const Color(0xFF0381FE).withValues(alpha: 0.11), // Subtle ambient fade
+                      const Color(0xFF0381FE).withValues(alpha: 0.02), // Faint outer halo
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.50, 0.85, 1.0],
                   ),
                 ),
               ),
+            ),
 
-              // 2. Frosted glass blur & semi-transparent card body
-              BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                child: Material(
-                  color: const Color(0xFF1C1C1E).withValues(alpha: 0.72),
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      onTap();
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: OneUITheme.cardBorderRadius,
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          width: 1.0,
+            // 2. Frosted glass blur & translucent card body (completely flat, no 3D borders or shadows)
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Material(
+                color: const Color(0xFF1B1C20).withValues(alpha: 0.68), // Understated dark glass
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onTap();
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header Row: Title with subtle chevron & single status badge
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Monthly budget',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: OneUITheme.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 18,
+                                  color: OneUITheme.textTertiary.withValues(alpha: 0.7),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: statusBadgeBg,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                statusBadgeLabel,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: statusBadgeText,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header Row: Title with subtle chevron & single status badge
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        const SizedBox(height: 14),
+
+                        // Main Spend Metric & Right-Aligned Percentage
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '${store.currency}${totalSpend.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.8,
+                                color: OneUITheme.textPrimary,
+                              ),
+                            ),
+                            if (budget > 0) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '/ ${store.currency}${budget.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                            ] else ...[
+                              const SizedBox(width: 8),
+                              const Text(
+                                'spent this month',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            if (budget > 0)
+                              Text(
+                                '$budgetPercent%',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: trackColor,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // One UI Track Bar (12dp thick, 100dp radius, dark slate graphite track with multi-tone gradient fill)
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final totalWidth = constraints.maxWidth;
+                            final fillFactor = budgetProgress.clamp(0.0, 1.0);
+                            return Container(
+                              height: 12,
+                              width: totalWidth,
+                              decoration: BoxDecoration(
+                                color: trackBackground,
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(100),
+                                child: Stack(
+                                  children: [
+                                    if (fillFactor > 0)
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Container(
+                                          width: totalWidth * fillFactor,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(100),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: trackColor.withValues(alpha: 0.35),
+                                                blurRadius: 6,
+                                                offset: Offset.zero,
+                                              ),
+                                            ],
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(100),
+                                            child: OverflowBox(
+                                              alignment: Alignment.centerLeft,
+                                              minWidth: totalWidth,
+                                              maxWidth: totalWidth,
+                                              minHeight: 12,
+                                              maxHeight: 12,
+                                              child: Container(
+                                                height: 12,
+                                                width: totalWidth,
+                                                decoration: const BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.centerLeft,
+                                                    end: Alignment.centerRight,
+                                                    colors: [
+                                                      // Several Blues (0% to ~45%)
+                                                      Color(0xFF0044B2), // Deep Royal Blue
+                                                      Color(0xFF0066FF), // Vivid Electric Blue
+                                                      Color(0xFF0381FE), // Samsung Signature Blue
+                                                      Color(0xFF4791FF), // Soft Bright Azure
+
+                                                      // Smooth Warm Transition (avoids green tint entirely)
+                                                      Color(0xFFE59078), // Warm Apricot Transition
+
+                                                      // Several Oranges (~55% to ~82%)
+                                                      Color(0xFFFF9E00), // Rich Golden Orange
+                                                      Color(0xFFFF8500), // Vivid One UI Orange
+                                                      Color(0xFFFF6200), // Deep Tangerine Orange
+                                                      Color(0xFFFF4500), // Sunset Fiery Orange
+
+                                                      // Several Reds (~82% to 100%)
+                                                      Color(0xFFFF2A2A), // Bright Warning Crimson
+                                                      Color(0xFFE50914), // Pure Vibrant Red
+                                                      Color(0xFFDC2626), // Deep Signal Red
+                                                      Color(0xFF8B0000), // Dark Ruby Red
+                                                    ],
+                                                    stops: [
+                                                      0.0,
+                                                      0.15,
+                                                      0.30,
+                                                      0.42,
+                                                      0.50,
+                                                      0.58,
+                                                      0.68,
+                                                      0.76,
+                                                      0.83,
+                                                      0.89,
+                                                      0.93,
+                                                      0.97,
+                                                      1.0,
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Samsung Device Care-Style Key-Value Container (Flat, No Border, No Icons, No Truncation)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
+                              // Row 1: Daily Burn (clean typography, no icon)
                               Row(
-                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'Monthly budget',
+                                    'Daily burn',
                                     style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
                                       color: OneUITheme.textSecondary,
                                     ),
                                   ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    size: 18,
-                                    color: OneUITheme.textTertiary.withValues(alpha: 0.7),
+                                  Text(
+                                    '~${store.currency}${dailyAvg.toStringAsFixed(2)} / day',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: OneUITheme.textPrimary,
+                                    ),
                                   ),
                                 ],
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: statusBadgeBg,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  statusBadgeLabel,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: statusBadgeText,
-                                  ),
-                                ),
+                              Divider(
+                                height: 14,
+                                thickness: 0.6,
+                                color: Colors.white.withValues(alpha: 0.06),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Main Spend Metric & Right-Aligned Percentage
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                '${store.currency}${totalSpend.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.8,
-                                  color: OneUITheme.textPrimary,
-                                ),
-                              ),
-                              if (budget > 0) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  '/ ${store.currency}${budget.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white54,
-                                  ),
-                                ),
-                              ] else ...[
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'spent this month',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white54,
-                                  ),
-                                ),
-                              ],
-                              const Spacer(),
-                              if (budget > 0)
-                                Text(
-                                  '$budgetPercent%',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: trackColor,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // One UI Track Bar (12dp thick, 100dp radius, dark slate graphite track)
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final totalWidth = constraints.maxWidth;
-                              final fillFactor = budgetProgress.clamp(0.0, 1.0);
-                              return Container(
-                                height: 12,
-                                width: totalWidth,
-                                decoration: BoxDecoration(
-                                  color: trackBackground,
-                                  borderRadius: BorderRadius.circular(100),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(100),
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: FractionallySizedBox(
-                                      widthFactor: fillFactor,
-                                      child: Container(
-                                        height: 12,
-                                        decoration: BoxDecoration(
-                                          color: trackColor,
-                                          borderRadius: BorderRadius.circular(100),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: trackColor.withValues(alpha: 0.35),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 1),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Samsung Device Care-Style Key-Value Container (Icons Removed, No Truncation)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.04),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.04),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Row 1: Daily Burn (clean typography, no icon)
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      'Daily burn',
+                              // Row 2: Next Renewal (clean typography, no icon, zero clipping even for long titles)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 1),
+                                    child: Text(
+                                      'Next renewal',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                         color: OneUITheme.textSecondary,
                                       ),
                                     ),
-                                    Text(
-                                      '~${store.currency}${dailyAvg.toStringAsFixed(2)} / day',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: OneUITheme.textPrimary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Divider(
-                                  height: 14,
-                                  thickness: 0.6,
-                                  color: Colors.white.withValues(alpha: 0.06),
-                                ),
-                                // Row 2: Next Renewal (clean typography, no icon, zero clipping even for long titles)
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Padding(
-                                      padding: EdgeInsets.only(top: 1),
-                                      child: Text(
-                                        'Next renewal',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                          color: OneUITheme.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: upcomingSubs.isNotEmpty
-                                          ? Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  '${upcomingSubs.first.name}\u200B',
-                                                  textAlign: TextAlign.right,
-                                                  style: const TextStyle(
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: OneUITheme.textPrimary,
-                                                  ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: upcomingSubs.isNotEmpty
+                                        ? Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                '${upcomingSubs.first.name}\u200B',
+                                                textAlign: TextAlign.right,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: OneUITheme.textPrimary,
                                                 ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  renewalSubtext,
-                                                  textAlign: TextAlign.right,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w400,
-                                                    color: OneUITheme.textSecondary,
-                                                  ),
-                                                ),
-                                              ],
-                                            )
-                                          : const Text(
-                                              'None scheduled',
-                                              textAlign: TextAlign.right,
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                                color: OneUITheme.textSecondary,
                                               ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                renewalSubtext,
+                                                textAlign: TextAlign.right,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w400,
+                                                  color: OneUITheme.textSecondary,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : const Text(
+                                            'None scheduled',
+                                            textAlign: TextAlign.right,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: OneUITheme.textSecondary,
                                             ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                                          ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

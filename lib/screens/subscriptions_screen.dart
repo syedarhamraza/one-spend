@@ -21,6 +21,7 @@ import '../widgets/one_ui_subscription_card.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_upcoming_carousel.dart';
 import 'add_subscription_screen.dart';
+import 'one_ui_field_editor_screen.dart';
 import 'subscription_detail_screen.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
@@ -115,7 +116,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         ),
         OneUIFloatingMenuItem(
           label: 'Edit monthly budget',
-          onTap: () => _showEditBudgetDialog(context),
+          onTap: () => _showEditBudgetDialog(),
         ),
         OneUIFloatingMenuItem(
           label: 'Export list (CSV)',
@@ -378,26 +379,27 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     );
   }
 
-  void _showEditBudgetDialog(BuildContext context) {
+  Future<void> _showEditBudgetDialog() async {
     final store = SubscriptionStore.instance;
 
-    OneUIFloatingModal.showTextInputDialog(
+    final result = await OneUIFieldEditorScreen.open<double>(
       context: context,
       title: 'Set Monthly Budget',
-      message: 'Enter your monthly subscription budget limit:',
-      initialValue: store.monthlyBudget.toStringAsFixed(0),
+      subtitle: 'Enter your monthly subscription budget limit:',
+      type: FieldEditorType.number,
+      initialValue: store.monthlyBudget,
       prefixText: '${store.currency} ',
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      cancelLabel: 'Cancel',
-      confirmLabel: 'Save',
-    ).then((result) {
-      if (result != null) {
-        final parsed = double.tryParse(result.trim().replaceAll(',', '.'));
-        if (parsed != null && parsed >= 0) {
-          store.setMonthlyBudget(parsed.clamp(0.0, 999999.0));
-        }
-      }
-    });
+      hintText: '0',
+      currency: store.currency,
+    );
+
+    if (result != null && mounted) {
+      store.setMonthlyBudget(result.clamp(0.0, 999999.0));
+      OneUIToast.show(
+        context,
+        'Budget updated to ${store.currency}${store.monthlyBudget.toStringAsFixed(0)}',
+      );
+    }
   }
 
   void _showExportDialog(BuildContext context) {
@@ -893,7 +895,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         child: OneUIBudgetCard(
                           store: store,
                           upcomingSubs: upcomingSubs,
-                          onTap: () => _showEditBudgetDialog(context),
+                          onTap: () => _showEditBudgetDialog(),
                         ),
                       ),
 
