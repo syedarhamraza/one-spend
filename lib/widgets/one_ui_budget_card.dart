@@ -225,7 +225,7 @@ class OneUIBudgetCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // One UI Track Bar (12dp thick, 100dp radius, dark slate graphite track)
+                        // One UI Track Bar (12dp thick, 100dp radius, dark slate graphite track with multi-tone gradient fill)
                         LayoutBuilder(
                           builder: (context, constraints) {
                             final totalWidth = constraints.maxWidth;
@@ -239,25 +239,78 @@ class OneUIBudgetCard extends StatelessWidget {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(100),
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: FractionallySizedBox(
-                                    widthFactor: fillFactor,
-                                    child: Container(
-                                      height: 12,
-                                      decoration: BoxDecoration(
-                                        color: trackColor,
-                                        borderRadius: BorderRadius.circular(100),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: trackColor.withValues(alpha: 0.30),
-                                            blurRadius: 6,
-                                            offset: Offset.zero,
+                                child: Stack(
+                                  children: [
+                                    if (fillFactor > 0)
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Container(
+                                          width: totalWidth * fillFactor,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(100),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: trackColor.withValues(alpha: 0.35),
+                                                blurRadius: 6,
+                                                offset: Offset.zero,
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(100),
+                                            child: OverflowBox(
+                                              alignment: Alignment.centerLeft,
+                                              minWidth: totalWidth,
+                                              maxWidth: totalWidth,
+                                              minHeight: 12,
+                                              maxHeight: 12,
+                                              child: Container(
+                                                height: 12,
+                                                width: totalWidth,
+                                                decoration: const BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.centerLeft,
+                                                    end: Alignment.centerRight,
+                                                    colors: [
+                                                      // Several Blues (0% to ~50%)
+                                                      Color(0xFF0044B2), // Deep Royal Blue
+                                                      Color(0xFF0381FE), // Samsung Signature Blue
+                                                      Color(0xFF29B6F6), // Vibrant Sky Blue
+                                                      Color(0xFF00C4D4), // Electric Cyan-Blue
+                                                      // Several Oranges (~50% to ~85%)
+                                                      Color(0xFFFFC107), // Golden Amber
+                                                      Color(0xFFFFA000), // Deep Amber
+                                                      Color(0xFFFB8500), // Vivid One UI Orange
+                                                      Color(0xFFFF5722), // Fiery Sunset Orange
+                                                      // Several Reds (~85% to 100%)
+                                                      Color(0xFFFF3B30), // Bright Crimson
+                                                      Color(0xFFE50914), // Pure Red
+                                                      Color(0xFFD32F2F), // Deep Signal Red
+                                                      Color(0xFF8B0000), // Dark Ruby Red
+                                                    ],
+                                                    stops: [
+                                                      0.0,
+                                                      0.18,
+                                                      0.34,
+                                                      0.46,
+                                                      0.56,
+                                                      0.66,
+                                                      0.76,
+                                                      0.84,
+                                                      0.89,
+                                                      0.93,
+                                                      0.97,
+                                                      1.0,
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                  ],
                                 ),
                               ),
                             );
