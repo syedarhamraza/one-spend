@@ -703,8 +703,8 @@ class OneUISubscriptionCard extends StatelessWidget {
       return baseIcon;
     }
 
-    final badgeWidth = size >= 40 ? 20.0 : 16.0;
-    final badgeHeight = size >= 40 ? 13.0 : 10.5;
+    final badgeWidth = size >= 40 ? 18.0 : 15.0;
+    final badgeHeight = size >= 40 ? 11.5 : 9.5;
 
     Widget badgeChild;
     if (cardBrand != null) {
@@ -749,8 +749,8 @@ class OneUISubscriptionCard extends StatelessWidget {
       children: [
         baseIcon,
         Positioned(
-          right: -2,
-          bottom: -2,
+          right: -1,
+          bottom: -1,
           child: badgeChild,
         ),
       ],

@@ -67,7 +67,7 @@ void main() {
   });
 
   group('SubscriptionCardCustomizerScreen UI & Settings', () {
-    testWidgets('Toggles price modes with clean to-the-point headings', (WidgetTester tester) async {
+    testWidgets('Toggles price modes with One UI radio selection dialog', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -82,18 +82,27 @@ void main() {
       // Verify Screen Header
       expect(find.text('Card details & indicators'), findsWidgets);
 
-      // Verify Price display section and clean titles (no descriptions)
+      // Verify Price display row with current subtitle
       expect(find.text('Price display'), findsOneWidget);
       expect(find.text('Actual billed amount'), findsOneWidget);
+
+      // Tap Price display to open One UI radio modal
+      await tester.tap(find.text('Price display'));
+      await tester.pumpAndSettle();
+
+      // Modal is open, showing options and Cancel button
       expect(find.text('Monthly normalized'), findsOneWidget);
       expect(find.text('Amount only'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
 
       // Tap Monthly normalized
       await tester.tap(find.text('Monthly normalized'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.monthlyEquivalent));
 
-      // Tap Amount only
+      // Re-open and tap Amount only
+      await tester.tap(find.text('Price display'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Amount only'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.rawAmount));
