@@ -85,4 +85,10 @@ class SubscriptionRepositoryImpl implements SubscriptionRepository {
 
   @override
   Future<void> setGroupByDate(bool value) => _dataSource.setGroupByDate(value);
+
+  @override
+  Future<List<String>> getRecentSearches() => _dataSource.getRecentSearches();
+
+  @override
+  Future<void> saveRecentSearches(List<String> searches) => _dataSource.saveRecentSearches(searches);
 }

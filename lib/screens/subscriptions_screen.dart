@@ -597,8 +597,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                     controller: _searchController,
                     focusNode: _searchFocusNode,
                     textInputAction: TextInputAction.search,
-                    onSubmitted: (_) {
+                    onSubmitted: (val) {
                       _searchFocusNode.unfocus();
+                      if (val.trim().isNotEmpty) {
+                        SubscriptionStore.instance.addRecentSearch(val.trim());
+                      }
                     },
                     style: const TextStyle(
                       color: Colors.white,
@@ -681,6 +684,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 HapticFeedback.selectionClick();
                 _toggleSelectItem(sub.id);
               } else {
+                if (_showSearch && _searchQuery.trim().isNotEmpty) {
+                  SubscriptionStore.instance.addRecentSearch(_searchQuery.trim());
+                }
                 HapticFeedback.lightImpact();
                 Navigator.push(
                   context,
@@ -722,7 +728,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             return s.name.toLowerCase().contains(q) ||
                 s.category.label.toLowerCase().contains(q) ||
                 s.description.toLowerCase().contains(q) ||
-                s.price.toString().contains(q);
+                s.price.toString().contains(q) ||
+                s.paymentMethod.toLowerCase().contains(q) ||
+                s.notes.toLowerCase().contains(q);
           }
           return true;
         }).toList();
@@ -825,25 +833,144 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                     // Search View (Matching One UI Screenshot 1:1)
                     if (_showSearch) ...[
                       if (_searchQuery.isEmpty)
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              bottom: searchPillBottom + 56,
-                            ),
-                            child: Center(
-                              child: Text(
-                                'No recent searches',
-                                style: TextStyle(
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: OneUITheme.textSecondary.withValues(alpha: 0.8),
-                                  letterSpacing: -0.2,
+                        if (store.recentSearches.isEmpty)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                bottom: searchPillBottom + 56,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'No recent searches',
+                                  style: TextStyle(
+                                    fontSize: 16.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: OneUITheme.textSecondary.withValues(alpha: 0.8),
+                                    letterSpacing: -0.2,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        )
+                          )
+                        else
+                          SliverPadding(
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              12,
+                              16,
+                              searchPillBottom + 56,
+                            ),
+                            sliver: SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 4, right: 4, bottom: 12),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Recent searches',
+                                          style: TextStyle(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: OneUITheme.textSecondary,
+                                            letterSpacing: -0.2,
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            HapticFeedback.lightImpact();
+                                            store.clearRecentSearches();
+                                          },
+                                          behavior: HitTestBehavior.opaque,
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                                            child: Text(
+                                              'Clear all',
+                                              style: TextStyle(
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: OneUITheme.accentBlue.withValues(alpha: 0.9),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: store.recentSearches.map((query) {
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          color: OneUITheme.surfacePill,
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.08),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(20),
+                                            onTap: () {
+                                              HapticFeedback.selectionClick();
+                                              _searchController.text = query;
+                                              setState(() {
+                                                _searchQuery = query;
+                                              });
+                                            },
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.history_rounded,
+                                                    size: 15,
+                                                    color: OneUITheme.textSecondary.withValues(alpha: 0.8),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    query,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      HapticFeedback.lightImpact();
+                                                      store.removeRecentSearch(query);
+                                                    },
+                                                    behavior: HitTestBehavior.opaque,
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.all(2),
+                                                      child: Icon(
+                                                        Icons.close_rounded,
+                                                        size: 15,
+                                                        color: OneUITheme.textSecondary.withValues(alpha: 0.7),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
                       else if (filteredSubs.isEmpty)
                         SliverFillRemaining(
                           hasScrollBody: false,

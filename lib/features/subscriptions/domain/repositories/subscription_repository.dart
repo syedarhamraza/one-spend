@@ -27,4 +27,7 @@ abstract class SubscriptionRepository {
 
   Future<bool> getGroupByDate();
   Future<void> setGroupByDate(bool value);
+
+  Future<List<String>> getRecentSearches();
+  Future<void> saveRecentSearches(List<String> searches);
 }

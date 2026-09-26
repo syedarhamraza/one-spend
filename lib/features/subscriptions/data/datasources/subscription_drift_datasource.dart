@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/error/exceptions.dart';
@@ -16,6 +17,7 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
   static const String keyDefaultReminder = 'onespend_default_reminder';
   static const String keySortOption = 'onespend_sort_option';
   static const String keyGroupByDate = 'onespend_group_by_date';
+  static const String keyRecentSearches = 'onespend_recent_searches';
 
   const SubscriptionDriftDataSource(this.db);
 
@@ -165,5 +167,22 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
   @override
   Future<void> setGroupByDate(bool value) async {
     await db.setSetting(keyGroupByDate, value.toString());
+  }
+
+  @override
+  Future<List<String>> getRecentSearches() async {
+    final val = await db.getSetting(keyRecentSearches);
+    if (val == null || val.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(val) as List<dynamic>;
+      return decoded.map((e) => e.toString()).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<void> saveRecentSearches(List<String> searches) async {
+    await db.setSetting(keyRecentSearches, jsonEncode(searches));
   }
 }
