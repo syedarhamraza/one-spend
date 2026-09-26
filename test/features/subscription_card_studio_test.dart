@@ -115,6 +115,7 @@ void main() {
       expect(find.text('Card details'), findsOneWidget);
       expect(find.text('Payment method'), findsOneWidget);
       expect(find.text('Category'), findsOneWidget);
+      expect(find.text('Corner payment badge'), findsOneWidget);
 
       // Toggle Payment method
       await tester.tap(find.text('Payment method'));
@@ -126,13 +127,74 @@ void main() {
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.showCategoryChip, isFalse);
 
-      // Tap Reset Button
+      // Toggle Corner payment badge
+      await tester.tap(find.text('Corner payment badge'));
+      await tester.pumpAndSettle();
+      expect(OneUIEffectsController.instance.paymentBadgeStyle, equals(PaymentBadgeStyle.inlineSubtitle));
+
+      // Drag up to reveal Reset Button
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Reset to defaults'));
       await tester.pumpAndSettle();
 
       // Verify restored defaults
       expect(OneUIEffectsController.instance.showPaymentMethodChip, isTrue);
       expect(OneUIEffectsController.instance.showCategoryChip, isTrue);
+      expect(OneUIEffectsController.instance.paymentBadgeStyle, equals(PaymentBadgeStyle.cornerBadge));
+    });
+
+    testWidgets('Corner badge and Card expiring badge are visible on OneUISubscriptionCard', (WidgetTester tester) async {
+      final sampleSub = Subscription(
+        id: 'sub_expiring_test',
+        name: 'Netflix',
+        description: 'Movies & TV',
+        price: 15.99,
+        billingCycle: BillingCycle.monthly,
+        category: SubscriptionCategory.entertainment,
+        nextBillingDate: DateTime.now().add(const Duration(days: 3)),
+        brandColorValue: 0xFFE50914,
+      );
+
+      // Test 1: Corner badge style with expiring card
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OneUISubscriptionCard(
+              subscription: sampleSub,
+              paymentMethodNickname: 'Chase Visa',
+              cardBrand: CardBrand.visa,
+              isCardExpiring: true,
+              overridePaymentBadgeStyle: PaymentBadgeStyle.cornerBadge,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Netflix'), findsOneWidget);
+      expect(find.byType(OneUIPaymentBrandIcon), findsOneWidget);
+      expect(find.text('Card expiring'), findsOneWidget);
+
+      // Test 2: Inline subtitle style with expiring card
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OneUISubscriptionCard(
+              subscription: sampleSub,
+              paymentMethodNickname: 'Chase Visa',
+              cardBrand: CardBrand.visa,
+              isCardExpiring: true,
+              overridePaymentBadgeStyle: PaymentBadgeStyle.inlineSubtitle,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Netflix'), findsOneWidget);
+      expect(find.byType(OneUIPaymentBrandIcon), findsOneWidget);
+      expect(find.text('Card expiring'), findsOneWidget);
     });
   });
 

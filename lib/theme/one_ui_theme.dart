@@ -41,6 +41,12 @@ enum SubscriptionRenewalBadgeMode {
   combined,         // "In 4 days (Sep 29)"
 }
 
+/// Payment badge placement style on subscription cards
+enum PaymentBadgeStyle {
+  cornerBadge,      // 20x13 card logo anchored on corner of brand icon (prevents text clipping)
+  inlineSubtitle,   // Inline inside subtitle text next to card nickname
+}
+
 /// Upcoming renewals presentation style
 enum UpcomingSectionStyle {
   carousel,         // Horizontal swipeable reel with calendar chips
@@ -69,6 +75,7 @@ class OneUIEffectsController extends ChangeNotifier {
   SubscriptionBrandAccent _brandAccent = SubscriptionBrandAccent.neutral;
   SubscriptionPriceMode _priceMode = SubscriptionPriceMode.billedAmount;
   SubscriptionRenewalBadgeMode _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
+  PaymentBadgeStyle _paymentBadgeStyle = PaymentBadgeStyle.cornerBadge;
   UpcomingSectionStyle _upcomingStyle = UpcomingSectionStyle.groupedList;
   bool _showCycleProgress = true;
   bool _showPaymentMethodChip = true;
@@ -126,6 +133,14 @@ class OneUIEffectsController extends ChangeNotifier {
         _renewalBadgeMode = SubscriptionRenewalBadgeMode.values.firstWhere(
           (e) => e.name == badgeStr,
           orElse: () => SubscriptionRenewalBadgeMode.countdown,
+        );
+      }
+
+      final badgeStyleStr = prefs.getString('paymentBadgeStyle');
+      if (badgeStyleStr != null) {
+        _paymentBadgeStyle = PaymentBadgeStyle.values.firstWhere(
+          (e) => e.name == badgeStyleStr,
+          orElse: () => PaymentBadgeStyle.cornerBadge,
         );
       }
 
@@ -264,6 +279,15 @@ class OneUIEffectsController extends ChangeNotifier {
     }
   }
 
+  PaymentBadgeStyle get paymentBadgeStyle => _paymentBadgeStyle;
+  set paymentBadgeStyle(PaymentBadgeStyle val) {
+    if (_paymentBadgeStyle != val) {
+      _paymentBadgeStyle = val;
+      _saveStringSetting('paymentBadgeStyle', val.name);
+      notifyListeners();
+    }
+  }
+
   UpcomingSectionStyle get upcomingSectionStyle => _upcomingStyle;
   set upcomingSectionStyle(UpcomingSectionStyle val) => upcomingStyle = val;
 
@@ -275,6 +299,7 @@ class OneUIEffectsController extends ChangeNotifier {
     _brandAccent = SubscriptionBrandAccent.neutral;
     _priceMode = SubscriptionPriceMode.billedAmount;
     _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
+    _paymentBadgeStyle = PaymentBadgeStyle.cornerBadge;
     _upcomingStyle = UpcomingSectionStyle.groupedList;
     _showCycleProgress = true;
     _showPaymentMethodChip = true;
@@ -287,6 +312,7 @@ class OneUIEffectsController extends ChangeNotifier {
     _saveStringSetting('brandAccent', _brandAccent.name);
     _saveStringSetting('priceMode', _priceMode.name);
     _saveStringSetting('renewalBadgeMode', _renewalBadgeMode.name);
+    _saveStringSetting('paymentBadgeStyle', _paymentBadgeStyle.name);
     _saveStringSetting('upcomingStyle', _upcomingStyle.name);
     _saveSetting('showCycleProgress', _showCycleProgress);
     _saveSetting('showPaymentMethodChip', _showPaymentMethodChip);
@@ -591,6 +617,7 @@ class OneUITheme {
   static SubscriptionBrandAccent get brandAccent => OneUIEffectsController.instance.brandAccent;
   static SubscriptionPriceMode get priceMode => OneUIEffectsController.instance.priceMode;
   static SubscriptionRenewalBadgeMode get renewalBadgeMode => OneUIEffectsController.instance.renewalBadgeMode;
+  static PaymentBadgeStyle get paymentBadgeStyle => OneUIEffectsController.instance.paymentBadgeStyle;
   static UpcomingSectionStyle get upcomingStyle => OneUIEffectsController.instance.upcomingStyle;
   static bool get showCycleProgress => OneUIEffectsController.instance.showCycleProgress;
   static bool get showPaymentMethodChip => OneUIEffectsController.instance.showPaymentMethodChip;
