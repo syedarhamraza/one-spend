@@ -99,20 +99,20 @@ class OneUIBudgetCard extends StatelessWidget {
         borderRadius: OneUITheme.cardBorderRadius,
         child: Stack(
           children: [
-            // 1. Rich, luminous Samsung Blue glow positioned BENEATH the card
+            // 1. Soft, balanced Samsung Blue ambient glow positioned BENEATH the card
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    center: const Alignment(0.0, -0.25),
-                    radius: 1.35,
+                    center: const Alignment(0.0, -0.2),
+                    radius: 1.1,
                     colors: [
-                      const Color(0xFF0381FE).withValues(alpha: 0.58), // Vibrant blue core
-                      const Color(0xFF0066FF).withValues(alpha: 0.32), // Smooth ambient mid-wash
-                      const Color(0xFF0381FE).withValues(alpha: 0.10), // Faint outer halo
+                      const Color(0xFF0381FE).withValues(alpha: 0.36), // Soft balanced blue core
+                      const Color(0xFF0381FE).withValues(alpha: 0.16), // Gentle ambient fade
+                      const Color(0xFF0381FE).withValues(alpha: 0.04), // Faint outer breath
                       Colors.transparent,
                     ],
-                    stops: const [0.0, 0.45, 0.80, 1.0],
+                    stops: const [0.0, 0.50, 0.85, 1.0],
                   ),
                 ),
               ),
@@ -120,9 +120,9 @@ class OneUIBudgetCard extends StatelessWidget {
 
             // 2. Frosted glass blur & translucent card body (completely flat, no 3D borders or shadows)
             BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Material(
-                color: const Color(0xFF13151A).withValues(alpha: 0.50), // Semi-transparent glass
+                color: const Color(0xFF191A1E).withValues(alpha: 0.64), // Balanced dark glass
                 child: InkWell(
                   onTap: () {
                     HapticFeedback.lightImpact();
