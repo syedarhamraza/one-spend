@@ -7,6 +7,7 @@ class BrandPreset {
   final SubscriptionCategory category;
   final Color color;
   final Color textColor;
+  final Color? glowColor;
   final IconData icon;
   final String monogram;
   final String defaultUrl;
@@ -18,6 +19,7 @@ class BrandPreset {
     required this.category,
     required this.color,
     this.textColor = Colors.white,
+    this.glowColor,
     required this.icon,
     required this.monogram,
     required this.defaultUrl,
@@ -60,6 +62,7 @@ class OneUIBrandCatalog {
       name: 'Apple One',
       category: SubscriptionCategory.utilities,
       color: Color(0xFF000000),
+      glowColor: Color(0xFFE5E5EA), // Apple Luminous Silver
       icon: Icons.apple_rounded,
       monogram: '',
       defaultUrl: 'https://appleid.apple.com/account/manage',
@@ -69,6 +72,7 @@ class OneUIBrandCatalog {
       name: 'Apple TV+',
       category: SubscriptionCategory.entertainment,
       color: Color(0xFF1C1C1E),
+      glowColor: Color(0xFFD4D4D8), // Titanium Silver
       icon: Icons.tv_rounded,
       monogram: 'tv+',
       defaultUrl: 'https://tv.apple.com/settings',
@@ -132,6 +136,7 @@ class OneUIBrandCatalog {
       name: 'GitHub Copilot',
       category: SubscriptionCategory.developer,
       color: Color(0xFF24292F),
+      glowColor: Color(0xFF8957E5), // GitHub Copilot Electric Purple
       icon: Icons.terminal_rounded,
       monogram: 'GH',
       defaultUrl: 'https://github.com/settings/billing',
@@ -141,6 +146,7 @@ class OneUIBrandCatalog {
       name: 'Notion',
       category: SubscriptionCategory.productivity,
       color: Color(0xFF2F3437),
+      glowColor: Color(0xFFF1F5F9), // Notion Clean Ivory/Silver
       icon: Icons.edit_note_rounded,
       monogram: 'N',
       defaultUrl: 'https://www.notion.so/settings',
@@ -159,6 +165,7 @@ class OneUIBrandCatalog {
       name: 'Slack',
       category: SubscriptionCategory.productivity,
       color: Color(0xFF4A154B),
+      glowColor: Color(0xFF9E2A9B), // Slack Vibrant Plum
       icon: Icons.forum_rounded,
       monogram: 'Sl',
       defaultUrl: 'https://slack.com/admin/billing',
@@ -267,6 +274,7 @@ class OneUIBrandCatalog {
       name: 'Medium',
       category: SubscriptionCategory.productivity,
       color: Color(0xFF000000),
+      glowColor: Color(0xFFEDEDED), // Medium Crisp Ivory/White
       icon: Icons.menu_book_rounded,
       monogram: 'M',
       defaultUrl: 'https://medium.com/me/settings/membership',
@@ -276,6 +284,7 @@ class OneUIBrandCatalog {
       name: 'The New York Times',
       category: SubscriptionCategory.productivity,
       color: Color(0xFF121212),
+      glowColor: Color(0xFFE0E0E0), // NYT Classic Newsprint Silver
       icon: Icons.newspaper_rounded,
       monogram: 'NYT',
       defaultUrl: 'https://www.nytimes.com/subscription',
@@ -312,6 +321,7 @@ class OneUIBrandCatalog {
       name: 'X Premium',
       category: SubscriptionCategory.utilities,
       color: Color(0xFF000000),
+      glowColor: Color(0xFFF8FAFC), // X High-Contrast Monochrome
       icon: Icons.close_rounded,
       monogram: '𝕏',
       defaultUrl: 'https://x.com/settings/manage_subscriptions',
@@ -339,6 +349,7 @@ class OneUIBrandCatalog {
       name: 'Uber One',
       category: SubscriptionCategory.utilities,
       color: Color(0xFF000000),
+      glowColor: Color(0xFFFBBF24), // Uber One Amber Gold
       icon: Icons.local_taxi_rounded,
       monogram: 'Ub',
       defaultUrl: 'https://m.uber.com/uber-one',
@@ -426,5 +437,67 @@ class OneUIBrandCatalog {
       hash = name.codeUnitAt(i) + ((hash << 5) - hash);
     }
     return colors[(hash & 0x7FFFFFFFFFFFFFFF) % colors.length];
+  }
+
+  /// All 12 swatch background colors from IconPickerScreen mapped to tuned radiant glow colors.
+  static final Map<Color, Color> swatchGlowColors = {
+    const Color(0xFFE50914): const Color(0xFFE50914), // Red
+    const Color(0xFF1DB954): const Color(0xFF1DB954), // Spotify Green
+    const Color(0xFF0066FF): const Color(0xFF0066FF), // One UI Blue
+    const Color(0xFF8A2BE2): const Color(0xFF8A2BE2), // Purple
+    const Color(0xFFFF9500): const Color(0xFFFF9500), // Orange
+    const Color(0xFF00C7BE): const Color(0xFF00C7BE), // Teal
+    const Color(0xFFFF2D55): const Color(0xFFFF2D55), // Pink
+    const Color(0xFF34AADC): const Color(0xFF34AADC), // Light Blue
+    const Color(0xFF10A37F): const Color(0xFF10A37F), // Mint / OpenAI
+    const Color(0xFF2C3440): const Color(0xFF64748B), // Dark Slate -> Radiant Slate/Steel Blue
+    const Color(0xFF5856D6): const Color(0xFF5856D6), // Indigo
+    const Color(0xFF555555): const Color(0xFF94A3B8), // Charcoal -> Radiant Platinum/Silver
+  };
+
+  /// Resolves the optimal under-card glow color for any subscription, popular preset,
+  /// icon picker swatch, or custom user color.
+  static Color getGlowColor({
+    required Color color,
+    String? presetId,
+    String? name,
+  }) {
+    // 1. Check known preset by ID
+    if (presetId != null && presetId.isNotEmpty) {
+      final preset = findById(presetId);
+      if (preset != null) {
+        if (preset.glowColor != null) return preset.glowColor!;
+        if (preset.color.computeLuminance() >= 0.05) return preset.color;
+      }
+    }
+
+    // 2. Check known preset by Name
+    if (name != null && name.trim().isNotEmpty) {
+      final preset = findPreset(name);
+      if (preset != null) {
+        if (preset.glowColor != null) return preset.glowColor!;
+        if (preset.color.computeLuminance() >= 0.05) return preset.color;
+      }
+    }
+
+    // 3. Check exact match against IconPickerScreen swatch colors
+    for (final entry in swatchGlowColors.entries) {
+      if (entry.key.toARGB32() == color.toARGB32()) {
+        return entry.value;
+      }
+    }
+
+    // 4. Custom colors: if luminance is too low to glow against dark glass,
+    // lift lightness while preserving hue and saturation.
+    final hsl = HSLColor.fromColor(color);
+    if (hsl.lightness < 0.08) {
+      // Pure or near pitch black -> Sleek luminous silver-white glow
+      return const Color(0xFFE2E8F0);
+    } else if (hsl.lightness < 0.38) {
+      // Dark shade -> boost lightness so the glow radiates visibly on dark background
+      return hsl.withLightness(0.55).toColor();
+    }
+
+    return color;
   }
 }

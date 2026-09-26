@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_brand_catalog.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
@@ -277,9 +278,11 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
             ? '${shortFormat.format(upcomingDates[0])} (${_sub.currency}${_sub.price.toStringAsFixed(2)}) • ${shortFormat.format(upcomingDates[1])} (${_sub.currency}${_sub.price.toStringAsFixed(2)})'
             : (upcomingDates.isNotEmpty ? shortFormat.format(upcomingDates[0]) : formattedDate);
 
-        final heroGlowColor = (_sub.brandColor.computeLuminance() < 0.05)
-            ? const Color(0xFF0381FE)
-            : _sub.brandColor;
+        final heroGlowColor = OneUIBrandCatalog.getGlowColor(
+          color: _sub.brandColor,
+          presetId: _sub.brandPresetId,
+          name: _sub.name,
+        );
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
