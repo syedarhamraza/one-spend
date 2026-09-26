@@ -470,74 +470,55 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                             ),
                                             const SizedBox(height: 12),
 
-                                            // Next Billing Banner (Flat, No 3D Border)
+                                            // Next Billing Key-Value Container (Matching Main Hero Card)
                                             Container(
                                               width: double.infinity,
-                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                               decoration: BoxDecoration(
                                                 color: Colors.white.withValues(alpha: 0.04),
-                                                borderRadius: BorderRadius.circular(16),
+                                                borderRadius: BorderRadius.circular(18),
                                               ),
                                               child: Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.calendar_today_rounded,
-                                                        size: 15,
-                                                        color: badgeColor,
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(top: 1),
+                                                    child: Text(
+                                                      'Next billing',
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: OneUITheme.textSecondary,
                                                       ),
-                                                      const SizedBox(width: 8),
-                                                      const Text(
-                                                        'Next billing',
-                                                        style: TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight: FontWeight.w500,
-                                                          color: OneUITheme.textSecondary,
-                                                        ),
-                                                      ),
-                                                    ],
+                                                    ),
                                                   ),
-                                                  const SizedBox(width: 10),
+                                                  const SizedBox(width: 12),
                                                   Expanded(
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.end,
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.end,
                                                       mainAxisSize: MainAxisSize.min,
                                                       children: [
-                                                        Flexible(
-                                                          child: Text(
-                                                            isPaused ? 'Paused' : formattedDate,
-                                                            maxLines: 1,
-                                                            overflow: TextOverflow.ellipsis,
-                                                            style: TextStyle(
-                                                              fontSize: 13,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: isPaused
-                                                                  ? OneUITheme.textSecondary
-                                                                  : (daysRemaining <= 3 ? OneUITheme.accentRed : OneUITheme.textPrimary),
-                                                            ),
+                                                        Text(
+                                                          isPaused ? 'Billing on hold' : formattedDate,
+                                                          textAlign: TextAlign.right,
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.w700,
+                                                            color: isPaused
+                                                                ? OneUITheme.textSecondary
+                                                                : OneUITheme.textPrimary,
                                                           ),
                                                         ),
-                                                        if (!isPaused) ...[
-                                                          const SizedBox(width: 8),
-                                                          Container(
-                                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                                            decoration: BoxDecoration(
-                                                              color: badgeColor.withValues(alpha: 0.16),
-                                                              borderRadius: BorderRadius.circular(6),
-                                                            ),
-                                                            child: Text(
-                                                              badgeText,
-                                                              style: TextStyle(
-                                                                fontSize: 11,
-                                                                fontWeight: FontWeight.w700,
-                                                                color: badgeColor,
-                                                              ),
-                                                            ),
+                                                        const SizedBox(height: 2),
+                                                        Text(
+                                                          badgeText,
+                                                          textAlign: TextAlign.right,
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.w400,
+                                                            color: badgeColor,
                                                           ),
-                                                        ],
+                                                        ),
                                                       ],
                                                     ),
                                                   ),
