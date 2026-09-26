@@ -15,6 +15,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
+import '../widgets/one_ui_switch.dart';
 import 'category_picker_screen.dart';
 import 'icon_picker_screen.dart';
 import 'one_ui_field_editor_screen.dart';
@@ -406,6 +407,27 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                     ],
                                                   ),
                                                 ),
+                                                const SizedBox(width: 8),
+                                                // Status Badge Capsule (Active / Paused) matching Monthly Budget Card
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: isPaused
+                                                        ? Colors.white.withValues(alpha: 0.08)
+                                                        : const Color(0xFF00C05A).withValues(alpha: 0.15),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    isPaused ? 'Paused' : 'Active',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: isPaused
+                                                          ? OneUITheme.textSecondary
+                                                          : const Color(0xFF00C05A),
+                                                    ),
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                             const SizedBox(height: 16),
@@ -415,62 +437,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                             ),
                                             const SizedBox(height: 14),
 
-                                            // Quick Status Toggle Row
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    const Text(
-                                                      'Subscription status',
-                                                      style: TextStyle(
-                                                        fontSize: 15,
-                                                        fontWeight: FontWeight.w600,
-                                                        letterSpacing: -0.2,
-                                                        color: OneUITheme.textPrimary,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 3),
-                                                    Row(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Text(
-                                                          isPaused ? 'Paused' : 'Active',
-                                                          style: TextStyle(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w600,
-                                                            color: isPaused ? OneUITheme.textSecondary : OneUITheme.accentBlue,
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          isPaused ? ' • Billing on hold' : ' • Renews automatically',
-                                                          style: const TextStyle(
-                                                            fontSize: 13,
-                                                            color: OneUITheme.textSecondary,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ],
-                                                ),
-                                                Transform.scale(
-                                                  scale: 0.84,
-                                                  alignment: Alignment.centerRight,
-                                                  child: Switch.adaptive(
-                                                    value: !isPaused,
-                                                    activeTrackColor: OneUITheme.accentBlue,
-                                                    onChanged: (active) {
-                                                      HapticFeedback.lightImpact();
-                                                      _togglePause();
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 12),
-
-                                            // Next Billing Key-Value Container (Matching Main Hero Card)
+                                            // Unified Device Care Container (Auto-renew + Next billing)
                                             Container(
                                               width: double.infinity,
                                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -478,49 +445,98 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                 color: Colors.white.withValues(alpha: 0.04),
                                                 borderRadius: BorderRadius.circular(18),
                                               ),
-                                              child: Row(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  const Padding(
-                                                    padding: EdgeInsets.only(top: 1),
-                                                    child: Text(
-                                                      'Next billing',
-                                                      style: TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.w500,
-                                                        color: OneUITheme.textSecondary,
+                                                  // Row 1: Auto-renew toggle with authentic OneUISwitch
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          const Text(
+                                                            'Auto-renew',
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight: FontWeight.w500,
+                                                              color: OneUITheme.textSecondary,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 1),
+                                                          Text(
+                                                            isPaused ? 'Billing on hold' : 'Renews automatically',
+                                                            style: TextStyle(
+                                                              fontSize: 11.5,
+                                                              fontWeight: FontWeight.w400,
+                                                              color: isPaused ? OneUITheme.textTertiary : Colors.white54,
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                    ),
+                                                      Transform.scale(
+                                                        scale: 0.88,
+                                                        alignment: Alignment.centerRight,
+                                                        child: OneUISwitch(
+                                                          value: !isPaused,
+                                                          activeTrackColor: OneUITheme.accentBlue,
+                                                          onChanged: (_) => _togglePause(),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Text(
-                                                          isPaused ? 'Billing on hold' : formattedDate,
-                                                          textAlign: TextAlign.right,
+                                                  Divider(
+                                                    height: 14,
+                                                    thickness: 0.6,
+                                                    color: Colors.white.withValues(alpha: 0.06),
+                                                  ),
+                                                  // Row 2: Next billing
+                                                  Row(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      const Padding(
+                                                        padding: EdgeInsets.only(top: 1),
+                                                        child: Text(
+                                                          'Next billing',
                                                           style: TextStyle(
                                                             fontSize: 13,
-                                                            fontWeight: FontWeight.w700,
-                                                            color: isPaused
-                                                                ? OneUITheme.textSecondary
-                                                                : OneUITheme.textPrimary,
+                                                            fontWeight: FontWeight.w500,
+                                                            color: OneUITheme.textSecondary,
                                                           ),
                                                         ),
-                                                        const SizedBox(height: 2),
-                                                        Text(
-                                                          badgeText,
-                                                          textAlign: TextAlign.right,
-                                                          style: TextStyle(
-                                                            fontSize: 12,
-                                                            fontWeight: FontWeight.w400,
-                                                            color: badgeColor,
-                                                          ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            Text(
+                                                              isPaused ? 'Billing on hold' : formattedDate,
+                                                              textAlign: TextAlign.right,
+                                                              style: TextStyle(
+                                                                fontSize: 13,
+                                                                fontWeight: FontWeight.w700,
+                                                                color: isPaused
+                                                                    ? OneUITheme.textSecondary
+                                                                    : OneUITheme.textPrimary,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 2),
+                                                            Text(
+                                                              badgeText,
+                                                              textAlign: TextAlign.right,
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight: FontWeight.w400,
+                                                                color: badgeColor,
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
-                                                      ],
-                                                    ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ],
                                               ),
