@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/one_ui_theme.dart';
 
 class OneUIGroupItem {
@@ -113,7 +114,7 @@ class OneUIGroupItemTile extends StatelessWidget {
             splashColor: Colors.white.withValues(alpha: 0.06),
             highlightColor: Colors.white.withValues(alpha: 0.03),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
                   if (item.leading != null) ...[
@@ -146,7 +147,9 @@ class OneUIGroupItemTile extends StatelessWidget {
                               fontSize: 13.5,
                               fontWeight: FontWeight.normal,
                               height: 1.25,
-                              color: item.subtitleColor ?? OneUITheme.textSecondary,
+                              color:
+                                  item.subtitleColor ??
+                                  OneUITheme.textSecondary,
                             ),
                           ),
                         ],
