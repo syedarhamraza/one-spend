@@ -113,7 +113,7 @@ class OneUIGroupItemTile extends StatelessWidget {
             splashColor: Colors.white.withValues(alpha: 0.06),
             highlightColor: Colors.white.withValues(alpha: 0.03),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   if (item.leading != null) ...[
@@ -128,22 +128,24 @@ class OneUIGroupItemTile extends StatelessWidget {
                         Text(
                           item.title,
                           style: const TextStyle(
-                            fontSize: 16.5,
+                            fontSize: 16.0,
                             fontWeight: FontWeight.w400,
+                            height: 1.25,
                             letterSpacing: -0.2,
                             color: OneUITheme.textPrimary,
                           ),
                         ),
                         if (item.customSubtitle != null) ...[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           item.customSubtitle!,
                         ] else if (item.subtitle != null) ...[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
                             item.subtitle!,
                             style: TextStyle(
-                              fontSize: 13.5,
+                              fontSize: 13.0,
                               fontWeight: FontWeight.normal,
+                              height: 1.2,
                               color: item.subtitleColor ?? OneUITheme.textSecondary,
                             ),
                           ),

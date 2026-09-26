@@ -67,7 +67,7 @@ void main() {
   });
 
   group('SubscriptionCardCustomizerScreen UI & Settings', () {
-    testWidgets('Toggles price modes with One UI radio selection dialog', (WidgetTester tester) async {
+    testWidgets('Toggles price modes with One UI option subpage and live preview', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -86,26 +86,30 @@ void main() {
       expect(find.text('Price display'), findsOneWidget);
       expect(find.text('Actual billed amount'), findsOneWidget);
 
-      // Tap Price display to open One UI radio modal
+      // Tap Price display to navigate to option subpage
       await tester.tap(find.text('Price display'));
       await tester.pumpAndSettle();
 
-      // Modal is open, showing options and Cancel button
+      // Subpage is open with live preview card and options
+      expect(find.byType(SubscriptionCardOptionScreen<SubscriptionPriceMode>), findsOneWidget);
+      expect(find.byType(OneUISubscriptionCard), findsOneWidget);
       expect(find.text('Monthly normalized'), findsOneWidget);
       expect(find.text('Amount only'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
 
       // Tap Monthly normalized
       await tester.tap(find.text('Monthly normalized'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.monthlyEquivalent));
 
-      // Re-open and tap Amount only
-      await tester.tap(find.text('Price display'));
-      await tester.pumpAndSettle();
+      // Tap Amount only on the same subpage
       await tester.tap(find.text('Amount only'));
       await tester.pumpAndSettle();
       expect(OneUIEffectsController.instance.priceMode, equals(SubscriptionPriceMode.rawAmount));
+
+      // Back navigation returns to main customizer
+      await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Amount only'), findsOneWidget); // subtitle updated on main screen
     });
 
     testWidgets('Toggles card detail switches and reset action interactively', (WidgetTester tester) async {
