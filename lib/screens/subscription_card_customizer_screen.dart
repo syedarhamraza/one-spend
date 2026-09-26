@@ -93,8 +93,7 @@ class _SubscriptionCardCustomizerScreenState
                     pinned: true,
                     delegate: OneUICollapsibleHeaderDelegate(
                       title: 'Card details & indicators',
-                      subtitle: 'Price display & metadata indicators',
-                      hasBigHeader: true,
+                      hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {
                         HapticFeedback.lightImpact();
@@ -142,6 +141,7 @@ class _SubscriptionCardCustomizerScreenState
                                 OneUISubscriptionCard(
                                   subscription: currentSample,
                                   paymentMethodNickname: 'Chase Sapphire',
+                                  cardBrandIcon: Icons.credit_card_rounded,
                                   isCardExpiring: false,
                                   hasNoCard: false,
                                 ),
@@ -311,7 +311,12 @@ class _SubscriptionCardCustomizerScreenState
                   ),
                 ],
               ),
-              const OneUIBottomVignette(),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: const OneUIBottomVignette(),
+              ),
             ],
           ),
         );

@@ -669,6 +669,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
             isSelected: _selectedIds.contains(sub.id),
             onToggleSelect: _toggleSelectItem,
             paymentMethodNickname: method?.nickname,
+            cardBrandIcon: method?.brand.icon,
             isCardExpiring: isCardExpiring,
             hasNoCard: hasNoCard,
             onTap: () {

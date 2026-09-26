@@ -5,6 +5,7 @@ import 'package:onespend/screens/subscription_card_customizer_screen.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
 import 'package:onespend/widgets/one_ui_subscription_card.dart';
 import 'package:onespend/widgets/one_ui_upcoming_carousel.dart';
+import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -187,6 +188,61 @@ void main() {
       expect(find.text('Disney+'), findsOneWidget);
       expect(find.textContaining('13.99'), findsWidgets);
       expect(find.textContaining('/ day'), findsOneWidget);
+    });
+
+    testWidgets('OneUISubscriptionCard renders inline payment method icon and nickname', (WidgetTester tester) async {
+      final sampleSub = Subscription(
+        id: 'sub_pay_test',
+        name: 'Spotify Premium',
+        description: 'Music',
+        price: 10.99,
+        billingCycle: BillingCycle.monthly,
+        category: SubscriptionCategory.entertainment,
+        nextBillingDate: DateTime.now().add(const Duration(days: 5)),
+        brandColor: const Color(0xFF1DB954),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OneUISubscriptionCard(
+              subscription: sampleSub,
+              paymentMethodNickname: 'Chase Visa',
+              cardBrandIcon: Icons.credit_card_rounded,
+              overrideShowPaymentMethodChip: true,
+              overrideShowCategoryChip: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Spotify Premium'), findsOneWidget);
+      expect(find.byIcon(Icons.credit_card_rounded), findsOneWidget);
+      expect(find.textContaining('Chase Visa'), findsOneWidget);
+    });
+
+    testWidgets('SubscriptionCardCustomizerScreen positions bottom vignette at bottom of stack', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: SubscriptionCardCustomizerScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final vignetteFinder = find.byType(OneUIBottomVignette);
+      expect(vignetteFinder, findsOneWidget);
+
+      final positionedFinder = find.ancestor(
+        of: vignetteFinder,
+        matching: find.byType(Positioned),
+      );
+      expect(positionedFinder, findsOneWidget);
+
+      final Positioned positioned = tester.widget(positionedFinder);
+      expect(positioned.bottom, equals(0.0));
+      expect(positioned.left, equals(0.0));
+      expect(positioned.right, equals(0.0));
     });
 
     testWidgets('OneUIUpcomingRenewalsSection renders upcoming list cleanly', (WidgetTester tester) async {
