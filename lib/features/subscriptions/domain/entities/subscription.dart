@@ -177,6 +177,17 @@ class Subscription extends Equatable {
 
   double get yearlyCost => monthlyCost * 12;
 
+  double get dailyCost {
+    switch (billingCycle) {
+      case BillingCycle.weekly:
+        return price / 7.0;
+      case BillingCycle.monthly:
+      case BillingCycle.quarterly:
+      case BillingCycle.yearly:
+        return yearlyCost / 365.0;
+    }
+  }
+
   int get daysRemaining {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);

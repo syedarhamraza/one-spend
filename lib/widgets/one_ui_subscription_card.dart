@@ -35,6 +35,7 @@ class OneUISubscriptionCard extends StatelessWidget {
   final bool? overrideShowCycleProgress;
   final bool? overrideShowPaymentMethodChip;
   final bool? overrideShowCategoryChip;
+  final bool? overrideShowBillingCycle;
   final bool? overrideShowDailyEquivalent;
 
   const OneUISubscriptionCard({
@@ -60,6 +61,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     this.overrideShowCycleProgress,
     this.overrideShowPaymentMethodChip,
     this.overrideShowCategoryChip,
+    this.overrideShowBillingCycle,
     this.overrideShowDailyEquivalent,
   });
 
@@ -79,6 +81,7 @@ class OneUISubscriptionCard extends StatelessWidget {
         final showProgress = overrideShowCycleProgress ?? ctrl.showCycleProgress;
         final showPaymentChip = overrideShowPaymentMethodChip ?? ctrl.showPaymentMethodChip;
         final showCatChip = overrideShowCategoryChip ?? ctrl.showCategoryChip;
+        final showBillingCycle = overrideShowBillingCycle ?? ctrl.showBillingCycle;
         final showDaily = overrideShowDailyEquivalent ?? ctrl.showDailyEquivalent;
 
         switch (layout) {
@@ -93,6 +96,7 @@ class OneUISubscriptionCard extends StatelessWidget {
               showProgress: showProgress,
               showPaymentChip: showPaymentChip,
               showCatChip: showCatChip,
+              showBillingCycle: showBillingCycle,
               showDaily: showDaily,
             );
           case SubscriptionCardLayout.compact:
@@ -105,6 +109,7 @@ class OneUISubscriptionCard extends StatelessWidget {
               badgeStyle: badgeStyle,
               showPaymentChip: showPaymentChip,
               showCatChip: showCatChip,
+              showDaily: showDaily,
             );
           case SubscriptionCardLayout.oneUiFluent:
             return _buildOneUiFluentItem(
@@ -117,6 +122,7 @@ class OneUISubscriptionCard extends StatelessWidget {
               showProgress: showProgress,
               showPaymentChip: showPaymentChip,
               showCatChip: showCatChip,
+              showBillingCycle: showBillingCycle,
               showDaily: showDaily,
             );
         }
@@ -135,6 +141,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     required bool showProgress,
     required bool showPaymentChip,
     required bool showCatChip,
+    required bool showBillingCycle,
     required bool showDaily,
   }) {
     final sub = subscription;
@@ -147,6 +154,21 @@ class OneUISubscriptionCard extends StatelessWidget {
 
     final isGlow = brandAccent == SubscriptionBrandAccent.ambientGlow;
     final isBorderHighlight = brandAccent == SubscriptionBrandAccent.borderHighlight;
+
+    final metadataRow = !isSelectionMode
+        ? _buildMetadataChipsRow(
+            sub,
+            showCatChip: showCatChip,
+            showPaymentChip: showPaymentChip,
+            showBillingCycle: showBillingCycle,
+            badgeStyle: badgeStyle,
+            paymentMethodNickname: paymentMethodNickname,
+            cardBrand: cardBrand,
+            cardBrandIcon: cardBrandIcon,
+            isCardExpiring: isCardExpiring,
+            hasNoCard: hasNoCard,
+          )
+        : null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -247,19 +269,9 @@ class OneUISubscriptionCard extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  if (!isSelectionMode) ...[
+                                  if (metadataRow != null) ...[
                                     const SizedBox(height: 3),
-                                    _buildMetadataChipsRow(
-                                      sub,
-                                      showCatChip: showCatChip,
-                                      showPaymentChip: showPaymentChip,
-                                      badgeStyle: badgeStyle,
-                                      paymentMethodNickname: paymentMethodNickname,
-                                      cardBrand: cardBrand,
-                                      cardBrandIcon: cardBrandIcon,
-                                      isCardExpiring: isCardExpiring,
-                                      hasNoCard: hasNoCard,
-                                    ),
+                                    metadataRow,
                                   ],
                                 ],
                               ),
@@ -269,7 +281,7 @@ class OneUISubscriptionCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                _buildPriceDisplay(sub, priceMode: priceMode),
+                                _buildPriceDisplay(sub, priceMode: priceMode, showDaily: showDaily),
                                 const SizedBox(height: 4),
                                 _buildRenewalBadge(sub, badgeMode: badgeMode),
                               ],
@@ -298,6 +310,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     required PaymentBadgeStyle badgeStyle,
     required bool showPaymentChip,
     required bool showCatChip,
+    required bool showDaily,
   }) {
     final sub = subscription;
     final brandColor = sub.brandColor;
@@ -401,7 +414,7 @@ class OneUISubscriptionCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _buildPriceDisplay(sub, priceMode: priceMode, isCompact: true),
+                  _buildPriceDisplay(sub, priceMode: priceMode, showDaily: showDaily, isCompact: true),
                   const SizedBox(height: 2),
                   _buildRenewalBadge(sub, badgeMode: badgeMode, isCompact: true),
                 ],
@@ -424,6 +437,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     required bool showProgress,
     required bool showPaymentChip,
     required bool showCatChip,
+    required bool showBillingCycle,
     required bool showDaily,
   }) {
     final sub = subscription;
@@ -449,6 +463,7 @@ class OneUISubscriptionCard extends StatelessWidget {
       overrideShowCycleProgress: showProgress,
       overrideShowPaymentMethodChip: showPaymentChip,
       overrideShowCategoryChip: showCatChip,
+      overrideShowBillingCycle: showBillingCycle,
       overrideShowDailyEquivalent: showDaily,
     );
 
@@ -494,6 +509,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     bool? overrideShowCycleProgress,
     bool? overrideShowPaymentMethodChip,
     bool? overrideShowCategoryChip,
+    bool? overrideShowBillingCycle,
     bool? overrideShowDailyEquivalent,
   }) {
     final ctrl = OneUIEffectsController.instance;
@@ -502,6 +518,8 @@ class OneUISubscriptionCard extends StatelessWidget {
     final badgeStyle = overridePaymentBadgeStyle ?? ctrl.paymentBadgeStyle;
     final showPaymentChip = overrideShowPaymentMethodChip ?? ctrl.showPaymentMethodChip;
     final showCatChip = overrideShowCategoryChip ?? ctrl.showCategoryChip;
+    final showBillingCycle = overrideShowBillingCycle ?? ctrl.showBillingCycle;
+    final showDaily = overrideShowDailyEquivalent ?? ctrl.showDailyEquivalent;
 
     final sub = subscription;
 
@@ -511,6 +529,7 @@ class OneUISubscriptionCard extends StatelessWidget {
         sub,
         showCatChip: showCatChip,
         showPaymentChip: showPaymentChip,
+        showBillingCycle: showBillingCycle,
         badgeStyle: badgeStyle,
         paymentMethodNickname: paymentMethodNickname,
         cardBrand: cardBrand,
@@ -553,7 +572,7 @@ class OneUISubscriptionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildPriceDisplay(sub, priceMode: priceMode),
+          _buildPriceDisplay(sub, priceMode: priceMode, showDaily: showDaily),
           const SizedBox(height: 3),
           _buildRenewalBadge(sub, badgeMode: badgeMode),
         ],
@@ -580,6 +599,7 @@ class OneUISubscriptionCard extends StatelessWidget {
   static Widget _buildPriceDisplay(
     Subscription sub, {
     required SubscriptionPriceMode priceMode,
+    bool showDaily = false,
     bool isCompact = false,
   }) {
     final currency = sub.currency;
@@ -604,7 +624,7 @@ class OneUISubscriptionCard extends StatelessWidget {
         break;
     }
 
-    return Text(
+    final priceWidget = Text(
       text,
       style: TextStyle(
         fontSize: isCompact ? 14 : 16,
@@ -614,6 +634,31 @@ class OneUISubscriptionCard extends StatelessWidget {
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+    );
+
+    if (!showDaily) {
+      return priceWidget;
+    }
+
+    final dailyText = '$currency${sub.dailyCost.toStringAsFixed(2)}/day';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        priceWidget,
+        const SizedBox(height: 1),
+        Text(
+          dailyText,
+          style: TextStyle(
+            fontSize: isCompact ? 10.0 : 11.0,
+            fontWeight: FontWeight.w500,
+            color: OneUITheme.textSecondary,
+            letterSpacing: -0.1,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 
@@ -757,10 +802,11 @@ class OneUISubscriptionCard extends StatelessWidget {
     );
   }
 
-  static Widget _buildMetadataChipsRow(
+  static Widget? _buildMetadataChipsRow(
     Subscription sub, {
     required bool showCatChip,
     required bool showPaymentChip,
+    bool showBillingCycle = false,
     PaymentBadgeStyle badgeStyle = PaymentBadgeStyle.cornerBadge,
     String? paymentMethodNickname,
     CardBrand? cardBrand,
@@ -771,9 +817,14 @@ class OneUISubscriptionCard extends StatelessWidget {
     final hasCard = !hasNoCard &&
         ((paymentMethodNickname != null && paymentMethodNickname.isNotEmpty) || cardBrand != null);
 
-    final categoryText = showCatChip
-        ? '${sub.category.label} • ${sub.billingCycle.label}'
-        : sub.billingCycle.label;
+    final fragments = <String>[];
+    if (showCatChip) {
+      fragments.add(sub.category.label);
+    }
+    if (showBillingCycle) {
+      fragments.add(sub.billingCycle.label);
+    }
+    final categoryText = fragments.join(' • ');
 
     Widget? brandWidget;
     if (cardBrand != null) {
@@ -794,60 +845,82 @@ class OneUISubscriptionCard extends StatelessWidget {
     }
 
     final isCornerBadge = badgeStyle == PaymentBadgeStyle.cornerBadge;
+    final spans = <InlineSpan>[];
+
+    if (categoryText.isNotEmpty) {
+      spans.add(
+        TextSpan(
+          text: categoryText,
+        ),
+      );
+    }
+
+    if (showPaymentChip && hasCard) {
+      if (isCornerBadge) {
+        // In corner badge mode, brand logo is on the app squircle
+        if (paymentMethodNickname != null && paymentMethodNickname.isNotEmpty) {
+          if (spans.isNotEmpty) {
+            spans.add(const TextSpan(text: ' • '));
+          }
+          spans.add(
+            TextSpan(
+              text: paymentMethodNickname,
+              style: TextStyle(
+                color: isCardExpiring ? OneUITheme.accentAmber : OneUITheme.textSecondary,
+                fontWeight: isCardExpiring ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          );
+        }
+      } else {
+        // In inline mode, show logo inline next to nickname
+        if (spans.isNotEmpty) {
+          spans.add(const TextSpan(text: ' • '));
+        }
+        spans.add(
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: brandWidget,
+            ),
+          ),
+        );
+        spans.add(
+          TextSpan(
+            text: paymentMethodNickname ?? cardBrand?.label ?? '',
+            style: TextStyle(
+              color: isCardExpiring ? OneUITheme.accentAmber : OneUITheme.textSecondary,
+              fontWeight: isCardExpiring ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        );
+      }
+    }
+
+    final hasStatusBadge = (showPaymentChip && hasNoCard) || isCardExpiring;
+    if (spans.isEmpty && !hasStatusBadge) {
+      return null;
+    }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Flexible(
-          child: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: categoryText,
-                ),
-                if (showPaymentChip && hasCard) ...[
-                  if (isCornerBadge) ...[
-                    // In corner badge mode, brand logo is on the app squircle
-                    if (paymentMethodNickname != null && paymentMethodNickname.isNotEmpty) ...[
-                      const TextSpan(text: ' • '),
-                      TextSpan(
-                        text: paymentMethodNickname,
-                        style: TextStyle(
-                          color: isCardExpiring ? OneUITheme.accentAmber : OneUITheme.textSecondary,
-                          fontWeight: isCardExpiring ? FontWeight.w600 : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ] else ...[
-                    // In inline mode, show logo inline next to nickname
-                    const TextSpan(text: ' • '),
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: brandWidget,
-                      ),
-                    ),
-                    TextSpan(
-                      text: paymentMethodNickname ?? cardBrand?.label ?? '',
-                      style: TextStyle(
-                        color: isCardExpiring ? OneUITheme.accentAmber : OneUITheme.textSecondary,
-                        fontWeight: isCardExpiring ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ],
-              ],
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.normal,
-              color: OneUITheme.textSecondary,
+        if (spans.isNotEmpty)
+          Flexible(
+            child: Text.rich(
+              TextSpan(
+                children: spans,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.normal,
+                color: OneUITheme.textSecondary,
+              ),
             ),
           ),
-        ),
         if (showPaymentChip && hasNoCard) ...[
           const SizedBox(width: 8),
           Container(

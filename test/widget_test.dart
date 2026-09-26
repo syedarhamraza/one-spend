@@ -705,7 +705,7 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
 
     // Verify subscription description/subtitle is hidden in selection mode
-    expect(find.text('Entertainment • Monthly'), findsNothing);
+    expect(find.text('Entertainment'), findsNothing);
 
     // Verify OneUISelectionActionBar replaced the floating nav bar at the bottom
     expect(find.byType(OneUISelectionActionBar), findsOneWidget);
@@ -747,7 +747,7 @@ void main() {
     expect(find.byType(OneUISelectionActionBar), findsNothing);
     expect(find.text('Subscriptions'), findsOneWidget);
     // Verify subscription subtitle is restored
-    expect(find.textContaining('Entertainment • Monthly'), findsWidgets);
+    expect(find.textContaining('Entertainment'), findsWidgets);
 
     // Test entering selection mode via long-press on a subscription
     await tester.longPress(find.text('Spotify').first);
