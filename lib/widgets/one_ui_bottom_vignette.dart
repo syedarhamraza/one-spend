@@ -48,11 +48,11 @@ class OneUIBottomVignette extends StatelessWidget {
     end: Alignment.bottomCenter,
     colors: [
       Colors.transparent,
-      Color(0x03000000), // ~1% black
-      Color(0x08000000), // ~3% black
-      Color(0x14000000), // ~8% black
-      Color(0x28000000), // ~16% black
-      Color(0x45000000), // ~27% soft black
+      Color(0x0F000000), // ~6% black
+      Color(0x30000000), // ~19% black
+      Color(0x66000000), // ~40% black
+      Color(0xA6000000), // ~65% black
+      Color(0xDD000000), // ~87% rich ambient OLED black
     ],
     stops: [0.0, 0.20, 0.40, 0.65, 0.85, 1.0],
   );
@@ -65,7 +65,7 @@ class OneUIBottomVignette extends StatelessWidget {
         final isEnabled = OneUIEffectsController.instance.bottomVignetteEffect && isVisible;
         final bottomPadding = MediaQuery.paddingOf(context).bottom;
         final normalHeight = bottomPadding + 160.0;
-        final decreasedHeight = bottomPadding + 44.0;
+        final decreasedHeight = bottomPadding + 105.0;
         final effectiveHeight = height ?? (hasFloatingElements ? normalHeight : decreasedHeight);
 
         return IgnorePointer(

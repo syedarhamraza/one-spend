@@ -2585,7 +2585,61 @@ void main() {
     expect(find.descendant(of: scrimFinder, matching: find.byType(RepaintBoundary)), findsOneWidget);
     expect(find.descendant(of: scrimFinder, matching: find.byType(BackdropFilter)), findsOneWidget);
   });
+
+  testWidgets('UpcomingScheduleScreen renders OneUIBottomVignette with hasFloatingElements: false', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: UpcomingScheduleScreen(
+        subscription: SubscriptionStore.instance.subscriptions.first,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    final vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isFalse);
+  });
+
+  testWidgets('PaymentHistoryScreen renders OneUIBottomVignette with hasFloatingElements: false', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: PaymentHistoryScreen(
+        subscriptionId: SubscriptionStore.instance.subscriptions.first.id,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    final vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isFalse);
+  });
+
+  testWidgets('PaymentMethodPickerScreen renders OneUIBottomVignette with hasFloatingElements: false in manage-only mode', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: PaymentMethodPickerScreen(
+        isManageOnly: true,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    final vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isFalse);
+  });
 }
+
 
 
 
