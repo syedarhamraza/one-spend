@@ -7,6 +7,7 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_subscription_card.dart';
+import '../widgets/one_ui_switch.dart';
 import '../widgets/one_ui_toast.dart';
 
 /// Samsung One UI Subscription Card Display & Data Indicators Screen
@@ -248,20 +249,10 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
     required ValueChanged<bool> onChanged,
     Color activeTrackColor = OneUITheme.accentBlue,
   }) {
-    return Transform.scale(
-      scale: 0.8,
-      child: Switch.adaptive(
-        value: value,
-        activeTrackColor: activeTrackColor,
-        activeThumbColor: Colors.white,
-        inactiveThumbColor: Colors.white,
-        inactiveTrackColor: const Color(0xFF38383A),
-        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-        onChanged: (val) {
-          HapticFeedback.lightImpact();
-          onChanged(val);
-        },
-      ),
+    return OneUISwitch(
+      value: value,
+      onChanged: onChanged,
+      activeTrackColor: activeTrackColor,
     );
   }
 

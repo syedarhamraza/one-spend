@@ -57,7 +57,7 @@ class OneUIGroupCard extends StatelessWidget {
                 ),
               ),
             Container(
-              margin: margin ?? const EdgeInsets.only(bottom: 14),
+              margin: margin ?? const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
                 color: OneUIEffectsController.instance.resolveCardBackground(),
                 borderRadius: OneUITheme.cardBorderRadius,
@@ -143,9 +143,9 @@ class OneUIGroupItemTile extends StatelessWidget {
                           Text(
                             item.subtitle!,
                             style: TextStyle(
-                              fontSize: 13.0,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.normal,
-                              height: 1.2,
+                              height: 1.25,
                               color: item.subtitleColor ?? OneUITheme.textSecondary,
                             ),
                           ),
