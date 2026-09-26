@@ -105,6 +105,7 @@ class OneUISubscriptionCard extends StatelessWidget {
               badgeStyle: badgeStyle,
               showPaymentChip: showPaymentChip,
               showCatChip: showCatChip,
+              showDaily: showDaily,
             );
           case SubscriptionCardLayout.oneUiFluent:
             return _buildOneUiFluentItem(
@@ -269,7 +270,7 @@ class OneUISubscriptionCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                _buildPriceDisplay(sub, priceMode: priceMode),
+                                _buildPriceDisplay(sub, priceMode: priceMode, showDaily: showDaily),
                                 const SizedBox(height: 4),
                                 _buildRenewalBadge(sub, badgeMode: badgeMode),
                               ],
@@ -298,6 +299,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     required PaymentBadgeStyle badgeStyle,
     required bool showPaymentChip,
     required bool showCatChip,
+    required bool showDaily,
   }) {
     final sub = subscription;
     final brandColor = sub.brandColor;
@@ -401,7 +403,7 @@ class OneUISubscriptionCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _buildPriceDisplay(sub, priceMode: priceMode, isCompact: true),
+                  _buildPriceDisplay(sub, priceMode: priceMode, showDaily: showDaily, isCompact: true),
                   const SizedBox(height: 2),
                   _buildRenewalBadge(sub, badgeMode: badgeMode, isCompact: true),
                 ],
@@ -502,6 +504,7 @@ class OneUISubscriptionCard extends StatelessWidget {
     final badgeStyle = overridePaymentBadgeStyle ?? ctrl.paymentBadgeStyle;
     final showPaymentChip = overrideShowPaymentMethodChip ?? ctrl.showPaymentMethodChip;
     final showCatChip = overrideShowCategoryChip ?? ctrl.showCategoryChip;
+    final showDaily = overrideShowDailyEquivalent ?? ctrl.showDailyEquivalent;
 
     final sub = subscription;
 
@@ -553,7 +556,7 @@ class OneUISubscriptionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildPriceDisplay(sub, priceMode: priceMode),
+          _buildPriceDisplay(sub, priceMode: priceMode, showDaily: showDaily),
           const SizedBox(height: 3),
           _buildRenewalBadge(sub, badgeMode: badgeMode),
         ],
@@ -580,6 +583,7 @@ class OneUISubscriptionCard extends StatelessWidget {
   static Widget _buildPriceDisplay(
     Subscription sub, {
     required SubscriptionPriceMode priceMode,
+    bool showDaily = false,
     bool isCompact = false,
   }) {
     final currency = sub.currency;
@@ -604,7 +608,7 @@ class OneUISubscriptionCard extends StatelessWidget {
         break;
     }
 
-    return Text(
+    final priceWidget = Text(
       text,
       style: TextStyle(
         fontSize: isCompact ? 14 : 16,
@@ -614,6 +618,31 @@ class OneUISubscriptionCard extends StatelessWidget {
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+    );
+
+    if (!showDaily) {
+      return priceWidget;
+    }
+
+    final dailyText = '$currency${sub.dailyCost.toStringAsFixed(2)}/day';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        priceWidget,
+        const SizedBox(height: 1),
+        Text(
+          dailyText,
+          style: TextStyle(
+            fontSize: isCompact ? 10.0 : 11.0,
+            fontWeight: FontWeight.w500,
+            color: OneUITheme.textSecondary,
+            letterSpacing: -0.1,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 

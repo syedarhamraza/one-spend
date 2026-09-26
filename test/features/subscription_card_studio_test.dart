@@ -247,6 +247,35 @@ void main() {
       expect(find.textContaining('13.99/mo'), findsOneWidget);
     });
 
+    testWidgets('OneUISubscriptionCard renders daily equivalent cost when enabled', (WidgetTester tester) async {
+      final sampleSub = Subscription(
+        id: 'sub_daily_test',
+        name: 'Spotify',
+        description: 'Music',
+        price: 10.99,
+        billingCycle: BillingCycle.monthly,
+        category: SubscriptionCategory.entertainment,
+        nextBillingDate: DateTime.now().add(const Duration(days: 5)),
+        brandColor: const Color(0xFF1DB954),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OneUISubscriptionCard(
+              subscription: sampleSub,
+              overridePriceMode: SubscriptionPriceMode.rawAmount,
+              overrideShowDailyEquivalent: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('\$10.99'), findsOneWidget);
+      expect(find.text('\$0.36/day'), findsOneWidget);
+    });
+
     testWidgets('OneUISubscriptionCard renders official CardBrand logo (Visa, Mastercard)', (WidgetTester tester) async {
       final sampleSub = Subscription(
         id: 'sub_pay_test',
