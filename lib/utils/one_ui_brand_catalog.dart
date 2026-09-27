@@ -37,7 +37,6 @@ class OneUIBrandCatalog {
       icon: Icons.movie_filter_rounded,
       monogram: 'N',
       defaultUrl: 'https://www.netflix.com/youraccount',
-      logoUrl: 'https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.png',
     ),
     BrandPreset(
       id: 'spotify',
@@ -278,16 +277,6 @@ class OneUIBrandCatalog {
       icon: Icons.menu_book_rounded,
       monogram: 'M',
       defaultUrl: 'https://medium.com/me/settings/membership',
-    ),
-    BrandPreset(
-      id: 'nytimes',
-      name: 'The New York Times',
-      category: SubscriptionCategory.productivity,
-      color: Color(0xFF121212),
-      glowColor: Color(0xFFE0E0E0), // NYT Classic Newsprint Silver
-      icon: Icons.newspaper_rounded,
-      monogram: 'NYT',
-      defaultUrl: 'https://www.nytimes.com/subscription',
     ),
     BrandPreset(
       id: 'audible',

@@ -47,7 +47,7 @@ class OneUIBrandIcon extends StatelessWidget {
     'notion': 'assets/logos/brands/notion.svg',
     'figma': 'assets/logos/brands/figma.svg',
     'google': 'assets/logos/brands/google.svg',
-    'googleone': 'assets/logos/brands/google.svg',
+    'googleone': 'assets/logos/brands/googleone.svg',
     'googledrive': 'assets/logos/brands/googledrive.svg',
     'googlecloud': 'assets/logos/brands/googlecloud.svg',
     'crunchyroll': 'assets/logos/brands/crunchyroll.svg',
@@ -84,19 +84,61 @@ class OneUIBrandIcon extends StatelessWidget {
     'deezer': 'assets/logos/brands/deezer.svg',
     'tidal': 'assets/logos/brands/tidal.svg',
     'audible': 'assets/logos/brands/audible.svg',
+    'googleworkspace': 'assets/logos/brands/google.svg',
+    'nintendo': 'assets/logos/brands/nintendoswitch.svg',
+    'nintendoswitch': 'assets/logos/brands/nintendoswitch.svg',
+    'nintendoswitchonline': 'assets/logos/brands/nintendoswitch.svg',
+    'xbox': 'assets/logos/brands/xbox.svg',
+    'xboxgamepass': 'assets/logos/brands/xbox.svg',
+    'microsoft': 'assets/logos/brands/microsoft.svg',
+    'microsoft365': 'assets/logos/brands/microsoft.svg',
+    'canva': 'assets/logos/brands/canva.svg',
+    'canvapro': 'assets/logos/brands/canva.svg',
+    'adobe': 'assets/logos/brands/adobe.svg',
+    'adobecreativecloud': 'assets/logos/brands/adobecreativecloud.svg',
+    'adobecc': 'assets/logos/brands/adobe.svg',
+    'slack': 'assets/logos/brands/slack.svg',
+    'claude': 'assets/logos/brands/claude.svg',
+    'claudepro': 'assets/logos/brands/claude.svg',
+    'chatgpt': 'assets/logos/brands/openai.svg',
+    'chatgptplus': 'assets/logos/brands/openai.svg',
+    'openai': 'assets/logos/brands/openai.svg',
+    'amazon': 'assets/logos/brands/amazon.svg',
+    'amazonprime': 'assets/logos/brands/amazonprime.svg',
+    'disney': 'assets/logos/brands/disneyplus.svg',
+    'disneyplus': 'assets/logos/brands/disneyplus.svg',
+    'dplus': 'assets/logos/brands/disneyplus.svg',
+    'd': 'assets/logos/brands/disneyplus.svg',
+    'linkedin': 'assets/logos/brands/linkedin.svg',
+    'linkedinpremium': 'assets/logos/brands/linkedin.svg',
   };
 
   static final RegExp _alphanumericRegex = RegExp(r'[^a-z0-9]');
 
-  static String? resolveBrandSvg(String name, [String? presetId]) {
-    final lowerName = name.toLowerCase().replaceAll(_alphanumericRegex, '');
+  static const Set<String> _multiColorSvgKeys = {
+    'google',
+    'googleone',
+    'googleworkspace',
+  };
+
+  static bool isMultiColorSvg(String? presetId, String? name) {
     final lowerId = presetId?.toLowerCase().replaceAll(_alphanumericRegex, '') ?? '';
-    final candidates = [lowerId, lowerName];
-    for (final key in candidates) {
-      if (key.isEmpty) continue;
-      if (_brandSvgMap.containsKey(key)) {
-        return _brandSvgMap[key];
+    final lowerName = name?.toLowerCase().replaceAll(_alphanumericRegex, '') ?? '';
+    return _multiColorSvgKeys.contains(lowerId) || _multiColorSvgKeys.contains(lowerName);
+  }
+
+  static String? resolveBrandSvg(String name, [String? presetId]) {
+    if (presetId == '__none__') return null;
+    final lowerId = presetId?.toLowerCase().replaceAll(_alphanumericRegex, '') ?? '';
+    if (lowerId.isNotEmpty) {
+      if (_brandSvgMap.containsKey(lowerId)) {
+        return _brandSvgMap[lowerId];
       }
+      return null;
+    }
+    final lowerName = name.toLowerCase().replaceAll(_alphanumericRegex, '');
+    if (lowerName.isNotEmpty && _brandSvgMap.containsKey(lowerName)) {
+      return _brandSvgMap[lowerName];
     }
     return null;
   }
@@ -106,7 +148,13 @@ class OneUIBrandIcon extends StatelessWidget {
     final subName = subscription?.name ?? name ?? 'Service';
     final effectiveLogoUrl = subscription?.logoUrl ?? logoUrl;
     final effectivePresetId = subscription?.brandPresetId ?? brandPresetId;
-    final preset = OneUIBrandCatalog.findById(effectivePresetId) ?? OneUIBrandCatalog.findPreset(subName);
+    final explicitIcon = iconData ?? (subscription?.iconCodePoint != null ? subscription?.iconData : null);
+
+    final preset = (effectivePresetId != null && effectivePresetId != '__none__')
+        ? OneUIBrandCatalog.findById(effectivePresetId)
+        : (effectivePresetId == '__none__' || explicitIcon != null || (effectiveLogoUrl != null && effectiveLogoUrl.isNotEmpty))
+            ? null
+            : OneUIBrandCatalog.findPreset(subName);
 
     final effectiveColor = subscription?.brandColor ??
         brandColor ??
@@ -127,7 +175,7 @@ class OneUIBrandIcon extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: _buildInnerContent(context, subName, preset, effectiveLogoUrl, effectivePresetId),
+      child: _buildInnerContent(context, subName, preset, effectiveLogoUrl, effectivePresetId, explicitIcon),
     );
   }
 
@@ -137,26 +185,9 @@ class OneUIBrandIcon extends StatelessWidget {
     BrandPreset? preset,
     String? effectiveLogoUrl,
     String? effectivePresetId,
+    IconData? explicitIcon,
   ) {
-    // 1. Check for bundled SVG asset first (instant, zero network lag, vector sharp)
-    final svgAsset = resolveBrandSvg(subName, effectivePresetId);
-    if (svgAsset != null) {
-      return Center(
-        child: SvgPicture.asset(
-          svgAsset,
-          width: size * 0.54,
-          height: size * 0.54,
-          fit: BoxFit.contain,
-          colorFilter: ColorFilter.mode(
-            preset?.textColor ?? Colors.white,
-            BlendMode.srcIn,
-          ),
-          placeholderBuilder: (context) => _buildFallback(subName, preset),
-        ),
-      );
-    }
-
-    // 2. Network image logo if provided (downsampled to device resolution to prevent raster spikes)
+    // 1. Network image logo if provided (takes absolute precedence when custom URL is specified)
     if (effectiveLogoUrl != null && effectiveLogoUrl.isNotEmpty) {
       final pixelRatio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
       final cacheDim = (size * pixelRatio).round();
@@ -167,20 +198,47 @@ class OneUIBrandIcon extends StatelessWidget {
           fit: BoxFit.contain,
           cacheWidth: cacheDim,
           cacheHeight: cacheDim,
-          errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset),
+          errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset, explicitIcon),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
-            return _buildFallback(subName, preset);
+            return _buildFallback(subName, preset, explicitIcon);
           },
         ),
       );
     }
 
-    return _buildFallback(subName, preset);
+    // 2. If explicitly opted out of brand preset (effectivePresetId == '__none__'),
+    // render explicit icon or dynamic monogram without SVG brand matching
+    if (effectivePresetId == '__none__') {
+      return _buildFallback(subName, null, explicitIcon);
+    }
+
+    // 3. Check for bundled vector SVG asset (preset or auto-matched by subName)
+    final svgAsset = resolveBrandSvg(subName, effectivePresetId);
+    if (svgAsset != null) {
+      final isMultiColor = isMultiColorSvg(effectivePresetId, subName);
+      return Center(
+        child: SvgPicture.asset(
+          svgAsset,
+          width: size * 0.54,
+          height: size * 0.54,
+          fit: BoxFit.contain,
+          colorFilter: isMultiColor
+              ? null
+              : ColorFilter.mode(
+                  preset?.textColor ?? Colors.white,
+                  BlendMode.srcIn,
+                ),
+          placeholderBuilder: (context) => _buildFallback(subName, preset, explicitIcon),
+        ),
+      );
+    }
+
+    return _buildFallback(subName, preset, explicitIcon);
   }
 
-  Widget _buildFallback(String subName, BrandPreset? preset) {
-    // 2. Curated brand preset monogram or icon
+  Widget _buildFallback(String subName, BrandPreset? preset, IconData? explicitIcon) {
+    // 1. Curated brand preset monogram or icon
     if (preset != null && preset.monogram.isNotEmpty && preset.monogram != '') {
       return Center(
         child: Text(
@@ -195,8 +253,8 @@ class OneUIBrandIcon extends StatelessWidget {
       );
     }
 
-    // 3. Subscription IconData if explicit
-    final effectiveIcon = subscription?.iconData ?? iconData ?? preset?.icon;
+    // 2. Subscription IconData if explicit
+    final effectiveIcon = explicitIcon ?? subscription?.iconData ?? iconData ?? preset?.icon;
     if (effectiveIcon != null && effectiveIcon != Icons.subscriptions_rounded) {
       return Icon(
         effectiveIcon,
@@ -205,7 +263,7 @@ class OneUIBrandIcon extends StatelessWidget {
       );
     }
 
-    // 4. Dynamic styled monogram
+    // 3. Dynamic styled monogram
     final monogram = OneUIBrandCatalog.getMonogram(subName);
     return Center(
       child: Text(

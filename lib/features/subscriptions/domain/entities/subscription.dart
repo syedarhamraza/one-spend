@@ -129,7 +129,9 @@ class Subscription extends Equatable {
     List<DateTime>? paymentHistory,
     String? accountUrl,
     String? logoUrl,
+    bool clearLogoUrl = false,
     String? brandPresetId,
+    bool clearBrandPresetId = false,
     bool? autoRenew,
     int? anchorDay,
   }) {
@@ -155,8 +157,8 @@ class Subscription extends Equatable {
       notes: notes ?? this.notes,
       paymentHistory: paymentHistory ?? this.paymentHistory,
       accountUrl: accountUrl ?? this.accountUrl,
-      logoUrl: logoUrl ?? this.logoUrl,
-      brandPresetId: brandPresetId ?? this.brandPresetId,
+      logoUrl: clearLogoUrl ? null : (logoUrl ?? this.logoUrl),
+      brandPresetId: clearBrandPresetId ? null : (brandPresetId ?? this.brandPresetId),
       autoRenew: autoRenew ?? this.autoRenew,
       anchorDay: anchorDay ?? this.anchorDay,
     );
