@@ -29,19 +29,19 @@ void main() {
   group('OneUIEffectsController Detail Screen Settings', () {
     test('Defaults and reset functionality', () {
       final ctrl = OneUIEffectsController.instance;
-      expect(ctrl.detailShowItemIcons, isFalse);
+      expect(ctrl.detailShowItemIcons, isTrue);
       expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
       expect(ctrl.detailHighlightSelectable, isFalse);
       expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
       expect(ctrl.detailShowInlineCardBrand, isTrue);
 
-      ctrl.detailShowItemIcons = true;
+      ctrl.detailShowItemIcons = false;
       ctrl.detailIconShape = DetailIconShape.circle;
       ctrl.detailHighlightSelectable = true;
       ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
       ctrl.detailShowInlineCardBrand = false;
 
-      expect(ctrl.detailShowItemIcons, isTrue);
+      expect(ctrl.detailShowItemIcons, isFalse);
       expect(ctrl.detailIconShape, equals(DetailIconShape.circle));
       expect(ctrl.detailHighlightSelectable, isTrue);
       expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.cardBrand));
@@ -49,7 +49,7 @@ void main() {
 
       ctrl.resetDetailStyle();
 
-      expect(ctrl.detailShowItemIcons, isFalse);
+      expect(ctrl.detailShowItemIcons, isTrue);
       expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
       expect(ctrl.detailHighlightSelectable, isFalse);
       expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
@@ -58,7 +58,7 @@ void main() {
 
     test('resetCardStyle also resets detail styling', () {
       final ctrl = OneUIEffectsController.instance;
-      ctrl.detailShowItemIcons = true;
+      ctrl.detailShowItemIcons = false;
       ctrl.detailIconShape = DetailIconShape.circle;
       ctrl.detailHighlightSelectable = true;
       ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
@@ -66,7 +66,7 @@ void main() {
 
       ctrl.resetCardStyle();
 
-      expect(ctrl.detailShowItemIcons, isFalse);
+      expect(ctrl.detailShowItemIcons, isTrue);
       expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
       expect(ctrl.detailHighlightSelectable, isFalse);
       expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
@@ -346,15 +346,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('LIVE PREVIEW'), findsOneWidget);
-      expect(ctrl.detailShowItemIcons, isFalse);
+      expect(ctrl.detailShowItemIcons, isTrue);
 
-      // Tap "Show setting icons" to toggle on
+      // Tap "Show setting icons" to toggle off
       final showIconsFinder = find.text('Show setting icons');
       expect(showIconsFinder, findsOneWidget);
       await tester.tap(showIconsFinder);
       await tester.pumpAndSettle();
 
-      expect(ctrl.detailShowItemIcons, isTrue);
+      expect(ctrl.detailShowItemIcons, isFalse);
 
       // Tap "Blue selectable descriptions" to toggle on
       expect(ctrl.detailHighlightSelectable, isFalse);
@@ -371,7 +371,7 @@ void main() {
       await tester.tap(resetFinder);
       await tester.pumpAndSettle();
 
-      expect(ctrl.detailShowItemIcons, isFalse);
+      expect(ctrl.detailShowItemIcons, isTrue);
       expect(ctrl.detailHighlightSelectable, isFalse);
       expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
       expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
