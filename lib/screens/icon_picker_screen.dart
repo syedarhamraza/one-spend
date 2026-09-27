@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -84,20 +85,9 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
     Color(0xFF555555), // Charcoal
   ];
 
-  static const Map<int, String> colorNames = {
-    0xFFE50914: 'Netflix Red',
-    0xFF1DB954: 'Spotify Green',
-    0xFF0066FF: 'One UI Blue',
-    0xFF8A2BE2: 'Purple',
-    0xFFFF9500: 'Orange',
-    0xFF00C7BE: 'Teal',
-    0xFFFF2D55: 'Pink',
-    0xFF34AADC: 'Light Blue',
-    0xFF10A37F: 'Mint Green',
-    0xFF2C3440: 'Slate Dark',
-    0xFF5856D6: 'Indigo',
-    0xFF555555: 'Charcoal',
-  };
+  static String getColorHex(Color color) {
+    return '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+  }
 
   static const List<IconData> systemIcons = [
     Icons.movie_filter_rounded,
@@ -160,6 +150,12 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
     _selectedIcon = widget.initialIcon;
     _selectedLogoUrl = widget.initialLogoUrl;
     _selectedPresetId = widget.initialPresetId;
+    if (_selectedPresetId == null && (_selectedLogoUrl == null || _selectedLogoUrl!.isEmpty)) {
+      final autoMatch = OneUIBrandCatalog.findPreset(widget.subscriptionName);
+      if (autoMatch != null) {
+        _selectedPresetId = autoMatch.id;
+      }
+    }
   }
 
   void _save() {
@@ -170,16 +166,13 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         iconData: _selectedIcon,
         brandColor: _selectedColor,
         logoUrl: _selectedLogoUrl,
-        brandPresetId: (_selectedPresetId == '__none__' || _selectedPresetId == null)
-            ? null
-            : _selectedPresetId,
+        brandPresetId: _selectedPresetId,
       ),
     );
   }
 
   String _getColorName(Color color) {
-    return colorNames[color.toARGB32()] ??
-        '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+    return getColorHex(color);
   }
 
   String _getSystemIconName(IconData icon) {
@@ -210,7 +203,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         _selectedPresetId = result.preset.id;
         _selectedColor = result.preset.color;
         _selectedIcon = result.preset.icon;
-        _selectedLogoUrl = result.preset.logoUrl;
+        _selectedLogoUrl = null; // Brand logo vector replaces any custom URL!
       });
     }
   }
@@ -240,7 +233,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
 
   void _openCustomUrlSubpage() async {
     HapticFeedback.lightImpact();
-    final result = await Navigator.push<String?>(
+    final result = await Navigator.push<_CustomUrlResult>(
       context,
       MaterialPageRoute(
         builder: (_) => _CustomUrlPickerSubpage(
@@ -254,8 +247,8 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
     );
     if (result != null && mounted) {
       setState(() {
-        final clean = result.trim();
-        _selectedLogoUrl = clean.isNotEmpty ? clean : null;
+        final clean = result.url?.trim();
+        _selectedLogoUrl = (clean != null && clean.isNotEmpty) ? clean : null;
         if (_selectedLogoUrl != null) {
           _selectedPresetId = '__none__';
         }
@@ -339,7 +332,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
                         child: OneUIGroupCard(
                           items: [
                             OneUIGroupItem(
-                              title: 'Brand preset',
+                              title: 'Brand logos',
                               subtitle: isPresetSelected
                                   ? (OneUIBrandCatalog.findById(_selectedPresetId)?.name ?? _selectedPresetId!)
                                   : 'None',
@@ -460,7 +453,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
 }
 
 /// Standalone One UI Hero Preview Card with Frosted Glass Blur & Ambient Under-Card Glow
-/// Identical in architecture to the hero card in SubscriptionDetailScreen and OneUIBudgetCard.
+/// Completely flat surface matching Samsung One UI design without 3D rims or borders.
 class _IconHeroPreviewCard extends StatelessWidget {
   final String subscriptionName;
   final Color brandColor;
@@ -487,27 +480,14 @@ class _IconHeroPreviewCard extends StatelessWidget {
     final isPreset = brandPresetId != null && brandPresetId != '__none__';
     final isCustomUrl = logoUrl != null && logoUrl!.isNotEmpty;
 
-    final String sourceTitle;
     final String sourceSubtitle;
-    final IconData sourceBadgeIcon;
-
     if (isPreset) {
-      final preset = OneUIBrandCatalog.findById(brandPresetId);
-      sourceTitle = preset?.name ?? brandPresetId!;
       sourceSubtitle = 'Official Brand Vector';
-      sourceBadgeIcon = Icons.verified_rounded;
     } else if (isCustomUrl) {
-      sourceTitle = 'Custom Web Link';
       sourceSubtitle = 'Network Image Asset';
-      sourceBadgeIcon = Icons.link_rounded;
     } else {
-      sourceTitle = _IconPickerScreenState.systemIconNames[iconData] ?? 'System Icon';
       sourceSubtitle = 'Curated Vector Glyph';
-      sourceBadgeIcon = Icons.category_rounded;
     }
-
-    final colorHex = '#${brandColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
-    final colorName = _IconPickerScreenState.colorNames[brandColor.toARGB32()] ?? colorHex;
 
     return Container(
       width: double.infinity,
@@ -535,169 +515,54 @@ class _IconHeroPreviewCard extends StatelessWidget {
               ),
             ),
 
-            // 2. Frosted glass blur & flat translucent card body (no 3D borders or elevated rims)
+            // 2. Frosted glass blur & flat translucent card body (completely flat, NO border, NO 3D rims)
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Material(
                 color: const Color(0xFF1B1C20).withValues(alpha: 0.68),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
                   decoration: BoxDecoration(
                     borderRadius: OneUITheme.cardBorderRadius,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      width: 0.8,
-                    ),
                   ),
-                  child: Column(
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          // Squircle Brand Icon (completely flat, clean, without icon glow)
-                          OneUIBrandIcon(
-                            name: subscriptionName,
-                            brandColor: brandColor,
-                            iconData: iconData,
-                            logoUrl: logoUrl,
-                            brandPresetId: brandPresetId,
-                            size: 60,
-                            borderRadius: 18,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  subscriptionName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.w700,
-                                    color: OneUITheme.textPrimary,
-                                    letterSpacing: -0.3,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  sourceSubtitle,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: OneUITheme.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Status Badge Capsule matching Subs Detail & Budget Card
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: OneUITheme.accentBlue.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: OneUITheme.accentBlue.withValues(alpha: 0.20),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  sourceBadgeIcon,
-                                  size: 13,
-                                  color: OneUITheme.accentBlue,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  isPreset ? 'Preset' : (isCustomUrl ? 'Web URL' : 'System'),
-                                  style: const TextStyle(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: OneUITheme.accentBlue,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      // Squircle Brand Icon (completely flat, clean, without icon glow)
+                      OneUIBrandIcon(
+                        name: subscriptionName,
+                        brandColor: brandColor,
+                        iconData: iconData,
+                        logoUrl: logoUrl,
+                        brandPresetId: brandPresetId,
+                        size: 60,
+                        borderRadius: 18,
                       ),
-                      const SizedBox(height: 16),
-                      Container(
-                        height: 0.8,
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Device Care Style Spec Metadata Container
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Left: Selected Element Name
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isPreset
-                                        ? Icons.stars_rounded
-                                        : (isCustomUrl ? Icons.link_rounded : iconData),
-                                    size: 16,
-                                    color: OneUITheme.textSecondary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      sourceTitle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: OneUITheme.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              subscriptionName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w700,
+                                color: OneUITheme.textPrimary,
+                                letterSpacing: -0.3,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            // Right: Color preview with colored dot & label
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: brandColor,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.25),
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  colorName,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: OneUITheme.textSecondary,
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: 4),
+                            Text(
+                              sourceSubtitle,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: OneUITheme.textSecondary,
+                              ),
                             ),
                           ],
                         ),
@@ -717,6 +582,11 @@ class _IconHeroPreviewCard extends StatelessWidget {
 class _BrandPresetResult {
   final BrandPreset preset;
   const _BrandPresetResult(this.preset);
+}
+
+class _CustomUrlResult {
+  final String? url;
+  const _CustomUrlResult(this.url);
 }
 
 /// Dedicated subpage to select Brand Preset with live interactive Hero Preview
@@ -745,6 +615,7 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
   late IconData _previewIcon;
   late String? _previewLogoUrl;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
   bool _showSearch = false;
 
@@ -760,7 +631,102 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _exitSearchMode() {
+    _searchFocusNode.unfocus();
+    setState(() {
+      _showSearch = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
+
+  Widget _buildFloatingSearchPill() {
+    final is3d = OneUIEffectsController.instance.floating3dEffect;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: OneUITheme.floatingShadow,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: OneUITheme.blurSigma,
+            sigmaY: OneUITheme.blurSigma,
+          ),
+          child: Container(
+            height: 56,
+            decoration: BoxDecoration(
+              color: is3d ? null : OneUITheme.floatingColor,
+              gradient: is3d ? OneUITheme.floatingGradient : null,
+              borderRadius: BorderRadius.circular(32),
+              border: OneUITheme.floatingBorder,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) {
+                      _searchFocusNode.unfocus();
+                    },
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Search 40+ brand logos...',
+                      hintStyle: TextStyle(
+                        color: Color(0xFF8E95B8),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onChanged: (val) {
+                      setState(() {
+                        _searchQuery = val;
+                      });
+                    },
+                  ),
+                ),
+                if (_searchQuery.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _searchQuery = '';
+                        _searchController.clear();
+                      });
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -774,20 +740,21 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
         ? widget.subscriptionName
         : 'Icon Preview';
 
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final searchPillBottom = math.max(bottomPadding + 16, bottomInset + 14);
+
     return PopScope(
       canPop: !_showSearch,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         if (_showSearch) {
-          setState(() {
-            _showSearch = false;
-            _searchQuery = '';
-            _searchController.clear();
-          });
+          _exitSearchMode();
         }
       },
       child: Scaffold(
         backgroundColor: OneUITheme.surfacePitch,
+        resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
             CustomScrollView(
@@ -797,17 +764,13 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: OneUICollapsibleHeaderDelegate(
-                    title: _showSearch ? 'Search presets' : 'Brand preset',
+                    title: _showSearch ? 'Search logos' : 'Brand logos',
                     hasBigHeader: false,
                     showBackButton: true,
                     onBack: () {
                       HapticFeedback.lightImpact();
                       if (_showSearch) {
-                        setState(() {
-                          _showSearch = false;
-                          _searchQuery = '';
-                          _searchController.clear();
-                        });
+                        _exitSearchMode();
                       } else {
                         Navigator.pop(context);
                       }
@@ -817,10 +780,13 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
                         : [
                             OneUIHeaderAction(
                               icon: Icons.search_rounded,
-                              tooltip: 'Search brands',
+                              tooltip: 'Search brand logos',
                               onTap: () {
                                 HapticFeedback.lightImpact();
                                 setState(() => _showSearch = true);
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  _searchFocusNode.requestFocus();
+                                });
                               },
                             ),
                           ],
@@ -829,7 +795,7 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
 
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                    padding: EdgeInsets.fromLTRB(16, 4, 16, _showSearch ? (searchPillBottom + 70) : 120),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -843,174 +809,144 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
                         ),
                         const SizedBox(height: 16),
 
-                        // One UI Search Capsule (only visible when search is toggled in header)
-                        if (_showSearch) ...[
-                          Container(
-                            height: 44,
-                            margin: const EdgeInsets.only(bottom: 14),
-                            decoration: BoxDecoration(
-                              color: OneUITheme.surfacePill,
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.08),
-                                width: 0.8,
-                              ),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.search_rounded, size: 20, color: OneUITheme.textSecondary),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _searchController,
-                                    autofocus: true,
-                                    onChanged: (val) => setState(() => _searchQuery = val),
-                                    style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
-                                    decoration: const InputDecoration(
-                                      hintText: 'Search 40+ brands...',
-                                      hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                    ),
+                        // Brand Logos Grid wrapped in OneUISection and group container
+                        OneUISection(
+                          title: 'Brand logos',
+                          child: filtered.isEmpty
+                              ? Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 48),
+                                  decoration: BoxDecoration(
+                                    color: OneUIEffectsController.instance.resolveCardBackground(),
+                                    borderRadius: OneUITheme.cardBorderRadius,
+                                    border: OneUITheme.cardBorder,
                                   ),
-                                ),
-                                if (_searchQuery.isNotEmpty)
-                                  GestureDetector(
-                                    onTap: () {
-                                      _searchController.clear();
-                                      setState(() => _searchQuery = '');
-                                    },
-                                    child: const Icon(Icons.cancel_rounded, size: 18, color: OneUITheme.textSecondary),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-
-                      // Brand Presets Grid
-                      if (filtered.isEmpty)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 48),
-                          decoration: BoxDecoration(
-                            color: OneUITheme.cardColor,
-                            borderRadius: OneUITheme.cardBorderRadius,
-                            border: OneUITheme.cardBorder,
-                          ),
-                          child: const Column(
-                            children: [
-                              Icon(Icons.search_off_rounded, size: 44, color: OneUITheme.textSecondary),
-                              SizedBox(height: 12),
-                              Text(
-                                'No matching brand preset found',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: OneUITheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: OneUITheme.cardColor,
-                            borderRadius: OneUITheme.cardBorderRadius,
-                            border: OneUITheme.cardBorder,
-                          ),
-                          child: GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.80,
-                            ),
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              final preset = filtered[index];
-                              final isSelected = _selectedPresetId == preset.id;
-
-                              return GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  setState(() {
-                                    _selectedPresetId = preset.id;
-                                    _previewColor = preset.color;
-                                    _previewIcon = preset.icon;
-                                    _previewLogoUrl = preset.logoUrl;
-                                  });
-                                  Navigator.pop(context, _BrandPresetResult(preset));
-                                },
-                                child: Column(
-                                  children: [
-                                    Stack(
-                                      children: [
-                                        OneUIBrandIcon(
-                                          brandPresetId: preset.id,
-                                          name: preset.name,
-                                          brandColor: preset.color,
-                                          size: 52,
-                                          borderRadius: 16,
+                                  child: const Column(
+                                    children: [
+                                      Icon(Icons.search_off_rounded, size: 44, color: OneUITheme.textSecondary),
+                                      SizedBox(height: 12),
+                                      Text(
+                                        'No matching brand logos found',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: OneUITheme.textSecondary,
                                         ),
-                                        if (isSelected)
-                                          Positioned(
-                                            right: 0,
-                                            top: 0,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(3.5),
-                                              decoration: const BoxDecoration(
-                                                color: OneUITheme.accentBlue,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.check_rounded,
-                                                size: 11,
-                                                color: Colors.white,
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: OneUIEffectsController.instance.resolveCardBackground(),
+                                    borderRadius: OneUITheme.cardBorderRadius,
+                                    border: OneUITheme.cardBorder,
+                                  ),
+                                  child: GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 4,
+                                      mainAxisSpacing: 16,
+                                      crossAxisSpacing: 12,
+                                      childAspectRatio: 0.80,
+                                    ),
+                                    itemCount: filtered.length,
+                                    itemBuilder: (context, index) {
+                                      final preset = filtered[index];
+                                      final isSelected = _selectedPresetId == preset.id;
+
+                                      return GestureDetector(
+                                        onTap: () {
+                                          HapticFeedback.selectionClick();
+                                          setState(() {
+                                            _selectedPresetId = preset.id;
+                                            _previewColor = preset.color;
+                                            _previewIcon = preset.icon;
+                                            _previewLogoUrl = preset.logoUrl;
+                                          });
+                                          Navigator.pop(context, _BrandPresetResult(preset));
+                                        },
+                                        child: Column(
+                                          children: [
+                                            Stack(
+                                              children: [
+                                                OneUIBrandIcon(
+                                                  brandPresetId: preset.id,
+                                                  name: preset.name,
+                                                  brandColor: preset.color,
+                                                  size: 52,
+                                                  borderRadius: 16,
+                                                ),
+                                                if (isSelected)
+                                                  Positioned(
+                                                    right: 0,
+                                                    top: 0,
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(3.5),
+                                                      decoration: const BoxDecoration(
+                                                        color: OneUITheme.accentBlue,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.check_rounded,
+                                                        size: 11,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              preset.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                                color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
                                               ),
                                             ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      preset.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                        color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
-                                      ),
-                                    ),
-                                  ],
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              );
-                            },
-                          ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: OneUIBottomVignette(hasFloatingElements: false),
-          ),
-        ],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: OneUIBottomVignette(hasFloatingElements: _showSearch),
+            ),
+
+            // Floating Search Pill above keyboard
+            if (_showSearch)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                left: 18,
+                right: 18,
+                bottom: searchPillBottom,
+                child: RepaintBoundary(
+                  child: _buildFloatingSearchPill(),
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -1085,53 +1021,56 @@ class _SystemIconPickerSubpageState extends State<_SystemIconPickerSubpage> {
                       ),
                       const SizedBox(height: 16),
 
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: OneUITheme.cardColor,
-                          borderRadius: OneUITheme.cardBorderRadius,
-                          border: OneUITheme.cardBorder,
-                        ),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 12,
-                            childAspectRatio: 1.0,
+                      OneUISection(
+                        title: 'Curated icons',
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: OneUIEffectsController.instance.resolveCardBackground(),
+                            borderRadius: OneUITheme.cardBorderRadius,
+                            border: OneUITheme.cardBorder,
                           ),
-                          itemCount: _IconPickerScreenState.systemIcons.length,
-                          itemBuilder: (context, index) {
-                            final icon = _IconPickerScreenState.systemIcons[index];
-                            final isSelected = _selectedIcon.codePoint == icon.codePoint;
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 1.0,
+                            ),
+                            itemCount: _IconPickerScreenState.systemIcons.length,
+                            itemBuilder: (context, index) {
+                              final icon = _IconPickerScreenState.systemIcons[index];
+                              final isSelected = _selectedIcon.codePoint == icon.codePoint;
 
-                            return GestureDetector(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() {
-                                  _selectedIcon = icon;
-                                });
-                                Navigator.pop(context, icon);
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? OneUITheme.surfacePillActive : OneUITheme.surfacePill,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
-                                    width: 1.6,
+                              return GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() {
+                                    _selectedIcon = icon;
+                                  });
+                                  Navigator.pop(context, icon);
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? OneUITheme.surfacePillActive : OneUITheme.surfacePill,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
+                                      width: 1.6,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    icon,
+                                    size: 26,
+                                    color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
                                   ),
                                 ),
-                                child: Icon(
-                                  icon,
-                                  size: 26,
-                                  color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
-                                ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ],
@@ -1211,7 +1150,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                   showBackButton: true,
                   onBack: () {
                     HapticFeedback.lightImpact();
-                    Navigator.pop(context, _previewUrl);
+                    Navigator.pop(context);
                   },
                 ),
               ),
@@ -1232,61 +1171,64 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // URL input card
-                      Container(
-                        decoration: BoxDecoration(
-                          color: OneUITheme.cardColor,
-                          borderRadius: OneUITheme.cardBorderRadius,
-                          border: OneUITheme.cardBorder,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.link_rounded, size: 22, color: OneUITheme.accentBlue),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                controller: _controller,
-                                onChanged: (val) {
-                                  setState(() {
-                                    _previewUrl = val.trim().isNotEmpty ? val.trim() : null;
-                                  });
-                                },
-                                style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
-                                decoration: const InputDecoration(
-                                  hintText: 'https://example.com/logo.png',
-                                  hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-                                  border: InputBorder.none,
+                      // URL input card inside OneUISection
+                      OneUISection(
+                        title: 'Web image source',
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: OneUIEffectsController.instance.resolveCardBackground(),
+                            borderRadius: OneUITheme.cardBorderRadius,
+                            border: OneUITheme.cardBorder,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.link_rounded, size: 22, color: OneUITheme.accentBlue),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextField(
+                                  controller: _controller,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _previewUrl = val.trim().isNotEmpty ? val.trim() : null;
+                                    });
+                                  },
+                                  style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
+                                  decoration: const InputDecoration(
+                                    hintText: 'https://example.com/logo.png',
+                                    hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
+                                    border: InputBorder.none,
+                                  ),
                                 ),
                               ),
-                            ),
-                            if (_controller.text.isNotEmpty)
+                              if (_controller.text.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.clear_rounded, size: 20, color: OneUITheme.textSecondary),
+                                  onPressed: () {
+                                    HapticFeedback.selectionClick();
+                                    _controller.clear();
+                                    setState(() {
+                                      _previewUrl = null;
+                                    });
+                                  },
+                                ),
                               IconButton(
-                                icon: const Icon(Icons.clear_rounded, size: 20, color: OneUITheme.textSecondary),
-                                onPressed: () {
-                                  HapticFeedback.selectionClick();
-                                  _controller.clear();
-                                  setState(() {
-                                    _previewUrl = null;
-                                  });
+                                icon: const Icon(Icons.content_paste_rounded, size: 20, color: OneUITheme.accentBlue),
+                                tooltip: 'Paste from clipboard',
+                                onPressed: () async {
+                                  final data = await Clipboard.getData('text/plain');
+                                  if (data != null && data.text != null && data.text!.trim().isNotEmpty) {
+                                    HapticFeedback.selectionClick();
+                                    final pasted = data.text!.trim();
+                                    _controller.text = pasted;
+                                    setState(() {
+                                      _previewUrl = pasted;
+                                    });
+                                  }
                                 },
                               ),
-                            IconButton(
-                              icon: const Icon(Icons.content_paste_rounded, size: 20, color: OneUITheme.accentBlue),
-                              tooltip: 'Paste from clipboard',
-                              onPressed: () async {
-                                final data = await Clipboard.getData('text/plain');
-                                if (data != null && data.text != null && data.text!.trim().isNotEmpty) {
-                                  HapticFeedback.selectionClick();
-                                  final pasted = data.text!.trim();
-                                  _controller.text = pasted;
-                                  setState(() {
-                                    _previewUrl = pasted;
-                                  });
-                                }
-                              },
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       const Padding(
@@ -1302,14 +1244,18 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Done Button
+                      // Apply Button
                       SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
                           onPressed: () {
                             HapticFeedback.mediumImpact();
-                            Navigator.pop(context, _previewUrl);
+                            final clean = _previewUrl?.trim();
+                            Navigator.pop(
+                              context,
+                              _CustomUrlResult((clean != null && clean.isNotEmpty) ? clean : null),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: OneUITheme.accentBlue,
@@ -1325,6 +1271,44 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                           ),
                         ),
                       ),
+
+                      // Remove Custom URL Button (if a URL was present or previewed)
+                      if ((widget.currentUrl != null && widget.currentUrl!.isNotEmpty) ||
+                          (_previewUrl != null && _previewUrl!.isNotEmpty)) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              HapticFeedback.mediumImpact();
+                              _controller.clear();
+                              setState(() {
+                                _previewUrl = null;
+                              });
+                              Navigator.pop(context, const _CustomUrlResult(null));
+                            },
+                            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Color(0xFFFF453A)),
+                            label: const Text(
+                              'Remove custom image URL',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFFF453A),
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: const Color(0xFFFF453A).withValues(alpha: 0.35),
+                                width: 1.0,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1415,82 +1399,85 @@ class _BackgroundColorPickerSubpageState extends State<_BackgroundColorPickerSub
                       ),
                       const SizedBox(height: 16),
 
-                      // Swatches Grid
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: OneUITheme.cardColor,
-                          borderRadius: OneUITheme.cardBorderRadius,
-                          border: OneUITheme.cardBorder,
-                        ),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            mainAxisSpacing: 14,
-                            crossAxisSpacing: 14,
-                            childAspectRatio: 0.88,
+                      // Swatches Grid wrapped in OneUISection
+                      OneUISection(
+                        title: 'Color presets',
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: OneUIEffectsController.instance.resolveCardBackground(),
+                            borderRadius: OneUITheme.cardBorderRadius,
+                            border: OneUITheme.cardBorder,
                           ),
-                          itemCount: _IconPickerScreenState.swatches.length,
-                          itemBuilder: (context, index) {
-                            final color = _IconPickerScreenState.swatches[index];
-                            final isSelected = _selectedColor.toARGB32() == color.toARGB32();
-                            final colorName = _IconPickerScreenState.colorNames[color.toARGB32()] ?? 'Color';
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 4,
+                              mainAxisSpacing: 14,
+                              crossAxisSpacing: 14,
+                              childAspectRatio: 0.88,
+                            ),
+                            itemCount: _IconPickerScreenState.swatches.length,
+                            itemBuilder: (context, index) {
+                              final color = _IconPickerScreenState.swatches[index];
+                              final isSelected = _selectedColor.toARGB32() == color.toARGB32();
+                              final colorHex = _IconPickerScreenState.getColorHex(color);
 
-                            return GestureDetector(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() {
-                                  _selectedColor = color;
-                                });
-                                Navigator.pop(context, color);
-                              },
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 180),
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: color,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.16),
-                                        width: isSelected ? 2.6 : 1.0,
+                              return GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() {
+                                    _selectedColor = color;
+                                  });
+                                  Navigator.pop(context, color);
+                                },
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AnimatedContainer(
+                                      duration: const Duration(milliseconds: 180),
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.16),
+                                          width: isSelected ? 2.6 : 1.0,
+                                        ),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: color.withValues(alpha: 0.45),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ]
+                                            : null,
                                       ),
-                                      boxShadow: isSelected
-                                          ? [
-                                              BoxShadow(
-                                                color: color.withValues(alpha: 0.45),
-                                                blurRadius: 10,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ]
+                                      alignment: Alignment.center,
+                                      child: isSelected
+                                          ? const Icon(Icons.check_rounded, size: 20, color: Colors.white)
                                           : null,
                                     ),
-                                    alignment: Alignment.center,
-                                    child: isSelected
-                                        ? const Icon(Icons.check_rounded, size: 20, color: Colors.white)
-                                        : null,
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    colorName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                      color: isSelected ? OneUITheme.accentBlue : OneUITheme.textSecondary,
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      colorHex,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                        color: isSelected ? OneUITheme.accentBlue : OneUITheme.textSecondary,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ],

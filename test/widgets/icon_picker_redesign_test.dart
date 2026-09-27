@@ -87,26 +87,26 @@ void main() {
       // Header
       expect(find.text('Subscription icon'), findsOneWidget);
 
-      // Hero Live Preview Card
+      // Hero Live Preview Card (flat, no extra pills)
       expect(find.text('Spotify Premium'), findsOneWidget);
-      expect(find.text('Spotify'), findsNWidgets(2)); // Card status badge + group item subtitle
+      expect(find.text('Spotify'), findsOneWidget); // Group item subtitle
 
       // Group Items
       expect(find.text('Icon style'), findsOneWidget);
-      expect(find.text('Brand preset'), findsOneWidget);
+      expect(find.text('Brand logos'), findsOneWidget);
       expect(find.text('System icon'), findsOneWidget);
       expect(find.text('Custom image URL'), findsOneWidget);
 
       expect(find.text('Appearance'), findsOneWidget);
       expect(find.text('Background color'), findsOneWidget);
-      expect(find.text('One UI Blue'), findsWidgets);
+      expect(find.text('#0066FF'), findsWidgets);
 
       // Bottom floating pill
       expect(find.text('Save'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     });
 
-    testWidgets('tapping Brand preset opens dedicated subpage and selecting a brand updates hero', (tester) async {
+    testWidgets('tapping Brand logos opens dedicated subpage and selecting a brand updates hero', (tester) async {
       await tester.binding.setSurfaceSize(const Size(412, 900));
 
       await tester.pumpWidget(
@@ -120,17 +120,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap on Brand preset group item
-      await tester.tap(find.text('Brand preset'));
+      // Tap on Brand logos group item
+      await tester.tap(find.text('Brand logos'));
       await tester.pumpAndSettle();
 
-      // Verify Brand preset subpage
-      expect(find.text('Brand preset'), findsWidgets); // Header & Title
+      // Verify Brand logos subpage
+      expect(find.text('Brand logos'), findsWidgets); // Header & Section
 
-      // Tap header search button to reveal search bar
+      // Tap header search button to reveal floating search bar
       await tester.tap(find.byIcon(Icons.search_rounded));
       await tester.pumpAndSettle();
-      expect(find.text('Search 40+ brands...'), findsOneWidget);
+      expect(find.text('Search 40+ brand logos...'), findsOneWidget);
 
       // Search for Nintendo
       await tester.enterText(find.byType(TextField), 'Nintendo');
@@ -143,7 +143,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Back on main screen: verify hero and group item updated!
-      expect(find.text('Nintendo Switch Online'), findsNWidgets(2)); // Hero badge & Group item subtitle
+      expect(find.text('Nintendo Switch Online'), findsWidgets);
     });
 
     testWidgets('tapping System icon opens dedicated subpage and selecting an icon updates hero', (tester) async {
@@ -190,7 +190,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('One UI Blue'), findsWidgets);
+      expect(find.text('#0066FF'), findsWidgets);
 
       // Tap on Background color group item
       await tester.tap(find.text('Background color'));
@@ -198,14 +198,14 @@ void main() {
 
       // Verify subpage
       expect(find.text('Background color'), findsWidgets);
-      expect(find.text('Spotify Green'), findsOneWidget);
+      expect(find.text('#1DB954'), findsOneWidget);
 
-      // Tap on Spotify Green
-      await tester.tap(find.text('Spotify Green'));
+      // Tap on #1DB954 swatch
+      await tester.tap(find.text('#1DB954'));
       await tester.pumpAndSettle();
 
       // Back on main screen: verify subtitle updated
-      expect(find.text('Spotify Green'), findsWidgets);
+      expect(find.text('#1DB954'), findsWidgets);
     });
 
     testWidgets('tapping Custom image URL opens subpage and saves entered link', (tester) async {

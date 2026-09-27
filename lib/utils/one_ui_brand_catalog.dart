@@ -37,7 +37,6 @@ class OneUIBrandCatalog {
       icon: Icons.movie_filter_rounded,
       monogram: 'N',
       defaultUrl: 'https://www.netflix.com/youraccount',
-      logoUrl: 'https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.png',
     ),
     BrandPreset(
       id: 'spotify',
