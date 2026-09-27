@@ -60,6 +60,12 @@ enum DetailIconShape {
   circle,           // Circular badge
 }
 
+/// Leading icon presentation style for payment method on subscription detail screen
+enum DetailPaymentIconStyle {
+  cardBrand,        // Authentic payment card rectangle (never deformed into circle/squircle)
+  iconBadge,        // Uniform One UI icon badge (morphs to squircle or circle with detailIconShape)
+}
+
 /// Interactive Dynamic Controller for 3D Elevation, Shadows, Frosted Glass Blur, and Card Styles
 class OneUIEffectsController extends ChangeNotifier {
   static final OneUIEffectsController instance = OneUIEffectsController._internal();
@@ -93,6 +99,8 @@ class OneUIEffectsController extends ChangeNotifier {
   bool _detailShowItemIcons = true;
   DetailIconShape _detailIconShape = DetailIconShape.squircle;
   bool _detailHighlightSelectable = true;
+  DetailPaymentIconStyle _detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
+  bool _detailShowInlineCardBrand = true;
 
   /// Explicit initialization hook (useful for test suites and hot restarts)
   Future<void> init() async {
@@ -179,6 +187,14 @@ class OneUIEffectsController extends ChangeNotifier {
         );
       }
       _detailHighlightSelectable = prefs.getBool('detailHighlightSelectable') ?? true;
+      final detailPaymentIconStyleStr = prefs.getString('detailPaymentIconStyle');
+      if (detailPaymentIconStyleStr != null) {
+        _detailPaymentIconStyle = DetailPaymentIconStyle.values.firstWhere(
+          (e) => e.name == detailPaymentIconStyleStr,
+          orElse: () => DetailPaymentIconStyle.cardBrand,
+        );
+      }
+      _detailShowInlineCardBrand = prefs.getBool('detailShowInlineCardBrand') ?? true;
 
       _invalidateCache();
       notifyListeners();
@@ -351,15 +367,37 @@ class OneUIEffectsController extends ChangeNotifier {
     }
   }
 
+  DetailPaymentIconStyle get detailPaymentIconStyle => _detailPaymentIconStyle;
+  set detailPaymentIconStyle(DetailPaymentIconStyle val) {
+    if (_detailPaymentIconStyle != val) {
+      _detailPaymentIconStyle = val;
+      _saveStringSetting('detailPaymentIconStyle', val.name);
+      notifyListeners();
+    }
+  }
+
+  bool get detailShowInlineCardBrand => _detailShowInlineCardBrand;
+  set detailShowInlineCardBrand(bool val) {
+    if (_detailShowInlineCardBrand != val) {
+      _detailShowInlineCardBrand = val;
+      _saveSetting('detailShowInlineCardBrand', val);
+      notifyListeners();
+    }
+  }
+
   /// Resets subscription detail screen styling back to default One UI specs
   void resetDetailStyle() {
     _detailShowItemIcons = true;
     _detailIconShape = DetailIconShape.squircle;
     _detailHighlightSelectable = true;
+    _detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
+    _detailShowInlineCardBrand = true;
 
     _saveSetting('detailShowItemIcons', _detailShowItemIcons);
     _saveStringSetting('detailIconShape', _detailIconShape.name);
     _saveSetting('detailHighlightSelectable', _detailHighlightSelectable);
+    _saveStringSetting('detailPaymentIconStyle', _detailPaymentIconStyle.name);
+    _saveSetting('detailShowInlineCardBrand', _detailShowInlineCardBrand);
 
     notifyListeners();
   }
@@ -383,6 +421,8 @@ class OneUIEffectsController extends ChangeNotifier {
     _detailShowItemIcons = true;
     _detailIconShape = DetailIconShape.squircle;
     _detailHighlightSelectable = true;
+    _detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
+    _detailShowInlineCardBrand = true;
 
     _saveStringSetting('cardBackground', _cardBackground.name);
     _saveIntSetting('customCardBackgroundColorValue', _customCardBackgroundColorValue);
@@ -401,6 +441,8 @@ class OneUIEffectsController extends ChangeNotifier {
     _saveSetting('detailShowItemIcons', _detailShowItemIcons);
     _saveStringSetting('detailIconShape', _detailIconShape.name);
     _saveSetting('detailHighlightSelectable', _detailHighlightSelectable);
+    _saveStringSetting('detailPaymentIconStyle', _detailPaymentIconStyle.name);
+    _saveSetting('detailShowInlineCardBrand', _detailShowInlineCardBrand);
 
     _invalidateCache();
     notifyListeners();

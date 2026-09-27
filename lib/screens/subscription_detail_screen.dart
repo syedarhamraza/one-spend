@@ -816,6 +816,18 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       : (_sub.paymentMethod.isNotEmpty ? _sub.paymentMethod : 'No payment method linked'),
                                   customSubtitle: Row(
                                     children: [
+                                      if (OneUIEffectsController.instance.detailPaymentIconStyle ==
+                                              DetailPaymentIconStyle.iconBadge &&
+                                          OneUIEffectsController.instance.detailShowInlineCardBrand &&
+                                          linkedCard != null) ...[
+                                        OneUIPaymentBrandIcon(
+                                          brand: linkedCard.brand,
+                                          width: 22,
+                                          height: 14.5,
+                                          borderRadius: 2.5,
+                                        ),
+                                        const SizedBox(width: 7),
+                                      ],
                                       Flexible(
                                         child: Text(
                                           linkedCard != null
@@ -1095,20 +1107,16 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
   Widget? _buildDetailPaymentIcon(PaymentMethod? card) {
     final ctrl = OneUIEffectsController.instance;
     if (!ctrl.detailShowItemIcons) return null;
-    if (card != null) {
-      if (ctrl.detailIconShape == DetailIconShape.circle) {
-        return OneUIPaymentBrandIcon.square(
-          brand: card.brand,
-          size: 36,
-          borderRadius: 18,
-        );
-      }
+    if (ctrl.detailPaymentIconStyle == DetailPaymentIconStyle.cardBrand && card != null) {
+      // Authentic rectangular payment card aspect ratio (never deformed into circle or squircle)
       return OneUIPaymentBrandIcon(
         brand: card.brand,
         width: 36,
         height: 26,
+        borderRadius: 5,
       );
     }
+    // Uniform One UI icon badge (morphs to squircle or circle with detailIconShape)
     return _buildDetailIcon(Icons.payment_rounded, OneUITheme.accentAmber);
   }
 

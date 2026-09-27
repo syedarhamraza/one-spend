@@ -49,17 +49,19 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Standalone Live Interactive Preview of Detail Settings Group
+                          // Standalone Live Interactive Preview of Detail Settings Group (Max 3 rows)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: _DetailScreenLivePreview(
                               showIcons: ctrl.detailShowItemIcons,
                               iconShape: ctrl.detailIconShape,
                               highlightSelectable: ctrl.detailHighlightSelectable,
+                              paymentIconStyle: ctrl.detailPaymentIconStyle,
+                              showInlineCardBrand: ctrl.detailShowInlineCardBrand,
                             ),
                           ),
 
-                          // Section 1: Display options (Icon Shape)
+                          // Section 1: Display options (Icon Shape & Payment Icon)
                           OneUISection(
                             title: 'Display options',
                             child: OneUIGroupCard(
@@ -85,6 +87,37 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                                     );
                                   },
                                 ),
+                                OneUIGroupItem(
+                                  title: 'Payment method icon',
+                                  subtitle: ctrl.detailPaymentIconStyle == DetailPaymentIconStyle.cardBrand
+                                      ? 'Card brand logo'
+                                      : 'Setting icon badge',
+                                  subtitleColor: OneUITheme.accentBlue,
+                                  trailing: const Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 20,
+                                    color: OneUITheme.textSecondary,
+                                  ),
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const _DetailPaymentIconOptionScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                if (ctrl.detailPaymentIconStyle == DetailPaymentIconStyle.iconBadge)
+                                  OneUIGroupItem(
+                                    title: 'Card logo beside description',
+                                    subtitle: 'Show mini card brand next to card name',
+                                    trailing: _buildOneUISwitch(
+                                      value: ctrl.detailShowInlineCardBrand,
+                                      onChanged: (val) => ctrl.detailShowInlineCardBrand = val,
+                                    ),
+                                    onTap: () => ctrl.detailShowInlineCardBrand = !ctrl.detailShowInlineCardBrand,
+                                  ),
                               ],
                             ),
                           ),
@@ -187,15 +220,20 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
 }
 
 /// Standalone Live Preview Card simulating the settings list of SubscriptionDetailScreen
+/// Limited to a maximum of 3 rows: Service name, Price / Cost, and Payment method
 class _DetailScreenLivePreview extends StatelessWidget {
   final bool showIcons;
   final DetailIconShape iconShape;
   final bool highlightSelectable;
+  final DetailPaymentIconStyle paymentIconStyle;
+  final bool showInlineCardBrand;
 
   const _DetailScreenLivePreview({
     required this.showIcons,
     required this.iconShape,
     required this.highlightSelectable,
+    required this.paymentIconStyle,
+    required this.showInlineCardBrand,
   });
 
   Widget? _buildPreviewIcon(IconData icon, Color color) {
@@ -216,18 +254,17 @@ class _DetailScreenLivePreview extends StatelessWidget {
 
   Widget? _buildPreviewPaymentIcon() {
     if (!showIcons) return null;
-    if (iconShape == DetailIconShape.circle) {
-      return const OneUIPaymentBrandIcon.square(
+    if (paymentIconStyle == DetailPaymentIconStyle.cardBrand) {
+      // Authentic rectangular payment card aspect ratio (never deformed into circle or squircle)
+      return const OneUIPaymentBrandIcon(
         brand: CardBrand.visa,
-        size: 36,
-        borderRadius: 18,
+        width: 36,
+        height: 26,
+        borderRadius: 5,
       );
     }
-    return const OneUIPaymentBrandIcon(
-      brand: CardBrand.visa,
-      width: 36,
-      height: 26,
-    );
+    // Uniform One UI icon badge (morphs to squircle or circle with detailIconShape)
+    return _buildPreviewIcon(Icons.payment_rounded, OneUITheme.accentAmber);
   }
 
   Color _selectableColor({Color fallback = OneUITheme.textSecondary}) {
@@ -254,6 +291,7 @@ class _DetailScreenLivePreview extends StatelessWidget {
         OneUIGroupCard(
           margin: EdgeInsets.zero,
           items: [
+            // Row 1: Service name
             OneUIGroupItem(
               leading: _buildPreviewIcon(Icons.badge_outlined, OneUITheme.accentBlue),
               title: 'Service name',
@@ -261,6 +299,7 @@ class _DetailScreenLivePreview extends StatelessWidget {
               subtitleColor: _selectableColor(fallback: OneUITheme.textPrimary),
               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
             ),
+            // Row 2: Price / Cost
             OneUIGroupItem(
               leading: _buildPreviewIcon(Icons.attach_money_rounded, OneUITheme.accentGreen),
               title: 'Price / Cost',
@@ -268,39 +307,35 @@ class _DetailScreenLivePreview extends StatelessWidget {
               subtitleColor: _selectableColor(fallback: OneUITheme.accentGreen),
               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
             ),
-            OneUIGroupItem(
-              leading: _buildPreviewIcon(Icons.repeat_rounded, OneUITheme.accentPurple),
-              title: 'Billing cycle',
-              subtitle: 'Monthly (12x / year)',
-              subtitleColor: _selectableColor(fallback: OneUITheme.textSecondary),
-              trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-            ),
-            OneUIGroupItem(
-              leading: _buildPreviewIcon(Icons.calendar_month_rounded, OneUITheme.accentTeal),
-              title: 'Next renewal date',
-              subtitle: 'Sep 30, 2026',
-              subtitleColor: _selectableColor(fallback: OneUITheme.textSecondary),
-              trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-            ),
-            OneUIGroupItem(
-              leading: _buildPreviewIcon(Icons.movie_outlined, OneUITheme.accentPurple),
-              title: 'Category',
-              subtitle: 'Entertainment',
-              subtitleColor: _selectableColor(fallback: OneUITheme.textPrimary),
-              trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-            ),
+            // Row 3: Payment method
             OneUIGroupItem(
               leading: _buildPreviewPaymentIcon(),
               title: 'Payment method',
               subtitle: 'Visa •••• 4242',
-              subtitleColor: _selectableColor(fallback: OneUITheme.textPrimary),
-              trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-            ),
-            OneUIGroupItem(
-              leading: _buildPreviewIcon(Icons.notes_rounded, Colors.white70),
-              title: 'Plan notes',
-              subtitle: '4K Ultra HD • Family Plan',
-              subtitleColor: _selectableColor(fallback: OneUITheme.textSecondary),
+              customSubtitle: Row(
+                children: [
+                  if (paymentIconStyle == DetailPaymentIconStyle.iconBadge && showInlineCardBrand) ...[
+                    const OneUIPaymentBrandIcon(
+                      brand: CardBrand.visa,
+                      width: 22,
+                      height: 14.5,
+                      borderRadius: 2.5,
+                    ),
+                    const SizedBox(width: 7),
+                  ],
+                  Flexible(
+                    child: Text(
+                      'Visa •••• 4242',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.normal,
+                        color: _selectableColor(fallback: OneUITheme.textPrimary),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
             ),
           ],
@@ -310,15 +345,10 @@ class _DetailScreenLivePreview extends StatelessWidget {
   }
 }
 
-/// Dedicated subpage to select Icon Shape with interactive live preview
-class _DetailIconShapeOptionScreen extends StatefulWidget {
+/// Dedicated subpage to select Icon Shape with interactive 3-row live preview
+class _DetailIconShapeOptionScreen extends StatelessWidget {
   const _DetailIconShapeOptionScreen();
 
-  @override
-  State<_DetailIconShapeOptionScreen> createState() => _DetailIconShapeOptionScreenState();
-}
-
-class _DetailIconShapeOptionScreenState extends State<_DetailIconShapeOptionScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -351,13 +381,15 @@ class _DetailIconShapeOptionScreenState extends State<_DetailIconShapeOptionScre
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Live Preview Card
+                          // 3-Row Live Preview Card
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: _DetailScreenLivePreview(
                               showIcons: ctrl.detailShowItemIcons,
                               iconShape: ctrl.detailIconShape,
                               highlightSelectable: ctrl.detailHighlightSelectable,
+                              paymentIconStyle: ctrl.detailPaymentIconStyle,
+                              showInlineCardBrand: ctrl.detailShowInlineCardBrand,
                             ),
                           ),
 
@@ -399,7 +431,7 @@ class _DetailIconShapeOptionScreenState extends State<_DetailIconShapeOptionScre
     );
   }
 
-  OneUIGroupItem _buildRadioItem({
+  static OneUIGroupItem _buildRadioItem({
     required String label,
     required DetailIconShape value,
     required DetailIconShape selectedValue,
@@ -430,6 +462,157 @@ class _DetailIconShapeOptionScreenState extends State<_DetailIconShapeOptionScre
             : null,
       ),
       title: label,
+      trailing: const SizedBox.shrink(),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onSelect();
+      },
+    );
+  }
+}
+
+/// Dedicated subpage to select Payment Method Icon Style with interactive 3-row live preview
+class _DetailPaymentIconOptionScreen extends StatelessWidget {
+  const _DetailPaymentIconOptionScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        final ctrl = OneUIEffectsController.instance;
+
+        return Scaffold(
+          backgroundColor: OneUITheme.surfacePitch,
+          body: Stack(
+            children: [
+              CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: OneUICollapsibleHeaderDelegate(
+                      title: 'Payment method icon',
+                      hasBigHeader: false,
+                      showBackButton: true,
+                      onBack: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 3-Row Live Preview Card
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _DetailScreenLivePreview(
+                              showIcons: ctrl.detailShowItemIcons,
+                              iconShape: ctrl.detailIconShape,
+                              highlightSelectable: ctrl.detailHighlightSelectable,
+                              paymentIconStyle: ctrl.detailPaymentIconStyle,
+                              showInlineCardBrand: ctrl.detailShowInlineCardBrand,
+                            ),
+                          ),
+
+                          // Radio options card
+                          OneUIGroupCard(
+                            items: [
+                              _buildPaymentRadioItem(
+                                label: 'Card brand logo',
+                                description: 'Official rectangular card logo (never deformed into circle or squircle)',
+                                value: DetailPaymentIconStyle.cardBrand,
+                                selectedValue: ctrl.detailPaymentIconStyle,
+                                onSelect: () => ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand,
+                              ),
+                              _buildPaymentRadioItem(
+                                label: 'Setting icon badge',
+                                description: 'Uniform One UI icon badge conforming to icon shape (squircle/circle)',
+                                value: DetailPaymentIconStyle.iconBadge,
+                                selectedValue: ctrl.detailPaymentIconStyle,
+                                onSelect: () => ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.iconBadge,
+                              ),
+                            ],
+                          ),
+
+                          // If iconBadge is active, provide option to show inline brand beside subtitle
+                          if (ctrl.detailPaymentIconStyle == DetailPaymentIconStyle.iconBadge) ...[
+                            const SizedBox(height: 16),
+                            OneUISection(
+                              title: 'Description options',
+                              child: OneUIGroupCard(
+                                items: [
+                                  OneUIGroupItem(
+                                    title: 'Card logo beside description',
+                                    subtitle: 'Show mini card brand next to card name',
+                                    trailing: SubscriptionDetailCustomizerScreen._buildOneUISwitch(
+                                      value: ctrl.detailShowInlineCardBrand,
+                                      onChanged: (val) => ctrl.detailShowInlineCardBrand = val,
+                                    ),
+                                    onTap: () => ctrl.detailShowInlineCardBrand = !ctrl.detailShowInlineCardBrand,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: OneUIBottomVignette(
+                  hasFloatingElements: false,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static OneUIGroupItem _buildPaymentRadioItem({
+    required String label,
+    required String description,
+    required DetailPaymentIconStyle value,
+    required DetailPaymentIconStyle selectedValue,
+    required VoidCallback onSelect,
+  }) {
+    final isSelected = value == selectedValue;
+    return OneUIGroupItem(
+      leading: Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? OneUITheme.accentBlue : const Color(0xFF5E5E62),
+            width: isSelected ? 2.0 : 1.6,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: isSelected
+            ? Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: OneUITheme.accentBlue,
+                ),
+              )
+            : null,
+      ),
+      title: label,
+      subtitle: description,
       trailing: const SizedBox.shrink(),
       onTap: () {
         HapticFeedback.selectionClick();
