@@ -26,6 +26,9 @@ abstract class SubscriptionLocalDataSource {
 
   Future<bool> getGroupByDate();
   Future<void> setGroupByDate(bool value);
+
+  Future<List<String>> getRecentSearches();
+  Future<void> saveRecentSearches(List<String> searches);
 }
 
 /// SharedPreferences implementation of SubscriptionLocalDataSource
@@ -40,6 +43,7 @@ class SubscriptionPreferencesDataSource implements SubscriptionLocalDataSource {
   static const String keyDefaultReminder = 'onespend_default_reminder';
   static const String keySortOption = 'onespend_sort_option';
   static const String keyGroupByDate = 'onespend_group_by_date';
+  static const String keyRecentSearches = 'onespend_recent_searches';
 
   SubscriptionPreferencesDataSource([this._prefs]);
 
@@ -113,4 +117,23 @@ class SubscriptionPreferencesDataSource implements SubscriptionLocalDataSource {
 
   @override
   Future<void> setGroupByDate(bool value) async => await (await _getPrefs).setBool(keyGroupByDate, value);
+
+  @override
+  Future<List<String>> getRecentSearches() async {
+    final prefs = await _getPrefs;
+    final raw = prefs.getString(keyRecentSearches);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded.map((e) => e.toString()).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<void> saveRecentSearches(List<String> searches) async {
+    final prefs = await _getPrefs;
+    await prefs.setString(keyRecentSearches, jsonEncode(searches));
+  }
 }

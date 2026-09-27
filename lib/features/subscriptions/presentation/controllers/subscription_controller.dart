@@ -40,6 +40,7 @@ class SubscriptionController extends ChangeNotifier {
 
   final List<Subscription> _subscriptions = [];
   final List<PaymentMethod> _paymentMethods = [];
+  final List<String> _recentSearches = [];
   double _monthlyBudget = 150.0;
   String _currency = '\$';
   String _userName = 'Syed Arham Raza';
@@ -97,6 +98,7 @@ class SubscriptionController extends ChangeNotifier {
     _defaultReminderDays = 2;
     _sortOption = SubscriptionSortOption.renewalAsc;
     _groupByDate = false;
+    _recentSearches.clear();
     _prePauseStatus.clear();
     _invalidateCache();
     super.notifyListeners();
@@ -105,6 +107,7 @@ class SubscriptionController extends ChangeNotifier {
   // Getters
   List<Subscription> get subscriptions => List.unmodifiable(_subscriptions);
   List<PaymentMethod> get paymentMethods => List.unmodifiable(_paymentMethods);
+  List<String> get recentSearches => List.unmodifiable(_recentSearches);
   double get monthlyBudget => _monthlyBudget;
   String get currency => _currency;
   String get userName => _userName;
@@ -233,6 +236,10 @@ class SubscriptionController extends ChangeNotifier {
       _defaultReminderDays = await subscriptionRepository.getDefaultReminderDays();
       _sortOption = await subscriptionRepository.getSortOption();
       _groupByDate = await subscriptionRepository.getGroupByDate();
+
+      final loadedSearches = await subscriptionRepository.getRecentSearches();
+      _recentSearches.clear();
+      _recentSearches.addAll(loadedSearches);
 
       _isLoaded = true;
       checkAndProcessAutoRenewals();
@@ -579,6 +586,44 @@ class SubscriptionController extends ChangeNotifier {
     _groupByDate = value;
     notifyListeners();
     _saveToRepository();
+  }
+
+  // --- Recent Searches ---
+  Future<void> _saveRecentSearches() async {
+    try {
+      await subscriptionRepository.saveRecentSearches(_recentSearches);
+    } catch (e) {
+      debugPrint('OneSpend: Failed to save recent searches: $e');
+    }
+  }
+
+  void addRecentSearch(String query) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    _recentSearches.removeWhere((q) => q.toLowerCase() == trimmed.toLowerCase());
+    _recentSearches.insert(0, trimmed);
+    if (_recentSearches.length > 10) {
+      _recentSearches.removeRange(10, _recentSearches.length);
+    }
+    notifyListeners();
+    _saveRecentSearches();
+  }
+
+  void removeRecentSearch(String query) {
+    final trimmed = query.trim().toLowerCase();
+    final beforeCount = _recentSearches.length;
+    _recentSearches.removeWhere((q) => q.toLowerCase() == trimmed);
+    if (_recentSearches.length != beforeCount) {
+      notifyListeners();
+      _saveRecentSearches();
+    }
+  }
+
+  void clearRecentSearches() {
+    if (_recentSearches.isEmpty) return;
+    _recentSearches.clear();
+    notifyListeners();
+    _saveRecentSearches();
   }
 
   void restoreDefaultCatalog() {

@@ -24,6 +24,7 @@ import 'package:onespend/screens/payment_method_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_spending_chart.dart';
 import 'package:onespend/widgets/one_ui_bottom_vignette.dart';
+import 'package:onespend/widgets/one_ui_status_bar_scrim.dart';
 import 'package:onespend/widgets/one_ui_cancel_save_pill.dart';
 import 'package:onespend/widgets/one_ui_selection_pills.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
@@ -31,6 +32,7 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/di/injection.dart';
+import 'package:onespend/features/subscriptions/data/datasources/subscription_drift_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -2204,6 +2206,8 @@ void main() {
     expect(OneUIEffectsController.instance.bottomVignetteEffect, isTrue);
 
     // Toggle switch off
+    await tester.dragUntilVisible(find.text('Bottom gradient vignette'), find.byType(CustomScrollView), const Offset(0, -100));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Bottom gradient vignette'));
     await tester.pumpAndSettle();
 
@@ -2389,7 +2393,253 @@ void main() {
 
     expect(find.byType(OneUIBottomVignette), findsOneWidget);
   });
+
+  test('SubscriptionDriftDataSource saves and retrieves recent searches via Drift AppSettingsTable', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final ds = SubscriptionDriftDataSource(db);
+
+    expect(await ds.getRecentSearches(), isEmpty);
+
+    await ds.saveRecentSearches(['Netflix', 'Spotify', 'ChatGPT']);
+    final loaded = await ds.getRecentSearches();
+    expect(loaded, ['Netflix', 'Spotify', 'ChatGPT']);
+
+    await ds.saveRecentSearches([]);
+    expect(await ds.getRecentSearches(), isEmpty);
+    await db.close();
+  });
+
+  test('SubscriptionController handles recent searches deduplication and cap', () {
+    final store = SubscriptionStore.instance;
+    expect(store.recentSearches, isEmpty);
+
+    store.addRecentSearch('Netflix');
+    store.addRecentSearch('Spotify');
+    expect(store.recentSearches, ['Spotify', 'Netflix']);
+
+    // Re-adding Netflix moves it to the front
+    store.addRecentSearch('Netflix');
+    expect(store.recentSearches, ['Netflix', 'Spotify']);
+
+    // Case-insensitive deduplication
+    store.addRecentSearch('spotify');
+    expect(store.recentSearches, ['spotify', 'Netflix']);
+
+    // Cap at 10
+    for (int i = 0; i < 15; i++) {
+      store.addRecentSearch('Query $i');
+    }
+    expect(store.recentSearches.length, 10);
+    expect(store.recentSearches.first, 'Query 14');
+
+    // Remove single
+    store.removeRecentSearch('Query 14');
+    expect(store.recentSearches.contains('Query 14'), isFalse);
+    expect(store.recentSearches.length, 9);
+
+    // Clear all
+    store.clearRecentSearches();
+    expect(store.recentSearches, isEmpty);
+  });
+
+  testWidgets('SubscriptionsScreen displays Samsung One UI Recent Searches chips, handles search tap, delete, and clear all', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const OneSpendApp());
+    await tester.pumpAndSettle();
+
+    // Tap search icon in header
+    final searchIconFinder = find.byIcon(Icons.search_rounded).first;
+    await tester.tap(searchIconFinder);
+    await tester.pumpAndSettle();
+
+    // Verify empty state "No recent searches" is visible
+    expect(find.text('No recent searches'), findsOneWidget);
+    expect(find.text('Recent searches'), findsNothing);
+
+    // Add recent searches programmatically
+    SubscriptionStore.instance.addRecentSearch('Netflix');
+    SubscriptionStore.instance.addRecentSearch('Spotify');
+    await tester.pumpAndSettle();
+
+    // Verify "Recent searches" header, chips, and "Clear all" button appear
+    expect(find.text('Recent searches'), findsOneWidget);
+    expect(find.text('Clear all'), findsOneWidget);
+    expect(find.text('Netflix'), findsOneWidget);
+    expect(find.text('Spotify'), findsOneWidget);
+    expect(find.text('No recent searches'), findsNothing);
+
+    // Tap on 'Netflix' chip -> triggers search and shows Netflix results
+    await tester.tap(find.text('Netflix'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Results (1)'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    final textField = tester.widget<TextField>(find.byType(TextField));
+    expect(textField.controller?.text, 'Netflix');
+
+    // Clear search text field using clear button
+    await tester.tap(find.byIcon(Icons.close_rounded).first);
+    await tester.pumpAndSettle();
+
+    // Back to recent searches view
+    expect(find.text('Recent searches'), findsOneWidget);
+    expect(find.text('Netflix'), findsOneWidget);
+    expect(find.text('Spotify'), findsOneWidget);
+
+    // Tap delete on Spotify chip
+    final spotifyCloseBtn = find.descendant(
+      of: find.ancestor(of: find.text('Spotify'), matching: find.byType(Container)),
+      matching: find.byIcon(Icons.close_rounded),
+    );
+    await tester.tap(spotifyCloseBtn.first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Spotify'), findsNothing);
+    expect(find.text('Netflix'), findsOneWidget);
+
+    // Tap "Clear all"
+    await tester.tap(find.text('Clear all'));
+    await tester.pumpAndSettle();
+
+    // Verify reverts cleanly to "No recent searches"
+    expect(find.text('No recent searches'), findsOneWidget);
+    expect(find.text('Recent searches'), findsNothing);
+  });
+
+  testWidgets('OneUIBottomVignette decreases height and gradient when hasFloatingElements is false', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    // 1. With floating elements (normal mode)
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: OneUIBottomVignette(hasFloatingElements: true),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final animatedContainerNormal = tester.widget<AnimatedContainer>(
+      find.descendant(of: find.byType(OneUIBottomVignette), matching: find.byType(AnimatedContainer)),
+    );
+    final normalBoxDec = animatedContainerNormal.decoration as BoxDecoration;
+    expect(normalBoxDec.gradient, OneUIBottomVignette.normalGradient);
+
+    // 2. Without floating elements (decreased mode)
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: OneUIBottomVignette(hasFloatingElements: false),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final animatedContainerDecreased = tester.widget<AnimatedContainer>(
+      find.descendant(of: find.byType(OneUIBottomVignette), matching: find.byType(AnimatedContainer)),
+    );
+    final decBoxDec = animatedContainerDecreased.decoration as BoxDecoration;
+    expect(decBoxDec.gradient, OneUIBottomVignette.decreasedGradient);
+  });
+
+  testWidgets('PopularPresetsScreen toggles OneUIBottomVignette hasFloatingElements between search modes', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: const PopularPresetsScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    // In browsing mode, hasFloatingElements is false (decreased)
+    var vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isFalse);
+
+    // Enter search mode
+    await tester.tap(find.byIcon(Icons.search_rounded).first);
+    await tester.pumpAndSettle();
+
+    // Now hasFloatingElements is true (normal mode behind search pill)
+    vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isTrue);
+  });
+
+  testWidgets('OneUIStatusBarScrim renders with extended height, progressive blur, and GPU isolation', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: OneUIStatusBarScrim(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIStatusBarScrim), findsOneWidget);
+    final scrimFinder = find.byType(OneUIStatusBarScrim);
+    expect(find.descendant(of: scrimFinder, matching: find.byType(IgnorePointer)), findsOneWidget);
+    expect(find.descendant(of: scrimFinder, matching: find.byType(RepaintBoundary)), findsOneWidget);
+    expect(find.descendant(of: scrimFinder, matching: find.byType(BackdropFilter)), findsOneWidget);
+  });
+
+  testWidgets('UpcomingScheduleScreen renders OneUIBottomVignette with hasFloatingElements: false', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: UpcomingScheduleScreen(
+        subscription: SubscriptionStore.instance.subscriptions.first,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    final vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isFalse);
+  });
+
+  testWidgets('PaymentHistoryScreen renders OneUIBottomVignette with hasFloatingElements: false', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: OneUITheme.darkTheme,
+      home: PaymentHistoryScreen(
+        subscriptionId: SubscriptionStore.instance.subscriptions.first.id,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    final vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isFalse);
+  });
+
+  testWidgets('PaymentMethodPickerScreen renders OneUIBottomVignette with hasFloatingElements: false in manage-only mode', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(const MaterialApp(
+      home: PaymentMethodPickerScreen(
+        isManageOnly: true,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OneUIBottomVignette), findsOneWidget);
+    final vignette = tester.widget<OneUIBottomVignette>(find.byType(OneUIBottomVignette));
+    expect(vignette.hasFloatingElements, isFalse);
+  });
 }
+
 
 
 

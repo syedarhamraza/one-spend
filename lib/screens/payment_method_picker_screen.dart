@@ -954,11 +954,13 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
               ),
 
               // Progressive OLED Bottom Vignette Scrim
-              const Positioned(
+              Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: OneUIBottomVignette(),
+                child: OneUIBottomVignette(
+                  hasFloatingElements: !widget.isManageOnly || _isSelectionMode,
+                ),
               ),
 
               // Bottom Floating Controls: Seamless transition between Normal Mode (Save Pill) and Selection Mode (Action Bar)

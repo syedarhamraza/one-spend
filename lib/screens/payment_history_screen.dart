@@ -8,6 +8,7 @@ import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_brand_icon.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 
 /// Samsung One UI Payment History Screen.
 /// Displays reverse-chronological ledger of past subscription charges,
@@ -113,9 +114,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
-          body: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
+          body: Stack(
+            children: [
+              CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
               // One UI Collapsible Header with Add Action
               SliverPersistentHeader(
                 pinned: true,
@@ -378,7 +381,17 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               ),
             ],
           ),
-        );
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: OneUIBottomVignette(
+              hasFloatingElements: false,
+            ),
+          ),
+        ],
+      ),
+    );
       },
     );
   }

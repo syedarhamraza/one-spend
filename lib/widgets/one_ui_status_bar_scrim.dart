@@ -1,65 +1,88 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../theme/one_ui_theme.dart';
 
 /// Samsung One UI Status Bar Scrim (Edge-to-Edge Progressive Blur & Gradient Scrim).
 ///
 /// Prevents scrolling cards and text from clashing with the white system status bar
 /// icons (clock, battery, Wi-Fi).
-/// Confined strictly to 90% of the system status bar height from the top of the device.
+/// Extends gracefully past the status bar (topPadding + 20px) with a multi-stop OLED
+/// gradient and progressive backdrop blur to ensure fluid, seamless dissolution.
 class OneUIStatusBarScrim extends StatelessWidget {
   final double? height;
+  final bool isVisible;
 
   const OneUIStatusBarScrim({
     super.key,
     this.height,
+    this.isVisible = true,
   });
+
+  static const LinearGradient topGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFA000000), // ~98% OLED black over system clock & battery
+      Color(0xEB000000), // ~92% OLED black
+      Color(0x9E000000), // ~62% dark feathering at status bar threshold
+      Color(0x45000000), // ~27% subtle fade
+      Color(0x12000000), // ~7% subtle fade
+      Colors.transparent, // 0%
+    ],
+    stops: [0.0, 0.35, 0.60, 0.78, 0.92, 1.0],
+  );
+
+  static const LinearGradient blurMask = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Colors.black,
+      Colors.black,
+      Color(0x80000000),
+      Colors.transparent,
+    ],
+    stops: [0.0, 0.40, 0.75, 1.0],
+  );
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
-    final scrimHeight = height ?? (topPadding > 0 ? topPadding * 0.90 : 32.0);
+    return AnimatedBuilder(
+      animation: OneUIEffectsController.instance,
+      builder: (context, _) {
+        final isEnabled = OneUIEffectsController.instance.bottomVignetteEffect && isVisible;
+        if (!isEnabled) return const SizedBox.shrink();
 
-    return SizedBox(
-      height: scrimHeight,
-      child: IgnorePointer(
-        child: ClipRect(
-          child: ShaderMask(
-            shaderCallback: (Rect bounds) {
-              return const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black,
-                  Colors.transparent,
-                ],
-                stops: [0.35, 1.0],
-              ).createShader(bounds);
-            },
-            blendMode: BlendMode.dstIn,
-            child: RepaintBoundary(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: 16.0,
-                  sigmaY: 16.0,
-                ),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xF2000000), // Pure OLED pitch black ~95%
-                        Colors.transparent,
-                      ],
-                      stops: [0.25, 1.0],
+        final topPadding = MediaQuery.of(context).padding.top;
+        final scrimHeight = height ?? (topPadding > 0 ? topPadding + 20.0 : 48.0);
+
+        return IgnorePointer(
+          child: SizedBox(
+            height: scrimHeight,
+            width: double.infinity,
+            child: ClipRect(
+              child: ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return blurMask.createShader(bounds);
+                },
+                blendMode: BlendMode.dstIn,
+                child: RepaintBoundary(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: 12.0,
+                      sigmaY: 12.0,
+                    ),
+                    child: const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: topGradient,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
