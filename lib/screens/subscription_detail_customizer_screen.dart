@@ -70,7 +70,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                                   title: 'Icon shape',
                                   subtitle: ctrl.detailIconShape == DetailIconShape.circle
                                       ? 'Circle'
-                                      : 'Rounded (Squircle)',
+                                      : 'Squircle',
                                   subtitleColor: OneUITheme.accentBlue,
                                   trailing: const Icon(
                                     Icons.chevron_right_rounded,
@@ -397,7 +397,7 @@ class _DetailIconShapeOptionScreen extends StatelessWidget {
                           OneUIGroupCard(
                             items: [
                               _buildRadioItem(
-                                label: 'Rounded (Squircle)',
+                                label: 'Squircle',
                                 value: DetailIconShape.squircle,
                                 selectedValue: ctrl.detailIconShape,
                                 onSelect: () => ctrl.detailIconShape = DetailIconShape.squircle,

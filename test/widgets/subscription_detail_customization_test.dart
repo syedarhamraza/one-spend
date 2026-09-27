@@ -29,47 +29,47 @@ void main() {
   group('OneUIEffectsController Detail Screen Settings', () {
     test('Defaults and reset functionality', () {
       final ctrl = OneUIEffectsController.instance;
-      expect(ctrl.detailShowItemIcons, isTrue);
-      expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
-      expect(ctrl.detailHighlightSelectable, isTrue);
-      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.cardBrand));
-      expect(ctrl.detailShowInlineCardBrand, isTrue);
-
-      ctrl.detailShowItemIcons = false;
-      ctrl.detailIconShape = DetailIconShape.circle;
-      ctrl.detailHighlightSelectable = false;
-      ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.iconBadge;
-      ctrl.detailShowInlineCardBrand = false;
-
       expect(ctrl.detailShowItemIcons, isFalse);
-      expect(ctrl.detailIconShape, equals(DetailIconShape.circle));
+      expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
       expect(ctrl.detailHighlightSelectable, isFalse);
       expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
+      expect(ctrl.detailShowInlineCardBrand, isTrue);
+
+      ctrl.detailShowItemIcons = true;
+      ctrl.detailIconShape = DetailIconShape.circle;
+      ctrl.detailHighlightSelectable = true;
+      ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
+      ctrl.detailShowInlineCardBrand = false;
+
+      expect(ctrl.detailShowItemIcons, isTrue);
+      expect(ctrl.detailIconShape, equals(DetailIconShape.circle));
+      expect(ctrl.detailHighlightSelectable, isTrue);
+      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.cardBrand));
       expect(ctrl.detailShowInlineCardBrand, isFalse);
 
       ctrl.resetDetailStyle();
 
-      expect(ctrl.detailShowItemIcons, isTrue);
+      expect(ctrl.detailShowItemIcons, isFalse);
       expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
-      expect(ctrl.detailHighlightSelectable, isTrue);
-      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.cardBrand));
+      expect(ctrl.detailHighlightSelectable, isFalse);
+      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
       expect(ctrl.detailShowInlineCardBrand, isTrue);
     });
 
     test('resetCardStyle also resets detail styling', () {
       final ctrl = OneUIEffectsController.instance;
-      ctrl.detailShowItemIcons = false;
+      ctrl.detailShowItemIcons = true;
       ctrl.detailIconShape = DetailIconShape.circle;
-      ctrl.detailHighlightSelectable = false;
-      ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.iconBadge;
+      ctrl.detailHighlightSelectable = true;
+      ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
       ctrl.detailShowInlineCardBrand = false;
 
       ctrl.resetCardStyle();
 
-      expect(ctrl.detailShowItemIcons, isTrue);
+      expect(ctrl.detailShowItemIcons, isFalse);
       expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
-      expect(ctrl.detailHighlightSelectable, isTrue);
-      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.cardBrand));
+      expect(ctrl.detailHighlightSelectable, isFalse);
+      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
       expect(ctrl.detailShowInlineCardBrand, isTrue);
     });
   });
@@ -346,24 +346,24 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('LIVE PREVIEW'), findsOneWidget);
-      expect(ctrl.detailShowItemIcons, isTrue);
+      expect(ctrl.detailShowItemIcons, isFalse);
 
-      // Tap "Show setting icons"
+      // Tap "Show setting icons" to toggle on
       final showIconsFinder = find.text('Show setting icons');
       expect(showIconsFinder, findsOneWidget);
       await tester.tap(showIconsFinder);
       await tester.pumpAndSettle();
 
-      expect(ctrl.detailShowItemIcons, isFalse);
+      expect(ctrl.detailShowItemIcons, isTrue);
 
-      // Tap "Blue selectable descriptions" to toggle
-      expect(ctrl.detailHighlightSelectable, isTrue);
+      // Tap "Blue selectable descriptions" to toggle on
+      expect(ctrl.detailHighlightSelectable, isFalse);
       final blueDescFinder = find.text('Blue selectable descriptions');
       expect(blueDescFinder, findsOneWidget);
       await tester.tap(blueDescFinder);
       await tester.pumpAndSettle();
 
-      expect(ctrl.detailHighlightSelectable, isFalse);
+      expect(ctrl.detailHighlightSelectable, isTrue);
 
       // Tap Reset to defaults
       final resetFinder = find.text('Reset to defaults');
@@ -371,14 +371,14 @@ void main() {
       await tester.tap(resetFinder);
       await tester.pumpAndSettle();
 
-      expect(ctrl.detailShowItemIcons, isTrue);
-      expect(ctrl.detailHighlightSelectable, isTrue);
+      expect(ctrl.detailShowItemIcons, isFalse);
+      expect(ctrl.detailHighlightSelectable, isFalse);
       expect(ctrl.detailIconShape, equals(DetailIconShape.squircle));
-      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.cardBrand));
+      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
       expect(ctrl.detailShowInlineCardBrand, isTrue);
     });
 
-    testWidgets('Payment method icon subpage allows switching to Setting icon badge and toggling inline logo', (WidgetTester tester) async {
+    testWidgets('Payment method icon subpage allows switching between styles and toggling inline logo', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -399,12 +399,18 @@ void main() {
       await tester.tap(paymentIconFinder);
       await tester.pumpAndSettle();
 
-      // Select Setting icon badge
+      // Switch to Card brand logo
+      final cardBrandOptionFinder = find.text('Card brand logo');
+      expect(cardBrandOptionFinder, findsOneWidget);
+      await tester.tap(cardBrandOptionFinder);
+      await tester.pumpAndSettle();
+      expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.cardBrand));
+
+      // Switch back to Setting icon badge
       final badgeOptionFinder = find.text('Setting icon badge');
       expect(badgeOptionFinder, findsOneWidget);
       await tester.tap(badgeOptionFinder);
       await tester.pumpAndSettle();
-
       expect(ctrl.detailPaymentIconStyle, equals(DetailPaymentIconStyle.iconBadge));
 
       // Inline card brand option appears
@@ -451,6 +457,9 @@ void main() {
       expect(find.text('Netflix Premium'), findsOneWidget);
       expect(find.text('\$15.99 / Monthly'), findsOneWidget);
       expect(find.text('Visa •••• 4242'), findsOneWidget);
+
+      // Verify 'Squircle' radio option is displayed
+      expect(find.text('Squircle'), findsOneWidget);
 
       // Select Circle
       final circleFinder = find.text('Circle');

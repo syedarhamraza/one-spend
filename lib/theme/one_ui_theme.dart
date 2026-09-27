@@ -96,10 +96,10 @@ class OneUIEffectsController extends ChangeNotifier {
   bool _showDailyEquivalent = false;
 
   // Detail Screen Settings Customizations
-  bool _detailShowItemIcons = true;
+  bool _detailShowItemIcons = false;
   DetailIconShape _detailIconShape = DetailIconShape.squircle;
-  bool _detailHighlightSelectable = true;
-  DetailPaymentIconStyle _detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
+  bool _detailHighlightSelectable = false;
+  DetailPaymentIconStyle _detailPaymentIconStyle = DetailPaymentIconStyle.iconBadge;
   bool _detailShowInlineCardBrand = true;
 
   /// Explicit initialization hook (useful for test suites and hot restarts)
@@ -178,7 +178,7 @@ class OneUIEffectsController extends ChangeNotifier {
       _showBillingCycle = prefs.getBool('showBillingCycle') ?? false;
       _showDailyEquivalent = prefs.getBool('showDailyEquivalent') ?? false;
 
-      _detailShowItemIcons = prefs.getBool('detailShowItemIcons') ?? true;
+      _detailShowItemIcons = prefs.getBool('detailShowItemIcons') ?? false;
       final detailIconShapeStr = prefs.getString('detailIconShape');
       if (detailIconShapeStr != null) {
         _detailIconShape = DetailIconShape.values.firstWhere(
@@ -186,12 +186,12 @@ class OneUIEffectsController extends ChangeNotifier {
           orElse: () => DetailIconShape.squircle,
         );
       }
-      _detailHighlightSelectable = prefs.getBool('detailHighlightSelectable') ?? true;
+      _detailHighlightSelectable = prefs.getBool('detailHighlightSelectable') ?? false;
       final detailPaymentIconStyleStr = prefs.getString('detailPaymentIconStyle');
       if (detailPaymentIconStyleStr != null) {
         _detailPaymentIconStyle = DetailPaymentIconStyle.values.firstWhere(
           (e) => e.name == detailPaymentIconStyleStr,
-          orElse: () => DetailPaymentIconStyle.cardBrand,
+          orElse: () => DetailPaymentIconStyle.iconBadge,
         );
       }
       _detailShowInlineCardBrand = prefs.getBool('detailShowInlineCardBrand') ?? true;
@@ -387,10 +387,10 @@ class OneUIEffectsController extends ChangeNotifier {
 
   /// Resets subscription detail screen styling back to default One UI specs
   void resetDetailStyle() {
-    _detailShowItemIcons = true;
+    _detailShowItemIcons = false;
     _detailIconShape = DetailIconShape.squircle;
-    _detailHighlightSelectable = true;
-    _detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
+    _detailHighlightSelectable = false;
+    _detailPaymentIconStyle = DetailPaymentIconStyle.iconBadge;
     _detailShowInlineCardBrand = true;
 
     _saveSetting('detailShowItemIcons', _detailShowItemIcons);
@@ -418,10 +418,10 @@ class OneUIEffectsController extends ChangeNotifier {
     _showBillingCycle = false;
     _showDailyEquivalent = false;
 
-    _detailShowItemIcons = true;
+    _detailShowItemIcons = false;
     _detailIconShape = DetailIconShape.squircle;
-    _detailHighlightSelectable = true;
-    _detailPaymentIconStyle = DetailPaymentIconStyle.cardBrand;
+    _detailHighlightSelectable = false;
+    _detailPaymentIconStyle = DetailPaymentIconStyle.iconBadge;
     _detailShowInlineCardBrand = true;
 
     _saveStringSetting('cardBackground', _cardBackground.name);
