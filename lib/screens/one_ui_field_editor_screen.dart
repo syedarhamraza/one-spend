@@ -365,16 +365,34 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Charged ${cycle.occurrencesPerYear} time${cycle.occurrencesPerYear == 1 ? '' : 's'} a year',
+                              switch (cycle) {
+                                BillingCycle.monthly => 'Billed once every month (12x/yr)',
+                                BillingCycle.yearly => 'Billed once every year (1x/yr)',
+                                BillingCycle.weekly => 'Billed every week (52x/yr)',
+                                BillingCycle.quarterly => 'Billed every 3 months (4x/yr)',
+                              },
                               style: const TextStyle(fontSize: 12.5, color: OneUITheme.textSecondary),
                             ),
                           ],
                         ),
                       ),
-                      if (isSelected)
-                        const Icon(Icons.check_circle_rounded, color: OneUITheme.accentBlue, size: 22)
-                      else
-                        Icon(Icons.radio_button_unchecked_rounded, color: Colors.white.withValues(alpha: 0.3), size: 22),
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected
+                                ? OneUITheme.accentBlue
+                                : Colors.white.withValues(alpha: 0.3),
+                            width: isSelected ? 0 : 1.5,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                            : null,
+                      ),
                     ],
                   ),
                 ),

@@ -40,43 +40,53 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
 
   static const Map<SubscriptionCategory, _CategoryMeta> _meta = {
     SubscriptionCategory.entertainment: _CategoryMeta(
-      subtitle: 'Movies, TV series, streaming & live video',
+      heroSubtitle: 'Movies, TV series, streaming & live video',
+      listSubtitle: 'Movies, streaming & video',
       color: Color(0xFFE50914),
     ),
     SubscriptionCategory.music: _CategoryMeta(
-      subtitle: 'Music streaming, podcasts & audiobooks',
+      heroSubtitle: 'Music streaming, podcasts & audiobooks',
+      listSubtitle: 'Music, podcasts & audio',
       color: Color(0xFF1DB954),
     ),
     SubscriptionCategory.productivity: _CategoryMeta(
-      subtitle: 'Productivity suites, AI assistants & workspaces',
+      heroSubtitle: 'Productivity suites, AI assistants & workspaces',
+      listSubtitle: 'Suites, AI & workspaces',
       color: Color(0xFF6C5CE7),
     ),
     SubscriptionCategory.cloud: _CategoryMeta(
-      subtitle: 'Cloud storage, file hosting & drive backup',
+      heroSubtitle: 'Cloud storage, file hosting & drive backup',
+      listSubtitle: 'Storage & file backup',
       color: Color(0xFF0984E3),
     ),
     SubscriptionCategory.gaming: _CategoryMeta(
-      subtitle: 'Game passes, consoles & cloud gaming',
+      heroSubtitle: 'Game passes, consoles & cloud gaming',
+      listSubtitle: 'Games & cloud passes',
       color: Color(0xFFE84393),
     ),
     SubscriptionCategory.design: _CategoryMeta(
-      subtitle: 'Creative suites, vector & graphic design tools',
+      heroSubtitle: 'Creative suites, vector & graphic design tools',
+      listSubtitle: 'Creative & vector tools',
       color: Color(0xFFFF7675),
     ),
     SubscriptionCategory.developer: _CategoryMeta(
-      subtitle: 'Cloud hosting, APIs, code tools & repositories',
+      heroSubtitle: 'Cloud hosting, APIs, code tools & repositories',
+      listSubtitle: 'APIs, code & cloud hosting',
       color: Color(0xFF00CEC9),
     ),
     SubscriptionCategory.utilities: _CategoryMeta(
-      subtitle: 'VPNs, password managers & privacy utilities',
+      heroSubtitle: 'VPNs, password managers & privacy utilities',
+      listSubtitle: 'VPN & security utilities',
       color: Color(0xFF74B9FF),
     ),
     SubscriptionCategory.finance: _CategoryMeta(
-      subtitle: 'Banking, investing & personal finance trackers',
+      heroSubtitle: 'Banking, investing & personal finance trackers',
+      listSubtitle: 'Banking & investments',
       color: Color(0xFF00B894),
     ),
     SubscriptionCategory.health: _CategoryMeta(
-      subtitle: 'Fitness tracking, workout coaching & wellness',
+      heroSubtitle: 'Fitness tracking, workout coaching & wellness',
+      listSubtitle: 'Fitness & wellness',
       color: Color(0xFFFD79A8),
     ),
   };
@@ -95,7 +105,11 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final currentMeta = _meta[_selectedCategory] ??
-        const _CategoryMeta(subtitle: 'Subscription service', color: OneUITheme.accentBlue);
+        const _CategoryMeta(
+          heroSubtitle: 'Subscription service',
+          listSubtitle: 'Service',
+          color: OneUITheme.accentBlue,
+        );
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
@@ -167,7 +181,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    currentMeta.subtitle,
+                                    currentMeta.heroSubtitle,
                                     style: const TextStyle(
                                       fontSize: 13,
                                       color: OneUITheme.textSecondary,
@@ -251,36 +265,33 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
   OneUIGroupItem _buildCategoryItem(SubscriptionCategory cat) {
     final isSelected = cat == _selectedCategory;
     final meta = _meta[cat] ??
-        const _CategoryMeta(subtitle: 'Subscription service', color: OneUITheme.accentBlue);
+        const _CategoryMeta(
+          heroSubtitle: 'Subscription service',
+          listSubtitle: 'Service',
+          color: OneUITheme.accentBlue,
+        );
 
     return OneUIGroupItem(
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: meta.color.withValues(alpha: isSelected ? 0.22 : 0.12),
-          borderRadius: BorderRadius.circular(11),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          cat.icon,
-          size: 19,
-          color: isSelected ? meta.color : OneUITheme.textPrimary.withValues(alpha: 0.85),
-        ),
-      ),
       title: cat.label,
-      subtitle: meta.subtitle,
-      trailing: isSelected
-          ? const Icon(
-              Icons.check_circle_rounded,
-              color: OneUITheme.accentBlue,
-              size: 22,
-            )
-          : const Icon(
-              Icons.radio_button_unchecked_rounded,
-              color: OneUITheme.textTertiary,
-              size: 22,
-            ),
+      subtitle: meta.listSubtitle,
+      subtitleColor: OneUITheme.textSecondary,
+      trailing: Container(
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
+          border: Border.all(
+            color: isSelected
+                ? OneUITheme.accentBlue
+                : Colors.white.withValues(alpha: 0.3),
+            width: isSelected ? 0 : 1.5,
+          ),
+        ),
+        child: isSelected
+            ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+            : null,
+      ),
       onTap: () {
         HapticFeedback.selectionClick();
         setState(() {
@@ -292,7 +303,12 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
 }
 
 class _CategoryMeta {
-  final String subtitle;
+  final String heroSubtitle;
+  final String listSubtitle;
   final Color color;
-  const _CategoryMeta({required this.subtitle, required this.color});
+  const _CategoryMeta({
+    required this.heroSubtitle,
+    required this.listSubtitle,
+    required this.color,
+  });
 }

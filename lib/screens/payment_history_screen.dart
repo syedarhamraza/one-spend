@@ -165,8 +165,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                               children: [
                                 OneUIBrandIcon(
                                   subscription: sub,
-                                  size: 46,
-                                  borderRadius: 14,
+                                  size: 48,
+                                  borderRadius: 16,
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
@@ -182,11 +182,12 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                           color: OneUITheme.textPrimary,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: 3),
                                       Text(
                                         '${sub.currency}${sub.price.toStringAsFixed(2)} • ${sub.billingCycle.label}',
                                         style: const TextStyle(
                                           fontSize: 13,
+                                          fontWeight: FontWeight.w500,
                                           color: OneUITheme.textSecondary,
                                         ),
                                       ),
@@ -198,7 +199,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                             const SizedBox(height: 16),
                             Container(
                               height: 0.8,
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: Colors.white.withValues(alpha: 0.06),
                             ),
                             const SizedBox(height: 16),
                             Row(
@@ -210,7 +211,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                     const Text(
                                       'Lifetime spend',
                                       style: TextStyle(
-                                        fontSize: 12.5,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                         color: OneUITheme.textSecondary,
                                       ),
@@ -219,7 +220,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                     Text(
                                       '${sub.currency}${totalPaid.toStringAsFixed(2)}',
                                       style: const TextStyle(
-                                        fontSize: 24,
+                                        fontSize: 26,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: -0.5,
                                         color: OneUITheme.textPrimary,
@@ -228,10 +229,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                   ],
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: OneUITheme.accentBlue.withValues(alpha: 0.14),
-                                    borderRadius: BorderRadius.circular(10),
+                                    color: OneUITheme.accentBlue.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     '$recordedPayments ${recordedPayments == 1 ? 'cycle' : 'cycles'} paid',
@@ -266,7 +267,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                       if (sub.paymentHistory.isEmpty)
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+                          padding: const EdgeInsets.symmetric(vertical: 42, horizontal: 24),
                           decoration: BoxDecoration(
                             color: OneUITheme.cardColor,
                             borderRadius: OneUITheme.cardBorderRadius,
@@ -275,46 +276,72 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.receipt_long_rounded,
-                                size: 48,
-                                color: OneUITheme.textSecondary.withValues(alpha: 0.4),
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color: OneUITheme.accentBlue.withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(22),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.receipt_long_rounded,
+                                  size: 34,
+                                  color: OneUITheme.accentBlue,
+                                ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 16),
                               const Text(
                                 'No payments recorded yet',
                                 style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
                                   color: OneUITheme.textPrimary,
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              const Text(
-                                'Payments are automatically recorded when renewal dates occur, or when marked as paid.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: OneUITheme.textSecondary,
-                                  height: 1.4,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              TextButton.icon(
-                                onPressed: () => _showAddPaymentDialog(sub),
-                                icon: const Icon(Icons.add_rounded, size: 18, color: OneUITheme.accentBlue),
-                                label: const Text(
-                                  'Add past payment',
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  'Payments are automatically recorded when renewal dates occur, or when marked as paid.',
+                                  textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: OneUITheme.accentBlue,
+                                    fontSize: 13,
+                                    color: OneUITheme.textSecondary,
+                                    height: 1.45,
                                   ),
                                 ),
-                                style: TextButton.styleFrom(
-                                  backgroundColor: OneUITheme.accentBlue.withValues(alpha: 0.12),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                              const SizedBox(height: 22),
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _showAddPaymentDialog(sub),
+                                  borderRadius: BorderRadius.circular(100),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentBlue.withValues(alpha: 0.16),
+                                      borderRadius: BorderRadius.circular(100),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.add_rounded, size: 18, color: OneUITheme.accentBlue),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Add past payment',
+                                          style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: OneUITheme.accentBlue,
+                                            letterSpacing: -0.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -346,10 +373,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
                                         color: OneUITheme.accentGreen.withValues(alpha: 0.16),
-                                        borderRadius: BorderRadius.circular(6),
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: const Text(
                                         'Paid',
