@@ -540,8 +540,7 @@ class _DetailPaymentIconOptionScreen extends StatelessWidget {
                           ),
 
                           // If iconBadge is active, provide option to show inline brand beside subtitle
-                          if (ctrl.detailPaymentIconStyle == DetailPaymentIconStyle.iconBadge) ...[
-                            const SizedBox(height: 16),
+                          if (ctrl.detailPaymentIconStyle == DetailPaymentIconStyle.iconBadge)
                             OneUISection(
                               title: 'Description options',
                               child: OneUIGroupCard(
@@ -558,7 +557,6 @@ class _DetailPaymentIconOptionScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
-                          ],
                         ],
                       ),
                     ),
