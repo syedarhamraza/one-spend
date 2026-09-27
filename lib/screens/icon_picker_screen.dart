@@ -2,15 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_brand_catalog.dart';
+import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
+import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
+import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_icon_picker_modal.dart';
-import '../widgets/one_ui_bottom_vignette.dart';
 
-/// Dedicated Samsung One UI Icon Picker Subpage.
-/// Replaces the bottom modal sheet with a full One UI subpage with live preview,
-/// categorized tabs, color swatches, and a floating Cancel | Save pill.
+enum IconPickerMode {
+  brandPresets,
+  systemIcons,
+  customUrl,
+}
+
+/// Samsung One UI Subscription Icon Picker Subpage.
+/// Redesigned with authentic One UI aesthetics:
+/// - Standalone Live Hero Preview Card with ambient underglow
+/// - Horizontal color swatch palette with illuminated selection rings
+/// - Stadium-style Segmented Capsule Bar (Brand presets | System icons | Custom URL)
+/// - Unified, natural single-scroll hierarchy without nested scrollbars or height caps
+/// - Instant search for curated brand presets with sharp vector logos
+/// - One-handed Floating Cancel | Save Pill with progressive bottom vignette
 class IconPickerScreen extends StatefulWidget {
   final Color initialColor;
   final IconData initialIcon;
@@ -54,9 +67,8 @@ class IconPickerScreen extends StatefulWidget {
   State<IconPickerScreen> createState() => _IconPickerScreenState();
 }
 
-class _IconPickerScreenState extends State<IconPickerScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _IconPickerScreenState extends State<IconPickerScreen> {
+  IconPickerMode _activeMode = IconPickerMode.brandPresets;
   late Color _selectedColor;
   late IconData _selectedIcon;
   late String? _selectedLogoUrl;
@@ -98,29 +110,36 @@ class _IconPickerScreenState extends State<IconPickerScreen>
     Icons.palette_rounded,
     Icons.fitness_center_rounded,
     Icons.shopping_bag_rounded,
-    Icons.newspaper_rounded,
     Icons.school_rounded,
     Icons.wifi_rounded,
     Icons.shield_rounded,
     Icons.attach_money_rounded,
     Icons.subscriptions_rounded,
     Icons.star_rounded,
+    Icons.home_repair_service_rounded,
   ];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _selectedColor = widget.initialColor;
     _selectedIcon = widget.initialIcon;
     _selectedLogoUrl = widget.initialLogoUrl;
     _selectedPresetId = widget.initialPresetId;
     _urlController.text = widget.initialLogoUrl ?? '';
+
+    // Automatically initialize active mode based on initial values
+    if (widget.initialLogoUrl != null && widget.initialLogoUrl!.isNotEmpty) {
+      _activeMode = IconPickerMode.customUrl;
+    } else if (widget.initialPresetId != null) {
+      _activeMode = IconPickerMode.brandPresets;
+    } else {
+      _activeMode = IconPickerMode.brandPresets;
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _urlController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -158,171 +177,39 @@ class _IconPickerScreenState extends State<IconPickerScreen>
                   title: 'Subscription icon',
                   hasBigHeader: false,
                   showBackButton: true,
-                  onBack: () => Navigator.pop(context),
+                  onBack: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pop(context);
+                  },
                 ),
               ),
 
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 140),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Top Live Preview Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: OneUITheme.cardColor,
-                          borderRadius: OneUITheme.cardBorderRadius,
-                          border: OneUITheme.cardBorder,
-                          boxShadow: OneUITheme.cardShadow,
-                        ),
-                        child: Row(
-                          children: [
-                            OneUIBrandIcon(
-                              name: widget.subscriptionName.isNotEmpty ? widget.subscriptionName : 'Icon Preview',
-                              brandColor: _selectedColor,
-                              iconData: _selectedIcon,
-                              logoUrl: _selectedLogoUrl,
-                              brandPresetId: _selectedPresetId,
-                              size: 64,
-                              borderRadius: 20,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.subscriptionName.isNotEmpty ? widget.subscriptionName : 'Live Preview',
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: OneUITheme.textPrimary,
-                                      letterSpacing: -0.3,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _selectedPresetId != null
-                                        ? 'Brand Preset: ${_selectedPresetId!}'
-                                        : (_selectedLogoUrl != null && _selectedLogoUrl!.isNotEmpty
-                                            ? 'Custom Logo URL'
-                                            : 'Custom Icon Glyph'),
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: OneUITheme.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                      // 1. Standalone Live Hero Preview Card
+                      _buildHeroPreviewCard(),
+                      const SizedBox(height: 16),
+
+                      // 2. Background Color Palette
+                      OneUISection(
+                        title: 'Background color',
+                        child: _buildColorPaletteCard(),
                       ),
                       const SizedBox(height: 16),
 
-                      // Color Palette Row
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: OneUITheme.cardColor,
-                          borderRadius: OneUITheme.cardBorderRadius,
-                          border: OneUITheme.cardBorder,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Background Color',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: OneUITheme.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 38,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: _swatches.length,
-                                separatorBuilder: (_, _) => const SizedBox(width: 10),
-                                itemBuilder: (context, index) {
-                                  final color = _swatches[index];
-                                  final isSelected = _selectedColor.toARGB32() == color.toARGB32();
-
-                                  return GestureDetector(
-                                    onTap: () {
-                                      HapticFeedback.selectionClick();
-                                      setState(() => _selectedColor = color);
-                                    },
-                                    child: Container(
-                                      width: 38,
-                                      height: 38,
-                                      decoration: BoxDecoration(
-                                        color: color,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.15),
-                                          width: isSelected ? 2.5 : 1,
-                                        ),
-                                      ),
-                                      child: isSelected
-                                          ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
-                                          : null,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
+                      // 3. Icon Style Segmented Capsule Bar
+                      OneUISection(
+                        title: 'Icon style',
+                        child: _buildSegmentedCapsuleBar(),
                       ),
                       const SizedBox(height: 16),
 
-                      // Tab Bar & Container
-                      Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: OneUITheme.cardColor,
-                          borderRadius: OneUITheme.cardBorderRadius,
-                          border: OneUITheme.cardBorder,
-                        ),
-                        child: Column(
-                          children: [
-                            TabBar(
-                              controller: _tabController,
-                              indicatorColor: OneUITheme.accentBlue,
-                              indicatorSize: TabBarIndicatorSize.tab,
-                              dividerColor: Colors.white.withValues(alpha: 0.06),
-                              labelColor: OneUITheme.accentBlue,
-                              unselectedLabelColor: OneUITheme.textSecondary,
-                              labelStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
-                              unselectedLabelStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
-                              tabs: const [
-                                Tab(text: 'Brand Presets'),
-                                Tab(text: 'System Icons'),
-                                Tab(text: 'Custom URL'),
-                              ],
-                            ),
-                            SizedBox(
-                              height: 380,
-                              child: TabBarView(
-                                controller: _tabController,
-                                children: [
-                                  _buildBrandPresetsTab(),
-                                  _buildSystemIconsTab(),
-                                  _buildCustomUrlTab(),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // 4. Dynamic Body Content based on active mode
+                      _buildActiveContent(),
                     ],
                   ),
                 ),
@@ -338,7 +225,7 @@ class _IconPickerScreenState extends State<IconPickerScreen>
             child: OneUIBottomVignette(),
           ),
 
-          // Floating Cancel | Save Pill
+          // Floating Cancel | Save Stadium Pill
           Positioned(
             left: 0,
             right: 0,
@@ -362,210 +249,539 @@ class _IconPickerScreenState extends State<IconPickerScreen>
     );
   }
 
-  Widget _buildBrandPresetsTab() {
-    final allPresets = OneUIBrandCatalog.presets;
-    final filtered = _searchQuery.trim().isEmpty
-        ? allPresets
-        : allPresets.where((p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+  /// Live Interactive Hero Preview Card matching One UI settings styling
+  Widget _buildHeroPreviewCard() {
+    final effectiveName = widget.subscriptionName.trim().isNotEmpty
+        ? widget.subscriptionName
+        : 'Icon Preview';
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: OneUITheme.surfacePill,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
+    final glowColor = OneUIBrandCatalog.getGlowColor(
+      color: _selectedColor,
+      presetId: _selectedPresetId,
+      name: effectiveName,
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      decoration: BoxDecoration(
+        color: OneUITheme.cardColor,
+        borderRadius: OneUITheme.cardBorderRadius,
+        border: OneUITheme.cardBorder,
+        boxShadow: OneUITheme.cardShadow,
+      ),
+      child: Row(
+        children: [
+          // Icon with dynamic ambient glow
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: glowColor.withValues(alpha: 0.36),
+                      blurRadius: 26,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+              OneUIBrandIcon(
+                name: effectiveName,
+                brandColor: _selectedColor,
+                iconData: _selectedIcon,
+                logoUrl: _selectedLogoUrl,
+                brandPresetId: _selectedPresetId,
+                size: 66,
+                borderRadius: 21,
+              ),
+            ],
+          ),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.search_rounded, size: 18, color: OneUITheme.textSecondary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    style: const TextStyle(fontSize: 13.5, color: OneUITheme.textPrimary),
-                    decoration: const InputDecoration(
-                      hintText: 'Search 40+ brands...',
-                      hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-                      border: InputBorder.none,
-                      isDense: true,
+                Text(
+                  effectiveName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 18.5,
+                    fontWeight: FontWeight.w700,
+                    color: OneUITheme.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: OneUITheme.surfacePill,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.06),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Text(
+                    _selectedPresetId != null
+                        ? (OneUIBrandCatalog.findById(_selectedPresetId)?.name ?? _selectedPresetId!)
+                        : (_selectedLogoUrl != null && _selectedLogoUrl!.isNotEmpty
+                            ? 'Custom Web Link'
+                            : 'System Icon'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: OneUITheme.accentBlue,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            physics: const BouncingScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              mainAxisSpacing: 14,
-              crossAxisSpacing: 14,
-              childAspectRatio: 0.82,
-            ),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              final preset = filtered[index];
-              final isSelected = _selectedPresetId == preset.id;
+        ],
+      ),
+    );
+  }
 
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() {
-                    _selectedPresetId = preset.id;
-                    _selectedColor = preset.color;
-                    _selectedIcon = preset.icon;
-                    _selectedLogoUrl = preset.logoUrl;
-                  });
-                },
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        OneUIBrandIcon(
-                          brandPresetId: preset.id,
-                          name: preset.name,
-                          brandColor: preset.color,
-                          size: 52,
-                          borderRadius: 16,
-                        ),
-                        if (isSelected)
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(3),
-                              decoration: const BoxDecoration(
-                                color: OneUITheme.accentBlue,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.check_rounded, size: 12, color: Colors.white),
-                            ),
+  /// Horizontal Background Color Palette Card with smooth circle swatches
+  Widget _buildColorPaletteCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: OneUITheme.cardColor,
+        borderRadius: OneUITheme.cardBorderRadius,
+        border: OneUITheme.cardBorder,
+      ),
+      child: SizedBox(
+        height: 40,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: _swatches.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 10),
+          itemBuilder: (context, index) {
+            final color = _swatches[index];
+            final isSelected = _selectedColor.toARGB32() == color.toARGB32();
+
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedColor = color);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.16),
+                    width: isSelected ? 2.5 : 1.0,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.45),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      preset.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
-                      ),
-                    ),
-                  ],
+                        ]
+                      : null,
                 ),
-              );
-            },
+                alignment: Alignment.center,
+                child: isSelected
+                    ? const Icon(Icons.check_rounded, size: 19, color: Colors.white)
+                    : null,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Samsung One UI Segmented Capsule Bar (Replaces ugly tabs)
+  Widget _buildSegmentedCapsuleBar() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: OneUITheme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: OneUITheme.cardBorder,
+      ),
+      child: Row(
+        children: [
+          _buildSegmentItem('Brand presets', IconPickerMode.brandPresets),
+          _buildSegmentItem('System icons', IconPickerMode.systemIcons),
+          _buildSegmentItem('Custom URL', IconPickerMode.customUrl),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentItem(String label, IconPickerMode mode) {
+    final isSelected = _activeMode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _activeMode = mode);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: OneUITheme.accentBlue.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? Colors.white : OneUITheme.textSecondary,
+              letterSpacing: -0.2,
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildActiveContent() {
+    switch (_activeMode) {
+      case IconPickerMode.brandPresets:
+        return _buildBrandPresetsView();
+      case IconPickerMode.systemIcons:
+        return _buildSystemIconsView();
+      case IconPickerMode.customUrl:
+        return _buildCustomUrlView();
+    }
+  }
+
+  Widget _buildBrandPresetsView() {
+    final allPresets = OneUIBrandCatalog.presets;
+    final filtered = _searchQuery.trim().isEmpty
+        ? allPresets
+        : allPresets.where((p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // One UI Search Capsule
+        Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: OneUITheme.surfacePill,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 0.8,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              const Icon(Icons.search_rounded, size: 20, color: OneUITheme.textSecondary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
+                  decoration: const InputDecoration(
+                    hintText: 'Search 40+ brands...',
+                    hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
+                    border: InputBorder.none,
+                    isDense: true,
+                  ),
+                ),
+              ),
+              if (_searchQuery.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                  child: const Icon(Icons.cancel_rounded, size: 18, color: OneUITheme.textSecondary),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Brand Presets Grid
+        if (filtered.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 48),
+            decoration: BoxDecoration(
+              color: OneUITheme.cardColor,
+              borderRadius: OneUITheme.cardBorderRadius,
+              border: OneUITheme.cardBorder,
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 44,
+                  color: OneUITheme.textSecondary.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'No matching brand preset found',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: OneUITheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: OneUITheme.cardColor,
+              borderRadius: OneUITheme.cardBorderRadius,
+              border: OneUITheme.cardBorder,
+            ),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.80,
+              ),
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final preset = filtered[index];
+                final isSelected = _selectedPresetId == preset.id;
+
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _selectedPresetId = preset.id;
+                      _selectedColor = preset.color;
+                      _selectedIcon = preset.icon;
+                      _selectedLogoUrl = preset.logoUrl;
+                    });
+                  },
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          OneUIBrandIcon(
+                            brandPresetId: preset.id,
+                            name: preset.name,
+                            brandColor: preset.color,
+                            size: 52,
+                            borderRadius: 16,
+                          ),
+                          if (isSelected)
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(3.5),
+                                decoration: const BoxDecoration(
+                                  color: OneUITheme.accentBlue,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.check_rounded,
+                                  size: 11,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        preset.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildSystemIconsTab() {
-    return GridView.builder(
+  Widget _buildSystemIconsView() {
+    return Container(
       padding: const EdgeInsets.all(16),
-      physics: const BouncingScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        childAspectRatio: 1.0,
+      decoration: BoxDecoration(
+        color: OneUITheme.cardColor,
+        borderRadius: OneUITheme.cardBorderRadius,
+        border: OneUITheme.cardBorder,
       ),
-      itemCount: _systemIcons.length,
-      itemBuilder: (context, index) {
-        final icon = _systemIcons[index];
-        final isSelected = _selectedPresetId == null &&
-            _selectedLogoUrl == null &&
-            _selectedIcon.codePoint == icon.codePoint;
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.0,
+        ),
+        itemCount: _systemIcons.length,
+        itemBuilder: (context, index) {
+          final icon = _systemIcons[index];
+          final isSelected = _selectedPresetId == null &&
+              _selectedLogoUrl == null &&
+              _selectedIcon.codePoint == icon.codePoint;
 
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() {
-              _selectedPresetId = null;
-              _selectedLogoUrl = null;
-              _selectedIcon = icon;
-            });
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: isSelected ? OneUITheme.surfacePillActive : OneUITheme.surfacePill,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
-                width: 1.5,
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() {
+                _selectedPresetId = null;
+                _selectedLogoUrl = null;
+                _selectedIcon = icon;
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              decoration: BoxDecoration(
+                color: isSelected ? OneUITheme.surfacePillActive : OneUITheme.surfacePill,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
+                  width: 1.6,
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 26,
+                color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
               ),
             ),
-            child: Icon(
-              icon,
-              size: 26,
-              color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
-            ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildCustomUrlTab() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Paste Direct Image or Icon URL',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: OneUITheme.textPrimary,
+  Widget _buildCustomUrlView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        OneUIGroupCard(
+          items: [
+            OneUIGroupItem(
+              title: 'Image link / URL',
+              subtitle: _selectedLogoUrl != null && _selectedLogoUrl!.isNotEmpty
+                  ? _selectedLogoUrl!
+                  : 'Tap to enter or paste link',
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_urlController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 20, color: OneUITheme.textSecondary),
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        _urlController.clear();
+                        setState(() {
+                          _selectedLogoUrl = null;
+                        });
+                      },
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.content_paste_rounded, size: 20, color: OneUITheme.accentBlue),
+                    tooltip: 'Paste from clipboard',
+                    onPressed: () async {
+                      final data = await Clipboard.getData('text/plain');
+                      if (data != null && data.text != null && data.text!.trim().isNotEmpty) {
+                        HapticFeedback.selectionClick();
+                        final pasted = data.text!.trim();
+                        _urlController.text = pasted;
+                        setState(() {
+                          _selectedLogoUrl = pasted;
+                          _selectedPresetId = null;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              onTap: () {},
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: OneUITheme.cardColor,
+            borderRadius: OneUITheme.cardBorderRadius,
+            border: OneUITheme.cardBorder,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: TextField(
+            controller: _urlController,
+            onChanged: (val) {
+              setState(() {
+                _selectedLogoUrl = val.trim().isNotEmpty ? val.trim() : null;
+                _selectedPresetId = null;
+              });
+            },
+            style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
+            decoration: const InputDecoration(
+              hintText: 'https://example.com/logo.png',
+              hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
+              border: InputBorder.none,
+              prefixIcon: Icon(Icons.link_rounded, size: 20, color: OneUITheme.textSecondary),
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Supports PNG, WebP, or SVG web links (e.g. from company website).',
+        ),
+        const Padding(
+          padding: EdgeInsets.only(left: 16, right: 16, top: 10),
+          child: Text(
+            'Supported formats: PNG, WebP, or SVG web links (e.g. from company website or CDN). The image scales automatically to fit the One UI squircle.',
             style: TextStyle(
               fontSize: 12.5,
               color: OneUITheme.textSecondary,
+              height: 1.35,
             ),
           ),
-          const SizedBox(height: 16),
-          Container(
-            decoration: BoxDecoration(
-              color: OneUITheme.surfacePill,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: TextField(
-              controller: _urlController,
-              onChanged: (val) {
-                setState(() {
-                  _selectedLogoUrl = val.trim().isNotEmpty ? val.trim() : null;
-                  _selectedPresetId = null;
-                });
-              },
-              style: const TextStyle(fontSize: 13.5, color: OneUITheme.textPrimary),
-              decoration: const InputDecoration(
-                hintText: 'https://example.com/logo.png',
-                hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
