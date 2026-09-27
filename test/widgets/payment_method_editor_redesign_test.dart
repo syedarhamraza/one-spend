@@ -200,5 +200,30 @@ void main() {
 
       expect(find.text('Debit Card'), findsWidgets);
     });
+
+    testWidgets('nickname subpage positions floating pill directly above keyboard', (tester) async {
+      setMobileDimensions(tester);
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: PaymentMethodEditorScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Card nickname'));
+      await tester.pumpAndSettle();
+
+      // Simulate keyboard open with 300px height
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+
+      // Device height is 2400. With 300px keyboard, keyboard top is at 2100.
+      // Pill height is 52. Bottom should be at 2400 - 300 - 12 = 2088.
+      final pillCenter = tester.getCenter(find.text('Apply'));
+      expect(pillCenter.dy, greaterThan(2000));
+      expect(pillCenter.dy, lessThan(2100));
+
+      tester.view.resetViewInsets();
+    });
   });
 }

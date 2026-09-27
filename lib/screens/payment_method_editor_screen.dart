@@ -146,9 +146,11 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.initialMethod != null;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
@@ -494,9 +496,10 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: bottomInset > 0 ? (bottomInset + 12.0) : 0,
             child: SafeArea(
               top: false,
+              bottom: bottomInset == 0,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Center(
@@ -750,6 +753,7 @@ class _CardColorPickerSubpageState extends State<_CardColorPickerSubpage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
@@ -932,6 +936,7 @@ class _CardBrandPickerSubpageState extends State<_CardBrandPickerSubpage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
@@ -1087,6 +1092,7 @@ class _CardNicknameEditorSubpageState extends State<_CardNicknameEditorSubpage> 
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
@@ -1104,7 +1110,12 @@ class _CardNicknameEditorSubpageState extends State<_CardNicknameEditorSubpage> 
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    4,
+                    16,
+                    bottomInset > 0 ? (bottomInset + 90) : 140,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1221,6 +1232,7 @@ class _CardNicknameEditorSubpageState extends State<_CardNicknameEditorSubpage> 
             bottom: bottomInset > 0 ? (bottomInset + 12.0) : 0,
             child: SafeArea(
               top: false,
+              bottom: bottomInset == 0,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Center(
@@ -1285,6 +1297,7 @@ class _CardLast4EditorSubpageState extends State<_CardLast4EditorSubpage> {
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
@@ -1302,7 +1315,12 @@ class _CardLast4EditorSubpageState extends State<_CardLast4EditorSubpage> {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    4,
+                    16,
+                    bottomInset > 0 ? (bottomInset + 90) : 140,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1401,6 +1419,7 @@ class _CardLast4EditorSubpageState extends State<_CardLast4EditorSubpage> {
             bottom: bottomInset > 0 ? (bottomInset + 12.0) : 0,
             child: SafeArea(
               top: false,
+              bottom: bottomInset == 0,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Center(
@@ -1473,6 +1492,7 @@ class _CardExpiryEditorSubpageState extends State<_CardExpiryEditorSubpage> {
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
@@ -1490,7 +1510,12 @@ class _CardExpiryEditorSubpageState extends State<_CardExpiryEditorSubpage> {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    4,
+                    16,
+                    bottomInset > 0 ? (bottomInset + 90) : 140,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1617,6 +1642,7 @@ class _CardExpiryEditorSubpageState extends State<_CardExpiryEditorSubpage> {
             bottom: bottomInset > 0 ? (bottomInset + 12.0) : 0,
             child: SafeArea(
               top: false,
+              bottom: bottomInset == 0,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Center(
@@ -1675,6 +1701,7 @@ class _CardTypePickerSubpageState extends State<_CardTypePickerSubpage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
@@ -1844,6 +1871,7 @@ class _CardStatementDayPickerSubpageState extends State<_CardStatementDayPickerS
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           CustomScrollView(
@@ -1861,7 +1889,12 @@ class _CardStatementDayPickerSubpageState extends State<_CardStatementDayPickerS
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    4,
+                    16,
+                    bottomInset > 0 ? (bottomInset + 90) : 140,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -2005,6 +2038,7 @@ class _CardStatementDayPickerSubpageState extends State<_CardStatementDayPickerS
             bottom: bottomInset > 0 ? (bottomInset + 12.0) : 0,
             child: SafeArea(
               top: false,
+              bottom: bottomInset == 0,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Center(
