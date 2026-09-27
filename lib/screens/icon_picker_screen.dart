@@ -170,7 +170,9 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         iconData: _selectedIcon,
         brandColor: _selectedColor,
         logoUrl: _selectedLogoUrl,
-        brandPresetId: _selectedPresetId,
+        brandPresetId: (_selectedPresetId == '__none__' || _selectedPresetId == null)
+            ? null
+            : _selectedPresetId,
       ),
     );
   }
@@ -195,7 +197,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => _BrandPresetPickerSubpage(
-          currentPresetId: _selectedPresetId,
+          currentPresetId: (_selectedPresetId == '__none__' ? null : _selectedPresetId),
           currentColor: _selectedColor,
           currentIcon: _selectedIcon,
           currentLogoUrl: _selectedLogoUrl,
@@ -230,7 +232,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
     if (result != null && mounted) {
       setState(() {
         _selectedIcon = result;
-        _selectedPresetId = null;
+        _selectedPresetId = '__none__';
         _selectedLogoUrl = null;
       });
     }
@@ -254,7 +256,9 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
       setState(() {
         final clean = result.trim();
         _selectedLogoUrl = clean.isNotEmpty ? clean : null;
-        _selectedPresetId = null;
+        if (_selectedLogoUrl != null) {
+          _selectedPresetId = '__none__';
+        }
       });
     }
   }
@@ -287,7 +291,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         ? widget.subscriptionName
         : 'Icon Preview';
 
-    final isPresetSelected = _selectedPresetId != null;
+    final isPresetSelected = _selectedPresetId != null && _selectedPresetId != '__none__';
     final isCustomUrlSelected = _selectedLogoUrl != null && _selectedLogoUrl!.isNotEmpty;
     final isSystemIconSelected = !isPresetSelected && !isCustomUrlSelected;
 
@@ -476,13 +480,34 @@ class _IconHeroPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final heroGlowColor = OneUIBrandCatalog.getGlowColor(
       color: brandColor,
-      presetId: brandPresetId,
+      presetId: (brandPresetId == '__none__' ? null : brandPresetId),
       name: subscriptionName,
     );
 
-    final statusText = brandPresetId != null
-        ? (OneUIBrandCatalog.findById(brandPresetId)?.name ?? brandPresetId!)
-        : (logoUrl != null && logoUrl!.isNotEmpty ? 'Custom Web Link' : 'System Icon');
+    final isPreset = brandPresetId != null && brandPresetId != '__none__';
+    final isCustomUrl = logoUrl != null && logoUrl!.isNotEmpty;
+
+    final String sourceTitle;
+    final String sourceSubtitle;
+    final IconData sourceBadgeIcon;
+
+    if (isPreset) {
+      final preset = OneUIBrandCatalog.findById(brandPresetId);
+      sourceTitle = preset?.name ?? brandPresetId!;
+      sourceSubtitle = 'Official Brand Vector';
+      sourceBadgeIcon = Icons.verified_rounded;
+    } else if (isCustomUrl) {
+      sourceTitle = 'Custom Web Link';
+      sourceSubtitle = 'Network Image Asset';
+      sourceBadgeIcon = Icons.link_rounded;
+    } else {
+      sourceTitle = _IconPickerScreenState.systemIconNames[iconData] ?? 'System Icon';
+      sourceSubtitle = 'Curated Vector Glyph';
+      sourceBadgeIcon = Icons.category_rounded;
+    }
+
+    final colorHex = '#${brandColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+    final colorName = _IconPickerScreenState.colorNames[brandColor.toARGB32()] ?? colorHex;
 
     return Container(
       width: double.infinity,
@@ -510,7 +535,7 @@ class _IconHeroPreviewCard extends StatelessWidget {
               ),
             ),
 
-            // 2. Frosted glass blur & translucent card body
+            // 2. Frosted glass blur & flat translucent card body (no 3D borders or elevated rims)
             BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Material(
@@ -521,57 +546,158 @@ class _IconHeroPreviewCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: OneUITheme.cardBorderRadius,
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.10),
+                      color: Colors.white.withValues(alpha: 0.08),
                       width: 0.8,
                     ),
                   ),
-                  child: Row(
+                  child: Column(
                     children: [
-                      // Squircle Brand Icon (completely flat, clean, without icon glow)
-                      OneUIBrandIcon(
-                        name: subscriptionName,
-                        brandColor: brandColor,
-                        iconData: iconData,
-                        logoUrl: logoUrl,
-                        brandPresetId: brandPresetId,
-                        size: 62,
-                        borderRadius: 20,
-                      ),
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              subscriptionName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 18.5,
-                                fontWeight: FontWeight.w700,
-                                color: OneUITheme.textPrimary,
-                                letterSpacing: -0.3,
+                      Row(
+                        children: [
+                          // Squircle Brand Icon (completely flat, clean, without icon glow)
+                          OneUIBrandIcon(
+                            name: subscriptionName,
+                            brandColor: brandColor,
+                            iconData: iconData,
+                            logoUrl: logoUrl,
+                            brandPresetId: brandPresetId,
+                            size: 60,
+                            borderRadius: 18,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  subscriptionName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w700,
+                                    color: OneUITheme.textPrimary,
+                                    letterSpacing: -0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  sourceSubtitle,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: OneUITheme.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Status Badge Capsule matching Subs Detail & Budget Card
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: OneUITheme.accentBlue.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: OneUITheme.accentBlue.withValues(alpha: 0.20),
+                                width: 0.8,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: OneUITheme.surfacePill,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.08),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                statusText,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  sourceBadgeIcon,
+                                  size: 13,
                                   color: OneUITheme.accentBlue,
                                 ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  isPreset ? 'Preset' : (isCustomUrl ? 'Web URL' : 'System'),
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: OneUITheme.accentBlue,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        height: 0.8,
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Device Care Style Spec Metadata Container
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Left: Selected Element Name
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isPreset
+                                        ? Icons.stars_rounded
+                                        : (isCustomUrl ? Icons.link_rounded : iconData),
+                                    size: 16,
+                                    color: OneUITheme.textSecondary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      sourceTitle,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: OneUITheme.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Right: Color preview with colored dot & label
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: brandColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.25),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  colorName,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: OneUITheme.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -620,6 +746,7 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
   late String? _previewLogoUrl;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -647,84 +774,119 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
         ? widget.subscriptionName
         : 'Icon Preview';
 
-    return Scaffold(
-      backgroundColor: OneUITheme.surfacePitch,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: OneUICollapsibleHeaderDelegate(
-                  title: 'Brand preset',
-                  hasBigHeader: false,
-                  showBackButton: true,
-                  onBack: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                  },
+    return PopScope(
+      canPop: !_showSearch,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_showSearch) {
+          setState(() {
+            _showSearch = false;
+            _searchQuery = '';
+            _searchController.clear();
+          });
+        }
+      },
+      child: Scaffold(
+        backgroundColor: OneUITheme.surfacePitch,
+        body: Stack(
+          children: [
+            CustomScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: OneUICollapsibleHeaderDelegate(
+                    title: _showSearch ? 'Search presets' : 'Brand preset',
+                    hasBigHeader: false,
+                    showBackButton: true,
+                    onBack: () {
+                      HapticFeedback.lightImpact();
+                      if (_showSearch) {
+                        setState(() {
+                          _showSearch = false;
+                          _searchQuery = '';
+                          _searchController.clear();
+                        });
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
+                    actions: _showSearch
+                        ? null
+                        : [
+                            OneUIHeaderAction(
+                              icon: Icons.search_rounded,
+                              tooltip: 'Search brands',
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                setState(() => _showSearch = true);
+                              },
+                            ),
+                          ],
+                  ),
                 ),
-              ),
 
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Live Hero Preview Card
-                      _IconHeroPreviewCard(
-                        subscriptionName: effectiveName,
-                        brandColor: _previewColor,
-                        iconData: _previewIcon,
-                        logoUrl: _previewLogoUrl,
-                        brandPresetId: _selectedPresetId,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // One UI Search Capsule
-                      Container(
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: OneUITheme.surfacePill,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            width: 0.8,
-                          ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Live Hero Preview Card
+                        _IconHeroPreviewCard(
+                          subscriptionName: effectiveName,
+                          brandColor: _previewColor,
+                          iconData: _previewIcon,
+                          logoUrl: _previewLogoUrl,
+                          brandPresetId: _selectedPresetId,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.search_rounded, size: 20, color: OneUITheme.textSecondary),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                onChanged: (val) => setState(() => _searchQuery = val),
-                                style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
-                                decoration: const InputDecoration(
-                                  hintText: 'Search 40+ brands...',
-                                  hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                ),
+                        const SizedBox(height: 16),
+
+                        // One UI Search Capsule (only visible when search is toggled in header)
+                        if (_showSearch) ...[
+                          Container(
+                            height: 44,
+                            margin: const EdgeInsets.only(bottom: 14),
+                            decoration: BoxDecoration(
+                              color: OneUITheme.surfacePill,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                width: 0.8,
                               ),
                             ),
-                            if (_searchQuery.isNotEmpty)
-                              GestureDetector(
-                                onTap: () {
-                                  _searchController.clear();
-                                  setState(() => _searchQuery = '');
-                                },
-                                child: const Icon(Icons.cancel_rounded, size: 18, color: OneUITheme.textSecondary),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 14),
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.search_rounded, size: 20, color: OneUITheme.textSecondary),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    autofocus: true,
+                                    onChanged: (val) => setState(() => _searchQuery = val),
+                                    style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
+                                    decoration: const InputDecoration(
+                                      hintText: 'Search 40+ brands...',
+                                      hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                    ),
+                                  ),
+                                ),
+                                if (_searchQuery.isNotEmpty)
+                                  GestureDetector(
+                                    onTap: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                    child: const Icon(Icons.cancel_rounded, size: 18, color: OneUITheme.textSecondary),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
 
                       // Brand Presets Grid
                       if (filtered.isEmpty)
@@ -847,7 +1009,8 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -918,7 +1081,7 @@ class _SystemIconPickerSubpageState extends State<_SystemIconPickerSubpage> {
                         brandColor: widget.currentColor,
                         iconData: _selectedIcon,
                         logoUrl: null,
-                        brandPresetId: null,
+                        brandPresetId: '__none__',
                       ),
                       const SizedBox(height: 16),
 
@@ -1065,7 +1228,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                         brandColor: widget.currentColor,
                         iconData: widget.currentIcon,
                         logoUrl: _previewUrl,
-                        brandPresetId: null,
+                        brandPresetId: '__none__',
                       ),
                       const SizedBox(height: 16),
 

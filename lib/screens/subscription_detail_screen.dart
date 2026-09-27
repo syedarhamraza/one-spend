@@ -90,7 +90,9 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
         brandColor: result.brandColor,
         iconData: result.iconData,
         logoUrl: result.logoUrl,
+        clearLogoUrl: result.logoUrl == null,
         brandPresetId: result.brandPresetId,
+        clearBrandPresetId: result.brandPresetId == null,
       );
     });
     SubscriptionStore.instance.updateSubscription(_sub);

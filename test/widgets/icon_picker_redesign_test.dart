@@ -99,7 +99,7 @@ void main() {
 
       expect(find.text('Appearance'), findsOneWidget);
       expect(find.text('Background color'), findsOneWidget);
-      expect(find.text('One UI Blue'), findsOneWidget);
+      expect(find.text('One UI Blue'), findsWidgets);
 
       // Bottom floating pill
       expect(find.text('Save'), findsOneWidget);
@@ -126,6 +126,10 @@ void main() {
 
       // Verify Brand preset subpage
       expect(find.text('Brand preset'), findsWidgets); // Header & Title
+
+      // Tap header search button to reveal search bar
+      await tester.tap(find.byIcon(Icons.search_rounded));
+      await tester.pumpAndSettle();
       expect(find.text('Search 40+ brands...'), findsOneWidget);
 
       // Search for Nintendo
@@ -168,7 +172,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Returned to main screen: verify system icon updated!
-      expect(find.text('Gaming Controller'), findsOneWidget);
+      expect(find.text('Gaming Controller'), findsWidgets);
       expect(find.byIcon(Icons.sports_esports_rounded), findsWidgets);
     });
 
@@ -186,7 +190,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('One UI Blue'), findsOneWidget);
+      expect(find.text('One UI Blue'), findsWidgets);
 
       // Tap on Background color group item
       await tester.tap(find.text('Background color'));
@@ -201,7 +205,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Back on main screen: verify subtitle updated
-      expect(find.text('Spotify Green'), findsOneWidget);
+      expect(find.text('Spotify Green'), findsWidgets);
     });
 
     testWidgets('tapping Custom image URL opens subpage and saves entered link', (tester) async {
