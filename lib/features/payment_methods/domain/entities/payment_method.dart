@@ -16,22 +16,16 @@ enum PaymentMethodType {
 enum CardBrand {
   visa('Visa', 0xFF1A1F71, 'assets/logos/payments/visa.svg'),
   mastercard('Mastercard', 0xFFEB001B, 'assets/logos/payments/mastercard.svg'),
-  amex('American Express', 0xFF006FCF, 'assets/logos/payments/american-express.svg'),
-  discover('Discover', 0xFFFF6000, 'assets/logos/payments/discover.svg'),
   applePay('Apple Pay', 0xFF000000, 'assets/logos/payments/apple-pay.svg'),
   googlePay('Google Pay', 0xFF4285F4, 'assets/logos/payments/google-pay.svg'),
   samsungPay('Samsung Pay', 0xFF1428A0, 'assets/logos/payments/samsung-pay.svg'),
   paypal('PayPal', 0xFF003087, 'assets/logos/payments/paypal.svg'),
+  skrill('Skrill', 0xFF811963, 'assets/logos/payments/skrill.svg'),
   unionPay('UnionPay', 0xFF007B80, 'assets/logos/payments/unionpay.svg'),
   jcb('JCB', 0xFF0E4C92, 'assets/logos/payments/jcb.svg'),
-  diners('Diners Club', 0xFF004A97, 'assets/logos/payments/diners.svg'),
   maestro('Maestro', 0xFF00A2E5, 'assets/logos/payments/maestro.svg'),
-  klarna('Klarna', 0xFFFFB3C7, 'assets/logos/payments/klarna.svg'),
   alipay('Alipay', 0xFF1677FF, 'assets/logos/payments/alipay.svg'),
-  wechatPay('WeChat Pay', 0xFF07C160, 'assets/logos/payments/wechat-pay.svg'),
-  amazonPay('Amazon Pay', 0xFFFF9900, 'assets/logos/payments/amazon-pay.svg'),
-  bank('Bank / Direct Debit', 0xFF00897B, 'assets/logos/payments/card-generic.svg'),
-  other('Custom Card', 0xFF424242, 'assets/logos/payments/card-generic.svg');
+  wechatPay('WeChat Pay', 0xFF07C160, 'assets/logos/payments/wechat-pay.svg');
 
   final String label;
   final int defaultColorValue;
@@ -117,8 +111,8 @@ class PaymentMethod extends Equatable {
     if (brand == CardBrand.wechatPay) {
       return 'WeChat Pay • Digital Wallet';
     }
-    if (brand == CardBrand.amazonPay) {
-      return 'Amazon Pay • Digital Wallet';
+    if (brand == CardBrand.skrill) {
+      return 'Skrill • Digital Wallet';
     }
     if (type == PaymentMethodType.digitalWallet) {
       return '${brand.label} • Digital Wallet';

@@ -18,8 +18,7 @@ extension CardBrandUIAdapter on CardBrand {
         return Icons.smartphone_rounded;
       case CardBrand.paypal:
         return Icons.paypal_rounded;
-      case CardBrand.klarna:
-        return Icons.shopping_bag_rounded;
+      case CardBrand.skrill:
       case CardBrand.alipay:
         return Icons.account_balance_wallet_rounded;
       default:
