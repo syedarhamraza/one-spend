@@ -706,7 +706,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   leading: _buildDetailIcon(Icons.badge_outlined, OneUITheme.accentBlue),
                                   title: 'Service name',
                                   subtitle: _sub.name,
-                                  subtitleColor: OneUITheme.textPrimary,
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textPrimary),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<String>(
                                     title: 'Edit name',
@@ -719,7 +719,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   leading: _buildDetailIcon(Icons.attach_money_rounded, OneUITheme.accentGreen),
                                   title: 'Price / Cost',
                                   subtitle: '${_sub.currency}${_sub.price.toStringAsFixed(2)} / ${_sub.billingCycle.label}',
-                                  subtitleColor: OneUITheme.accentGreen,
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.accentGreen),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<double>(
                                     title: 'Edit price',
@@ -896,7 +896,9 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   leading: _buildDetailIcon(Icons.notes_rounded, Colors.white70),
                                   title: 'Plan notes',
                                   subtitle: _sub.notes.isNotEmpty ? _sub.notes : 'Tap to add notes, account details, or terms...',
-                                  subtitleColor: _sub.notes.isNotEmpty ? OneUITheme.textSecondary : OneUITheme.textSecondary.withValues(alpha: 0.6),
+                                  subtitleColor: _sub.notes.isNotEmpty
+                                      ? _selectableSubtitleColor(fallback: OneUITheme.textSecondary)
+                                      : _selectableSubtitleColor(fallback: OneUITheme.textSecondary).withValues(alpha: 0.6),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<String>(
                                     title: 'Edit notes',

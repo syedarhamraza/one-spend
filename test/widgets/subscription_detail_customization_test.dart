@@ -55,6 +55,7 @@ void main() {
       id: 'test_netflix',
       name: 'Netflix',
       description: 'Movies & TV shows',
+      notes: 'Family 4K plan',
       price: 15.99,
       billingCycle: BillingCycle.monthly,
       category: SubscriptionCategory.entertainment,
@@ -138,20 +139,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // With highlightSelectable = true, Next renewal date and Billing cycle are accentBlue
+      // With highlightSelectable = true, Next renewal date, Billing cycle, Category, Service name, Price, and Notes are accentBlue
       final groupTiles = tester.widgetList<OneUIGroupItemTile>(find.byType(OneUIGroupItemTile));
       final renewalTile = groupTiles.firstWhere((t) => t.item.title == 'Next renewal date');
       final billingTile = groupTiles.firstWhere((t) => t.item.title == 'Billing cycle');
       final categoryTile = groupTiles.firstWhere((t) => t.item.title == 'Category');
       final serviceTile = groupTiles.firstWhere((t) => t.item.title == 'Service name');
+      final priceTile = groupTiles.firstWhere((t) => t.item.title == 'Price / Cost');
+      final notesTile = groupTiles.firstWhere((t) => t.item.title == 'Plan notes');
 
       expect(renewalTile.item.subtitleColor, equals(OneUITheme.accentBlue));
       expect(billingTile.item.subtitleColor, equals(OneUITheme.accentBlue));
       expect(categoryTile.item.subtitleColor, equals(OneUITheme.accentBlue));
-      // Non-selectable item remains textPrimary
-      expect(serviceTile.item.subtitleColor, equals(OneUITheme.textPrimary));
+      expect(serviceTile.item.subtitleColor, equals(OneUITheme.accentBlue));
+      expect(priceTile.item.subtitleColor, equals(OneUITheme.accentBlue));
+      expect(notesTile.item.subtitleColor, equals(OneUITheme.accentBlue));
 
-      // With highlightSelectable = false, selectable subtitles fall back to standard text colors
+      // With highlightSelectable = false, subtitles fall back to standard text colors
       ctrl.detailHighlightSelectable = false;
       await tester.pumpAndSettle();
 
@@ -159,24 +163,31 @@ void main() {
       final updatedRenewalTile = updatedTiles.firstWhere((t) => t.item.title == 'Next renewal date');
       final updatedBillingTile = updatedTiles.firstWhere((t) => t.item.title == 'Billing cycle');
       final updatedCategoryTile = updatedTiles.firstWhere((t) => t.item.title == 'Category');
+      final updatedServiceTile = updatedTiles.firstWhere((t) => t.item.title == 'Service name');
+      final updatedPriceTile = updatedTiles.firstWhere((t) => t.item.title == 'Price / Cost');
+      final updatedNotesTile = updatedTiles.firstWhere((t) => t.item.title == 'Plan notes');
 
       expect(updatedRenewalTile.item.subtitleColor, equals(OneUITheme.textSecondary));
       expect(updatedBillingTile.item.subtitleColor, equals(OneUITheme.textSecondary));
       expect(updatedCategoryTile.item.subtitleColor, equals(OneUITheme.textPrimary));
+      expect(updatedServiceTile.item.subtitleColor, equals(OneUITheme.textPrimary));
+      expect(updatedPriceTile.item.subtitleColor, equals(OneUITheme.accentGreen));
+      expect(updatedNotesTile.item.subtitleColor, equals(OneUITheme.textSecondary));
     });
   });
 
   group('SubscriptionDetailCustomizerScreen & Settings Integration', () {
     testWidgets('Settings screen contains Detail screen styling and navigates to customizer', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         const MaterialApp(
           home: SettingsScreen(),
         ),
       );
-      await tester.pumpAndSettle();
-
-      // Scroll down in CustomScrollView to reveal Appearance section
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -350));
       await tester.pumpAndSettle();
 
       final detailItemFinder = find.text('Detail screen styling');
@@ -193,6 +204,11 @@ void main() {
     });
 
     testWidgets('SubscriptionDetailCustomizerScreen toggles live preview and controller state', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       final ctrl = OneUIEffectsController.instance;
 
       await tester.pumpWidget(
@@ -204,10 +220,6 @@ void main() {
 
       expect(find.text('LIVE PREVIEW'), findsOneWidget);
       expect(ctrl.detailShowItemIcons, isTrue);
-
-      // Scroll down to see Setting items section
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
-      await tester.pumpAndSettle();
 
       // Tap "Show setting icons"
       final showIconsFinder = find.text('Show setting icons');
@@ -226,10 +238,7 @@ void main() {
 
       expect(ctrl.detailHighlightSelectable, isFalse);
 
-      // Scroll further and tap Reset to defaults
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -200));
-      await tester.pumpAndSettle();
-
+      // Tap Reset to defaults
       final resetFinder = find.text('Reset to defaults');
       expect(resetFinder, findsOneWidget);
       await tester.tap(resetFinder);
@@ -241,6 +250,11 @@ void main() {
     });
 
     testWidgets('Icon shape subpage allows switching to Circle and back', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       final ctrl = OneUIEffectsController.instance;
 
       await tester.pumpWidget(
@@ -252,13 +266,12 @@ void main() {
 
       // Tap "Icon shape"
       final iconShapeFinder = find.text('Icon shape');
-      await tester.scrollUntilVisible(iconShapeFinder, 150);
+      expect(iconShapeFinder, findsOneWidget);
       await tester.tap(iconShapeFinder);
       await tester.pumpAndSettle();
 
       // Select Circle
       final circleFinder = find.text('Circle');
-      await tester.scrollUntilVisible(circleFinder, 150);
       expect(circleFinder, findsOneWidget);
       await tester.tap(circleFinder);
       await tester.pumpAndSettle();

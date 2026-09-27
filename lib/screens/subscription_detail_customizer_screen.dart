@@ -120,7 +120,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                                 const Padding(
                                   padding: EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 6),
                                   child: Text(
-                                    'When Blue selectable descriptions is enabled, values for Billing cycle, Renewal date, Category, and Payment method display in accent blue matching One UI settings.',
+                                    'When Blue selectable descriptions is enabled, values for Service name, Price, Billing cycle, Renewal date, Category, Payment method, and Plan notes display in accent blue matching One UI settings.',
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       color: OneUITheme.textSecondary,
@@ -258,7 +258,14 @@ class _DetailScreenLivePreview extends StatelessWidget {
               leading: _buildPreviewIcon(Icons.badge_outlined, OneUITheme.accentBlue),
               title: 'Service name',
               subtitle: 'Netflix Premium',
-              subtitleColor: OneUITheme.textPrimary,
+              subtitleColor: _selectableColor(fallback: OneUITheme.textPrimary),
+              trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+            ),
+            OneUIGroupItem(
+              leading: _buildPreviewIcon(Icons.attach_money_rounded, OneUITheme.accentGreen),
+              title: 'Price / Cost',
+              subtitle: '\$15.99 / Monthly',
+              subtitleColor: _selectableColor(fallback: OneUITheme.accentGreen),
               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
             ),
             OneUIGroupItem(
@@ -287,6 +294,13 @@ class _DetailScreenLivePreview extends StatelessWidget {
               title: 'Payment method',
               subtitle: 'Visa •••• 4242',
               subtitleColor: _selectableColor(fallback: OneUITheme.textPrimary),
+              trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+            ),
+            OneUIGroupItem(
+              leading: _buildPreviewIcon(Icons.notes_rounded, Colors.white70),
+              title: 'Plan notes',
+              subtitle: '4K Ultra HD • Family Plan',
+              subtitleColor: _selectableColor(fallback: OneUITheme.textSecondary),
               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
             ),
           ],
