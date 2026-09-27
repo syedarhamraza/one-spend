@@ -63,6 +63,18 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Standalone Live Preview Card
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4, bottom: 8, top: 4),
+                            child: Text(
+                              'LIVE PREVIEW',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: OneUITheme.textTertiary,
+                              ),
+                            ),
+                          ),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: OneUISubscriptionCard(
@@ -140,7 +152,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                             ),
                           ),
 
-                          // Section 2: Card details (Clean switches with no descriptions)
+                          // Section 2: Card details (Indicators, tags, and badge options)
                           OneUISection(
                             title: 'Card details',
                             child: Column(
@@ -150,6 +162,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                   items: [
                                     OneUIGroupItem(
                                       title: 'Payment method',
+                                      subtitle: 'Show linked payment card or account',
                                       trailing: _buildOneUISwitch(
                                         value: ctrl.showPaymentMethodChip,
                                         onChanged: (val) => ctrl.showPaymentMethodChip = val,
@@ -179,6 +192,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                       ),
                                     OneUIGroupItem(
                                       title: 'Category',
+                                      subtitle: 'Display category tag badge',
                                       trailing: _buildOneUISwitch(
                                         value: ctrl.showCategoryChip,
                                         onChanged: (val) => ctrl.showCategoryChip = val,
@@ -187,6 +201,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                     ),
                                     OneUIGroupItem(
                                       title: 'Billing cycle',
+                                      subtitle: 'Show renewal period badge (monthly, yearly)',
                                       trailing: _buildOneUISwitch(
                                         value: ctrl.showBillingCycle,
                                         onChanged: (val) => ctrl.showBillingCycle = val,
@@ -195,6 +210,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                     ),
                                     OneUIGroupItem(
                                       title: 'Daily equivalent cost',
+                                      subtitle: 'Display normalized daily cost below price',
                                       trailing: _buildOneUISwitch(
                                         value: ctrl.showDailyEquivalent,
                                         onChanged: (val) => ctrl.showDailyEquivalent = val,
@@ -203,18 +219,19 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                if (ctrl.showPaymentMethodChip)
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 6),
-                                    child: Text(
-                                      'When Corner payment badge is on, card logos are pinned on the app icon to prevent text clipping on smaller screens.',
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        color: OneUITheme.textSecondary,
-                                        height: 1.35,
-                                      ),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 6),
+                                  child: Text(
+                                    ctrl.showPaymentMethodChip
+                                        ? 'When Corner payment badge is on, card logos are pinned on the app icon to prevent text clipping on smaller screens.'
+                                        : 'Customize which indicator chips and details are displayed on subscription cards across your list.',
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      color: OneUITheme.textSecondary,
+                                      height: 1.35,
                                     ),
                                   ),
+                                ),
                               ],
                             ),
                           ),
@@ -363,6 +380,18 @@ class _SubscriptionCardOptionScreenState<T> extends State<SubscriptionCardOption
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Live Preview Card
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4, bottom: 8, top: 4),
+                            child: Text(
+                              'LIVE PREVIEW',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: OneUITheme.textTertiary,
+                              ),
+                            ),
+                          ),
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: OneUISubscriptionCard(

@@ -9,6 +9,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
 import 'one_ui_field_editor_screen.dart';
 import 'subscription_card_customizer_screen.dart';
+import 'subscription_detail_customizer_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -460,6 +461,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const SubscriptionCardCustomizerScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.dashboard_customize_rounded, OneUITheme.accentTeal),
+                          title: 'Detail screen styling',
+                          subtitle: 'Icon visibility, shape, and blue highlight for selectable items',
+                          trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionDetailCustomizerScreen(),
                               ),
                             );
                           },

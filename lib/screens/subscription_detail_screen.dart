@@ -703,10 +703,10 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                             child: OneUIGroupCard(
                               items: [
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.badge_outlined, OneUITheme.accentBlue),
+                                  leading: _buildDetailIcon(Icons.badge_outlined, OneUITheme.accentBlue),
                                   title: 'Service name',
                                   subtitle: _sub.name,
-                                  subtitleColor: OneUITheme.textPrimary,
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textPrimary),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<String>(
                                     title: 'Edit name',
@@ -716,10 +716,10 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   ),
                                 ),
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.attach_money_rounded, OneUITheme.accentGreen),
+                                  leading: _buildDetailIcon(Icons.attach_money_rounded, OneUITheme.accentGreen),
                                   title: 'Price / Cost',
                                   subtitle: '${_sub.currency}${_sub.price.toStringAsFixed(2)} / ${_sub.billingCycle.label}',
-                                  subtitleColor: OneUITheme.accentGreen,
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.accentGreen),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<double>(
                                     title: 'Edit price',
@@ -729,10 +729,10 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   ),
                                 ),
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.repeat_rounded, OneUITheme.accentPurple),
+                                  leading: _buildDetailIcon(Icons.repeat_rounded, OneUITheme.accentPurple),
                                   title: 'Billing cycle',
                                   subtitle: '${_sub.billingCycle.label} (${_sub.billingCycle.occurrencesPerYear}x / year)',
-                                  subtitleColor: OneUITheme.textSecondary,
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textSecondary),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<BillingCycle>(
                                     title: 'Edit billing cycle',
@@ -742,10 +742,10 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   ),
                                 ),
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.calendar_month_rounded, OneUITheme.accentTeal),
+                                  leading: _buildDetailIcon(Icons.calendar_month_rounded, OneUITheme.accentTeal),
                                   title: 'Next renewal date',
                                   subtitle: formattedDate,
-                                  subtitleColor: OneUITheme.accentBlue,
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textSecondary),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<DateTime>(
                                     title: 'Edit renewal date',
@@ -755,7 +755,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   ),
                                 ),
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.link_rounded, OneUITheme.accentBlue),
+                                  leading: _buildDetailIcon(Icons.link_rounded, OneUITheme.accentBlue),
                                   title: 'Account / Website URL',
                                   subtitle: _sub.accountUrl.isNotEmpty
                                       ? _sub.accountUrl
@@ -787,10 +787,10 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                             child: OneUIGroupCard(
                               items: [
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(_sub.category.icon, OneUITheme.accentPurple),
+                                  leading: _buildDetailIcon(_sub.category.icon, OneUITheme.accentPurple),
                                   title: 'Category',
                                   subtitle: _sub.category.label,
-                                  subtitleColor: OneUITheme.textPrimary,
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textPrimary),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () async {
                                     final newCat = await CategoryPickerScreen.open(
@@ -809,15 +809,25 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   },
                                 ),
                                 OneUIGroupItem(
-                                  leading: linkedCard != null
-                                      ? OneUIPaymentBrandIcon(brand: linkedCard.brand, width: 36, height: 26)
-                                      : _buildCategoryIconBadge(Icons.payment_rounded, OneUITheme.accentAmber),
+                                  leading: _buildDetailPaymentIcon(linkedCard),
                                   title: 'Payment method',
                                   subtitle: linkedCard != null
                                       ? linkedCard.displayName
                                       : (_sub.paymentMethod.isNotEmpty ? _sub.paymentMethod : 'No payment method linked'),
                                   customSubtitle: Row(
                                     children: [
+                                      if (OneUIEffectsController.instance.detailPaymentIconStyle ==
+                                              DetailPaymentIconStyle.iconBadge &&
+                                          OneUIEffectsController.instance.detailShowInlineCardBrand &&
+                                          linkedCard != null) ...[
+                                        OneUIPaymentBrandIcon(
+                                          brand: linkedCard.brand,
+                                          width: 22,
+                                          height: 14.5,
+                                          borderRadius: 2.5,
+                                        ),
+                                        const SizedBox(width: 7),
+                                      ],
                                       Flexible(
                                         child: Text(
                                           linkedCard != null
@@ -827,7 +837,11 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.normal,
-                                            color: linkedCard != null ? OneUITheme.textPrimary : OneUITheme.accentRed,
+                                            color: linkedCard != null
+                                                ? (OneUIEffectsController.instance.detailHighlightSelectable
+                                                    ? OneUITheme.accentBlue
+                                                    : OneUITheme.textPrimary)
+                                                : OneUITheme.accentRed,
                                           ),
                                         ),
                                       ),
@@ -872,12 +886,12 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   onTap: _pickPaymentMethod,
                                 ),
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.notifications_active_rounded, OneUITheme.accentTeal),
+                                  leading: _buildDetailIcon(Icons.notifications_active_rounded, OneUITheme.accentTeal),
                                   title: 'Renewal notification',
                                   subtitle: _sub.reminderDays == 0
                                       ? 'On renewal day (9:00 AM)'
                                       : 'Alert ${_sub.reminderDays} days before renewal',
-                                  subtitleColor: OneUITheme.textSecondary,
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textSecondary),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: _pickReminderDays,
                                 ),
@@ -891,10 +905,12 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                             child: OneUIGroupCard(
                               items: [
                                 OneUIGroupItem(
-                                  leading: _buildCategoryIconBadge(Icons.notes_rounded, Colors.white70),
+                                  leading: _buildDetailIcon(Icons.notes_rounded, Colors.white70),
                                   title: 'Plan notes',
                                   subtitle: _sub.notes.isNotEmpty ? _sub.notes : 'Tap to add notes, account details, or terms...',
-                                  subtitleColor: _sub.notes.isNotEmpty ? OneUITheme.textSecondary : OneUITheme.textSecondary.withValues(alpha: 0.6),
+                                  subtitleColor: _sub.notes.isNotEmpty
+                                      ? _selectableSubtitleColor(fallback: OneUITheme.textSecondary)
+                                      : _selectableSubtitleColor(fallback: OneUITheme.textSecondary).withValues(alpha: 0.6),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<String>(
                                     title: 'Edit notes',
@@ -985,7 +1001,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                 OneUIGroupCard(
                                   items: [
                                     OneUIGroupItem(
-                                      leading: _buildCategoryIconBadge(Icons.calendar_month_rounded, OneUITheme.accentBlue),
+                                      leading: _buildDetailIcon(Icons.calendar_month_rounded, OneUITheme.accentBlue),
                                       title: 'Upcoming schedule',
                                       subtitle: upcomingSubtitle,
                                       subtitleColor: OneUITheme.textSecondary,
@@ -1001,7 +1017,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       },
                                     ),
                                     OneUIGroupItem(
-                                      leading: _buildCategoryIconBadge(Icons.receipt_long_rounded, OneUITheme.accentGreen),
+                                      leading: _buildDetailIcon(Icons.receipt_long_rounded, OneUITheme.accentGreen),
                                       title: 'Payment history',
                                       subtitle: _sub.paymentHistory.isNotEmpty
                                           ? 'Last paid on ${dateFormat.format(_sub.paymentHistory.first)} • ${_sub.paymentHistory.length} records'
@@ -1071,16 +1087,42 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
     );
   }
 
-  Widget _buildCategoryIconBadge(IconData icon, Color color) {
+  Widget? _buildDetailIcon(IconData icon, Color color) {
+    final ctrl = OneUIEffectsController.instance;
+    if (!ctrl.detailShowItemIcons) return null;
+    final isCircle = ctrl.detailIconShape == DetailIconShape.circle;
     return Container(
       width: 38,
       height: 38,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: isCircle ? null : BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: Icon(icon, size: 20, color: color),
     );
+  }
+
+  Widget? _buildDetailPaymentIcon(PaymentMethod? card) {
+    final ctrl = OneUIEffectsController.instance;
+    if (!ctrl.detailShowItemIcons) return null;
+    if (ctrl.detailPaymentIconStyle == DetailPaymentIconStyle.cardBrand && card != null) {
+      // Authentic rectangular payment card aspect ratio (never deformed into circle or squircle)
+      return OneUIPaymentBrandIcon(
+        brand: card.brand,
+        width: 36,
+        height: 26,
+        borderRadius: 5,
+      );
+    }
+    // Uniform One UI icon badge (morphs to squircle or circle with detailIconShape)
+    return _buildDetailIcon(Icons.payment_rounded, OneUITheme.accentAmber);
+  }
+
+  Color _selectableSubtitleColor({Color fallback = OneUITheme.textSecondary}) {
+    return OneUIEffectsController.instance.detailHighlightSelectable
+        ? OneUITheme.accentBlue
+        : fallback;
   }
 }
