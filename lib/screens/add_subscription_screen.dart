@@ -16,6 +16,7 @@ import 'one_ui_field_editor_screen.dart';
 import 'payment_methods_screen.dart';
 import 'popular_presets_screen.dart';
 import 'reminder_picker_screen.dart';
+import 'billing_cycle_picker_screen.dart';
 import 'category_picker_screen.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
@@ -441,12 +442,17 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                               subtitle: '${_billingCycle.label} (${_billingCycle.occurrencesPerYear}x / year)',
                               subtitleColor: OneUITheme.textSecondary,
                               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                              onTap: () => _editField<BillingCycle>(
-                                title: 'Billing cycle',
-                                type: FieldEditorType.billingCycle,
-                                initialValue: _billingCycle,
-                                onApply: (val) => _billingCycle = val,
-                              ),
+                              onTap: () async {
+                                final selected = await BillingCyclePickerScreen.open(
+                                  context,
+                                  initialCycle: _billingCycle,
+                                );
+                                if (selected != null && mounted) {
+                                  setState(() {
+                                    _billingCycle = selected;
+                                  });
+                                }
+                              },
                             ),
                             OneUIGroupItem(
                               leading: _buildCategoryIconBadge(Icons.calendar_month_rounded, OneUITheme.accentTeal),

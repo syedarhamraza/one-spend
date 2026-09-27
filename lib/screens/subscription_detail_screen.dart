@@ -17,6 +17,7 @@ import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_switch.dart';
+import 'billing_cycle_picker_screen.dart';
 import 'category_picker_screen.dart';
 import 'icon_picker_screen.dart';
 import 'one_ui_field_editor_screen.dart';
@@ -734,12 +735,21 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                   subtitle: '${_sub.billingCycle.label} (${_sub.billingCycle.occurrencesPerYear}x / year)',
                                   subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textSecondary),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                                  onTap: () => _editField<BillingCycle>(
-                                    title: 'Edit billing cycle',
-                                    type: FieldEditorType.billingCycle,
-                                    initialValue: _sub.billingCycle,
-                                    onApply: (val) => _sub = _sub.copyWith(billingCycle: val),
-                                  ),
+                                  onTap: () async {
+                                    final newCycle = await BillingCyclePickerScreen.open(
+                                      context,
+                                      initialCycle: _sub.billingCycle,
+                                    );
+                                    if (newCycle == null || newCycle == _sub.billingCycle) return;
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _sub = _sub.copyWith(billingCycle: newCycle);
+                                    });
+                                    SubscriptionStore.instance.updateSubscription(_sub);
+                                    if (context.mounted) {
+                                      OneUIToast.show(context, 'Billing cycle updated');
+                                    }
+                                  },
                                 ),
                                 OneUIGroupItem(
                                   leading: _buildDetailIcon(Icons.calendar_month_rounded, OneUITheme.accentTeal),
@@ -928,72 +938,150 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                             title: 'Spend & Billing',
                             child: Column(
                               children: [
-                                // Lifetime Spend Overview Tile
+                                // Lifetime Spend Overview Tile (Hero card architecture without glow)
                                 Container(
                                   width: double.infinity,
                                   margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.all(18),
-                                  decoration: BoxDecoration(
-                                    color: OneUITheme.cardColor,
+                                  child: ClipRRect(
                                     borderRadius: OneUITheme.cardBorderRadius,
-                                    border: OneUITheme.cardBorder,
-                                    boxShadow: OneUITheme.cardShadow,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Column(
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                                      child: Material(
+                                        color: const Color(0xFF1B1C20).withValues(alpha: 0.68),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(20),
+                                          child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              const Text(
-                                                'Lifetime spend',
-                                                style: TextStyle(
-                                                  fontSize: 12.5,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: OneUITheme.textSecondary,
-                                                ),
+                                              // Header Row: Title & Status Capsule
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  const Text(
+                                                    'Lifetime spend',
+                                                    style: TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: OneUITheme.textSecondary,
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                    decoration: BoxDecoration(
+                                                      color: OneUITheme.accentBlue.withValues(alpha: 0.15),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      '$recordedPayments ${recordedPayments == 1 ? 'payment' : 'payments'}',
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: OneUITheme.accentBlue,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              const SizedBox(height: 3),
-                                              Text(
-                                                '${_sub.currency}${totalPaid.toStringAsFixed(2)}',
-                                                style: const TextStyle(
-                                                  fontSize: 22,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: -0.4,
-                                                  color: OneUITheme.textPrimary,
+                                              const SizedBox(height: 14),
+
+                                              // Main Spend Metric Typography
+                                              Row(
+                                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                                textBaseline: TextBaseline.alphabetic,
+                                                children: [
+                                                  Text(
+                                                    '${_sub.currency}${totalPaid.toStringAsFixed(2)}',
+                                                    style: const TextStyle(
+                                                      fontSize: 32,
+                                                      fontWeight: FontWeight.w700,
+                                                      letterSpacing: -0.8,
+                                                      color: OneUITheme.textPrimary,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  const Text(
+                                                    'total recorded',
+                                                    style: TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.white54,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Container(
+                                                height: 0.8,
+                                                color: Colors.white.withValues(alpha: 0.06),
+                                              ),
+                                              const SizedBox(height: 14),
+
+                                              // Samsung Device Care-Style Key-Value Container
+                                              Container(
+                                                width: double.infinity,
+                                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withValues(alpha: 0.04),
+                                                  borderRadius: BorderRadius.circular(18),
+                                                ),
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        const Text(
+                                                          'Estimated annual',
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.w500,
+                                                            color: OneUITheme.textSecondary,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          '${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)} / yr',
+                                                          style: const TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.w700,
+                                                            color: OneUITheme.textPrimary,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Divider(
+                                                      height: 14,
+                                                      thickness: 0.6,
+                                                      color: Colors.white.withValues(alpha: 0.06),
+                                                    ),
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        const Text(
+                                                          'Monthly equivalent',
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.w500,
+                                                            color: OneUITheme.textSecondary,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          '~${_sub.currency}${_sub.monthlyCost.toStringAsFixed(2)} / mo',
+                                                          style: const TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight: FontWeight.w700,
+                                                            color: OneUITheme.textPrimary,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ],
                                           ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                                            decoration: BoxDecoration(
-                                              color: OneUITheme.accentBlue.withValues(alpha: 0.14),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              '$recordedPayments ${recordedPayments == 1 ? 'payment' : 'payments'}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w700,
-                                                color: OneUITheme.accentBlue,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        'Estimated annual: ${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)}/yr',
-                                        style: const TextStyle(
-                                          fontSize: 12.5,
-                                          color: OneUITheme.textSecondary,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
                                 ),
 

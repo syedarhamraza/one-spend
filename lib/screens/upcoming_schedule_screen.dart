@@ -98,27 +98,34 @@ class UpcomingScheduleScreen extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    '12-Cycle Est.',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: OneUITheme.textSecondary,
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: OneUITheme.accentBlue.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    const Text(
+                                      '12-Cycle Est.',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: OneUITheme.accentBlue,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${subscription.currency}${totalProjected.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: OneUITheme.accentBlue,
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      '${subscription.currency}${totalProjected.toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: OneUITheme.accentBlue,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -245,10 +252,10 @@ class UpcomingScheduleScreen extends StatelessWidget {
 
     return OneUIGroupItem(
       leading: Container(
-        width: 36,
-        height: 36,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
-          color: (isNext ? OneUITheme.accentBlue : Colors.white).withValues(alpha: isNext ? 0.16 : 0.07),
+          color: (isNext ? OneUITheme.accentBlue : Colors.white).withValues(alpha: isNext ? 0.18 : 0.06),
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
@@ -268,16 +275,16 @@ class UpcomingScheduleScreen extends StatelessWidget {
         children: [
           if (isNext) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: OneUITheme.accentBlue.withValues(alpha: 0.14),
+                color: OneUITheme.accentBlue.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Text(
                 'Next',
                 style: TextStyle(
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: OneUITheme.accentBlue,
                 ),
