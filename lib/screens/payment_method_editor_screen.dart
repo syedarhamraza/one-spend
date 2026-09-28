@@ -190,11 +190,6 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
 
                             // 2. Card Network / Provider
                             OneUIGroupItem(
-                              leading: OneUIPaymentBrandIcon(
-                                brand: _brand,
-                                width: 34,
-                                height: 22,
-                              ),
                               title: 'Card network / Provider',
                               subtitle: _brand.label,
                               subtitleColor: OneUITheme.accentBlue,
