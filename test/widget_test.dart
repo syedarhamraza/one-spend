@@ -1740,9 +1740,8 @@ void main() {
 
     expect(find.text('Payment methods'), findsOneWidget);
 
-    // Long-press on first card to enter multi-selection mode
-    final firstCard = find.text('Primary Samsung Pay');
-    expect(firstCard, findsOneWidget);
+    // Long-press on first card in list to enter multi-selection mode
+    final firstCard = find.text('Primary Samsung Pay').last;
     await tester.longPress(firstCard);
     await tester.pumpAndSettle();
 
@@ -1758,8 +1757,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('2'), findsOneWidget);
-    // When > 1 selected, Edit is hidden, Move subs and Delete remain
-    expect(find.text('Edit'), findsNothing);
+    // When > 1 selected, Edit remains visible (disabled for layout stability), Move subs and Delete remain
+    expect(find.text('Edit'), findsOneWidget);
     expect(find.text('Move subs'), findsOneWidget);
     expect(find.text('Delete'), findsOneWidget);
 

@@ -6,6 +6,7 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
+import '../widgets/one_ui_radio.dart';
 
 /// Dedicated Samsung One UI Renewal Reminder Subpage.
 /// Replaces the bottom modal sheet with a full One UI subpage for selecting
@@ -175,23 +176,7 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
                               title: opt['title'] as String,
                               subtitle: opt['subtitle'] as String,
                               subtitleColor: OneUITheme.textSecondary,
-                              trailing: Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? OneUITheme.accentBlue
-                                        : Colors.white.withValues(alpha: 0.3),
-                                    width: isSelected ? 0 : 1.5,
-                                  ),
-                                ),
-                                child: isSelected
-                                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                                    : null,
-                              ),
+                              trailing: OneUIRadio(isSelected: isSelected),
                               onTap: () {
                                 HapticFeedback.selectionClick();
                                 setState(() {
@@ -216,23 +201,7 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
                                   ? 'Enter days in advance (1-60)'
                                   : 'Specify custom days prior to renewal',
                               subtitleColor: OneUITheme.textSecondary,
-                              trailing: Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _isCustom ? OneUITheme.accentBlue : Colors.transparent,
-                                  border: Border.all(
-                                    color: _isCustom
-                                        ? OneUITheme.accentBlue
-                                        : Colors.white.withValues(alpha: 0.3),
-                                    width: _isCustom ? 0 : 1.5,
-                                  ),
-                                ),
-                                child: _isCustom
-                                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                                    : null,
-                              ),
+                              trailing: OneUIRadio(isSelected: _isCustom),
                               onTap: () {
                                 HapticFeedback.selectionClick();
                                 setState(() {

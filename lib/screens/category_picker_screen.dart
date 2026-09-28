@@ -6,10 +6,11 @@ import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
+import '../widgets/one_ui_radio.dart';
 
 /// Dedicated Samsung One UI Category Picker Subpage.
 /// Matches the design language of ReminderPickerScreen with hero status banner,
-/// One UI grouped card with descriptive subtitles, checkmarks, and floating stadium save pill.
+/// One UI grouped card with descriptive subtitles, radio buttons, and floating stadium save pill.
 class CategoryPickerScreen extends StatefulWidget {
   final SubscriptionCategory initialCategory;
 
@@ -275,23 +276,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
       title: cat.label,
       subtitle: meta.listSubtitle,
       subtitleColor: OneUITheme.textSecondary,
-      trailing: Container(
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
-          border: Border.all(
-            color: isSelected
-                ? OneUITheme.accentBlue
-                : Colors.white.withValues(alpha: 0.3),
-            width: isSelected ? 0 : 1.5,
-          ),
-        ),
-        child: isSelected
-            ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-            : null,
-      ),
+      trailing: OneUIRadio(isSelected: isSelected),
       onTap: () {
         HapticFeedback.selectionClick();
         setState(() {

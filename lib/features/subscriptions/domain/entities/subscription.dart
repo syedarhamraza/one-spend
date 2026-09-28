@@ -151,7 +151,7 @@ class Subscription extends Equatable {
       nextBillingDate: nextBillingDate ?? this.nextBillingDate,
       status: status ?? this.status,
       paymentMethod: paymentMethod ?? this.paymentMethod,
-      paymentMethodId: clearPaymentMethodId ? null : (paymentMethodId ?? this.paymentMethodId),
+      paymentMethodId: (clearPaymentMethodId || paymentMethodId == '__none__') ? null : (paymentMethodId ?? this.paymentMethodId),
       reminderDays: reminderDays ?? this.reminderDays,
       isPopular: isPopular ?? this.isPopular,
       notes: notes ?? this.notes,
