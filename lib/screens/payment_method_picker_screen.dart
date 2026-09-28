@@ -721,10 +721,6 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF1B1C20).withValues(alpha: 0.68),
                                         borderRadius: OneUITheme.cardBorderRadius,
-                                        border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.08),
-                                          width: 1,
-                                        ),
                                       ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
