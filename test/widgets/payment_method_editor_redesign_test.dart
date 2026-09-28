@@ -53,7 +53,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
     }
 
-    testWidgets('renders flat realistic card mockup without cardholder name label', (tester) async {
+    testWidgets('deprecates live card preview and color tint, rendering strictly functional form fields', (tester) async {
       setMobileDimensions(tester);
       await tester.pumpWidget(
         const MaterialApp(
@@ -71,27 +71,29 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Flat realistic mockup assertions (nickname in card & list item)
-      expect(find.text('Business Salary'), findsNWidgets(2));
+      // Nickname in form field
+      expect(find.text('Business Salary'), findsOneWidget);
       expect(find.textContaining('4242'), findsWidgets);
       expect(find.text('12/28'), findsWidgets);
-      expect(find.text('DEFAULT'), findsOneWidget);
-      expect(find.byIcon(Icons.contactless_rounded), findsOneWidget);
+
+      // Verify live mockup and contactless icon are deprecated and removed
+      expect(find.byIcon(Icons.contactless_rounded), findsNothing);
+      expect(find.text('Card appearance'), findsNothing);
+      expect(find.text('Card color tint'), findsNothing);
 
       // Verify no "cardholder name" label is rendered anywhere
       expect(find.textContaining('cardholder', findRichText: true), findsNothing);
       expect(find.textContaining('CARDHOLDER', findRichText: true), findsNothing);
 
-      // Verify One UI sections
-      expect(find.text('Card appearance'), findsOneWidget);
+      // Verify functional form sections
       expect(find.text('Card details'), findsOneWidget);
-      expect(find.text('Billing & preferences'), findsOneWidget);
+      expect(find.text('Preferences'), findsOneWidget);
 
       // Verify OneUISwitch is used for default toggle
       expect(find.byType(OneUISwitch), findsOneWidget);
     });
 
-    testWidgets('navigates to Card color tint subpage and displays hex swatches', (tester) async {
+    testWidgets('deprecates Card color tint subpage completely', (tester) async {
       setMobileDimensions(tester);
       await tester.pumpWidget(
         const MaterialApp(
@@ -100,20 +102,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Tap Card color tint
-      await tester.tap(find.text('Card color tint'));
-      await tester.pumpAndSettle();
-
-      // Should be in subpage with 'Select color' section and hex codes
-      expect(find.text('Select color'), findsOneWidget);
-      expect(find.text('#1E2638'), findsOneWidget);
-      expect(find.text('#1428A0'), findsOneWidget);
-      expect(find.text('Apply'), findsOneWidget);
-
-      // Tapping apply pops back to editor screen
-      await tester.tap(find.text('Apply'));
-      await tester.pumpAndSettle();
-      expect(find.text('Card appearance'), findsOneWidget);
+      // Card color tint must not exist
+      expect(find.text('Card color tint'), findsNothing);
+      expect(find.text('Card appearance'), findsNothing);
     });
 
     testWidgets('navigates to Card network subpage and displays 12 brands including Skrill', (tester) async {

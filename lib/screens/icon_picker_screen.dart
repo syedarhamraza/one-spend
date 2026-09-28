@@ -11,6 +11,7 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_icon_picker_modal.dart';
+import '../widgets/one_ui_radio.dart';
 
 /// Samsung One UI Subscription Icon Picker Subpage.
 /// Redesigned to match One UI customization subpages (e.g. Subscription Detail Styling):
@@ -87,6 +88,25 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
 
   static String getColorHex(Color color) {
     return '#${color.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+  }
+
+  static final Map<int, String> swatchNames = {
+    const Color(0xFFE50914).toARGB32(): 'Netflix Red',
+    const Color(0xFF1DB954).toARGB32(): 'Spotify Green',
+    const Color(0xFF0066FF).toARGB32(): 'One UI Blue',
+    const Color(0xFF8A2BE2).toARGB32(): 'Electric Purple',
+    const Color(0xFFFF9500).toARGB32(): 'Sunset Orange',
+    const Color(0xFF00C7BE).toARGB32(): 'Ocean Teal',
+    const Color(0xFFFF2D55).toARGB32(): 'Neon Pink',
+    const Color(0xFF34AADC).toARGB32(): 'Sky Blue',
+    const Color(0xFF10A37F).toARGB32(): 'Mint Green',
+    const Color(0xFF2C3440).toARGB32(): 'Dark Slate',
+    const Color(0xFF5856D6).toARGB32(): 'Deep Indigo',
+    const Color(0xFF555555).toARGB32(): 'Charcoal Grey',
+  };
+
+  static String getSwatchName(Color color) {
+    return swatchNames[color.toARGB32()] ?? 'Custom Color';
   }
 
   static const List<IconData> systemIcons = [
@@ -836,85 +856,26 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
                                     ],
                                   ),
                                 )
-                              : Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: OneUIEffectsController.instance.resolveCardBackground(),
-                                    borderRadius: OneUITheme.cardBorderRadius,
-                                    border: OneUITheme.cardBorder,
-                                  ),
-                                  child: GridView.builder(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 4,
-                                      mainAxisSpacing: 16,
-                                      crossAxisSpacing: 12,
-                                      childAspectRatio: 0.80,
-                                    ),
-                                    itemCount: filtered.length,
-                                    itemBuilder: (context, index) {
-                                      final preset = filtered[index];
-                                      final isSelected = _selectedPresetId == preset.id;
-
-                                      return GestureDetector(
-                                        onTap: () {
-                                          HapticFeedback.selectionClick();
-                                          setState(() {
-                                            _selectedPresetId = preset.id;
-                                            _previewColor = preset.color;
-                                            _previewIcon = preset.icon;
-                                            _previewLogoUrl = preset.logoUrl;
-                                          });
-                                          Navigator.pop(context, _BrandPresetResult(preset));
-                                        },
-                                        child: Column(
-                                          children: [
-                                            Stack(
-                                              children: [
-                                                OneUIBrandIcon(
-                                                  brandPresetId: preset.id,
-                                                  name: preset.name,
-                                                  brandColor: preset.color,
-                                                  size: 52,
-                                                  borderRadius: 16,
-                                                ),
-                                                if (isSelected)
-                                                  Positioned(
-                                                    right: 0,
-                                                    top: 0,
-                                                    child: Container(
-                                                      padding: const EdgeInsets.all(3.5),
-                                                      decoration: const BoxDecoration(
-                                                        color: OneUITheme.accentBlue,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: const Icon(
-                                                        Icons.check_rounded,
-                                                        size: 11,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              preset.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                fontSize: 11.5,
-                                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                                color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
+                              : OneUIGroupCard(
+                                  items: filtered.map((preset) {
+                                    final isSelected = _selectedPresetId == preset.id;
+                                    return OneUIGroupItem(
+                                      leading: OneUIBrandIcon(
+                                        brandPresetId: preset.id,
+                                        name: preset.name,
+                                        brandColor: preset.color,
+                                        size: 38,
+                                        borderRadius: 12,
+                                      ),
+                                      title: preset.name,
+                                      subtitle: preset.category.label,
+                                      trailing: OneUIRadio(isSelected: isSelected),
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        Navigator.pop(context, _BrandPresetResult(preset));
+                                      },
+                                    );
+                                  }).toList(),
                                 ),
                         ),
                       ],
@@ -1023,54 +984,29 @@ class _SystemIconPickerSubpageState extends State<_SystemIconPickerSubpage> {
 
                       OneUISection(
                         title: 'Curated icons',
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: OneUIEffectsController.instance.resolveCardBackground(),
-                            borderRadius: OneUITheme.cardBorderRadius,
-                            border: OneUITheme.cardBorder,
-                          ),
-                          child: GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 1.0,
-                            ),
-                            itemCount: _IconPickerScreenState.systemIcons.length,
-                            itemBuilder: (context, index) {
-                              final icon = _IconPickerScreenState.systemIcons[index];
-                              final isSelected = _selectedIcon.codePoint == icon.codePoint;
-
-                              return GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  setState(() {
-                                    _selectedIcon = icon;
-                                  });
-                                  Navigator.pop(context, icon);
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? OneUITheme.surfacePillActive : OneUITheme.surfacePill,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: isSelected ? OneUITheme.accentBlue : Colors.transparent,
-                                      width: 1.6,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    icon,
-                                    size: 26,
-                                    color: isSelected ? OneUITheme.accentBlue : OneUITheme.textPrimary,
-                                  ),
+                        child: OneUIGroupCard(
+                          items: _IconPickerScreenState.systemIcons.map((icon) {
+                            final isSelected = _selectedIcon.codePoint == icon.codePoint;
+                            final name = _IconPickerScreenState.systemIconNames[icon] ?? 'System Icon';
+                            return OneUIGroupItem(
+                              leading: Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: widget.currentColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                              );
-                            },
-                          ),
+                                alignment: Alignment.center,
+                                child: Icon(icon, size: 20, color: widget.currentColor),
+                              ),
+                              title: name,
+                              trailing: OneUIRadio(isSelected: isSelected),
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                Navigator.pop(context, icon);
+                              },
+                            );
+                          }).toList(),
                         ),
                       ),
                     ],
@@ -1172,64 +1108,98 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                       const SizedBox(height: 16),
 
                       // URL input card inside OneUISection
-                      OneUISection(
-                        title: 'Web image source',
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: OneUIEffectsController.instance.resolveCardBackground(),
-                            borderRadius: OneUITheme.cardBorderRadius,
-                            border: OneUITheme.cardBorder,
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.link_rounded, size: 22, color: OneUITheme.accentBlue),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: TextField(
-                                  controller: _controller,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _previewUrl = val.trim().isNotEmpty ? val.trim() : null;
-                                    });
-                                  },
-                                  style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
-                                  decoration: const InputDecoration(
-                                    hintText: 'https://example.com/logo.png',
-                                    hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-                                    border: InputBorder.none,
+                      Builder(
+                        builder: (context) {
+                          final rawText = _controller.text.trim();
+                          final isValidUrl = rawText.isEmpty || rawText.startsWith('http://') || rawText.startsWith('https://');
+
+                          return OneUISection(
+                            title: 'Web image source',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: OneUIEffectsController.instance.resolveCardBackground(),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: !isValidUrl
+                                        ? Border.all(color: OneUITheme.accentRed, width: 1.5)
+                                        : (rawText.isNotEmpty
+                                            ? Border.all(color: OneUITheme.accentBlue.withValues(alpha: 0.6), width: 1.5)
+                                            : OneUITheme.cardBorder),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.link_rounded,
+                                        size: 22,
+                                        color: !isValidUrl ? OneUITheme.accentRed : OneUITheme.accentBlue,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _controller,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              _previewUrl = val.trim().isNotEmpty ? val.trim() : null;
+                                            });
+                                          },
+                                          style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
+                                          decoration: const InputDecoration(
+                                            hintText: 'https://example.com/logo.png',
+                                            hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
+                                            border: InputBorder.none,
+                                          ),
+                                        ),
+                                      ),
+                                      if (_controller.text.isNotEmpty)
+                                        IconButton(
+                                          icon: const Icon(Icons.clear_rounded, size: 20, color: OneUITheme.textSecondary),
+                                          onPressed: () {
+                                            HapticFeedback.selectionClick();
+                                            _controller.clear();
+                                            setState(() {
+                                              _previewUrl = null;
+                                            });
+                                          },
+                                        ),
+                                      IconButton(
+                                        icon: const Icon(Icons.content_paste_rounded, size: 20, color: OneUITheme.accentBlue),
+                                        tooltip: 'Paste from clipboard',
+                                        onPressed: () async {
+                                          final data = await Clipboard.getData('text/plain');
+                                          if (data != null && data.text != null && data.text!.trim().isNotEmpty) {
+                                            HapticFeedback.selectionClick();
+                                            final pasted = data.text!.trim();
+                                            _controller.text = pasted;
+                                            setState(() {
+                                              _previewUrl = pasted;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              if (_controller.text.isNotEmpty)
-                                IconButton(
-                                  icon: const Icon(Icons.clear_rounded, size: 20, color: OneUITheme.textSecondary),
-                                  onPressed: () {
-                                    HapticFeedback.selectionClick();
-                                    _controller.clear();
-                                    setState(() {
-                                      _previewUrl = null;
-                                    });
-                                  },
-                                ),
-                              IconButton(
-                                icon: const Icon(Icons.content_paste_rounded, size: 20, color: OneUITheme.accentBlue),
-                                tooltip: 'Paste from clipboard',
-                                onPressed: () async {
-                                  final data = await Clipboard.getData('text/plain');
-                                  if (data != null && data.text != null && data.text!.trim().isNotEmpty) {
-                                    HapticFeedback.selectionClick();
-                                    final pasted = data.text!.trim();
-                                    _controller.text = pasted;
-                                    setState(() {
-                                      _previewUrl = pasted;
-                                    });
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
+                                if (!isValidUrl) ...[
+                                  const SizedBox(height: 6),
+                                  const Padding(
+                                    padding: EdgeInsets.only(left: 6),
+                                    child: Text(
+                                      'Please enter a valid URL starting with http:// or https://',
+                                      style: TextStyle(
+                                        color: OneUITheme.accentRed,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
                       ),
                       const Padding(
                         padding: EdgeInsets.only(left: 16, right: 16, top: 10),
@@ -1245,31 +1215,42 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                       const SizedBox(height: 24),
 
                       // Apply Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            HapticFeedback.mediumImpact();
-                            final clean = _previewUrl?.trim();
-                            Navigator.pop(
-                              context,
-                              _CustomUrlResult((clean != null && clean.isNotEmpty) ? clean : null),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: OneUITheme.accentBlue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
+                      Builder(
+                        builder: (context) {
+                          final rawText = _controller.text.trim();
+                          final isValidUrl = rawText.isEmpty || rawText.startsWith('http://') || rawText.startsWith('https://');
+
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: isValidUrl
+                                  ? () {
+                                      HapticFeedback.mediumImpact();
+                                      final clean = _previewUrl?.trim();
+                                      Navigator.pop(
+                                        context,
+                                        _CustomUrlResult((clean != null && clean.isNotEmpty) ? clean : null),
+                                      );
+                                    }
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: OneUITheme.accentBlue,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: OneUITheme.accentBlue.withValues(alpha: 0.35),
+                                disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                'Apply URL',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                              ),
                             ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Apply URL',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                          ),
-                        ),
+                          );
+                        },
                       ),
 
                       // Remove Custom URL Button (if a URL was present or previewed)
@@ -1303,7 +1284,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                                 width: 1.0,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
+                                borderRadius: BorderRadius.circular(100),
                               ),
                             ),
                           ),
@@ -1402,82 +1383,34 @@ class _BackgroundColorPickerSubpageState extends State<_BackgroundColorPickerSub
                       // Swatches Grid wrapped in OneUISection
                       OneUISection(
                         title: 'Color presets',
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: OneUIEffectsController.instance.resolveCardBackground(),
-                            borderRadius: OneUITheme.cardBorderRadius,
-                            border: OneUITheme.cardBorder,
-                          ),
-                          child: GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              mainAxisSpacing: 14,
-                              crossAxisSpacing: 14,
-                              childAspectRatio: 0.88,
-                            ),
-                            itemCount: _IconPickerScreenState.swatches.length,
-                            itemBuilder: (context, index) {
-                              final color = _IconPickerScreenState.swatches[index];
-                              final isSelected = _selectedColor.toARGB32() == color.toARGB32();
-                              final colorHex = _IconPickerScreenState.getColorHex(color);
+                        child: OneUIGroupCard(
+                          items: _IconPickerScreenState.swatches.map((color) {
+                            final isSelected = _selectedColor.toARGB32() == color.toARGB32();
+                            final name = _IconPickerScreenState.getSwatchName(color);
+                            final hex = _IconPickerScreenState.getColorHex(color);
 
-                              return GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  setState(() {
-                                    _selectedColor = color;
-                                  });
-                                  Navigator.pop(context, color);
-                                },
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AnimatedContainer(
-                                      duration: const Duration(milliseconds: 180),
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        color: color,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.16),
-                                          width: isSelected ? 2.6 : 1.0,
-                                        ),
-                                        boxShadow: isSelected
-                                            ? [
-                                                BoxShadow(
-                                                  color: color.withValues(alpha: 0.45),
-                                                  blurRadius: 10,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ]
-                                            : null,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: isSelected
-                                          ? const Icon(Icons.check_rounded, size: 20, color: Colors.white)
-                                          : null,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      colorHex,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                        color: isSelected ? OneUITheme.accentBlue : OneUITheme.textSecondary,
-                                      ),
-                                    ),
-                                  ],
+                            return OneUIGroupItem(
+                              leading: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.16),
+                                    width: 1.0,
+                                  ),
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                              title: name,
+                              subtitle: hex,
+                              trailing: OneUIRadio(isSelected: isSelected),
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                Navigator.pop(context, color);
+                              },
+                            );
+                          }).toList(),
                         ),
                       ),
                     ],

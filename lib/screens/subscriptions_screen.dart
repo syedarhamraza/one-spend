@@ -27,11 +27,13 @@ import 'subscription_detail_screen.dart';
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
   final ValueChanged<bool>? onSearchModeChanged;
+  final String? filterPaymentMethodId;
 
   const SubscriptionsScreen({
     super.key,
     this.onSelectionModeChanged,
     this.onSearchModeChanged,
+    this.filterPaymentMethodId,
   });
 
   @override
@@ -718,8 +720,15 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       builder: (context, _) {
         final store = SubscriptionStore.instance;
         final allSubs = store.sortedSubscriptions;
+        final isCardFilter = widget.filterPaymentMethodId != null;
+        final card = isCardFilter ? store.getPaymentMethod(widget.filterPaymentMethodId) : null;
+        final cardTitle = card != null ? '${card.nickname} Subscriptions' : 'Card Subscriptions';
+        final isTrueEmpty = allSubs.isEmpty;
 
         final filteredSubs = allSubs.where((s) {
+          if (isCardFilter && s.paymentMethodId != widget.filterPaymentMethodId) {
+            return false;
+          }
           if (_filterCategory != null && s.category != _filterCategory) {
             return false;
           }
@@ -770,18 +779,26 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                             ? 'Search'
                             : (_isSelectionMode
                                 ? '${_selectedIds.length} selected'
-                                : 'Subscriptions'),
+                                : (isCardFilter ? cardTitle : 'Subscriptions')),
                         subtitle: _showSearch
                             ? null
                             : (_isSelectionMode
                                 ? (_selectedIds.length == filteredSubs.length
                                     ? 'All selected • Tap (O) to deselect'
                                     : 'Tap (O) to select all')
-                                : '${store.totalActiveCount} active • ${store.currency}${store.totalMonthlySpend.toStringAsFixed(2)} / month'),
-                        hasBigHeader: !_showSearch,
-                        showBackButton: _showSearch,
-                        onBack: _showSearch ? _exitSearchMode : null,
-                        expandedHeight: 270.0,
+                                : (isCardFilter
+                                    ? '${filteredSubs.length} linked • ${store.currency}${filteredSubs.fold<double>(0.0, (sum, s) => sum + s.monthlyCost).toStringAsFixed(2)} / month'
+                                    : '${store.totalActiveCount} active • ${store.currency}${store.totalMonthlySpend.toStringAsFixed(2)} / month')),
+                        hasBigHeader: !_showSearch && !isCardFilter,
+                        showBackButton: _showSearch || isCardFilter,
+                        onBack: () {
+                          if (_showSearch) {
+                            _exitSearchMode();
+                          } else if (isCardFilter) {
+                            Navigator.pop(context);
+                          }
+                        },
+                        expandedHeight: isCardFilter ? 120.0 : 270.0,
                         collapsedHeight: 92.0,
                         actionsPillKey: _actionPillKey,
                         isSelectionMode: _isSelectionMode && !_showSearch,
@@ -797,7 +814,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                 onCancel: _exitSelectionMode,
                               )
                             : null,
-                        actions: (_isSelectionMode || _showSearch)
+                        actions: (_isSelectionMode || _showSearch || isTrueEmpty)
                             ? null
                             : [
                                 OneUIHeaderAction(
@@ -809,7 +826,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => const AddSubscriptionScreen(),
+                                        builder: (_) => AddSubscriptionScreen(
+                                          initialPaymentMethodId: widget.filterPaymentMethodId,
+                                        ),
                                       ),
                                     );
                                   },
@@ -819,13 +838,14 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                   tooltip: 'Search subscriptions',
                                   onTap: _enterSearchMode,
                                 ),
-                                OneUIHeaderAction(
-                                  actionKey: _moreButtonKey,
-                                  icon: Icons.more_vert_rounded,
-                                  tooltip: 'More options',
-                                  size: 22,
-                                  onTap: () => _showExpandedMenu(context),
-                                ),
+                                if (!isCardFilter)
+                                  OneUIHeaderAction(
+                                    actionKey: _moreButtonKey,
+                                    icon: Icons.more_vert_rounded,
+                                    tooltip: 'More options',
+                                    size: 22,
+                                    onTap: () => _showExpandedMenu(context),
+                                  ),
                               ],
                       ),
                     ),
@@ -1016,102 +1036,290 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                             ),
                           ),
                         ),
-                    ] else ...[
-                      // Monthly Budget Card (One UI Device Care Style)
-                      SliverToBoxAdapter(
-                        child: OneUIBudgetCard(
-                          store: store,
-                          upcomingSubs: upcomingSubs,
-                          onTap: () => _showEditBudgetDialog(),
-                        ),
-                      ),
-
-                    // Section: Upcoming Renewals (Adaptive Carousel / Spotlight / Grouped List)
-                    if (upcomingSubs.isNotEmpty && _filterCategory == null && _searchQuery.isEmpty)
-                      SliverToBoxAdapter(
-                        child: OneUIUpcomingRenewalsSection(
-                          upcomingSubscriptions: upcomingSubs,
-                          onTapSubscription: (sub) {
-                            HapticFeedback.lightImpact();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => SubscriptionDetailScreen(subscription: sub),
+                    ] else if (isTrueEmpty) ...[
+                      // True Empty State (Database has no subscriptions)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 72,
+                                height: 72,
+                                decoration: BoxDecoration(
+                                  color: OneUITheme.accentBlue.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.subscriptions_outlined,
+                                  size: 36,
+                                  color: OneUITheme.accentBlue,
+                                ),
                               ),
-                            );
-                          },
-                          onLongPressSubscription: (sub) {
-                            HapticFeedback.mediumImpact();
-                            _enterSelectionMode(sub.id);
-                          },
-                          onMarkPaid: (sub) {
-                            final nextDate = sub.calculateNextDateFrom(sub.nextBillingDate);
-                            final updated = sub.copyWith(nextBillingDate: nextDate);
-                            store.updateSubscription(updated);
-                            OneUIToast.show(
-                              context,
-                              'Marked ${sub.name} as paid (${OneUIDateFormats.monthDay.format(nextDate)})',
-                            );
-                          },
-                          isSelectionMode: _isSelectionMode,
-                          selectedIds: _selectedIds,
-                          onToggleSelect: _toggleSelectItem,
-                        ),
-                      ),
-
-                    // Section: Subscriptions List
-                    if (filteredSubs.isEmpty)
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(16, 4, 16, _isSelectionMode ? 120 : 160),
-                        sliver: SliverToBoxAdapter(
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(32),
-                            decoration: BoxDecoration(
-                              color: OneUITheme.cardColor,
-                              borderRadius: OneUITheme.cardBorderRadius,
-                              border: OneUITheme.cardBorder,
-                              boxShadow: OneUITheme.cardShadow,
-                            ),
-                            child: Column(
-                              children: [
-                                const Icon(Icons.search_off_rounded, size: 48, color: OneUITheme.textSecondary),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'No subscriptions found',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: OneUITheme.textPrimary,
-                                  ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'No subscriptions yet',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: OneUITheme.textPrimary,
+                                  letterSpacing: -0.3,
                                 ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Try adjusting your search or category filter',
-                                  style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Track your recurring expenses in one place',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: OneUITheme.textSecondary,
                                 ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: OneUITheme.accentBlue,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _searchQuery = '';
-                                      _searchController.clear();
-                                      _filterCategory = null;
-                                      _showSearch = false;
-                                    });
+                              ),
+                              const SizedBox(height: 24),
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const AddSubscriptionScreen(),
+                                      ),
+                                    );
                                   },
-                                  child: const Text('Reset filters', style: TextStyle(color: Colors.white)),
+                                  borderRadius: BorderRadius.circular(100),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentBlue.withValues(alpha: 0.16),
+                                      borderRadius: BorderRadius.circular(100),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.add_rounded, size: 19, color: OneUITheme.accentBlue),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Add a subscription',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: OneUITheme.accentBlue,
+                                            letterSpacing: -0.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      )
-                    else if (store.groupByDate && _filterCategory == null && _searchQuery.isEmpty) ...[
+                      ),
+                    ] else ...[
+                      // Monthly Budget Card (Suppressed when viewing card-filtered subscriptions)
+                      if (!isCardFilter)
+                        SliverToBoxAdapter(
+                          child: OneUIBudgetCard(
+                            store: store,
+                            upcomingSubs: upcomingSubs,
+                            onTap: () => _showEditBudgetDialog(),
+                          ),
+                        ),
+
+                      // Section: Upcoming Renewals (Suppressed when viewing card-filtered subscriptions)
+                      if (!isCardFilter && upcomingSubs.isNotEmpty && _filterCategory == null && _searchQuery.isEmpty)
+                        SliverToBoxAdapter(
+                          child: OneUIUpcomingRenewalsSection(
+                            upcomingSubscriptions: upcomingSubs,
+                            onTapSubscription: (sub) {
+                              HapticFeedback.lightImpact();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SubscriptionDetailScreen(subscription: sub),
+                                ),
+                              );
+                            },
+                            onLongPressSubscription: (sub) {
+                              HapticFeedback.mediumImpact();
+                              _enterSelectionMode(sub.id);
+                            },
+                            onMarkPaid: (sub) {
+                              final nextDate = sub.calculateNextDateFrom(sub.nextBillingDate);
+                              final updated = sub.copyWith(nextBillingDate: nextDate);
+                              store.updateSubscription(updated);
+                              OneUIToast.show(
+                                context,
+                                'Marked ${sub.name} as paid (${OneUIDateFormats.monthDay.format(nextDate)})',
+                              );
+                            },
+                            isSelectionMode: _isSelectionMode,
+                            selectedIds: _selectedIds,
+                            onToggleSelect: _toggleSelectItem,
+                          ),
+                        ),
+
+                      // Section: Subscriptions List
+                      if (filteredSubs.isEmpty)
+                        if (isCardFilter)
+                          SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 68,
+                                    height: 68,
+                                    decoration: BoxDecoration(
+                                      color: OneUITheme.accentBlue.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(22),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.credit_card_off_rounded,
+                                      size: 34,
+                                      color: OneUITheme.accentBlue,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  const Text(
+                                    'No linked subscriptions',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                      color: OneUITheme.textPrimary,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 32),
+                                    child: Text(
+                                      'No subscriptions are currently linked to this payment method',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        color: OneUITheme.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 22),
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        HapticFeedback.lightImpact();
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => AddSubscriptionScreen(
+                                              initialPaymentMethodId: widget.filterPaymentMethodId,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(100),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: OneUITheme.accentBlue.withValues(alpha: 0.16),
+                                          borderRadius: BorderRadius.circular(100),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.add_rounded, size: 18, color: OneUITheme.accentBlue),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Add a subscription',
+                                              style: TextStyle(
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: OneUITheme.accentBlue,
+                                                letterSpacing: -0.1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          SliverPadding(
+                            padding: EdgeInsets.fromLTRB(16, 4, 16, _isSelectionMode ? 120 : 160),
+                            sliver: SliverToBoxAdapter(
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(32),
+                                decoration: BoxDecoration(
+                                  color: OneUITheme.cardColor,
+                                  borderRadius: OneUITheme.cardBorderRadius,
+                                  border: OneUITheme.cardBorder,
+                                  boxShadow: OneUITheme.cardShadow,
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.search_off_rounded, size: 48, color: OneUITheme.textSecondary),
+                                    const SizedBox(height: 12),
+                                    const Text(
+                                      'No subscriptions found',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: OneUITheme.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Try adjusting your search or category filter',
+                                      style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            _searchQuery = '';
+                                            _searchController.clear();
+                                            _filterCategory = null;
+                                            _showSearch = false;
+                                          });
+                                        },
+                                        borderRadius: BorderRadius.circular(100),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                                          decoration: BoxDecoration(
+                                            color: OneUITheme.accentBlue.withValues(alpha: 0.16),
+                                            borderRadius: BorderRadius.circular(100),
+                                          ),
+                                          child: const Text(
+                                            'Reset filters',
+                                            style: TextStyle(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: OneUITheme.accentBlue,
+                                              letterSpacing: -0.1,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                      else if (store.groupByDate && _filterCategory == null && _searchQuery.isEmpty && !isCardFilter) ...[
                       // Group: Overdue
                       if (filteredSubs.any((s) => s.daysRemaining < 0))
                         SliverPadding(
@@ -1168,9 +1376,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         sliver: SliverToBoxAdapter(
                           child: _buildSubscriptionSection(
-                            title: _filterCategory != null
-                                ? '${_filterCategory!.label} (${filteredSubs.length})'
-                                : 'All subscriptions (${filteredSubs.length})',
+                            title: isCardFilter
+                                ? 'Linked subscriptions (${filteredSubs.length})'
+                                : (_filterCategory != null
+                                    ? '${_filterCategory!.label} (${filteredSubs.length})'
+                                    : 'All subscriptions (${filteredSubs.length})'),
                             subs: filteredSubs,
                           ),
                         ),

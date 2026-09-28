@@ -21,10 +21,12 @@ import 'category_picker_screen.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
+  final String? initialPaymentMethodId;
 
   const AddSubscriptionScreen({
     super.key,
     this.subscriptionToEdit,
+    this.initialPaymentMethodId,
   });
 
   @override
@@ -82,9 +84,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _nextBillingDate = DateTime(now.year, now.month + 1, now.day);
       _brandColor = OneUITheme.accentBlue;
       _iconData = Icons.subscriptions_rounded;
-      final defaultCard = SubscriptionStore.instance.defaultPaymentMethod;
+      final defaultCard = widget.initialPaymentMethodId != null
+          ? SubscriptionStore.instance.getPaymentMethod(widget.initialPaymentMethodId)
+          : SubscriptionStore.instance.defaultPaymentMethod;
       _paymentMethodId = defaultCard?.id;
-      _paymentMethod = defaultCard?.displayName ?? 'Samsung Pay (Visa •••• 9124)';
+      _paymentMethod = defaultCard?.displayName ?? '';
       _reminderDays = SubscriptionStore.instance.defaultReminderDays;
       _status = SubscriptionStatus.active;
       _notes = '';
@@ -113,9 +117,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
           _billingCycle = catalogMatch.billingCycle;
         }
         if (_paymentMethodId == null && catalogMatch.paymentMethodId != null) {
-          _paymentMethodId = catalogMatch.paymentMethodId;
-          final method = SubscriptionStore.instance.getPaymentMethod(_paymentMethodId);
-          if (method != null) _paymentMethod = method.displayName;
+          final method = SubscriptionStore.instance.getPaymentMethod(catalogMatch.paymentMethodId);
+          if (method != null) {
+            _paymentMethodId = method.id;
+            _paymentMethod = method.displayName;
+          }
         }
       }
     });

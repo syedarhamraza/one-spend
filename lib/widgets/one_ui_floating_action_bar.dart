@@ -8,12 +8,14 @@ class OneUIFloatingActionBarItem {
   final String label;
   final VoidCallback onTap;
   final Color? color;
+  final bool isEnabled;
 
   const OneUIFloatingActionBarItem({
     required this.icon,
     required this.label,
     required this.onTap,
     this.color,
+    this.isEnabled = true,
   });
 }
 
@@ -65,14 +67,20 @@ class OneUIFloatingActionBar extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: items.map((item) {
+                          final itemColor = item.isEnabled
+                              ? (item.color ?? OneUITheme.textPrimary)
+                              : OneUITheme.textSecondary.withValues(alpha: 0.35);
+
                           return InkWell(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              item.onTap();
-                            },
+                            onTap: item.isEnabled
+                                ? () {
+                                    HapticFeedback.lightImpact();
+                                    item.onTap();
+                                  }
+                                : null,
                             borderRadius: BorderRadius.circular(26),
-                            splashColor: Colors.white.withValues(alpha: 0.08),
-                            highlightColor: Colors.white.withValues(alpha: 0.04),
+                            splashColor: item.isEnabled ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
+                            highlightColor: item.isEnabled ? Colors.white.withValues(alpha: 0.04) : Colors.transparent,
                             child: SizedBox(
                               width: 68,
                               child: Column(
@@ -82,7 +90,7 @@ class OneUIFloatingActionBar extends StatelessWidget {
                                   Icon(
                                     item.icon,
                                     size: 21,
-                                    color: item.color ?? OneUITheme.textPrimary,
+                                    color: itemColor,
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
@@ -93,7 +101,7 @@ class OneUIFloatingActionBar extends StatelessWidget {
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: -0.2,
-                                      color: item.color ?? OneUITheme.textPrimary,
+                                      color: itemColor,
                                     ),
                                   ),
                                 ],

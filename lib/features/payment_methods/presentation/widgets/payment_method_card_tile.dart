@@ -20,7 +20,7 @@ class PaymentMethodGroupItem extends OneUIGroupItem {
   }) : super(
           leading: _buildLeading(method, isPicked, isSelectionMode, isSelectedInSelection, isManageOnly),
           title: method.nickname,
-          customSubtitle: _buildSubtitle(method, linkedSubs),
+          customSubtitle: _buildSubtitle(method),
           trailing: _buildTrailing(isSelectionMode, onEdit),
           onTap: onTap,
           onLongPress: onLongPress,
@@ -103,56 +103,38 @@ class PaymentMethodGroupItem extends OneUIGroupItem {
     );
   }
 
-  static Widget _buildSubtitle(PaymentMethod method, List<Subscription> linkedSubs) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  static Widget _buildSubtitle(PaymentMethod method) {
+    return Row(
       children: [
-        Row(
-          children: [
-            Flexible(
-              child: Text(
-                method.subtitleDisplay,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: OneUITheme.textSecondary,
-                ),
-                overflow: TextOverflow.ellipsis,
+        Flexible(
+          child: Text(
+            method.subtitleDisplay,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: OneUITheme.textSecondary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (method.isDefault) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Text(
+              'Default',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: OneUITheme.textSecondary,
               ),
             ),
-            if (method.isDefault) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Default',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: OneUITheme.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          linkedSubs.isNotEmpty
-              ? '${linkedSubs.length} linked subscription${linkedSubs.length > 1 ? "s" : ""}: ${linkedSubs.map((s) => s.name).join(", ")}'
-              : 'No subscriptions linked',
-          style: TextStyle(
-            fontSize: 12,
-            color: linkedSubs.isNotEmpty ? OneUITheme.accentGreen : OneUITheme.textTertiary,
-            fontWeight: linkedSubs.isNotEmpty ? FontWeight.w600 : FontWeight.normal,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        ],
       ],
     );
   }

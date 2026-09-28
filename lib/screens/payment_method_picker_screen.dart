@@ -12,6 +12,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_toast.dart';
 import 'payment_method_editor_screen.dart';
+import 'subscriptions_screen.dart';
 
 /// Samsung One UI Unified Payment Card Picker & Management Subpage.
 /// Combines in-place card management and single-subscription card selection:
@@ -637,6 +638,12 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
           }
         }
 
+        PaymentMethod? heroMethod = selectedMethod;
+        if (heroMethod == null && widget.isManageOnly && methods.isNotEmpty) {
+          heroMethod = store.defaultPaymentMethod ?? methods.first;
+        }
+        final heroLinkedCount = heroMethod != null ? (linkedSubsByMethod[heroMethod.id]?.length ?? 0) : 0;
+
         return Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
           body: Stack(
@@ -681,126 +688,198 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Top Hero Status Banner
-                          if (!widget.isManageOnly) ...[
-                            AnimatedBuilder(
-                              animation: OneUIEffectsController.instance,
-                              builder: (context, child) {
-                                return Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(18),
-                                  decoration: BoxDecoration(
-                                    color: OneUITheme.cardColor,
-                                    borderRadius: OneUITheme.cardBorderRadius,
-                                    border: OneUITheme.cardBorder,
-                                    boxShadow: OneUITheme.cardShadow,
-                                  ),
-                                  child: child,
-                                );
-                              },
-                              child: Row(
+                          // Top Hero Status Banner with Frosted Glass & Ambient Glow
+                          if (methods.isNotEmpty || !widget.isManageOnly) ...[
+                            ClipRRect(
+                              borderRadius: OneUITheme.cardBorderRadius,
+                              child: Stack(
                                 children: [
-                                  if (selectedMethod != null) ...[
-                                    OneUIPaymentBrandIcon(
-                                      brand: selectedMethod.brand,
-                                      width: 48,
-                                      height: 32,
-                                      showShadow: true,
+                                  // Ambient glow beneath the card
+                                  Positioned.fill(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        gradient: RadialGradient(
+                                          center: const Alignment(0.0, -0.2),
+                                          radius: 1.05,
+                                          colors: [
+                                            const Color(0xFF0381FE).withValues(alpha: 0.26),
+                                            const Color(0xFF0381FE).withValues(alpha: 0.11),
+                                            const Color(0xFF0381FE).withValues(alpha: 0.02),
+                                            Colors.transparent,
+                                          ],
+                                          stops: const [0.0, 0.50, 0.85, 1.0],
+                                        ),
+                                      ),
                                     ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
+                                  ),
+                                  // Frosted glass card body
+                                  BackdropFilter(
+                                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(18),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1B1C20).withValues(alpha: 0.68),
+                                        borderRadius: OneUITheme.cardBorderRadius,
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.08),
+                                          width: 1,
+                                        ),
+                                      ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
-                                              Flexible(
-                                                child: Text(
-                                                  selectedMethod.nickname,
-                                                  style: const TextStyle(
-                                                    fontSize: 16.5,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: OneUITheme.textPrimary,
-                                                    letterSpacing: -0.2,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                              if (heroMethod != null) ...[
+                                                OneUIPaymentBrandIcon(
+                                                  brand: heroMethod.brand,
+                                                  width: 48,
+                                                  height: 32,
+                                                  showShadow: true,
                                                 ),
-                                              ),
-                                              if (selectedMethod.isDefault) ...[
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: OneUITheme.accentBlue.withValues(alpha: 0.16),
-                                                    borderRadius: BorderRadius.circular(8),
+                                                const SizedBox(width: 14),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          Flexible(
+                                                            child: Text(
+                                                              heroMethod.nickname,
+                                                              style: const TextStyle(
+                                                                fontSize: 16.5,
+                                                                fontWeight: FontWeight.w700,
+                                                                color: OneUITheme.textPrimary,
+                                                                letterSpacing: -0.2,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow: TextOverflow.ellipsis,
+                                                            ),
+                                                          ),
+                                                          if (heroMethod.isDefault) ...[
+                                                            const SizedBox(width: 8),
+                                                            Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                              decoration: BoxDecoration(
+                                                                color: OneUITheme.accentBlue.withValues(alpha: 0.16),
+                                                                borderRadius: BorderRadius.circular(8),
+                                                              ),
+                                                              child: const Text(
+                                                                'Default',
+                                                                style: TextStyle(
+                                                                  fontSize: 10.5,
+                                                                  fontWeight: FontWeight.w700,
+                                                                  color: OneUITheme.accentBlue,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        '$heroLinkedCount linked subscription${heroLinkedCount == 1 ? '' : 's'}',
+                                                        style: const TextStyle(
+                                                          fontSize: 13,
+                                                          color: OneUITheme.textSecondary,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  child: const Text(
-                                                    'Default',
-                                                    style: TextStyle(
-                                                      fontSize: 10.5,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: OneUITheme.accentBlue,
-                                                    ),
+                                                ),
+                                              ] else ...[
+                                                Container(
+                                                  width: 44,
+                                                  height: 44,
+                                                  decoration: BoxDecoration(
+                                                    color: OneUITheme.accentRed.withValues(alpha: 0.12),
+                                                    borderRadius: BorderRadius.circular(14),
+                                                  ),
+                                                  alignment: Alignment.center,
+                                                  child: const Icon(
+                                                    Icons.credit_card_off_rounded,
+                                                    color: OneUITheme.accentRed,
+                                                    size: 22,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 14),
+                                                const Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        'No payment method',
+                                                        style: TextStyle(
+                                                          fontSize: 16.5,
+                                                          fontWeight: FontWeight.w700,
+                                                          color: OneUITheme.textPrimary,
+                                                          letterSpacing: -0.2,
+                                                        ),
+                                                      ),
+                                                      SizedBox(height: 3),
+                                                      Text(
+                                                        '0 linked subscriptions',
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          color: OneUITheme.textSecondary,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ],
                                             ],
                                           ),
-                                          const SizedBox(height: 3),
-                                          Text(
-                                            selectedMethod.subtitleDisplay,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              color: OneUITheme.textSecondary,
+                                          if (heroMethod != null) ...[
+                                            const SizedBox(height: 14),
+                                            Container(
+                                              height: 1,
+                                              color: Colors.white.withValues(alpha: 0.06),
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                            const SizedBox(height: 10),
+                                            InkWell(
+                                              onTap: () {
+                                                HapticFeedback.lightImpact();
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => SubscriptionsScreen(
+                                                      filterPaymentMethodId: heroMethod!.id,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      'View all subscriptions',
+                                                      style: TextStyle(
+                                                        fontSize: 13.5,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: OneUITheme.accentBlue.withValues(alpha: 0.95),
+                                                        letterSpacing: -0.1,
+                                                      ),
+                                                    ),
+                                                    Icon(
+                                                      Icons.chevron_right_rounded,
+                                                      size: 18,
+                                                      color: OneUITheme.accentBlue.withValues(alpha: 0.95),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ],
                                       ),
                                     ),
-                                  ] else ...[
-                                    Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        color: OneUITheme.accentRed.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: const Icon(
-                                        Icons.credit_card_off_rounded,
-                                        color: OneUITheme.accentRed,
-                                        size: 22,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    const Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'No payment method',
-                                            style: TextStyle(
-                                              fontSize: 16.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: OneUITheme.textPrimary,
-                                              letterSpacing: -0.2,
-                                            ),
-                                          ),
-                                          SizedBox(height: 3),
-                                          Text(
-                                            'This subscription has no card linked',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: OneUITheme.textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -860,14 +939,34 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                     style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
                                   ),
                                   const SizedBox(height: 16),
-                                  ElevatedButton.icon(
-                                    onPressed: _openAddCard,
-                                    icon: const Icon(Icons.add, size: 18),
-                                    label: const Text('Add payment card'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: OneUITheme.accentBlue,
-                                      foregroundColor: Colors.white,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: _openAddCard,
+                                      borderRadius: BorderRadius.circular(100),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: OneUITheme.accentBlue.withValues(alpha: 0.16),
+                                          borderRadius: BorderRadius.circular(100),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.add_rounded, size: 18, color: OneUITheme.accentBlue),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Add payment card',
+                                              style: TextStyle(
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: OneUITheme.accentBlue,
+                                                letterSpacing: -0.1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1010,18 +1109,20 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                     child: Center(
                       child: OneUIFloatingActionBar(
                         items: [
-                          if (_selectedIds.length == 1)
-                            OneUIFloatingActionBarItem(
-                              label: 'Edit',
-                              icon: Icons.edit_rounded,
-                              onTap: () {
-                                final m = methods.firstWhere((item) => item.id == _selectedIds.first);
-                                _openEditCard(m);
-                              },
-                            ),
+                          OneUIFloatingActionBarItem(
+                            label: 'Edit',
+                            icon: Icons.edit_rounded,
+                            isEnabled: _selectedIds.length == 1,
+                            onTap: () {
+                              if (_selectedIds.length != 1) return;
+                              final m = methods.firstWhere((item) => item.id == _selectedIds.first);
+                              _openEditCard(m);
+                            },
+                          ),
                           OneUIFloatingActionBarItem(
                             label: 'Move subs',
                             icon: Icons.swap_horiz_rounded,
+                            isEnabled: _selectedIds.isNotEmpty,
                             onTap: () => _showBatchReassignModal(
                               methods.where((m) => _selectedIds.contains(m.id)).toList(),
                             ),
@@ -1030,6 +1131,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                             label: 'Delete',
                             icon: Icons.delete_outline_rounded,
                             color: OneUITheme.accentRed,
+                            isEnabled: _selectedIds.isNotEmpty,
                             onTap: () => _deleteSelectedCards(methods),
                           ),
                         ],
@@ -1121,55 +1223,37 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
         ],
       ),
       title: m.nickname,
-      customSubtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      customSubtitle: Row(
         children: [
-          Row(
-            children: [
-              Flexible(
-                child: Text(
-                  m.subtitleDisplay,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: OneUITheme.textSecondary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: Text(
+              m.subtitleDisplay,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: OneUITheme.textSecondary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (m.isDefault) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'Default',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: OneUITheme.textSecondary,
                 ),
               ),
-              if (m.isDefault) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'Default',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: OneUITheme.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            linkedSubs.isNotEmpty
-                ? '${linkedSubs.length} linked subscription${linkedSubs.length > 1 ? "s" : ""}: ${linkedSubs.map((s) => s.name).join(", ")}'
-                : 'No subscriptions linked',
-            style: TextStyle(
-              fontSize: 12,
-              color: linkedSubs.isNotEmpty ? OneUITheme.accentGreen : OneUITheme.textTertiary,
-              fontWeight: linkedSubs.isNotEmpty ? FontWeight.w600 : FontWeight.normal,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          ],
         ],
       ),
       trailing: _isSelectionMode

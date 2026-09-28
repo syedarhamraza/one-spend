@@ -107,7 +107,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     if (!mounted || result == null) return;
     setState(() {
       if (result.id == '__none__') {
-        _sub = _sub.copyWith(paymentMethodId: null, paymentMethod: '');
+        _sub = _sub.copyWith(clearPaymentMethodId: true, paymentMethodId: null, paymentMethod: '');
       } else {
         _sub = _sub.copyWith(paymentMethodId: result.id, paymentMethod: result.displayName);
       }
@@ -844,7 +844,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                         child: Text(
                                           linkedCard != null
                                               ? linkedCard.displayName
-                                              : (_sub.paymentMethod.isNotEmpty ? _sub.paymentMethod : 'No payment method linked'),
+                                              : 'No payment method linked',
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             fontSize: 13,
