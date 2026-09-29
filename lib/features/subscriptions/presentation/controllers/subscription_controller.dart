@@ -39,6 +39,7 @@ class SubscriptionController extends ChangeNotifier {
   static const double _defaultBudget = 150.0;
   static const String _defaultCurrency = '\$';
   static const int _defaultReminder = 2;
+  static const int _defaultReminderTime = 9 * 60;
 
   final List<Subscription> _subscriptions = [];
   final List<PaymentMethod> _paymentMethods = [];
@@ -48,6 +49,8 @@ class SubscriptionController extends ChangeNotifier {
   String _userName = '';
   String _userEmail = '';
   int _defaultReminderDays = _defaultReminder;
+  int _defaultReminderTimeMinutes = _defaultReminderTime;
+  bool _notificationsEnabled = true;
   SubscriptionSortOption _sortOption = SubscriptionSortOption.renewalAsc;
   bool _groupByDate = false;
   bool _isLoaded = false;
@@ -95,6 +98,8 @@ class SubscriptionController extends ChangeNotifier {
     _userName = '';
     _userEmail = '';
     _defaultReminderDays = _defaultReminder;
+    _defaultReminderTimeMinutes = _defaultReminderTime;
+    _notificationsEnabled = true;
     _sortOption = SubscriptionSortOption.renewalAsc;
     _groupByDate = false;
     _recentSearches.clear();
@@ -118,6 +123,10 @@ class SubscriptionController extends ChangeNotifier {
   String get userName => _userName;
   String get userEmail => _userEmail;
   int get defaultReminderDays => _defaultReminderDays;
+
+  /// Default reminder time of day, in minutes after midnight.
+  int get defaultReminderTimeMinutes => _defaultReminderTimeMinutes;
+  bool get notificationsEnabled => _notificationsEnabled;
   SubscriptionSortOption get sortOption => _sortOption;
   bool get groupByDate => _groupByDate;
   bool get isLoaded => _isLoaded;
@@ -186,6 +195,8 @@ class SubscriptionController extends ChangeNotifier {
       _userName = profile.name;
       _userEmail = profile.email;
       _defaultReminderDays = await settingsRepository.getDefaultReminderDays();
+      _defaultReminderTimeMinutes = await settingsRepository.getDefaultReminderTimeMinutes();
+      _notificationsEnabled = await settingsRepository.getNotificationsEnabled();
       _sortOption = await settingsRepository.getSortOption();
       _groupByDate = await settingsRepository.getGroupByDate();
       _recentSearches
@@ -440,6 +451,19 @@ class SubscriptionController extends ChangeNotifier {
     _defaultReminderDays = days;
     notifyListeners();
     _persist(() => settingsRepository.setDefaultReminderDays(days));
+  }
+
+  void setDefaultReminderTimeMinutes(int minutes) {
+    _defaultReminderTimeMinutes = minutes.clamp(0, 24 * 60 - 1);
+    notifyListeners();
+    final value = _defaultReminderTimeMinutes;
+    _persist(() => settingsRepository.setDefaultReminderTimeMinutes(value));
+  }
+
+  void setNotificationsEnabled(bool value) {
+    _notificationsEnabled = value;
+    notifyListeners();
+    _persist(() => settingsRepository.setNotificationsEnabled(value));
   }
 
   void setSortOption(SubscriptionSortOption option) {

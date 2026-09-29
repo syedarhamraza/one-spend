@@ -8,6 +8,7 @@ import '../../screens/add_subscription_screen.dart';
 import '../../screens/analytics_screen.dart';
 import '../../screens/billing_cycle_picker_screen.dart';
 import '../../screens/category_picker_screen.dart';
+import '../../screens/date_picker_screen.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/icon_picker_screen.dart';
 import '../../screens/payment_history_screen.dart';
@@ -20,9 +21,11 @@ import '../../screens/subscription_card_customizer_screen.dart';
 import '../../screens/subscription_detail_customizer_screen.dart';
 import '../../screens/subscription_detail_screen.dart';
 import '../../screens/subscriptions_screen.dart';
+import '../../screens/time_picker_screen.dart';
 import '../../screens/upcoming_schedule_screen.dart';
 import '../../screens/upcoming_screen.dart';
 import '../../theme/one_ui_theme.dart';
+import '../../utils/reminder_format.dart';
 
 /// Centralized route paths.
 class AppRoutes {
@@ -48,12 +51,26 @@ class AppRoutes {
   static const billingCyclePicker = '/pickers/billing-cycle';
   static const reminderPicker = '/pickers/reminder';
   static const iconPicker = '/pickers/icon';
+  static const timePicker = '/pickers/time';
+  static const datePicker = '/pickers/date';
   static const cardStudio = '/settings/card-studio';
   static const detailStudio = '/settings/detail-studio';
 }
 
 /// Arguments for [AppRoutes.paymentMethods].
 typedef PaymentMethodPickerArgs = ({String? currentMethodId, bool isManageOnly});
+
+/// Arguments for [AppRoutes.timePicker]; times are minutes after midnight.
+typedef TimePickerArgs = ({int initialMinutes, String title, String? subtitle});
+
+/// Arguments for [AppRoutes.datePicker].
+typedef DatePickerArgs = ({
+  DateTime initialDate,
+  DateTime firstDate,
+  DateTime lastDate,
+  String title,
+  String? subtitle,
+});
 
 /// Arguments for [AppRoutes.iconPicker].
 typedef IconPickerArgs = ({
@@ -132,8 +149,38 @@ List<RouteBase> buildPageRoutes() {
           BillingCyclePickerScreen(initialCycle: state.extra as BillingCycle? ?? BillingCycle.monthly),
     ),
     GoRoute(
+      path: AppRoutes.timePicker,
+      builder: (context, state) {
+        final args = state.extra as TimePickerArgs?;
+        return TimePickerScreen(
+          initialMinutes: args?.initialMinutes ?? 9 * 60,
+          title: args?.title ?? 'Reminder time',
+          subtitle: args?.subtitle,
+        );
+      },
+    ),
+    GoRoute(
+      path: AppRoutes.datePicker,
+      builder: (context, state) {
+        final args = state.extra! as DatePickerArgs;
+        return DatePickerScreen(
+          initialDate: args.initialDate,
+          firstDate: args.firstDate,
+          lastDate: args.lastDate,
+          title: args.title,
+          subtitle: args.subtitle,
+        );
+      },
+    ),
+    GoRoute(
       path: AppRoutes.reminderPicker,
-      builder: (context, state) => ReminderPickerScreen(initialDays: state.extra as int? ?? 2),
+      builder: (context, state) {
+        final initial = state.extra as ReminderSetting?;
+        return ReminderPickerScreen(
+          initialDays: initial?.days ?? 2,
+          initialTimeMinutes: initial?.timeMinutes ?? 9 * 60,
+        );
+      },
     ),
     GoRoute(
       path: AppRoutes.iconPicker,

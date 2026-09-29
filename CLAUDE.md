@@ -20,6 +20,10 @@ dart run build_runner build --delete-conflicting-outputs       # regenerate Drif
 
 Regenerate with `build_runner` after changing anything under `lib/core/database/tables/` or the `@DriftDatabase` annotation. Bump `schemaVersion` in `app_database.dart` and add a migration when changing table shapes (currently v1, no `MigrationStrategy` defined).
 
+## UI / design language
+
+For any UI work, follow [`docs/design-language.md`](docs/design-language.md): the One UI 8.5 tokens, the component catalog, and the "every option is a subpage with a Cancel | Save pill" recipe. Don't use Material dialogs, pickers or snackbars.
+
 ## Architecture
 
 Data and domain logic follow feature-first clean architecture; most UI still lives in the older flat layout.
@@ -56,6 +60,20 @@ go_router, configured in `lib/core/router/app_router.dart`:
 - **Navigating from screens:** screens call their existing static helpers (`CategoryPickerScreen.open(...)` etc.), which wrap `context.push<T>(...)`. Results come back through `Navigator.pop(context, value)`.
 - **Left pageless:** private in-file sub-pages (icon picker sub-screens, payment method field editors, card-studio option screens, `OneUIFieldEditorScreen`) still use `Navigator.push`.
 - **Router ownership:** `OneSpendApp` creates its own router in state, so each instance (and each test) starts fresh.
+
+### Notifications
+
+Local notifications only, with no push server. They live in `lib/features/notifications/`:
+- **`NotificationPlanner`:** pure logic that turns the current data into a list of `PlannedNotification`s: renewals, free-trial endings, card expiry and over-budget alerts. It covers a rolling 60-day window, capped at 50.
+- **`NotificationScheduler`:** listens to `SubscriptionController` (debounced) and to app resume. Each time, it cancels what it last scheduled and schedules the new plan. Ids ≤ `PlannedNotification.maxReservedId` belong to the debug-only developer tests in Settings and are never cancelled.
+- **Services:**
+  - `LocalNotificationService` wraps `flutter_local_notifications` and `flutter_timezone`, uses inexact alarms, and has one Android channel per kind.
+  - `setupDependencies()` registers `NoopNotificationService` instead, so tests never touch the plugin.
+- **Deep links:** the payload is a go_router location. `OneSpendApp` opens it from the cold-start `launchRoute()` and from live `taps`.
+- **Reminder timing:**
+  - Per subscription: `reminderDays` and `reminderTimeMinutes`. The time is `null` when the subscription follows the global default; that column was added in schema v2.
+  - Globals: `notificationsEnabled` and `defaultReminderTimeMinutes` in `SettingsRepository`.
+- **Android setup:** `AndroidManifest.xml` has the POST_NOTIFICATIONS and boot permissions plus the plugin receivers. Core library desugaring is enabled in `android/app/build.gradle.kts`.
 
 ## Testing
 

@@ -20,6 +20,13 @@ abstract class SettingsRepository {
   Future<bool> getGroupByDate();
   Future<void> setGroupByDate(bool value);
 
+  Future<bool> getNotificationsEnabled();
+  Future<void> setNotificationsEnabled(bool value);
+
+  /// Default reminder time of day, in minutes after midnight.
+  Future<int> getDefaultReminderTimeMinutes();
+  Future<void> setDefaultReminderTimeMinutes(int minutes);
+
   Future<List<String>> getRecentSearches();
   Future<void> saveRecentSearches(List<String> searches);
 

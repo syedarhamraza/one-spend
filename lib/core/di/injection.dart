@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
@@ -6,6 +7,9 @@ import '../../features/payment_methods/data/datasources/payment_method_drift_dat
 import '../../features/payment_methods/data/datasources/payment_method_local_datasource.dart';
 import '../../features/payment_methods/data/repositories/payment_method_repository_impl.dart';
 import '../../features/payment_methods/domain/repositories/payment_method_repository.dart';
+import '../../features/notifications/data/local_notification_service.dart';
+import '../../features/notifications/data/notification_service.dart';
+import '../../features/notifications/presentation/notification_scheduler.dart';
 import '../../features/settings/data/datasources/settings_drift_datasource.dart';
 import '../../features/settings/data/repositories/settings_repository_impl.dart';
 import '../../features/settings/domain/repositories/settings_repository.dart';
@@ -90,6 +94,11 @@ void setupDependencies({AppDatabase? database}) {
   if (!sl.isRegistered<OneUIEffectsController>()) {
     sl.registerLazySingleton<OneUIEffectsController>(() => OneUIEffectsController.instance);
   }
+
+  // 4. Notifications: a no-op unless configureDependencies() registered the platform service
+  if (!sl.isRegistered<NotificationService>()) {
+    sl.registerSingleton<NotificationService>(NoopNotificationService());
+  }
 }
 
 Future<void> configureDependencies({AppDatabase? database}) async {
@@ -116,10 +125,31 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   );
   await migrator.checkAndMigrate();
 
-  // 4. Wire dependencies
+  // 4. Platform notifications (must be registered before setupDependencies falls back to the no-op)
+  if (!sl.isRegistered<NotificationService>()) {
+    final notifications = LocalNotificationService();
+    try {
+      await notifications.init();
+      sl.registerSingleton<NotificationService>(notifications);
+    } catch (e) {
+      debugPrint('OneSpend: Notifications unavailable: $e');
+    }
+  }
+
+  // 5. Wire dependencies
   setupDependencies();
 
-  // 5. Load persisted state before the first frame so nothing renders stale data
+  // 6. Load persisted state before the first frame so nothing renders stale data
   await sl<SubscriptionController>().load();
   await sl<OneUIEffectsController>().init();
+
+  // 7. Keep scheduled reminders in sync with the data from now on
+  if (!sl.isRegistered<NotificationScheduler>()) {
+    final scheduler = NotificationScheduler(
+      controller: sl<SubscriptionController>(),
+      service: sl<NotificationService>(),
+    );
+    sl.registerSingleton<NotificationScheduler>(scheduler);
+    scheduler.start();
+  }
 }

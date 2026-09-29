@@ -14,7 +14,23 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2 && !await _hasColumn('subscriptions', 'reminder_time_minutes')) {
+            await m.addColumn(subscriptionsTable, subscriptionsTable.reminderTimeMinutes);
+          }
+        },
+      );
+
+  /// Makes upgrades idempotent: a column may already exist if a previous upgrade was interrupted.
+  Future<bool> _hasColumn(String table, String column) async {
+    final rows = await customSelect('PRAGMA table_info("$table")').get();
+    return rows.any((row) => row.read<String>('name') == column);
+  }
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'onespend');

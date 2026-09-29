@@ -8,25 +8,33 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
+import '../utils/reminder_format.dart';
+import 'time_picker_screen.dart';
 import '../widgets/one_ui_radio.dart';
 
 /// Dedicated Samsung One UI Renewal Reminder Subpage.
 /// Replaces the bottom modal sheet with a full One UI subpage for selecting
-/// alert lead times (Same day, 1-7 days, custom days).
+/// alert lead times (Same day, 1-7 days, custom days) and the time of day to notify.
 class ReminderPickerScreen extends StatefulWidget {
   final int initialDays;
+
+  /// Time of day in minutes after midnight.
+  final int initialTimeMinutes;
 
   const ReminderPickerScreen({
     super.key,
     required this.initialDays,
+    this.initialTimeMinutes = 9 * 60,
   });
 
-  static Future<int?> open(
+  static Future<ReminderSetting?> open(
     BuildContext context, {
     required int initialDays,
+    required int initialTimeMinutes,
   }) {
     HapticFeedback.lightImpact();
-    return context.push<int>(AppRoutes.reminderPicker, extra: initialDays);
+    final ReminderSetting initial = (days: initialDays, timeMinutes: initialTimeMinutes);
+    return context.push<ReminderSetting>(AppRoutes.reminderPicker, extra: initial);
   }
 
   @override
@@ -35,11 +43,12 @@ class ReminderPickerScreen extends StatefulWidget {
 
 class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
   late int _selectedDays;
+  late int _timeMinutes;
   bool _isCustom = false;
   final TextEditingController _customController = TextEditingController();
 
   static const List<Map<String, dynamic>> _presetOptions = [
-    {'days': 0, 'title': 'Same day', 'subtitle': 'On the renewal morning (9:00 AM)'},
+    {'days': 0, 'title': 'Same day', 'subtitle': 'On the renewal day itself'},
     {'days': 1, 'title': '1 day before', 'subtitle': '24 hours prior to billing'},
     {'days': 2, 'title': '2 days before', 'subtitle': 'Recommended to review or cancel'},
     {'days': 3, 'title': '3 days before', 'subtitle': 'Early reminder for review'},
@@ -51,6 +60,7 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
   void initState() {
     super.initState();
     _selectedDays = widget.initialDays;
+    _timeMinutes = widget.initialTimeMinutes;
     final isKnownPreset = _presetOptions.any((opt) => opt['days'] == widget.initialDays);
     if (!isKnownPreset && widget.initialDays > 0) {
       _isCustom = true;
@@ -66,13 +76,24 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
 
   void _save() {
     HapticFeedback.mediumImpact();
-    if (_isCustom) {
-      final customVal = int.tryParse(_customController.text.trim()) ?? _selectedDays;
-      Navigator.pop(context, customVal.clamp(0, 60));
-    } else {
-      Navigator.pop(context, _selectedDays);
+    final days = _isCustom ? (int.tryParse(_customController.text.trim()) ?? _selectedDays).clamp(0, 60) : _selectedDays;
+    final ReminderSetting result = (days: days, timeMinutes: _timeMinutes);
+    Navigator.pop(context, result);
+  }
+
+  Future<void> _pickTime() async {
+    HapticFeedback.selectionClick();
+    final picked = await TimePickerScreen.open(
+      context,
+      initialMinutes: _timeMinutes,
+      title: 'Notification time',
+      subtitle: 'When this subscription\'s reminder is delivered',
+    );
+    if (picked != null && mounted) {
+      setState(() => _timeMinutes = picked);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -145,8 +166,8 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
                                   const SizedBox(height: 3),
                                   Text(
                                     _selectedDays == 0
-                                        ? 'Alert sent on the renewal day at 9:00 AM'
-                                        : 'Alert sent $_selectedDays day${_selectedDays > 1 ? "s" : ""} prior at 9:00 AM',
+                                        ? 'Alert sent on the renewal day at ${formatReminderTime(_timeMinutes)}'
+                                        : 'Alert sent $_selectedDays day${_selectedDays > 1 ? "s" : ""} prior at ${formatReminderTime(_timeMinutes)}',
                                     style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500,
@@ -160,6 +181,30 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      // Time of day for this subscription's reminders
+                      OneUISection(
+                        title: 'Notification Time',
+                        child: OneUIGroupCard(
+                          items: [
+                            OneUIGroupItem(
+                              title: 'Remind me at',
+                              subtitle: 'Time of day the alert is delivered',
+                              subtitleColor: OneUITheme.textSecondary,
+                              trailing: Text(
+                                formatReminderTime(_timeMinutes),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: OneUITheme.accentBlue,
+                                ),
+                              ),
+                              onTap: _pickTime,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
 
                       // Preset Options Group Card
                       OneUISection(
