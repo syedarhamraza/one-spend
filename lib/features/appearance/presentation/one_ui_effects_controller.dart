@@ -50,6 +50,12 @@ enum PaymentBadgeStyle {
 }
 
 /// Upcoming renewals presentation style
+/// How the Upcoming tab presents charges.
+enum UpcomingViewMode {
+  timeline, // Day-by-day agenda of every charge
+  calendar, // Month grid with brand-colour dots per billing day
+}
+
 enum UpcomingSectionStyle {
   carousel,         // Horizontal swipeable reel with calendar chips
   groupedList,      // Standard One UI grouped list card
@@ -92,6 +98,7 @@ class OneUIEffectsController extends ChangeNotifier {
   SubscriptionRenewalBadgeMode _renewalBadgeMode = SubscriptionRenewalBadgeMode.countdown;
   PaymentBadgeStyle _paymentBadgeStyle = PaymentBadgeStyle.cornerBadge;
   UpcomingSectionStyle _upcomingStyle = UpcomingSectionStyle.groupedList;
+  UpcomingViewMode _upcomingViewMode = UpcomingViewMode.timeline;
   bool _showCycleProgress = true;
   bool _showPaymentMethodChip = false;
   bool _showCategoryChip = true;
@@ -200,6 +207,10 @@ class OneUIEffectsController extends ChangeNotifier {
         );
       }
       _detailShowInlineCardBrand = prefs.getBool('detailShowInlineCardBrand') ?? true;
+      _upcomingViewMode = UpcomingViewMode.values.firstWhere(
+        (e) => e.name == prefs.getString('upcomingViewMode'),
+        orElse: () => UpcomingViewMode.timeline,
+      );
 
       _invalidateCache();
       notifyListeners();
@@ -338,6 +349,16 @@ class OneUIEffectsController extends ChangeNotifier {
     if (_paymentBadgeStyle != val) {
       _paymentBadgeStyle = val;
       _saveStringSetting('paymentBadgeStyle', val.name);
+      notifyListeners();
+    }
+  }
+
+  /// Remembered Upcoming tab view (timeline or calendar). Not reset by the card studio reset.
+  UpcomingViewMode get upcomingViewMode => _upcomingViewMode;
+  set upcomingViewMode(UpcomingViewMode val) {
+    if (_upcomingViewMode != val) {
+      _upcomingViewMode = val;
+      _saveStringSetting('upcomingViewMode', val.name);
       notifyListeners();
     }
   }

@@ -112,8 +112,10 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUITimeWheel` | `one_ui_time_wheel.dart` | Time-of-day selection (hour : minute AM/PM wheels). Use it via `TimePickerScreen.open` |
 | `OneUIDateWheel` | `one_ui_date_wheel.dart` | Date selection (month / day / year wheels, clamped to a range). Use it via `DatePickerScreen.open` |
 | `OneUIWheelColumn` | `one_ui_wheel_column.dart` | The single flat scroll-wheel column both pickers are built from. Reuse it for any new wheel picker |
+| `OneUISegmentedPills` | `one_ui_segmented_pills.dart` | A few mutually exclusive ranges/modes in one capsule with a sliding thumb (e.g. Upcoming's 7 days · 30 days · 3 months · 12 months) |
+| `OneUIMonthCalendar` + `CalendarDayMarker` | `one_ui_month_calendar.dart` | Samsung Calendar style swipeable month grid: today ring, filled selected day, up to 3 colour dots + "+N", and a heat tint per day |
 | `OneUIFloatingModal` | `one_ui_floating_modal.dart` | Floating bottom sheets: `show`, `showTextInputDialog`, `showConfirmationDialog` (destructive confirms) |
-| `OneUIToast` | `one_ui_toast.dart` | Brief feedback ("Netflix added"). Replaces snackbars |
+| `OneUIToast` | `one_ui_toast.dart` | Brief feedback ("Netflix added"). Replaces snackbars. Pass `actionLabel: 'Undo', onAction: …` for reversible actions; it then stays up for 4 s |
 | `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) |
 | `OneUIFloatingSearchPill` | `one_ui_floating_search_pill.dart` | In-screen search |
 | `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar |
@@ -152,7 +154,15 @@ Add an `OneUIGroupItem` to the right list in `settings_screen.dart`, with:
 
 Rows are filtered by the Settings search, so keep titles descriptive.
 
-### 5.3 Confirm a destructive action
+### 5.3 Make a quick action reversible
+Prefer **Undo over confirmation** for single-item, easily reversed actions (mark paid, skip a cycle):
+1. Take a snapshot of the entity before mutating it.
+2. Perform the action.
+3. Call `OneUIToast.show(context, 'Netflix marked as paid', actionLabel: 'Undo', onAction: () => store.updateSubscription(snapshot))`.
+
+Offer secondary actions on **long-press**, in a `OneUIFloatingModal.show` sheet containing a `OneUIGroupCard` of actions.
+
+### 5.4 Confirm a destructive action
 Use `OneUIFloatingModal.showConfirmationDialog(title, message, confirmLabel: 'Delete', …)`, then `OneUIToast.show(context, '… deleted')`.
 
 ---
@@ -177,6 +187,7 @@ Use `OneUIFloatingModal.showConfirmationDialog(title, message, confirmLabel: 'De
 - Use `OneUITheme` tokens and dynamic getters.
 - Put floating actions at the bottom with the vignette behind them.
 - Show the current value in a row's subtitle.
+- Give text in `Row`s a `Flexible` + `maxLines`/`ellipsis`, and check layouts at a **360 dp** width. Card names and subscription names can be long.
 
 **Don't**
 - ❌ `showDialog` / `AlertDialog` / `SimpleDialog`: use `OneUIFloatingModal`.

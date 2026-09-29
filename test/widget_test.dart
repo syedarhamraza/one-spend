@@ -77,7 +77,8 @@ void main() {
     // Switch to Upcoming tab
     await tester.tap(find.text('Upcoming'));
     await tester.pumpAndSettle();
-    expect(find.text('30-Day Forecast'), findsOneWidget);
+    expect(find.text('30 days'), findsOneWidget);
+    expect(find.text('Total due'), findsOneWidget);
 
     // Switch to Analytics tab
     await tester.tap(find.text('Analytics'));
