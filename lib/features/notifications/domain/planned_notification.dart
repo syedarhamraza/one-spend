@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum NotificationKind { renewal, trial, card, budget, developer }
+enum NotificationKind { renewal, card, budget, developer }
 
 /// A local notification the app intends to show at [fireAt] (device-local time).
 class PlannedNotification extends Equatable {
@@ -10,7 +10,7 @@ class PlannedNotification extends Equatable {
   final String title;
   final String body;
 
-  /// Subscription id (renewal/trial), payment method id (card), or month key (budget).
+  /// Subscription id (renewal), payment method id (card), or month key (budget).
   final String? subjectId;
 
   const PlannedNotification({

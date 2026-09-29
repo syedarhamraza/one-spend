@@ -64,7 +64,7 @@ go_router, configured in `lib/core/router/app_router.dart`:
 ### Notifications
 
 Local notifications only, with no push server. They live in `lib/features/notifications/`:
-- **`NotificationPlanner`:** pure logic that turns the current data into a list of `PlannedNotification`s: renewals, free-trial endings, card expiry and over-budget alerts. It covers a rolling 60-day window, capped at 50.
+- **`NotificationPlanner`:** pure logic that turns the current data into a list of `PlannedNotification`s: renewals, card expiry and over-budget alerts. It covers a rolling 60-day window, capped at 50.
 - **`NotificationScheduler`:** listens to `SubscriptionController` (debounced) and to app resume. Each time, it cancels what it last scheduled and schedules the new plan. Ids ≤ `PlannedNotification.maxReservedId` belong to the debug-only developer tests in Settings and are never cancelled.
 - **Services:**
   - `LocalNotificationService` wraps `flutter_local_notifications` and `flutter_timezone`, uses inexact alarms, and has one Android channel per kind.

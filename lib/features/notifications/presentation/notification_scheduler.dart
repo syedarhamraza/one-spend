@@ -36,7 +36,7 @@ class NotificationScheduler with WidgetsBindingObserver {
   static String routeFor(PlannedNotification notification) {
     final subjectId = notification.subjectId;
     return switch (notification.kind) {
-      NotificationKind.renewal || NotificationKind.trial => AppRoutes.subscriptionDetail(subjectId!),
+      NotificationKind.renewal => AppRoutes.subscriptionDetail(subjectId!),
       NotificationKind.card => AppRoutes.paymentMethods,
       NotificationKind.budget => AppRoutes.analytics,
       NotificationKind.developer =>

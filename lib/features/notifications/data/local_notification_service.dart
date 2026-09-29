@@ -22,12 +22,6 @@ class LocalNotificationService implements NotificationService {
       description: 'Upcoming subscription charges',
       importance: Importance.high,
     ),
-    NotificationKind.trial: AndroidNotificationChannel(
-      'trials',
-      'Free trials',
-      description: 'Free trials that are about to convert to paid',
-      importance: Importance.high,
-    ),
     NotificationKind.card: AndroidNotificationChannel(
       'cards',
       'Card expiry',
@@ -72,6 +66,8 @@ class LocalNotificationService implements NotificationService {
       for (final channel in _channels.values) {
         await android.createNotificationChannel(channel);
       }
+      // Clean up the unused "Free trials" channel created by earlier pre-release builds.
+      await android.deleteNotificationChannel(channelId: 'trials');
     }
   }
 

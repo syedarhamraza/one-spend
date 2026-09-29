@@ -60,7 +60,6 @@ class NotificationPlanner {
   ) sync* {
     if (sub.status == SubscriptionStatus.paused) return;
     final minutes = effectiveReminderMinutes(sub, defaultMinutes);
-    final isTrial = sub.status == SubscriptionStatus.trial;
     final price = _money(sub.currency, sub.price);
 
     var due = sub.nextBillingDate;
@@ -71,24 +70,11 @@ class NotificationPlanner {
       if (!fireAt.isAfter(now)) continue;
 
       final dueKey = DateFormat('yyyy-MM-dd').format(due);
-      final when = _relativeDay(sub.reminderDays);
-      if (isTrial) {
-        // A trial converts once: warn about the first upcoming charge only.
-        yield PlannedNotification(
-          id: PlannedNotification.stableId('trial|${sub.id}|$dueKey'),
-          kind: NotificationKind.trial,
-          fireAt: fireAt,
-          title: '${sub.name} trial ends $when',
-          body: 'Cancel before ${_dayFormat.format(due)} or you\'ll be charged $price.',
-          subjectId: sub.id,
-        );
-        return;
-      }
       yield PlannedNotification(
         id: PlannedNotification.stableId('renewal|${sub.id}|$dueKey'),
         kind: NotificationKind.renewal,
         fireAt: fireAt,
-        title: '${sub.name} renews $when',
+        title: '${sub.name} renews ${_relativeDay(sub.reminderDays)}',
         body: '$price will be charged on ${_dayFormat.format(due)}.',
         subjectId: sub.id,
       );

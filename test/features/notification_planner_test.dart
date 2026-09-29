@@ -111,16 +111,6 @@ void main() {
     });
   });
 
-  group('Free trials', () {
-    test('warn once about the first charge with trial wording', () {
-      final plan = _plan(subs: [_sub(name: 'ChatGPT Plus', price: 20, status: SubscriptionStatus.trial)]);
-      expect(plan, hasLength(1));
-      expect(plan.single.kind, NotificationKind.trial);
-      expect(plan.single.title, 'ChatGPT Plus trial ends in 2 days');
-      expect(plan.single.body, 'Cancel before Oct 10 or you\'ll be charged \$20.00.');
-    });
-  });
-
   group('Card expiry', () {
     PaymentMethod card(String expiry) => PaymentMethod(
           id: 'card_$expiry',

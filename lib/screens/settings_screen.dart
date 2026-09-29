@@ -84,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   String _notificationsSubtitle(SubscriptionStore store) {
     if (!store.notificationsEnabled) return 'Off';
     if (_systemNotificationsAllowed == false) return 'Blocked in system settings';
-    return 'Renewals, free trials, card expiry & budget';
+    return 'Renewals, card expiry & budget';
   }
 
   void _editProfile(BuildContext context, SubscriptionStore store) {
