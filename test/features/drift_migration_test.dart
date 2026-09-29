@@ -5,6 +5,7 @@ import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/database/converters/date_time_list_converter.dart';
 import 'package:onespend/core/database/migration/shared_preferences_migrator.dart';
 import 'package:onespend/features/payment_methods/data/datasources/payment_method_drift_datasource.dart';
+import 'package:onespend/features/settings/data/datasources/settings_drift_datasource.dart';
 import 'package:onespend/features/payment_methods/data/models/payment_method_model.dart';
 import 'package:onespend/features/payment_methods/domain/entities/payment_method.dart';
 import 'package:onespend/features/subscriptions/data/datasources/subscription_drift_datasource.dart';
@@ -128,14 +129,14 @@ void main() {
 
   group('Drift Settings persistence', () {
     test('stores and retrieves user preferences with defaults', () async {
-      final dataSource = SubscriptionDriftDataSource(db);
+      final dataSource = SettingsDriftDataSource(db);
 
       // Default values
       expect(await dataSource.getMonthlyBudget(), equals(150.0));
       expect(await dataSource.getCurrency(), equals('\$'));
       final defaultProfile = await dataSource.getUserProfile();
-      expect(defaultProfile.name, equals('Syed Arham Raza'));
-      expect(defaultProfile.email, equals('syed@onespend.app'));
+      expect(defaultProfile.name, isEmpty);
+      expect(defaultProfile.email, isEmpty);
       expect(await dataSource.getDefaultReminderDays(), equals(2));
       expect(await dataSource.getSortOptionName(), isNull);
       expect(await dataSource.getGroupByDate(), isFalse);
@@ -251,14 +252,15 @@ void main() {
       expect(cards.first.brand, equals(CardBrand.mastercard));
 
       // Verify Drift DB contains the migrated settings
-      expect(await subDs.getMonthlyBudget(), equals(200.0));
-      expect(await subDs.getCurrency(), equals('£'));
-      final profile = await subDs.getUserProfile();
+      final settingsDs = SettingsDriftDataSource(db);
+      expect(await settingsDs.getMonthlyBudget(), equals(200.0));
+      expect(await settingsDs.getCurrency(), equals('£'));
+      final profile = await settingsDs.getUserProfile();
       expect(profile.name, equals('Legacy User'));
       expect(profile.email, equals('legacy@onespend.app'));
-      expect(await subDs.getDefaultReminderDays(), equals(3));
-      expect(await subDs.getSortOptionName(), equals('renewalAsc'));
-      expect(await subDs.getGroupByDate(), isTrue);
+      expect(await settingsDs.getDefaultReminderDays(), equals(3));
+      expect(await settingsDs.getSortOptionName(), equals('renewalAsc'));
+      expect(await settingsDs.getGroupByDate(), isTrue);
 
       // Verify legacy JSON was removed from SharedPreferences to save space
       expect(prefs.containsKey('onespend_subscriptions'), isFalse);

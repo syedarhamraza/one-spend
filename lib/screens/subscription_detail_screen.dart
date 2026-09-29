@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_brand_catalog.dart';
 import '../utils/one_ui_date_formats.dart';
@@ -24,7 +26,6 @@ import 'one_ui_field_editor_screen.dart';
 import 'payment_history_screen.dart';
 import 'payment_methods_screen.dart';
 import 'reminder_picker_screen.dart';
-import 'upcoming_schedule_screen.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -1098,12 +1099,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                       onTap: () {
                                         HapticFeedback.lightImpact();
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => UpcomingScheduleScreen(subscription: _sub),
-                                          ),
-                                        );
+                                        context.push(AppRoutes.upcomingSchedule(_sub.id));
                                       },
                                     ),
                                     OneUIGroupItem(

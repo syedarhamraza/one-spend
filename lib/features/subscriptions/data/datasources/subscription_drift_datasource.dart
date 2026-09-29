@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/error/exceptions.dart';
@@ -9,15 +8,6 @@ import 'subscription_local_datasource.dart';
 /// Drift SQLite implementation of SubscriptionLocalDataSource.
 class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
   final AppDatabase db;
-
-  static const String keyBudget = 'onespend_monthly_budget';
-  static const String keyCurrency = 'onespend_currency';
-  static const String keyUserName = 'onespend_user_name';
-  static const String keyUserEmail = 'onespend_user_email';
-  static const String keyDefaultReminder = 'onespend_default_reminder';
-  static const String keySortOption = 'onespend_sort_option';
-  static const String keyGroupByDate = 'onespend_group_by_date';
-  static const String keyRecentSearches = 'onespend_recent_searches';
 
   const SubscriptionDriftDataSource(this.db);
 
@@ -57,41 +47,42 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
     }
   }
 
+  SubscriptionsTableCompanion _toCompanion(SubscriptionModel s) {
+    return SubscriptionsTableCompanion.insert(
+      id: s.id,
+      name: s.name,
+      description: s.description,
+      price: s.price,
+      currency: Value(s.currency),
+      billingCycle: s.billingCycle.name,
+      category: s.category.name,
+      brandColorValue: s.brandColorValue,
+      iconCodePoint: Value(s.iconCodePoint),
+      iconFontFamily: Value(s.iconFontFamily),
+      nextBillingDate: s.nextBillingDate,
+      status: s.status.name,
+      paymentMethod: s.paymentMethod,
+      paymentMethodId: Value(s.paymentMethodId),
+      reminderDays: Value(s.reminderDays),
+      isPopular: Value(s.isPopular),
+      notes: Value(s.notes),
+      paymentHistory: Value(s.paymentHistory),
+      accountUrl: Value(s.accountUrl),
+      logoUrl: Value(s.logoUrl),
+      brandPresetId: Value(s.brandPresetId),
+      autoRenew: Value(s.autoRenew),
+      anchorDay: Value(s.anchorDay),
+    );
+  }
+
   @override
   Future<void> saveSubscriptions(List<SubscriptionModel> subscriptions) async {
     try {
       await db.transaction(() async {
         await db.delete(db.subscriptionsTable).go();
         if (subscriptions.isNotEmpty) {
-          final companions = subscriptions.map((s) {
-            return SubscriptionsTableCompanion.insert(
-              id: s.id,
-              name: s.name,
-              description: s.description,
-              price: s.price,
-              currency: Value(s.currency),
-              billingCycle: s.billingCycle.name,
-              category: s.category.name,
-              brandColorValue: s.brandColorValue,
-              iconCodePoint: Value(s.iconCodePoint),
-              iconFontFamily: Value(s.iconFontFamily),
-              nextBillingDate: s.nextBillingDate,
-              status: s.status.name,
-              paymentMethod: s.paymentMethod,
-              paymentMethodId: Value(s.paymentMethodId),
-              reminderDays: Value(s.reminderDays),
-              isPopular: Value(s.isPopular),
-              notes: Value(s.notes),
-              paymentHistory: Value(s.paymentHistory),
-              accountUrl: Value(s.accountUrl),
-              logoUrl: Value(s.logoUrl),
-              brandPresetId: Value(s.brandPresetId),
-              autoRenew: Value(s.autoRenew),
-              anchorDay: Value(s.anchorDay),
-            );
-          }).toList();
           await db.batch((batch) {
-            batch.insertAll(db.subscriptionsTable, companions);
+            batch.insertAll(db.subscriptionsTable, subscriptions.map(_toCompanion).toList());
           });
         }
       });
@@ -101,88 +92,24 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
   }
 
   @override
-  Future<double> getMonthlyBudget() async {
-    final val = await db.getSetting(keyBudget);
-    if (val == null) return 150.0;
-    return double.tryParse(val) ?? 150.0;
-  }
-
-  @override
-  Future<void> setMonthlyBudget(double amount) async {
-    await db.setSetting(keyBudget, amount.toString());
-  }
-
-  @override
-  Future<String> getCurrency() async {
-    return (await db.getSetting(keyCurrency)) ?? '\$';
-  }
-
-  @override
-  Future<void> setCurrency(String currency) async {
-    await db.setSetting(keyCurrency, currency);
-  }
-
-  @override
-  Future<({String name, String email})> getUserProfile() async {
-    final name = (await db.getSetting(keyUserName)) ?? 'Syed Arham Raza';
-    final email = (await db.getSetting(keyUserEmail)) ?? 'syed@onespend.app';
-    return (name: name, email: email);
-  }
-
-  @override
-  Future<void> setUserProfile(String name, String email) async {
-    await db.setSetting(keyUserName, name);
-    await db.setSetting(keyUserEmail, email);
-  }
-
-  @override
-  Future<int> getDefaultReminderDays() async {
-    final val = await db.getSetting(keyDefaultReminder);
-    if (val == null) return 2;
-    return int.tryParse(val) ?? 2;
-  }
-
-  @override
-  Future<void> setDefaultReminderDays(int days) async {
-    await db.setSetting(keyDefaultReminder, days.toString());
-  }
-
-  @override
-  Future<String?> getSortOptionName() async {
-    return await db.getSetting(keySortOption);
-  }
-
-  @override
-  Future<void> setSortOptionName(String name) async {
-    await db.setSetting(keySortOption, name);
-  }
-
-  @override
-  Future<bool> getGroupByDate() async {
-    final val = await db.getSetting(keyGroupByDate);
-    if (val == null) return false;
-    return val.toLowerCase() == 'true';
-  }
-
-  @override
-  Future<void> setGroupByDate(bool value) async {
-    await db.setSetting(keyGroupByDate, value.toString());
-  }
-
-  @override
-  Future<List<String>> getRecentSearches() async {
-    final val = await db.getSetting(keyRecentSearches);
-    if (val == null || val.isEmpty) return [];
+  Future<void> upsertSubscriptions(List<SubscriptionModel> subscriptions) async {
+    if (subscriptions.isEmpty) return;
     try {
-      final List<dynamic> decoded = jsonDecode(val) as List<dynamic>;
-      return decoded.map((e) => e.toString()).toList();
-    } catch (_) {
-      return [];
+      await db.batch((batch) {
+        batch.insertAllOnConflictUpdate(db.subscriptionsTable, subscriptions.map(_toCompanion).toList());
+      });
+    } catch (e) {
+      throw StorageException('Failed to upsert subscriptions to SQLite', e);
     }
   }
 
   @override
-  Future<void> saveRecentSearches(List<String> searches) async {
-    await db.setSetting(keyRecentSearches, jsonEncode(searches));
+  Future<void> deleteSubscriptions(List<String> ids) async {
+    if (ids.isEmpty) return;
+    try {
+      await (db.delete(db.subscriptionsTable)..where((tbl) => tbl.id.isIn(ids))).go();
+    } catch (e) {
+      throw StorageException('Failed to delete subscriptions from SQLite', e);
+    }
   }
 }

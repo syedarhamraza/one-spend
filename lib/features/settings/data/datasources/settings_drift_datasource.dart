@@ -1,0 +1,104 @@
+import 'dart:convert';
+import '../../../../core/database/app_database.dart';
+
+/// Drift SQLite key/value storage for user preferences, backed by the app_settings table.
+class SettingsDriftDataSource {
+  final AppDatabase db;
+
+  static const String keyBudget = 'onespend_monthly_budget';
+  static const String keyCurrency = 'onespend_currency';
+  static const String keyUserName = 'onespend_user_name';
+  static const String keyUserEmail = 'onespend_user_email';
+  static const String keyDefaultReminder = 'onespend_default_reminder';
+  static const String keySortOption = 'onespend_sort_option';
+  static const String keyGroupByDate = 'onespend_group_by_date';
+  static const String keyRecentSearches = 'onespend_recent_searches';
+  static const String appearancePrefix = 'appearance.';
+
+  const SettingsDriftDataSource(this.db);
+
+  Future<double> getMonthlyBudget() async {
+    final val = await db.getSetting(keyBudget);
+    if (val == null) return 150.0;
+    return double.tryParse(val) ?? 150.0;
+  }
+
+  Future<void> setMonthlyBudget(double amount) async {
+    await db.setSetting(keyBudget, amount.toString());
+  }
+
+  Future<String> getCurrency() async {
+    return (await db.getSetting(keyCurrency)) ?? '\$';
+  }
+
+  Future<void> setCurrency(String currency) async {
+    await db.setSetting(keyCurrency, currency);
+  }
+
+  Future<({String name, String email})> getUserProfile() async {
+    final name = (await db.getSetting(keyUserName)) ?? '';
+    final email = (await db.getSetting(keyUserEmail)) ?? '';
+    return (name: name, email: email);
+  }
+
+  Future<void> setUserProfile(String name, String email) async {
+    await db.setSetting(keyUserName, name);
+    await db.setSetting(keyUserEmail, email);
+  }
+
+  Future<int> getDefaultReminderDays() async {
+    final val = await db.getSetting(keyDefaultReminder);
+    if (val == null) return 2;
+    return int.tryParse(val) ?? 2;
+  }
+
+  Future<void> setDefaultReminderDays(int days) async {
+    await db.setSetting(keyDefaultReminder, days.toString());
+  }
+
+  Future<String?> getSortOptionName() async {
+    return await db.getSetting(keySortOption);
+  }
+
+  Future<void> setSortOptionName(String name) async {
+    await db.setSetting(keySortOption, name);
+  }
+
+  Future<bool> getGroupByDate() async {
+    final val = await db.getSetting(keyGroupByDate);
+    if (val == null) return false;
+    return val.toLowerCase() == 'true';
+  }
+
+  Future<void> setGroupByDate(bool value) async {
+    await db.setSetting(keyGroupByDate, value.toString());
+  }
+
+  Future<List<String>> getRecentSearches() async {
+    final val = await db.getSetting(keyRecentSearches);
+    if (val == null || val.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(val) as List<dynamic>;
+      return decoded.map((e) => e.toString()).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveRecentSearches(List<String> searches) async {
+    await db.setSetting(keyRecentSearches, jsonEncode(searches));
+  }
+
+  Future<Map<String, String>> getAppearanceSettings() {
+    return db.getSettingsWithPrefix(appearancePrefix);
+  }
+
+  Future<void> setAppearanceSettings(Map<String, String> values) async {
+    if (values.isEmpty) return;
+    await db.transaction(() async {
+      for (final entry in values.entries) {
+        await db.setSetting('$appearancePrefix${entry.key}', entry.value);
+      }
+    });
+  }
+}

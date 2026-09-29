@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
@@ -20,9 +22,7 @@ import '../widgets/one_ui_sort_bottom_sheet.dart';
 import '../widgets/one_ui_subscription_card.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_upcoming_carousel.dart';
-import 'add_subscription_screen.dart';
 import 'one_ui_field_editor_screen.dart';
-import 'subscription_detail_screen.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -690,12 +690,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   SubscriptionStore.instance.addRecentSearch(_searchQuery.trim());
                 }
                 HapticFeedback.lightImpact();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SubscriptionDetailScreen(subscription: sub),
-                  ),
-                );
+                context.push(AppRoutes.subscriptionDetail(sub.id));
               }
             },
             onLongPress: () {
@@ -823,14 +818,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                   tooltip: 'Add subscription',
                                   onTap: () {
                                     HapticFeedback.lightImpact();
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => AddSubscriptionScreen(
-                                          initialPaymentMethodId: widget.filterPaymentMethodId,
-                                        ),
-                                      ),
-                                    );
+                                    context.push(AppRoutes.addSubscription, extra: widget.filterPaymentMethodId);
                                   },
                                 ),
                                 OneUIHeaderAction(
@@ -1082,12 +1070,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                 child: InkWell(
                                   onTap: () {
                                     HapticFeedback.lightImpact();
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const AddSubscriptionScreen(),
-                                      ),
-                                    );
+                                    context.push(AppRoutes.addSubscription);
                                   },
                                   borderRadius: BorderRadius.circular(100),
                                   child: Container(
@@ -1137,12 +1120,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                             upcomingSubscriptions: upcomingSubs,
                             onTapSubscription: (sub) {
                               HapticFeedback.lightImpact();
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SubscriptionDetailScreen(subscription: sub),
-                                ),
-                              );
+                              context.push(AppRoutes.subscriptionDetail(sub.id));
                             },
                             onLongPressSubscription: (sub) {
                               HapticFeedback.mediumImpact();
@@ -1214,14 +1192,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                     child: InkWell(
                                       onTap: () {
                                         HapticFeedback.lightImpact();
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => AddSubscriptionScreen(
-                                              initialPaymentMethodId: widget.filterPaymentMethodId,
-                                            ),
-                                          ),
-                                        );
+                                        context.push(AppRoutes.addSubscription, extra: widget.filterPaymentMethodId);
                                       },
                                       borderRadius: BorderRadius.circular(100),
                                       child: Container(

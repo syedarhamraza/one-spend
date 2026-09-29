@@ -1,20 +1,27 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../models/spending_trend.dart';
 import '../../../payment_methods/data/fixtures/default_payment_methods.dart';
 import '../../../payment_methods/domain/entities/payment_method.dart';
 import '../../../payment_methods/domain/repositories/payment_method_repository.dart';
+import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../data/fixtures/popular_catalog.dart';
+import '../../data/subscription_exporter.dart';
 import '../../domain/entities/subscription.dart';
 import '../../domain/entities/subscription_enums.dart';
 import '../../domain/repositories/subscription_repository.dart';
+import '../../domain/services/billing_schedule.dart';
+import '../../domain/services/subscription_stats.dart';
 
 /// Reactive Controller managing Subscriptions, Payment Methods, and Settings.
-/// Injected via GetIt; depends on abstract repositories, not SharedPreferences directly.
+/// Injected via GetIt; depends on abstract repositories, not storage directly.
+///
+/// State is held in memory; each mutation persists only what it changed through
+/// an ordered write queue, so writes land in the order they were made.
 class SubscriptionController extends ChangeNotifier {
   final SubscriptionRepository subscriptionRepository;
   final PaymentMethodRepository paymentMethodRepository;
+  final SettingsRepository settingsRepository;
 
   static SubscriptionController get instance {
     if (!sl.isRegistered<SubscriptionController>()) {
@@ -26,26 +33,21 @@ class SubscriptionController extends ChangeNotifier {
   SubscriptionController({
     required this.subscriptionRepository,
     required this.paymentMethodRepository,
-  }) {
-    _subscriptions.addAll([
-      popularCatalog[0], // Netflix
-      popularCatalog[1], // Spotify
-      popularCatalog[2], // ChatGPT Plus
-      popularCatalog[3], // YouTube Premium
-      popularCatalog[4], // iCloud+
-    ]);
-    _paymentMethods.addAll(defaultPaymentMethods);
-    _loadFromRepository();
-  }
+    required this.settingsRepository,
+  });
+
+  static const double _defaultBudget = 150.0;
+  static const String _defaultCurrency = '\$';
+  static const int _defaultReminder = 2;
 
   final List<Subscription> _subscriptions = [];
   final List<PaymentMethod> _paymentMethods = [];
   final List<String> _recentSearches = [];
-  double _monthlyBudget = 150.0;
-  String _currency = '\$';
-  String _userName = 'Syed Arham Raza';
-  String _userEmail = 'syed@onespend.app';
-  int _defaultReminderDays = 2;
+  double _monthlyBudget = _defaultBudget;
+  String _currency = _defaultCurrency;
+  String _userName = '';
+  String _userEmail = '';
+  int _defaultReminderDays = _defaultReminder;
   SubscriptionSortOption _sortOption = SubscriptionSortOption.renewalAsc;
   bool _groupByDate = false;
   bool _isLoaded = false;
@@ -80,28 +82,31 @@ class SubscriptionController extends ChangeNotifier {
     super.notifyListeners();
   }
 
+  /// Seeds the demo catalog and default cards into memory and storage (test fixture only).
   void resetForTesting() {
-    _subscriptions.clear();
-    _subscriptions.addAll([
-      popularCatalog[0], // Netflix
-      popularCatalog[1], // Spotify
-      popularCatalog[2], // ChatGPT Plus
-      popularCatalog[3], // YouTube Premium
-      popularCatalog[4], // iCloud+
-    ]);
-    _paymentMethods.clear();
-    _paymentMethods.addAll(defaultPaymentMethods);
-    _monthlyBudget = 150.0;
-    _currency = '\$';
-    _userName = 'Syed Arham Raza';
-    _userEmail = 'syed@onespend.app';
-    _defaultReminderDays = 2;
+    _subscriptions
+      ..clear()
+      ..addAll(popularCatalog.take(5)); // Netflix, Spotify, ChatGPT Plus, YouTube Premium, iCloud+
+    _paymentMethods
+      ..clear()
+      ..addAll(defaultPaymentMethods);
+    _monthlyBudget = _defaultBudget;
+    _currency = _defaultCurrency;
+    _userName = '';
+    _userEmail = '';
+    _defaultReminderDays = _defaultReminder;
     _sortOption = SubscriptionSortOption.renewalAsc;
     _groupByDate = false;
     _recentSearches.clear();
     _prePauseStatus.clear();
-    _invalidateCache();
-    super.notifyListeners();
+    _isLoaded = true;
+    notifyListeners();
+    final subs = List<Subscription>.from(_subscriptions);
+    final methods = List<PaymentMethod>.from(_paymentMethods);
+    _persist(() async {
+      await subscriptionRepository.replaceAll(subs);
+      await paymentMethodRepository.replaceAll(methods);
+    });
   }
 
   // Getters
@@ -117,81 +122,28 @@ class SubscriptionController extends ChangeNotifier {
   bool get groupByDate => _groupByDate;
   bool get isLoaded => _isLoaded;
 
-  double get totalMonthlySpend {
-    if (_cachedTotalMonthlySpend != null) return _cachedTotalMonthlySpend!;
-    final total = _subscriptions
-        .where((s) => s.status != SubscriptionStatus.paused && s.status != SubscriptionStatus.trial)
-        .fold<double>(0.0, (acc, sub) => acc + sub.monthlyCost);
-    return _cachedTotalMonthlySpend = total;
-  }
+  double get totalMonthlySpend =>
+      _cachedTotalMonthlySpend ??= SubscriptionStats.totalMonthlySpend(_subscriptions);
 
   double get totalYearlySpend => totalMonthlySpend * 12;
 
-  int get totalActiveCount {
-    if (_cachedTotalActiveCount != null) return _cachedTotalActiveCount!;
-    return _cachedTotalActiveCount = _subscriptions
-        .where((s) => s.status == SubscriptionStatus.active || s.status == SubscriptionStatus.dueSoon)
-        .length;
-  }
+  int get totalActiveCount => _cachedTotalActiveCount ??= SubscriptionStats.activeCount(_subscriptions);
 
-  int get totalPausedCount {
-    if (_cachedTotalPausedCount != null) return _cachedTotalPausedCount!;
-    return _cachedTotalPausedCount = _subscriptions.where((s) => s.status == SubscriptionStatus.paused).length;
-  }
+  int get totalPausedCount => _cachedTotalPausedCount ??= SubscriptionStats.pausedCount(_subscriptions);
 
-  List<Subscription> get upcomingDue {
-    if (_cachedUpcomingDue != null) return _cachedUpcomingDue!;
-    final list = List<Subscription>.from(_subscriptions.where((s) => s.status != SubscriptionStatus.paused));
-    list.sort((a, b) => a.nextBillingDate.compareTo(b.nextBillingDate));
-    return _cachedUpcomingDue = list;
-  }
+  List<Subscription> get upcomingDue => _cachedUpcomingDue ??= SubscriptionStats.upcomingDue(_subscriptions);
 
-  List<Subscription> get sortedSubscriptions {
-    if (_cachedSortedSubscriptions != null) return _cachedSortedSubscriptions!;
-    final list = List<Subscription>.from(_subscriptions);
-    switch (_sortOption) {
-      case SubscriptionSortOption.renewalAsc:
-        list.sort((a, b) => a.nextBillingDate.compareTo(b.nextBillingDate));
-        break;
-      case SubscriptionSortOption.renewalDesc:
-        list.sort((a, b) => b.nextBillingDate.compareTo(a.nextBillingDate));
-        break;
-      case SubscriptionSortOption.priceDesc:
-        list.sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
-        break;
-      case SubscriptionSortOption.priceAsc:
-        list.sort((a, b) => a.monthlyCost.compareTo(b.monthlyCost));
-        break;
-      case SubscriptionSortOption.nameAsc:
-        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        break;
-      case SubscriptionSortOption.nameDesc:
-        list.sort((a, b) => b.name.toLowerCase().compareTo(a.name.toLowerCase()));
-        break;
-    }
-    return _cachedSortedSubscriptions = list;
-  }
+  List<Subscription> get sortedSubscriptions =>
+      _cachedSortedSubscriptions ??= SubscriptionStats.sorted(_subscriptions, _sortOption);
 
   Subscription? get highestCostSubscription {
     if (_highestCostCalculated) return _cachedHighestCostSubscription;
     _highestCostCalculated = true;
-    if (_subscriptions.isEmpty) return _cachedHighestCostSubscription = null;
-    final active = _subscriptions
-        .where((s) => s.status != SubscriptionStatus.paused && s.status != SubscriptionStatus.trial)
-        .toList();
-    if (active.isEmpty) return _cachedHighestCostSubscription = null;
-    active.sort((a, b) => b.monthlyCost.compareTo(a.monthlyCost));
-    return _cachedHighestCostSubscription = active.first;
+    return _cachedHighestCostSubscription = SubscriptionStats.highestCost(_subscriptions);
   }
 
-  Map<SubscriptionCategory, double> get categorySpendMap {
-    if (_cachedCategorySpendMap != null) return _cachedCategorySpendMap!;
-    final Map<SubscriptionCategory, double> map = {};
-    for (var sub in _subscriptions.where((s) => s.status != SubscriptionStatus.paused && s.status != SubscriptionStatus.trial)) {
-      map[sub.category] = (map[sub.category] ?? 0.0) + sub.monthlyCost;
-    }
-    return _cachedCategorySpendMap = map;
-  }
+  Map<SubscriptionCategory, double> get categorySpendMap =>
+      _cachedCategorySpendMap ??= SubscriptionStats.categorySpend(_subscriptions);
 
   List<MonthlySpendPoint> getSpendingTrends(SpendingTrendHorizon horizon, [DateTime? referenceDate]) {
     if (referenceDate == null && _cachedTrends.containsKey(horizon)) {
@@ -214,56 +166,75 @@ class SubscriptionController extends ChangeNotifier {
   }
 
   // --- Persistence Integration ---
-  Future<void> _loadFromRepository() async {
+
+  /// Loads all state from storage, replacing whatever is in memory.
+  /// Awaited once at startup, before the first frame.
+  Future<void> load() async {
     try {
       final loadedSubs = await subscriptionRepository.getSubscriptions();
-      if (loadedSubs.isNotEmpty) {
-        _subscriptions.clear();
-        _subscriptions.addAll(loadedSubs);
-      }
-
       final loadedMethods = await paymentMethodRepository.getPaymentMethods();
-      if (loadedMethods.isNotEmpty) {
-        _paymentMethods.clear();
-        _paymentMethods.addAll(loadedMethods);
-      }
+      _subscriptions
+        ..clear()
+        ..addAll(loadedSubs);
+      _paymentMethods
+        ..clear()
+        ..addAll(loadedMethods);
 
-      _monthlyBudget = await subscriptionRepository.getMonthlyBudget();
-      _currency = await subscriptionRepository.getCurrency();
-      final profile = await subscriptionRepository.getUserProfile();
+      _monthlyBudget = await settingsRepository.getMonthlyBudget();
+      _currency = await settingsRepository.getCurrency();
+      final profile = await settingsRepository.getUserProfile();
       _userName = profile.name;
       _userEmail = profile.email;
-      _defaultReminderDays = await subscriptionRepository.getDefaultReminderDays();
-      _sortOption = await subscriptionRepository.getSortOption();
-      _groupByDate = await subscriptionRepository.getGroupByDate();
-
-      final loadedSearches = await subscriptionRepository.getRecentSearches();
-      _recentSearches.clear();
-      _recentSearches.addAll(loadedSearches);
-
-      _isLoaded = true;
-      checkAndProcessAutoRenewals();
-      notifyListeners();
+      _defaultReminderDays = await settingsRepository.getDefaultReminderDays();
+      _sortOption = await settingsRepository.getSortOption();
+      _groupByDate = await settingsRepository.getGroupByDate();
+      _recentSearches
+        ..clear()
+        ..addAll(await settingsRepository.getRecentSearches());
     } catch (e) {
       debugPrint('OneSpend: Failed to load data from repository: $e');
-      _isLoaded = true;
-      notifyListeners();
     }
+    _isLoaded = true;
+    checkAndProcessAutoRenewals();
+    notifyListeners();
   }
 
-  Future<void> _saveToRepository() async {
-    try {
-      await subscriptionRepository.saveSubscriptions(_subscriptions);
-      await paymentMethodRepository.savePaymentMethods(_paymentMethods);
-      await subscriptionRepository.setMonthlyBudget(_monthlyBudget);
-      await subscriptionRepository.setCurrency(_currency);
-      await subscriptionRepository.setUserProfile(_userName, _userEmail);
-      await subscriptionRepository.setDefaultReminderDays(_defaultReminderDays);
-      await subscriptionRepository.setSortOption(_sortOption);
-      await subscriptionRepository.setGroupByDate(_groupByDate);
-    } catch (e) {
+  Future<void> _writeQueue = Future.value();
+
+  /// Completes once every write queued so far has finished.
+  Future<void> get pendingWrites => _writeQueue;
+
+  void _persist(Future<void> Function() write) {
+    _writeQueue = _writeQueue.then((_) => write()).catchError((Object e) {
       debugPrint('OneSpend: Failed to save data to repository: $e');
+    });
+  }
+
+  void _persistSubscriptions(Iterable<Subscription> subs) {
+    final snapshot = List<Subscription>.from(subs);
+    if (snapshot.isEmpty) return;
+    _persist(() => subscriptionRepository.upsert(snapshot));
+  }
+
+  void _persistPaymentMethods(Iterable<PaymentMethod> methods) {
+    final snapshot = List<PaymentMethod>.from(methods);
+    if (snapshot.isEmpty) return;
+    _persist(() => paymentMethodRepository.upsert(snapshot));
+  }
+
+  /// Applies [update] to every subscription matching [test], then notifies and
+  /// persists only those rows.
+  void _updateSubscriptionsWhere(bool Function(Subscription s) test, Subscription Function(Subscription s) update) {
+    final changed = <Subscription>[];
+    for (int i = 0; i < _subscriptions.length; i++) {
+      if (test(_subscriptions[i])) {
+        _subscriptions[i] = update(_subscriptions[i]);
+        changed.add(_subscriptions[i]);
+      }
     }
+    if (changed.isEmpty) return;
+    notifyListeners();
+    _persistSubscriptions(changed);
   }
 
   // --- Payment Methods ---
@@ -282,61 +253,54 @@ class SubscriptionController extends ChangeNotifier {
     return null;
   }
 
-  void addPaymentMethod(PaymentMethod method) {
-    if (method.isDefault) {
-      for (int i = 0; i < _paymentMethods.length; i++) {
-        if (_paymentMethods[i].isDefault) {
-          _paymentMethods[i] = _paymentMethods[i].copyWith(isDefault: false);
-        }
+  /// Clears the default flag on every method except [keepId]; returns the demoted methods.
+  List<PaymentMethod> _demoteOtherDefaults(String keepId) {
+    final demoted = <PaymentMethod>[];
+    for (int i = 0; i < _paymentMethods.length; i++) {
+      if (_paymentMethods[i].id != keepId && _paymentMethods[i].isDefault) {
+        _paymentMethods[i] = _paymentMethods[i].copyWith(isDefault: false);
+        demoted.add(_paymentMethods[i]);
       }
     }
+    return demoted;
+  }
+
+  void addPaymentMethod(PaymentMethod method) {
+    final demoted = method.isDefault ? _demoteOtherDefaults(method.id) : const <PaymentMethod>[];
     _paymentMethods.add(method);
     notifyListeners();
-    _saveToRepository();
+    _persistPaymentMethods([...demoted, method]);
   }
 
   void updatePaymentMethod(PaymentMethod method) {
     final index = _paymentMethods.indexWhere((m) => m.id == method.id);
-    if (index != -1) {
-      if (method.isDefault) {
-        for (int i = 0; i < _paymentMethods.length; i++) {
-          if (_paymentMethods[i].id != method.id && _paymentMethods[i].isDefault) {
-            _paymentMethods[i] = _paymentMethods[i].copyWith(isDefault: false);
-          }
-        }
-      }
-      _paymentMethods[index] = method;
-      notifyListeners();
-      _saveToRepository();
-    }
+    if (index == -1) return;
+    final demoted = method.isDefault ? _demoteOtherDefaults(method.id) : const <PaymentMethod>[];
+    _paymentMethods[index] = method;
+    notifyListeners();
+    _persistPaymentMethods([...demoted, method]);
   }
 
   void deletePaymentMethod(String methodId, {String? replacementMethodId}) {
-    if (replacementMethodId != null && replacementMethodId.isNotEmpty) {
-      final replacement = getPaymentMethod(replacementMethodId);
-      final replacementName = replacement?.displayName ?? '';
-      for (int i = 0; i < _subscriptions.length; i++) {
-        if (_subscriptions[i].paymentMethodId == methodId) {
-          _subscriptions[i] = _subscriptions[i].copyWith(
-            paymentMethodId: replacementMethodId,
-            paymentMethod: replacementName.isNotEmpty ? replacementName : _subscriptions[i].paymentMethod,
-          );
-        }
-      }
-    } else {
-      for (int i = 0; i < _subscriptions.length; i++) {
-        if (_subscriptions[i].paymentMethodId == methodId) {
-          _subscriptions[i] = _subscriptions[i].copyWith(
-            clearPaymentMethodId: true,
-            paymentMethod: '',
-          );
-        }
-      }
+    final hasReplacement = replacementMethodId != null && replacementMethodId.isNotEmpty;
+    final replacementName = hasReplacement ? (getPaymentMethod(replacementMethodId)?.displayName ?? '') : '';
+    final relinked = <Subscription>[];
+    for (int i = 0; i < _subscriptions.length; i++) {
+      final sub = _subscriptions[i];
+      if (sub.paymentMethodId != methodId) continue;
+      _subscriptions[i] = hasReplacement
+          ? sub.copyWith(
+              paymentMethodId: replacementMethodId,
+              paymentMethod: replacementName.isNotEmpty ? replacementName : sub.paymentMethod,
+            )
+          : sub.copyWith(clearPaymentMethodId: true, paymentMethod: '');
+      relinked.add(_subscriptions[i]);
     }
 
     _paymentMethods.removeWhere((m) => m.id == methodId);
     notifyListeners();
-    _saveToRepository();
+    _persistSubscriptions(relinked);
+    _persist(() => paymentMethodRepository.delete([methodId]));
   }
 
   Subscription? getSubscription(String id) {
@@ -358,46 +322,34 @@ class SubscriptionController extends ChangeNotifier {
   }
 
   void reassignSubscriptions({required String fromMethodId, required String toMethodId}) {
-    final replacement = getPaymentMethod(toMethodId);
-    final replacementName = replacement?.displayName ?? '';
-    for (int i = 0; i < _subscriptions.length; i++) {
-      if (_subscriptions[i].paymentMethodId == fromMethodId) {
-        _subscriptions[i] = _subscriptions[i].copyWith(
-          paymentMethodId: toMethodId,
-          paymentMethod: replacementName.isNotEmpty ? replacementName : _subscriptions[i].paymentMethod,
-        );
-      }
-    }
-    notifyListeners();
-    _saveToRepository();
+    final replacementName = getPaymentMethod(toMethodId)?.displayName ?? '';
+    _updateSubscriptionsWhere(
+      (s) => s.paymentMethodId == fromMethodId,
+      (s) => s.copyWith(
+        paymentMethodId: toMethodId,
+        paymentMethod: replacementName.isNotEmpty ? replacementName : s.paymentMethod,
+      ),
+    );
   }
 
   // --- Subscriptions Actions ---
   void addSubscription(Subscription subscription) {
     _subscriptions.add(subscription);
     notifyListeners();
-    _saveToRepository();
+    _persistSubscriptions([subscription]);
   }
 
   void batchAdd(Iterable<Subscription> newSubscriptions) {
-    _subscriptions.addAll(newSubscriptions);
+    final added = newSubscriptions.toList();
+    _subscriptions.addAll(added);
     notifyListeners();
-    _saveToRepository();
+    _persistSubscriptions(added);
   }
 
-  void removeSubscription(String id) {
-    _subscriptions.removeWhere((item) => item.id == id);
-    notifyListeners();
-    _saveToRepository();
-  }
+  void removeSubscription(String id) => batchDelete([id]);
 
   void updateSubscription(Subscription updated) {
-    final index = _subscriptions.indexWhere((item) => item.id == updated.id);
-    if (index != -1) {
-      _subscriptions[index] = updated;
-      notifyListeners();
-      _saveToRepository();
-    }
+    _updateSubscriptionsWhere((s) => s.id == updated.id, (_) => updated);
   }
 
   void renewSubscription(String id) {
@@ -405,196 +357,107 @@ class SubscriptionController extends ChangeNotifier {
   }
 
   void markSubscriptionPaid(String id, [DateTime? paymentDate]) {
-    final index = _subscriptions.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      final sub = _subscriptions[index];
-      DateTime newDate = sub.calculateNextDateFrom(sub.nextBillingDate);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      while (newDate.isBefore(today)) {
-        newDate = sub.calculateNextDateFrom(newDate);
-      }
-      final dateToLog = paymentDate ?? (sub.nextBillingDate.isBefore(now) ? sub.nextBillingDate : now);
-      final updatedHistory = List<DateTime>.from(sub.paymentHistory)..insert(0, dateToLog);
-      updatedHistory.sort((a, b) => b.compareTo(a));
-
-      _subscriptions[index] = sub.copyWith(
-        nextBillingDate: newDate,
-        paymentHistory: updatedHistory,
-      );
-      notifyListeners();
-      _saveToRepository();
-    }
+    _updateSubscriptionsWhere((s) => s.id == id, (s) => BillingSchedule.markPaid(s, paymentDate: paymentDate));
   }
 
   void skipSubscriptionCycle(String id) {
-    final index = _subscriptions.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      final sub = _subscriptions[index];
-      DateTime newDate = sub.calculateNextDateFrom(sub.nextBillingDate);
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      while (newDate.isBefore(today)) {
-        newDate = sub.calculateNextDateFrom(newDate);
-      }
-      _subscriptions[index] = sub.copyWith(nextBillingDate: newDate);
-      notifyListeners();
-      _saveToRepository();
-    }
+    _updateSubscriptionsWhere((s) => s.id == id, BillingSchedule.skipCycle);
   }
 
   bool addPaymentRecord(String id, DateTime date) {
-    final index = _subscriptions.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      final sub = _subscriptions[index];
-      final alreadyExists = sub.paymentHistory.any((d) =>
-          d.year == date.year && d.month == date.month && d.day == date.day);
-      if (alreadyExists) {
-        return false;
-      }
-      final updatedHistory = List<DateTime>.from(sub.paymentHistory)..add(date);
-      updatedHistory.sort((a, b) => b.compareTo(a));
-      _subscriptions[index] = sub.copyWith(paymentHistory: updatedHistory);
-      notifyListeners();
-      _saveToRepository();
-      return true;
-    }
-    return false;
+    final sub = getSubscription(id);
+    if (sub == null) return false;
+    final alreadyExists = sub.paymentHistory.any((d) =>
+        d.year == date.year && d.month == date.month && d.day == date.day);
+    if (alreadyExists) return false;
+    final updatedHistory = List<DateTime>.from(sub.paymentHistory)
+      ..add(date)
+      ..sort((a, b) => b.compareTo(a));
+    updateSubscription(sub.copyWith(paymentHistory: updatedHistory));
+    return true;
   }
 
   void deletePaymentRecord(String id, int historyIndex) {
-    final index = _subscriptions.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      final sub = _subscriptions[index];
-      if (historyIndex >= 0 && historyIndex < sub.paymentHistory.length) {
-        final updatedHistory = List<DateTime>.from(sub.paymentHistory)..removeAt(historyIndex);
-        _subscriptions[index] = sub.copyWith(paymentHistory: updatedHistory);
-        notifyListeners();
-        _saveToRepository();
-      }
-    }
+    final sub = getSubscription(id);
+    if (sub == null || historyIndex < 0 || historyIndex >= sub.paymentHistory.length) return;
+    final updatedHistory = List<DateTime>.from(sub.paymentHistory)..removeAt(historyIndex);
+    updateSubscription(sub.copyWith(paymentHistory: updatedHistory));
   }
 
+  /// Logs one payment per elapsed cycle for every overdue auto-renewing subscription.
   void checkAndProcessAutoRenewals() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    bool changed = false;
-
-    for (int i = 0; i < _subscriptions.length; i++) {
-      final sub = _subscriptions[i];
-      if (sub.autoRenew && sub.status != SubscriptionStatus.paused) {
-        final target = DateTime(sub.nextBillingDate.year, sub.nextBillingDate.month, sub.nextBillingDate.day);
-        if (target.isBefore(today)) {
-          renewSubscription(sub.id);
-          changed = true;
-        }
-      }
-    }
-
-    if (changed) {
-      notifyListeners();
-      _saveToRepository();
-    }
+    _updateSubscriptionsWhere(BillingSchedule.isAutoRenewDue, BillingSchedule.applyAutoRenewal);
   }
 
-  void togglePauseSubscription(String id) {
-    final index = _subscriptions.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      final sub = _subscriptions[index];
-      SubscriptionStatus newStatus;
-      if (sub.status == SubscriptionStatus.paused) {
-        newStatus = _prePauseStatus.remove(id) ?? SubscriptionStatus.active;
-      } else {
-        _prePauseStatus[id] = sub.status;
-        newStatus = SubscriptionStatus.paused;
-      }
-      _subscriptions[index] = sub.copyWith(status: newStatus);
-      notifyListeners();
-      _saveToRepository();
+  SubscriptionStatus _toggledStatus(Subscription sub) {
+    if (sub.status == SubscriptionStatus.paused) {
+      return _prePauseStatus.remove(sub.id) ?? SubscriptionStatus.active;
     }
+    _prePauseStatus[sub.id] = sub.status;
+    return SubscriptionStatus.paused;
   }
+
+  void togglePauseSubscription(String id) => batchTogglePause([id]);
 
   void batchDelete(Iterable<String> ids) {
     final idSet = ids.toSet();
     _subscriptions.removeWhere((item) => idSet.contains(item.id));
     notifyListeners();
-    _saveToRepository();
+    _persist(() => subscriptionRepository.delete(idSet));
   }
 
   void batchTogglePause(Iterable<String> ids) {
     final idSet = ids.toSet();
-    for (int i = 0; i < _subscriptions.length; i++) {
-      if (idSet.contains(_subscriptions[i].id)) {
-        final sub = _subscriptions[i];
-        SubscriptionStatus newStatus;
-        if (sub.status == SubscriptionStatus.paused) {
-          newStatus = _prePauseStatus.remove(sub.id) ?? SubscriptionStatus.active;
-        } else {
-          _prePauseStatus[sub.id] = sub.status;
-          newStatus = SubscriptionStatus.paused;
-        }
-        _subscriptions[i] = sub.copyWith(status: newStatus);
-      }
-    }
-    notifyListeners();
-    _saveToRepository();
+    _updateSubscriptionsWhere((s) => idSet.contains(s.id), (s) => s.copyWith(status: _toggledStatus(s)));
   }
 
   void batchChangeCategory(Iterable<String> ids, SubscriptionCategory category) {
     final idSet = ids.toSet();
-    for (int i = 0; i < _subscriptions.length; i++) {
-      if (idSet.contains(_subscriptions[i].id)) {
-        _subscriptions[i] = _subscriptions[i].copyWith(category: category);
-      }
-    }
-    notifyListeners();
-    _saveToRepository();
+    _updateSubscriptionsWhere((s) => idSet.contains(s.id), (s) => s.copyWith(category: category));
   }
 
   void setMonthlyBudget(double amount) {
     _monthlyBudget = amount.clamp(0.0, 999999.0);
     notifyListeners();
-    _saveToRepository();
+    final value = _monthlyBudget;
+    _persist(() => settingsRepository.setMonthlyBudget(value));
   }
 
   void setCurrency(String newCurrency) {
     _currency = newCurrency;
     notifyListeners();
-    _saveToRepository();
+    _persist(() => settingsRepository.setCurrency(newCurrency));
   }
 
   void setUserProfile(String name, String email) {
     _userName = name;
     _userEmail = email;
     notifyListeners();
-    _saveToRepository();
+    _persist(() => settingsRepository.setUserProfile(name, email));
   }
 
   void setDefaultReminderDays(int days) {
     _defaultReminderDays = days;
     notifyListeners();
-    _saveToRepository();
+    _persist(() => settingsRepository.setDefaultReminderDays(days));
   }
 
   void setSortOption(SubscriptionSortOption option) {
     _sortOption = option;
     notifyListeners();
-    _saveToRepository();
+    _persist(() => settingsRepository.setSortOption(option));
   }
 
   void setGroupByDate(bool value) {
     _groupByDate = value;
     notifyListeners();
-    _saveToRepository();
+    _persist(() => settingsRepository.setGroupByDate(value));
   }
 
   // --- Recent Searches ---
-  Future<void> _saveRecentSearches() async {
-    try {
-      await subscriptionRepository.saveRecentSearches(_recentSearches);
-    } catch (e) {
-      debugPrint('OneSpend: Failed to save recent searches: $e');
-    }
+  void _saveRecentSearches() {
+    final snapshot = List<String>.from(_recentSearches);
+    _persist(() => settingsRepository.saveRecentSearches(snapshot));
   }
 
   void addRecentSearch(String query) {
@@ -627,34 +490,22 @@ class SubscriptionController extends ChangeNotifier {
   }
 
   void restoreDefaultCatalog() {
-    _subscriptions.clear();
-    _subscriptions.addAll(popularCatalog);
+    _subscriptions
+      ..clear()
+      ..addAll(popularCatalog);
     notifyListeners();
-    _saveToRepository();
+    final snapshot = List<Subscription>.from(_subscriptions);
+    _persist(() => subscriptionRepository.replaceAll(snapshot));
   }
 
   void clearAllData() {
     _subscriptions.clear();
+    _prePauseStatus.clear();
     notifyListeners();
-    _saveToRepository();
+    _persist(() => subscriptionRepository.replaceAll(const []));
   }
 
-  String exportDataAsJson() {
-    return const JsonEncoder.withIndent('  ').convert(
-      _subscriptions.map((s) => s.toJson()).toList(),
-    );
-  }
+  String exportDataAsJson() => SubscriptionExporter.toJson(_subscriptions);
 
-  String exportDataAsCsv() {
-    final buffer = StringBuffer();
-    buffer.writeln('Name,Category,Billing Cycle,Price,Currency,Next Renewal,Status,Payment Method');
-    for (var sub in _subscriptions) {
-      final dateStr = '${sub.nextBillingDate.year}-${sub.nextBillingDate.month.toString().padLeft(2, '0')}-${sub.nextBillingDate.day.toString().padLeft(2, '0')}';
-      String escCsv(String val) => val.replaceAll('"', '""');
-      buffer.writeln(
-        '"${escCsv(sub.name)}","${escCsv(sub.category.label)}","${escCsv(sub.billingCycle.label)}",${sub.price},"${escCsv(sub.currency)}","$dateStr","${escCsv(sub.status.label)}","${escCsv(sub.paymentMethod)}"',
-      );
-    }
-    return buffer.toString();
-  }
+  String exportDataAsCsv() => SubscriptionExporter.toCsv(_subscriptions);
 }

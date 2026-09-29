@@ -7,6 +7,8 @@ import 'package:onespend/screens/icon_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_icon_picker_modal.dart';
 
+import '../helpers/test_app.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -94,8 +96,8 @@ void main() {
       IconPickerResult? result;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
+        routedTestApp(
+          Builder(
             builder: (context) => ElevatedButton(
               onPressed: () async {
                 result = await IconPickerScreen.open(
@@ -144,8 +146,8 @@ void main() {
       IconPickerResult? result;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
+        routedTestApp(
+          Builder(
             builder: (context) => ElevatedButton(
               onPressed: () async {
                 result = await IconPickerScreen.open(

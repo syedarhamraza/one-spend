@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -23,12 +25,7 @@ class PaymentHistoryScreen extends StatefulWidget {
 
   static Future<void> open(BuildContext context, String subscriptionId) {
     HapticFeedback.lightImpact();
-    return Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PaymentHistoryScreen(subscriptionId: subscriptionId),
-      ),
-    );
+    return context.push(AppRoutes.paymentHistory(subscriptionId));
   }
 
   @override

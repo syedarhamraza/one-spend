@@ -9,6 +9,8 @@ import 'package:onespend/theme/one_ui_theme.dart';
 
 import 'package:flutter/services.dart';
 
+import '../helpers/test_app.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -95,9 +97,9 @@ void main() {
       SubscriptionCategory? selectedCat;
 
       await tester.pumpWidget(
-        MaterialApp(
+        routedTestApp(
           theme: OneUITheme.darkTheme,
-          home: Builder(
+          Builder(
             builder: (context) {
               return ElevatedButton(
                 onPressed: () async {
@@ -143,9 +145,9 @@ void main() {
       BillingCycle? pickedCycle;
 
       await tester.pumpWidget(
-        MaterialApp(
+        routedTestApp(
           theme: OneUITheme.darkTheme,
-          home: Builder(
+          Builder(
             builder: (context) {
               return ElevatedButton(
                 onPressed: () async {

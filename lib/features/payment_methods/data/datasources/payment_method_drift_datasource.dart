@@ -39,32 +39,55 @@ class PaymentMethodDriftDataSource implements PaymentMethodLocalDataSource {
     }
   }
 
+  PaymentMethodsTableCompanion _toCompanion(PaymentMethodModel m) {
+    return PaymentMethodsTableCompanion.insert(
+      id: m.id,
+      nickname: m.nickname,
+      type: m.type.name,
+      brand: m.brand.name,
+      last4: Value(m.last4),
+      expiryDate: Value(m.expiryDate),
+      cardColorValue: Value(m.cardColorValue),
+      isDefault: Value(m.isDefault),
+      statementDay: Value(m.statementDay),
+    );
+  }
+
   @override
   Future<void> savePaymentMethods(List<PaymentMethodModel> methods) async {
     try {
       await db.transaction(() async {
         await db.delete(db.paymentMethodsTable).go();
         if (methods.isNotEmpty) {
-          final companions = methods.map((m) {
-            return PaymentMethodsTableCompanion.insert(
-              id: m.id,
-              nickname: m.nickname,
-              type: m.type.name,
-              brand: m.brand.name,
-              last4: Value(m.last4),
-              expiryDate: Value(m.expiryDate),
-              cardColorValue: Value(m.cardColorValue),
-              isDefault: Value(m.isDefault),
-              statementDay: Value(m.statementDay),
-            );
-          }).toList();
           await db.batch((batch) {
-            batch.insertAll(db.paymentMethodsTable, companions);
+            batch.insertAll(db.paymentMethodsTable, methods.map(_toCompanion).toList());
           });
         }
       });
     } catch (e) {
       throw StorageException('Failed to save payment methods to SQLite', e);
+    }
+  }
+
+  @override
+  Future<void> upsertPaymentMethods(List<PaymentMethodModel> methods) async {
+    if (methods.isEmpty) return;
+    try {
+      await db.batch((batch) {
+        batch.insertAllOnConflictUpdate(db.paymentMethodsTable, methods.map(_toCompanion).toList());
+      });
+    } catch (e) {
+      throw StorageException('Failed to upsert payment methods to SQLite', e);
+    }
+  }
+
+  @override
+  Future<void> deletePaymentMethods(List<String> ids) async {
+    if (ids.isEmpty) return;
+    try {
+      await (db.delete(db.paymentMethodsTable)..where((tbl) => tbl.id.isIn(ids))).go();
+    } catch (e) {
+      throw StorageException('Failed to delete payment methods from SQLite', e);
     }
   }
 }

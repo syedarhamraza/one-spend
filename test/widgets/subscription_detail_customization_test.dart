@@ -10,6 +10,8 @@ import 'package:flutter/services.dart';
 import 'package:onespend/widgets/one_ui_group_card.dart';
 import 'package:onespend/widgets/one_ui_payment_brand_icon.dart';
 
+import '../helpers/test_app.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -286,9 +288,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: SettingsScreen(),
-        ),
+        routedTestApp(const SettingsScreen()),
       );
       await tester.pumpAndSettle();
 

@@ -34,6 +34,13 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  /// Read every app setting whose key starts with [prefix], keyed without the prefix
+  Future<Map<String, String>> getSettingsWithPrefix(String prefix) async {
+    final query = select(appSettingsTable)..where((tbl) => tbl.key.like('$prefix%'));
+    final rows = await query.get();
+    return {for (final row in rows) row.key.substring(prefix.length): row.value};
+  }
+
   /// Wipe all data (useful for reset or clear)
   Future<void> clearAll() async {
     await transaction(() async {

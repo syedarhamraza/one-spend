@@ -6,6 +6,9 @@ import '../../features/payment_methods/data/datasources/payment_method_drift_dat
 import '../../features/payment_methods/data/datasources/payment_method_local_datasource.dart';
 import '../../features/payment_methods/data/repositories/payment_method_repository_impl.dart';
 import '../../features/payment_methods/domain/repositories/payment_method_repository.dart';
+import '../../features/settings/data/datasources/settings_drift_datasource.dart';
+import '../../features/settings/data/repositories/settings_repository_impl.dart';
+import '../../features/settings/domain/repositories/settings_repository.dart';
 import '../../features/subscriptions/data/datasources/subscription_drift_datasource.dart';
 import '../../features/subscriptions/data/datasources/subscription_local_datasource.dart';
 import '../../features/subscriptions/data/repositories/subscription_repository_impl.dart';
@@ -25,6 +28,9 @@ void setupDependencies({AppDatabase? database}) {
     }
     if (sl.isRegistered<PaymentMethodRepository>()) {
       sl.unregister<PaymentMethodRepository>();
+    }
+    if (sl.isRegistered<SettingsRepository>()) {
+      sl.unregister<SettingsRepository>();
     }
     if (sl.isRegistered<SubscriptionLocalDataSource>()) {
       sl.unregister<SubscriptionLocalDataSource>();
@@ -54,6 +60,11 @@ void setupDependencies({AppDatabase? database}) {
   }
 
   // 2. Repositories (Pure domain interfaces bound to implementations)
+  if (!sl.isRegistered<SettingsRepository>()) {
+    sl.registerLazySingleton<SettingsRepository>(
+      () => SettingsRepositoryImpl(SettingsDriftDataSource(sl<AppDatabase>())),
+    );
+  }
   if (!sl.isRegistered<SubscriptionRepository>()) {
     sl.registerLazySingleton<SubscriptionRepository>(
       () => SubscriptionRepositoryImpl(sl<SubscriptionLocalDataSource>()),
@@ -71,6 +82,7 @@ void setupDependencies({AppDatabase? database}) {
       () => SubscriptionController(
         subscriptionRepository: sl<SubscriptionRepository>(),
         paymentMethodRepository: sl<PaymentMethodRepository>(),
+        settingsRepository: sl<SettingsRepository>(),
       ),
     );
   }
@@ -106,4 +118,8 @@ Future<void> configureDependencies({AppDatabase? database}) async {
 
   // 4. Wire dependencies
   setupDependencies();
+
+  // 5. Load persisted state before the first frame so nothing renders stale data
+  await sl<SubscriptionController>().load();
+  await sl<OneUIEffectsController>().init();
 }

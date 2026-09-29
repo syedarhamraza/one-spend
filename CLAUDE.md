@@ -1,0 +1,71 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+OneSpend (`package:onespend`) is a Flutter subscription/spend tracker styled after Samsung One UI (pitch-black dark theme only). Android is the only platform directory present. Dart SDK `^3.13.3`.
+
+## Commands
+
+```bash
+flutter pub get
+flutter run
+flutter analyze
+flutter test
+flutter test test/features/drift_migration_test.dart          # single file
+flutter test --plain-name "save and load subscriptions"        # single test by name
+dart run build_runner build --delete-conflicting-outputs       # regenerate Drift code (app_database.g.dart)
+```
+
+Regenerate with `build_runner` after changing anything under `lib/core/database/tables/` or the `@DriftDatabase` annotation. Bump `schemaVersion` in `app_database.dart` and add a migration when changing table shapes (currently v1, no `MigrationStrategy` defined).
+
+## Architecture
+
+Data and domain logic follow feature-first clean architecture; most UI still lives in the older flat layout.
+
+- **`lib/features/<feature>/{data,domain,presentation}`** — `subscriptions`, `payment_methods`, `settings`, `appearance`. Flow: Drift datasource → `*RepositoryImpl` (maps `*Model` ↔ domain entity) → abstract `*Repository` → controller. Pure logic lives in `subscriptions/domain/services/` (`BillingSchedule` for date advancement and auto-renew, `SubscriptionStats` for totals and sorting) and `subscriptions/data/subscription_exporter.dart`.
+- **`lib/screens/`, `lib/widgets/`, `lib/theme/`, `lib/utils/`** — the flat UI layer where almost all screens and `OneUI*` widgets live.
+- **`lib/models/subscription.dart`** is a backward-compat barrel that re-exports the feature modules and defines `typedef SubscriptionStore = SubscriptionController`. Screens import this and use `SubscriptionStore.instance`.
+
+### State
+
+- `SubscriptionController` (a `ChangeNotifier`, `lib/features/subscriptions/presentation/controllers/`) is the single app-wide store for subscriptions, payment methods, and user settings. UI rebuilds via `AnimatedBuilder` on it. Computed values are memoized and invalidated in the `notifyListeners` override.
+  - **Persistence is granular:** each mutation enqueues only the rows or keys it changed on a serial write queue (`_persist`). Repositories expose `upsert` / `delete` / `replaceAll`, never load-modify-save. `pendingWrites` completes when the queue drains, which is useful in tests.
+  - **`load()` is explicit** and awaited in `configureDependencies()` before `runApp`. It always replaces in-memory state, so a fresh install starts empty. The demo catalog is only seeded by `resetForTesting()` or the Settings "restore default catalog" action.
+- `OneUIEffectsController` (`lib/features/appearance/presentation/`, re-exported from `lib/theme/one_ui_theme.dart`) is a second singleton for card studio and 3D effects preferences. It persists through `SettingsRepository` (`app_settings` rows prefixed `appearance.`), and becomes a no-op when DI isn't set up. `init()` loads it.
+
+### DI and startup
+
+`lib/core/di/injection.dart` uses GetIt (`sl`). `main()` calls `configureDependencies()`, which:
+1. Registers `SharedPreferences` and `AppDatabase`.
+2. Runs `SharedPreferencesMigrator`. This is a one-time copy of legacy prefs into Drift: domain data gated by `drift_migrated_v1`, appearance keys gated by `appearance_migrated_v1`.
+3. Calls `setupDependencies()`.
+4. Awaits the controller `load()` and the effects `init()`.
+
+### Persistence
+
+Drift SQLite (`lib/core/database/`): tables for subscriptions, payment methods, and a key/value `app_settings` table (`getSetting` / `setSetting` / `getSettingsWithPrefix`). Setting keys are the legacy `onespend_*` names, kept for migration compatibility. List fields are stored as JSON via `converters/`.
+
+### Navigation
+
+go_router, configured in `lib/core/router/app_router.dart`:
+- **Shell:** `createAppRouter()` builds a `StatefulShellRoute.indexedStack` with four tabs (`/subscriptions`, `/upcoming`, `/analytics`, `/settings`). `HomeScreen` is the shell scaffold. It owns the floating nav bar and a `PopScope` that sends system back to the first tab.
+- **Nav bar hiding:** tab-level flags that hide the nav bar live in `HomeChrome` notifiers.
+- **Page routes:** `buildPageRoutes()` defines full-screen pages pushed above the shell. Subscription pages are addressed by id (`AppRoutes.subscriptionDetail(id)`, `/history`, `/schedule`) and show a not-found fallback for stale ids. Picker initial values travel via `extra`, using the typedef records in `app_router.dart`.
+- **Navigating from screens:** screens call their existing static helpers (`CategoryPickerScreen.open(...)` etc.), which wrap `context.push<T>(...)`. Results come back through `Navigator.pop(context, value)`.
+- **Left pageless:** private in-file sub-pages (icon picker sub-screens, payment method field editors, card-studio option screens, `OneUIFieldEditorScreen`) still use `Navigator.push`.
+- **Router ownership:** `OneSpendApp` creates its own router in state, so each instance (and each test) starts fresh.
+
+## Testing
+
+Tests that touch the controller or DB must inject an in-memory database first:
+
+```dart
+setupDependencies(database: AppDatabase.forTesting(NativeDatabase.memory()));
+```
+
+- **Fresh state per test:** passing `database:` unregisters and re-registers the datasources, repositories, and controller. Call `SubscriptionStore.instance.resetForTesting()` to seed the demo subscriptions and cards.
+- **Datasource tests:** construct `AppDatabase.forTesting(NativeDatabase.memory())` directly and close it in `tearDown` (see `test/features/drift_migration_test.dart`).
+- **Reload tests:** build a second controller on the same DB and `await load()` after `await controller.pendingWrites` (see `test/features/persistence_regression_test.dart`).
+- **Navigation:** a widget test that navigates via `context.push` (any `*.open(...)` helper) must host the widget with `routedTestApp(widget)` from `test/helpers/test_app.dart` instead of `MaterialApp(home: ...)`.

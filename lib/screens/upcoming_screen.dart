@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
@@ -9,7 +11,6 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
-import 'subscription_detail_screen.dart';
 
 class UpcomingScreen extends StatelessWidget {
   const UpcomingScreen({super.key});
@@ -341,12 +342,7 @@ class UpcomingScreen extends StatelessWidget {
         ],
       ),
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SubscriptionDetailScreen(subscription: sub),
-          ),
-        );
+        context.push(AppRoutes.subscriptionDetail(sub.id));
       },
     );
   }

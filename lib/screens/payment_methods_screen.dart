@@ -18,10 +18,7 @@ class PaymentMethodsScreen extends StatelessWidget {
 
   static Future<void> open(BuildContext context) {
     HapticFeedback.lightImpact();
-    return Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const PaymentMethodsScreen()),
-    );
+    return PaymentMethodPickerScreen.open(context, isManageOnly: true);
   }
 
   static Future<PaymentMethod?> select(BuildContext context, {String? currentMethodId}) {
