@@ -83,6 +83,7 @@ class SharedPreferencesMigrator {
                 brandPresetId: Value(m.brandPresetId),
                 autoRenew: Value(m.autoRenew),
                 anchorDay: Value(m.anchorDay),
+                reminderTimeMinutes: Value(m.reminderTimeMinutes),
               ),
             );
           }

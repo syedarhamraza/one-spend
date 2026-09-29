@@ -27,6 +27,7 @@ class SubscriptionModel extends Subscription {
     super.brandPresetId,
     super.autoRenew = true,
     super.anchorDay,
+    super.reminderTimeMinutes,
   });
 
   factory SubscriptionModel.fromEntity(Subscription entity) {
@@ -54,6 +55,7 @@ class SubscriptionModel extends Subscription {
       brandPresetId: entity.brandPresetId,
       autoRenew: entity.autoRenew,
       anchorDay: entity.anchorDay,
+      reminderTimeMinutes: entity.reminderTimeMinutes,
     );
   }
 
@@ -91,6 +93,7 @@ class SubscriptionModel extends Subscription {
       brandPresetId: json['brandPresetId'] as String?,
       autoRenew: json['autoRenew'] as bool? ?? true,
       anchorDay: json['anchorDay'] as int?,
+      reminderTimeMinutes: json['reminderTimeMinutes'] as int?,
     );
   }
 
@@ -120,6 +123,7 @@ class SubscriptionModel extends Subscription {
       'brandPresetId': brandPresetId,
       'autoRenew': autoRenew,
       'anchorDay': anchorDay ?? nextBillingDate.day,
+      'reminderTimeMinutes': reminderTimeMinutes,
     };
   }
 }

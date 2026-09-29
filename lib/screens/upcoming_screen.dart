@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
+import '../utils/reminder_format.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
@@ -68,10 +69,18 @@ class UpcomingScreen extends StatelessWidget {
                   expandedHeight: 270.0,
                   actions: [
                     OneUIHeaderAction(
-                      icon: Icons.notifications_none_rounded,
+                      icon: store.notificationsEnabled
+                          ? Icons.notifications_none_rounded
+                          : Icons.notifications_off_outlined,
                       tooltip: 'Reminders info',
                       onTap: () {
-                        OneUIToast.show(context, 'Smart reminders alert ${store.defaultReminderDays} days before renewals');
+                        OneUIToast.show(
+                          context,
+                          store.notificationsEnabled
+                              ? 'Reminders alert ${store.defaultReminderDays} days before renewals at '
+                                  '${formatReminderTime(store.defaultReminderTimeMinutes)}'
+                              : 'Reminders are off. Turn them on in Menu › Notifications',
+                        );
                       },
                     ),
                   ],

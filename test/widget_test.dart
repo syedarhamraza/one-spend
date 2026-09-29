@@ -366,7 +366,9 @@ void main() {
     expect(find.text('Floating buttons & pills 3D effect'), findsOneWidget);
     expect(find.text('3D elevation & rim highlight on search, back & action pills'), findsOneWidget);
 
-    // Toggle Floating buttons & pills OFF
+    // Center it so it isn't underneath the floating nav bar, then toggle Floating buttons & pills OFF
+    await Scrollable.ensureVisible(tester.element(find.text('Floating buttons & pills 3D effect')), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Floating buttons & pills 3D effect'));
     await tester.pumpAndSettle();
 
@@ -1392,14 +1394,14 @@ void main() {
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
 
-    int? selectedResult;
+    ({int days, int timeMinutes})? selectedResult;
     await tester.pumpWidget(
       routedTestApp(
         Builder(
           builder: (context) => Scaffold(
             body: ElevatedButton(
               onPressed: () async {
-                selectedResult = await ReminderPickerScreen.open(context, initialDays: 2);
+                selectedResult = await ReminderPickerScreen.open(context, initialDays: 2, initialTimeMinutes: 20 * 60 + 30);
               },
               child: const Text('Open Reminder Picker'),
             ),
@@ -1424,8 +1426,9 @@ void main() {
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
-    // Verify result returned was 3
-    expect(selectedResult, 3);
+    // Verify result returned 3 days, keeping the initial 8:30 PM time
+    expect(selectedResult, (days: 3, timeMinutes: 20 * 60 + 30));
+    expect(find.text('8:30 PM'), findsNothing);
   });
 
   testWidgets('Auto-record renewals advances billing date when past due', (WidgetTester tester) async {

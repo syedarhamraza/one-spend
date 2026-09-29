@@ -18,6 +18,8 @@ import 'popular_presets_screen.dart';
 import 'reminder_picker_screen.dart';
 import 'billing_cycle_picker_screen.dart';
 import 'category_picker_screen.dart';
+import '../features/notifications/presentation/notification_permission.dart';
+import '../utils/reminder_format.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
@@ -45,6 +47,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   late String _paymentMethod;
   String? _paymentMethodId;
   late int _reminderDays;
+  late int _reminderTimeMinutes;
   late SubscriptionStatus _status;
   late String _notes;
   late String _accountUrl;
@@ -69,6 +72,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _paymentMethod = editSub.paymentMethod;
       _paymentMethodId = editSub.paymentMethodId;
       _reminderDays = editSub.reminderDays;
+      _reminderTimeMinutes = editSub.reminderTimeMinutes ?? SubscriptionStore.instance.defaultReminderTimeMinutes;
       _status = editSub.status;
       _notes = editSub.notes;
       _accountUrl = editSub.accountUrl;
@@ -90,6 +94,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _paymentMethodId = defaultCard?.id;
       _paymentMethod = defaultCard?.displayName ?? '';
       _reminderDays = SubscriptionStore.instance.defaultReminderDays;
+      _reminderTimeMinutes = SubscriptionStore.instance.defaultReminderTimeMinutes;
       _status = SubscriptionStatus.active;
       _notes = '';
       _accountUrl = '';
@@ -177,10 +182,12 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     final result = await ReminderPickerScreen.open(
       context,
       initialDays: _reminderDays,
+      initialTimeMinutes: _reminderTimeMinutes,
     );
     if (result != null && mounted) {
       setState(() {
-        _reminderDays = result;
+        _reminderDays = result.days;
+        _reminderTimeMinutes = result.timeMinutes;
       });
     }
   }
@@ -224,6 +231,9 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       paymentMethod: _paymentMethod.trim(),
       paymentMethodId: _paymentMethodId,
       reminderDays: _reminderDays,
+      // Store null while it matches the default, so the sub keeps following the global setting.
+      reminderTimeMinutes:
+          _reminderTimeMinutes == SubscriptionStore.instance.defaultReminderTimeMinutes ? null : _reminderTimeMinutes,
       notes: _notes.trim(),
       paymentHistory: widget.subscriptionToEdit?.paymentHistory ?? [],
       accountUrl: _accountUrl.trim(),
@@ -238,6 +248,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     } else {
       SubscriptionStore.instance.addSubscription(newSub);
       OneUIToast.show(context, '${newSub.name} added');
+      ensureNotificationPermission();
     }
     Navigator.pop(context, newSub);
   }
@@ -529,9 +540,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                             OneUIGroupItem(
                               leading: _buildCategoryIconBadge(Icons.notifications_active_rounded, OneUITheme.accentTeal),
                               title: 'Renewal notification',
-                              subtitle: _reminderDays == 0
-                                  ? 'On renewal day'
-                                  : 'Alert $_reminderDays days before',
+                              subtitle: describeReminder(_reminderDays, _reminderTimeMinutes),
                               subtitleColor: OneUITheme.textSecondary,
                               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                               onTap: _selectReminderDays,

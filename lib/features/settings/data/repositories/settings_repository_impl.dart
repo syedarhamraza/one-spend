@@ -49,6 +49,18 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> setGroupByDate(bool value) => _dataSource.setGroupByDate(value);
 
   @override
+  Future<bool> getNotificationsEnabled() => _dataSource.getNotificationsEnabled();
+
+  @override
+  Future<void> setNotificationsEnabled(bool value) => _dataSource.setNotificationsEnabled(value);
+
+  @override
+  Future<int> getDefaultReminderTimeMinutes() => _dataSource.getDefaultReminderTimeMinutes();
+
+  @override
+  Future<void> setDefaultReminderTimeMinutes(int minutes) => _dataSource.setDefaultReminderTimeMinutes(minutes);
+
+  @override
   Future<List<String>> getRecentSearches() => _dataSource.getRecentSearches();
 
   @override

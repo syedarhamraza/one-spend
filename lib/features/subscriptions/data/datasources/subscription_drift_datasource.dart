@@ -40,6 +40,7 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
           brandPresetId: row.brandPresetId,
           autoRenew: row.autoRenew,
           anchorDay: row.anchorDay,
+          reminderTimeMinutes: row.reminderTimeMinutes,
         );
       }).toList();
     } catch (e) {
@@ -72,6 +73,7 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
       brandPresetId: Value(s.brandPresetId),
       autoRenew: Value(s.autoRenew),
       anchorDay: Value(s.anchorDay),
+      reminderTimeMinutes: Value(s.reminderTimeMinutes),
     );
   }
 

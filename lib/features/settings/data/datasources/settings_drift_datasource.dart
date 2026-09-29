@@ -13,6 +13,9 @@ class SettingsDriftDataSource {
   static const String keySortOption = 'onespend_sort_option';
   static const String keyGroupByDate = 'onespend_group_by_date';
   static const String keyRecentSearches = 'onespend_recent_searches';
+  static const String keyNotificationsEnabled = 'onespend_notifications_enabled';
+  static const String keyReminderTime = 'onespend_reminder_time_minutes';
+  static const int defaultReminderTimeMinutes = 9 * 60;
   static const String appearancePrefix = 'appearance.';
 
   const SettingsDriftDataSource(this.db);
@@ -72,6 +75,25 @@ class SettingsDriftDataSource {
 
   Future<void> setGroupByDate(bool value) async {
     await db.setSetting(keyGroupByDate, value.toString());
+  }
+
+  Future<bool> getNotificationsEnabled() async {
+    final val = await db.getSetting(keyNotificationsEnabled);
+    return val == null || val.toLowerCase() == 'true';
+  }
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    await db.setSetting(keyNotificationsEnabled, value.toString());
+  }
+
+  Future<int> getDefaultReminderTimeMinutes() async {
+    final val = int.tryParse(await db.getSetting(keyReminderTime) ?? '');
+    if (val == null || val < 0 || val >= 24 * 60) return defaultReminderTimeMinutes;
+    return val;
+  }
+
+  Future<void> setDefaultReminderTimeMinutes(int minutes) async {
+    await db.setSetting(keyReminderTime, minutes.toString());
   }
 
   Future<List<String>> getRecentSearches() async {

@@ -30,6 +30,9 @@ class SubscriptionsTable extends Table {
   BoolColumn get autoRenew => boolean().withDefault(const Constant(true))();
   IntColumn get anchorDay => integer().nullable()();
 
+  /// Added in schema v2: reminder time of day in minutes after midnight (null = global default).
+  IntColumn get reminderTimeMinutes => integer().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

@@ -11,6 +11,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
+import 'date_picker_screen.dart';
 
 /// Samsung One UI Payment History Screen.
 /// Displays reverse-chronological ledger of past subscription charges,
@@ -36,26 +37,14 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   final _dateFormat = OneUIDateFormats.fullMonthDayYear;
 
   void _showAddPaymentDialog(Subscription sub) async {
-    HapticFeedback.lightImpact();
     final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await DatePickerScreen.open(
+      context,
       initialDate: now,
       firstDate: DateTime(2018),
       lastDate: now,
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: ColorScheme.dark(
-              primary: OneUITheme.accentBlue,
-              onPrimary: Colors.white,
-              surface: OneUITheme.cardColor,
-              onSurface: OneUITheme.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      title: 'Payment date',
+      subtitle: 'Logs a past ${sub.name} charge of ${sub.currency}${sub.price.toStringAsFixed(2)}',
     );
 
     if (picked != null && mounted) {

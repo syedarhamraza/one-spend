@@ -28,6 +28,9 @@ class Subscription extends Equatable {
   final bool autoRenew;
   final int? anchorDay;
 
+  /// Reminder time of day in minutes after midnight; null uses the global default.
+  final int? reminderTimeMinutes;
+
   const Subscription.raw({
     required this.id,
     required this.name,
@@ -52,6 +55,7 @@ class Subscription extends Equatable {
     this.brandPresetId,
     this.autoRenew = true,
     this.anchorDay,
+    this.reminderTimeMinutes,
   });
 
   Subscription({
@@ -80,6 +84,7 @@ class Subscription extends Equatable {
     this.brandPresetId,
     this.autoRenew = true,
     this.anchorDay,
+    this.reminderTimeMinutes,
   })  : brandColorValue = brandColorValue ?? _extractColorValue(brandColor),
         iconCodePoint = iconCodePoint ?? _extractIconCodePoint(iconData);
 
@@ -134,6 +139,8 @@ class Subscription extends Equatable {
     bool clearBrandPresetId = false,
     bool? autoRenew,
     int? anchorDay,
+    int? reminderTimeMinutes,
+    bool clearReminderTime = false,
   }) {
     final resolvedColor = brandColorValue ?? (brandColor != null ? _extractColorValue(brandColor) : this.brandColorValue);
     final resolvedIcon = iconCodePoint ?? (iconData != null ? _extractIconCodePoint(iconData) : this.iconCodePoint);
@@ -161,6 +168,7 @@ class Subscription extends Equatable {
       brandPresetId: clearBrandPresetId ? null : (brandPresetId ?? this.brandPresetId),
       autoRenew: autoRenew ?? this.autoRenew,
       anchorDay: anchorDay ?? this.anchorDay,
+      reminderTimeMinutes: clearReminderTime ? null : (reminderTimeMinutes ?? this.reminderTimeMinutes),
     );
   }
 
@@ -274,6 +282,7 @@ class Subscription extends Equatable {
       'brandPresetId': brandPresetId,
       'autoRenew': autoRenew,
       'anchorDay': anchorDay ?? nextBillingDate.day,
+      'reminderTimeMinutes': reminderTimeMinutes,
     };
   }
 
@@ -311,6 +320,7 @@ class Subscription extends Equatable {
       brandPresetId: json['brandPresetId'] as String?,
       autoRenew: json['autoRenew'] as bool? ?? true,
       anchorDay: json['anchorDay'] as int?,
+      reminderTimeMinutes: json['reminderTimeMinutes'] as int?,
     );
   }
 
@@ -339,5 +349,6 @@ class Subscription extends Equatable {
         brandPresetId,
         autoRenew,
         anchorDay,
+        reminderTimeMinutes,
       ];
 }

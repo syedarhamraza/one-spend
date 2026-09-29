@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
@@ -9,7 +10,14 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
+import '../core/di/injection.dart';
+import '../features/notifications/data/notification_service.dart';
+import '../features/notifications/presentation/notification_developer_tools.dart';
+import '../features/notifications/presentation/notification_permission.dart';
+import '../utils/reminder_format.dart';
+import '../widgets/one_ui_switch.dart';
 import 'one_ui_field_editor_screen.dart';
+import 'time_picker_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,16 +26,65 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   bool _showSearch = false;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final GlobalKey _actionPillKey = GlobalKey();
 
+  /// Whether Android currently allows OneSpend to post notifications (null until checked).
+  bool? _systemNotificationsAllowed;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshSystemNotificationState();
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The user may have changed the permission in system settings while away.
+    if (state == AppLifecycleState.resumed) _refreshSystemNotificationState();
+  }
+
+  Future<void> _refreshSystemNotificationState() async {
+    if (!sl.isRegistered<NotificationService>()) return;
+    final allowed = await sl<NotificationService>().areEnabled();
+    if (mounted) setState(() => _systemNotificationsAllowed = allowed);
+  }
+
+  Future<void> _setNotificationsEnabled(SubscriptionStore store, bool enabled) async {
+    HapticFeedback.selectionClick();
+    store.setNotificationsEnabled(enabled);
+    if (enabled) {
+      await ensureNotificationPermission();
+      await _refreshSystemNotificationState();
+    }
+  }
+
+  Future<void> _pickDefaultReminderTime(SubscriptionStore store) async {
+    final picked = await TimePickerScreen.open(
+      context,
+      initialMinutes: store.defaultReminderTimeMinutes,
+      title: 'Default reminder time',
+      subtitle: 'Used for new subscriptions, card and budget alerts',
+    );
+    if (picked != null) store.setDefaultReminderTimeMinutes(picked);
+  }
+
+
+  String _notificationsSubtitle(SubscriptionStore store) {
+    if (!store.notificationsEnabled) return 'Off';
+    if (_systemNotificationsAllowed == false) return 'Blocked in system settings';
+    return 'Renewals, card expiry & budget';
   }
 
   void _editProfile(BuildContext context, SubscriptionStore store) {
@@ -437,10 +494,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onTap: () => _editBudget(store),
                         ),
                         OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.notifications_rounded, OneUITheme.accentAmber),
+                          title: 'Notifications',
+                          subtitle: _notificationsSubtitle(store),
+                          subtitleColor: store.notificationsEnabled && _systemNotificationsAllowed == false
+                              ? OneUITheme.accentRed
+                              : null,
+                          trailing: OneUISwitch(
+                            value: store.notificationsEnabled,
+                            onChanged: (value) => _setNotificationsEnabled(store, value),
+                          ),
+                          onTap: () => _setNotificationsEnabled(store, !store.notificationsEnabled),
+                        ),
+                        OneUIGroupItem(
                           leading: _buildIconBadge(Icons.notifications_active_rounded, OneUITheme.accentAmber),
                           title: 'Renewal notification alert',
                           subtitle: '${store.defaultReminderDays} days before renewal date',
                           onTap: () => _pickReminderDays(context, store),
+                        ),
+                        OneUIGroupItem(
+                          leading: _buildIconBadge(Icons.schedule_rounded, OneUITheme.accentTeal),
+                          title: 'Default reminder time',
+                          subtitle: '${formatReminderTime(store.defaultReminderTimeMinutes)} · new subscriptions, cards & budget',
+                          onTap: () => _pickDefaultReminderTime(store),
                         ),
                       ].where(itemMatches).toList();
 
@@ -611,7 +687,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ].where(itemMatches).toList();
 
-                      final hasAnyResult = showProfile ||
+                      // Debug builds only: tools for testing notifications on a device.
+                      final developerItems = kDebugMode
+                          ? NotificationDeveloperTools.items(context, _buildIconBadge).where(itemMatches).toList()
+                          : const <OneUIGroupItem>[];
+
+                      final hasAnyResult = developerItems.isNotEmpty ||
+                          showProfile ||
                           appPrefItems.isNotEmpty ||
                           appearanceItems.isNotEmpty ||
                           dataItems.isNotEmpty ||
@@ -723,6 +805,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 OneUIGroupCard(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   items: aboutItems,
+                                ),
+
+                              // Card 5: Developer tools (debug builds only)
+                              if (developerItems.isNotEmpty)
+                                OneUIGroupCard(
+                                  headerTitle: 'Developer',
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  items: developerItems,
                                 ),
 
                               const SizedBox(height: 8),

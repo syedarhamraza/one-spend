@@ -26,6 +26,7 @@ import 'one_ui_field_editor_screen.dart';
 import 'payment_history_screen.dart';
 import 'payment_methods_screen.dart';
 import 'reminder_picker_screen.dart';
+import '../utils/reminder_format.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -121,10 +122,17 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     final result = await ReminderPickerScreen.open(
       context,
       initialDays: _sub.reminderDays,
+      initialTimeMinutes: _sub.reminderTimeMinutes ?? SubscriptionStore.instance.defaultReminderTimeMinutes,
     );
     if (result != null && mounted) {
+      final followsDefault = result.timeMinutes == SubscriptionStore.instance.defaultReminderTimeMinutes;
       setState(() {
-        _sub = _sub.copyWith(reminderDays: result);
+        // Store null while it matches the default, so the sub keeps following the global setting.
+        _sub = _sub.copyWith(
+          reminderDays: result.days,
+          reminderTimeMinutes: followsDefault ? null : result.timeMinutes,
+          clearReminderTime: followsDefault,
+        );
       });
       SubscriptionStore.instance.updateSubscription(_sub);
       OneUIToast.show(context, 'Reminder alert updated');
@@ -901,9 +909,10 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                 OneUIGroupItem(
                                   leading: _buildDetailIcon(Icons.notifications_active_rounded, OneUITheme.accentTeal),
                                   title: 'Renewal notification',
-                                  subtitle: _sub.reminderDays == 0
-                                      ? 'On renewal day (9:00 AM)'
-                                      : 'Alert ${_sub.reminderDays} days before renewal',
+                                  subtitle: describeReminder(
+                                    _sub.reminderDays,
+                                    _sub.reminderTimeMinutes ?? SubscriptionStore.instance.defaultReminderTimeMinutes,
+                                  ),
                                   subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textSecondary),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: _pickReminderDays,
