@@ -32,8 +32,10 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/di/injection.dart';
-import 'package:onespend/features/subscriptions/data/datasources/subscription_drift_datasource.dart';
+import 'package:onespend/features/settings/data/datasources/settings_drift_datasource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'helpers/test_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1392,8 +1394,8 @@ void main() {
 
     int? selectedResult;
     await tester.pumpWidget(
-      MaterialApp(
-        home: Builder(
+      routedTestApp(
+        Builder(
           builder: (context) => Scaffold(
             body: ElevatedButton(
               onPressed: () async {
@@ -1615,9 +1617,9 @@ void main() {
     SubscriptionCategory? selectedCat;
 
     await tester.pumpWidget(
-      MaterialApp(
+      routedTestApp(
         theme: OneUITheme.darkTheme,
-        home: Builder(
+        Builder(
           builder: (context) {
             return ElevatedButton(
               onPressed: () async {
@@ -1773,9 +1775,9 @@ void main() {
     PaymentMethod? picked;
 
     await tester.pumpWidget(
-      MaterialApp(
+      routedTestApp(
         theme: OneUITheme.darkTheme,
-        home: Builder(
+        Builder(
           builder: (context) {
             return ElevatedButton(
               onPressed: () async {
@@ -2393,9 +2395,9 @@ void main() {
     expect(find.byType(OneUIBottomVignette), findsOneWidget);
   });
 
-  test('SubscriptionDriftDataSource saves and retrieves recent searches via Drift AppSettingsTable', () async {
+  test('SettingsDriftDataSource saves and retrieves recent searches via Drift AppSettingsTable', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
-    final ds = SubscriptionDriftDataSource(db);
+    final ds = SettingsDriftDataSource(db);
 
     expect(await ds.getRecentSearches(), isEmpty);
 

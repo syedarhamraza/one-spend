@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_card.dart';
@@ -24,12 +26,7 @@ class ReminderPickerScreen extends StatefulWidget {
     required int initialDays,
   }) {
     HapticFeedback.lightImpact();
-    return Navigator.push<int>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ReminderPickerScreen(initialDays: initialDays),
-      ),
-    );
+    return context.push<int>(AppRoutes.reminderPicker, extra: initialDays);
   }
 
   @override

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
@@ -26,12 +28,7 @@ class BillingCyclePickerScreen extends StatefulWidget {
     required BillingCycle initialCycle,
   }) {
     HapticFeedback.lightImpact();
-    return Navigator.push<BillingCycle>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BillingCyclePickerScreen(initialCycle: initialCycle),
-      ),
-    );
+    return context.push<BillingCycle>(AppRoutes.billingCyclePicker, extra: initialCycle);
   }
 
   @override

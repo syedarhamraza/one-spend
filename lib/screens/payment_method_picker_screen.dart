@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
@@ -12,7 +14,6 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_toast.dart';
 import 'payment_method_editor_screen.dart';
-import 'subscriptions_screen.dart';
 
 /// Samsung One UI Unified Payment Card Picker & Management Subpage.
 /// Combines in-place card management and single-subscription card selection:
@@ -43,14 +44,9 @@ class PaymentMethodPickerScreen extends StatefulWidget {
     bool isManageOnly = false,
   }) {
     HapticFeedback.lightImpact();
-    return Navigator.push<PaymentMethod>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PaymentMethodPickerScreen(
-          initialMethodId: currentMethodId,
-          isManageOnly: isManageOnly,
-        ),
-      ),
+    return context.push<PaymentMethod>(
+      AppRoutes.paymentMethods,
+      extra: (currentMethodId: currentMethodId, isManageOnly: isManageOnly),
     );
   }
 
@@ -838,14 +834,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                             InkWell(
                                               onTap: () {
                                                 HapticFeedback.lightImpact();
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) => SubscriptionsScreen(
-                                                      filterPaymentMethodId: heroMethod!.id,
-                                                    ),
-                                                  ),
-                                                );
+                                                context.push(AppRoutes.methodSubscriptions(heroMethod!.id));
                                               },
                                               borderRadius: BorderRadius.circular(8),
                                               child: Padding(

@@ -12,6 +12,18 @@ class SharedPreferencesMigrator {
   final AppDatabase db;
 
   static const String keyMigrated = 'drift_migrated_v1';
+  static const String keyAppearanceMigrated = 'appearance_migrated_v1';
+  static const String appearancePrefix = 'appearance.';
+
+  /// Legacy card studio / effects keys written directly to SharedPreferences.
+  static const List<String> appearanceKeys = [
+    'card3dEffect', 'floating3dEffect', 'navbar3dEffect', 'bottomVignetteEffect',
+    'cardBackground', 'customCardBackgroundColorValue', 'cardLayout', 'brandAccent',
+    'priceMode', 'renewalBadgeMode', 'paymentBadgeStyle', 'upcomingStyle',
+    'showCycleProgress', 'showPaymentMethodChip', 'showCategoryChip', 'showBillingCycle',
+    'showDailyEquivalent', 'detailShowItemIcons', 'detailIconShape',
+    'detailHighlightSelectable', 'detailPaymentIconStyle', 'detailShowInlineCardBrand',
+  ];
 
   // Legacy keys
   static const String keySubs = 'onespend_subscriptions';
@@ -27,6 +39,11 @@ class SharedPreferencesMigrator {
   SharedPreferencesMigrator({required this.prefs, required this.db});
 
   Future<void> checkAndMigrate() async {
+    await _migrateDomainData();
+    await _migrateAppearance();
+  }
+
+  Future<void> _migrateDomainData() async {
     final isMigrated = prefs.getBool(keyMigrated) ?? false;
     if (isMigrated) return;
 
@@ -149,6 +166,27 @@ class SharedPreferencesMigrator {
       debugPrint('OneSpend: Successfully migrated data from SharedPreferences to Drift SQLite.');
     } catch (e, stack) {
       debugPrint('OneSpend: SharedPreferences migration failed: $e\n$stack');
+    }
+  }
+
+  /// Copies card studio / effects preferences into the Drift app_settings table.
+  Future<void> _migrateAppearance() async {
+    if (prefs.getBool(keyAppearanceMigrated) ?? false) return;
+    try {
+      await db.transaction(() async {
+        for (final key in appearanceKeys) {
+          final value = prefs.get(key);
+          if (value != null) {
+            await db.setSetting('$appearancePrefix$key', value.toString());
+          }
+        }
+      });
+      for (final key in appearanceKeys) {
+        await prefs.remove(key);
+      }
+      await prefs.setBool(keyAppearanceMigrated, true);
+    } catch (e, stack) {
+      debugPrint('OneSpend: Appearance settings migration failed: $e\n$stack');
     }
   }
 }

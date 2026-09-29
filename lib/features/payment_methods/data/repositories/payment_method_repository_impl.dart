@@ -9,6 +9,9 @@ class PaymentMethodRepositoryImpl implements PaymentMethodRepository {
 
   const PaymentMethodRepositoryImpl(this._dataSource);
 
+  static PaymentMethodModel _toModel(PaymentMethod m) =>
+      m is PaymentMethodModel ? m : PaymentMethodModel.fromEntity(m);
+
   @override
   Future<List<PaymentMethod>> getPaymentMethods() async {
     final models = await _dataSource.loadPaymentMethods();
@@ -16,32 +19,17 @@ class PaymentMethodRepositoryImpl implements PaymentMethodRepository {
   }
 
   @override
-  Future<void> savePaymentMethods(List<PaymentMethod> methods) async {
-    final models = methods.map((m) => m is PaymentMethodModel ? m : PaymentMethodModel.fromEntity(m)).toList();
-    await _dataSource.savePaymentMethods(models);
+  Future<void> replaceAll(List<PaymentMethod> methods) {
+    return _dataSource.savePaymentMethods(methods.map(_toModel).toList());
   }
 
   @override
-  Future<void> addPaymentMethod(PaymentMethod method) async {
-    final current = await getPaymentMethods();
-    final updated = List<PaymentMethod>.from(current)..add(method);
-    await savePaymentMethods(updated);
+  Future<void> upsert(Iterable<PaymentMethod> methods) {
+    return _dataSource.upsertPaymentMethods(methods.map(_toModel).toList());
   }
 
   @override
-  Future<void> updatePaymentMethod(PaymentMethod method) async {
-    final current = await getPaymentMethods();
-    final index = current.indexWhere((m) => m.id == method.id);
-    if (index != -1) {
-      final updated = List<PaymentMethod>.from(current)..[index] = method;
-      await savePaymentMethods(updated);
-    }
-  }
-
-  @override
-  Future<void> deletePaymentMethod(String id) async {
-    final current = await getPaymentMethods();
-    final updated = current.where((m) => m.id != id).toList();
-    await savePaymentMethods(updated);
+  Future<void> delete(Iterable<String> ids) {
+    return _dataSource.deletePaymentMethods(ids.toList());
   }
 }

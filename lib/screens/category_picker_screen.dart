@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -24,12 +26,7 @@ class CategoryPickerScreen extends StatefulWidget {
     required SubscriptionCategory initialCategory,
   }) {
     HapticFeedback.lightImpact();
-    return Navigator.push<SubscriptionCategory>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CategoryPickerScreen(initialCategory: initialCategory),
-      ),
-    );
+    return context.push<SubscriptionCategory>(AppRoutes.categoryPicker, extra: initialCategory);
   }
 
   @override

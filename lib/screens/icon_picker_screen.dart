@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_brand_catalog.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
@@ -47,16 +49,14 @@ class IconPickerScreen extends StatefulWidget {
     String subscriptionName = '',
   }) {
     HapticFeedback.lightImpact();
-    return Navigator.push<IconPickerResult>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => IconPickerScreen(
-          initialColor: currentColor,
-          initialIcon: currentIcon,
-          initialLogoUrl: currentLogoUrl,
-          initialPresetId: currentPresetId,
-          subscriptionName: subscriptionName,
-        ),
+    return context.push<IconPickerResult>(
+      AppRoutes.iconPicker,
+      extra: (
+        initialColor: currentColor,
+        initialIcon: currentIcon,
+        initialLogoUrl: currentLogoUrl,
+        initialPresetId: currentPresetId,
+        subscriptionName: subscriptionName,
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -8,8 +10,6 @@ import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_toast.dart';
 import 'one_ui_field_editor_screen.dart';
-import 'subscription_card_customizer_screen.dart';
-import 'subscription_detail_customizer_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -457,12 +457,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SubscriptionCardCustomizerScreen(),
-                              ),
-                            );
+                            context.push(AppRoutes.cardStudio);
                           },
                         ),
                         OneUIGroupItem(
@@ -472,12 +467,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SubscriptionDetailCustomizerScreen(),
-                              ),
-                            );
+                            context.push(AppRoutes.detailStudio);
                           },
                         ),
                         OneUIGroupItem(
@@ -653,7 +643,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                store.userName,
+                                                store.userName.trim().isEmpty ? 'Your name' : store.userName,
                                                 style: const TextStyle(
                                                   fontSize: 18,
                                                   fontWeight: FontWeight.w700,
@@ -663,7 +653,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                               ),
                                               const SizedBox(height: 3),
                                               Text(
-                                                '${store.userEmail} • ${store.totalActiveCount} active subscriptions',
+                                                '${store.userEmail.trim().isEmpty ? 'Tap to set up profile' : store.userEmail} • ${store.totalActiveCount} active subscriptions',
                                                 style: const TextStyle(
                                                   fontSize: 13,
                                                   color: OneUITheme.textSecondary,
@@ -687,9 +677,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                           child: Text(
                                             () {
                                               final clean = store.userName.trim();
-                                              if (clean.isEmpty) return 'SA';
+                                              if (clean.isEmpty) return '?';
                                               final parts = clean.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
-                                              if (parts.isEmpty) return 'SA';
+                                              if (parts.isEmpty) return '?';
                                               if (parts.length == 1) {
                                                 return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
                                               }

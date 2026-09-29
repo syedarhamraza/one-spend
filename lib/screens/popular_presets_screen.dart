@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
+import 'package:go_router/go_router.dart';
+import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_brand_catalog.dart';
 import '../widgets/one_ui_brand_icon.dart';
@@ -19,10 +21,7 @@ class PopularPresetsScreen extends StatefulWidget {
 
   static Future<BrandPreset?> open(BuildContext context) {
     HapticFeedback.lightImpact();
-    return Navigator.push<BrandPreset>(
-      context,
-      MaterialPageRoute(builder: (_) => const PopularPresetsScreen()),
-    );
+    return context.push<BrandPreset>(AppRoutes.popularPresets);
   }
 
   @override
