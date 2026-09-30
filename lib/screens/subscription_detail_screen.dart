@@ -467,12 +467,15 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                   Row(
                                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                     children: [
-                                                      Column(
+                                                      Expanded(
+                                                        child: Column(
                                                         crossAxisAlignment: CrossAxisAlignment.start,
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
                                                           const Text(
                                                             'Auto-renew',
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
                                                             style: TextStyle(
                                                               fontSize: 13,
                                                               fontWeight: FontWeight.w500,
@@ -482,6 +485,8 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                           const SizedBox(height: 1),
                                                           Text(
                                                             isPaused ? 'Billing on hold' : 'Renews automatically',
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
                                                             style: TextStyle(
                                                               fontSize: 11.5,
                                                               fontWeight: FontWeight.w400,
@@ -489,7 +494,9 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                             ),
                                                           ),
                                                         ],
+                                                        ),
                                                       ),
+                                                      const SizedBox(width: 8),
                                                       Transform.scale(
                                                         scale: 0.88,
                                                         alignment: Alignment.centerRight,
@@ -969,14 +976,19 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
-                                                  const Text(
-                                                    'Lifetime spend',
-                                                    style: TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight: FontWeight.w600,
-                                                      color: OneUITheme.textSecondary,
+                                                  const Flexible(
+                                                    child: Text(
+                                                      'Lifetime spend',
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: OneUITheme.textSecondary,
+                                                      ),
                                                     ),
                                                   ),
+                                                  const SizedBox(width: 8),
                                                   Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                                     decoration: BoxDecoration(
@@ -997,9 +1009,9 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                               const SizedBox(height: 14),
 
                                               // Main Spend Metric Typography
-                                              Row(
-                                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                                textBaseline: TextBaseline.alphabetic,
+                                              Wrap(
+                                                spacing: 8,
+                                                crossAxisAlignment: WrapCrossAlignment.end,
                                                 children: [
                                                   Text(
                                                     '${_sub.currency}${totalPaid.toStringAsFixed(2)}',
@@ -1010,13 +1022,16 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                       color: OneUITheme.textPrimary,
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 8),
-                                                  const Text(
-                                                    'total recorded',
-                                                    style: TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight: FontWeight.w500,
-                                                      color: Colors.white54,
+                                                  const Padding(
+                                                    // Sits on the amount's baseline when both fit on one line.
+                                                    padding: EdgeInsets.only(bottom: 5),
+                                                    child: Text(
+                                                      'total recorded',
+                                                      style: TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.white54,
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
@@ -1039,52 +1054,18 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                 child: Column(
                                                   mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        const Text(
-                                                          'Estimated annual',
-                                                          style: TextStyle(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w500,
-                                                            color: OneUITheme.textSecondary,
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          '${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)} / yr',
-                                                          style: const TextStyle(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w700,
-                                                            color: OneUITheme.textPrimary,
-                                                          ),
-                                                        ),
-                                                      ],
+                                                    _keyValueRow(
+                                                      'Estimated annual',
+                                                      '${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)} / yr',
                                                     ),
                                                     Divider(
                                                       height: 14,
                                                       thickness: 0.6,
                                                       color: Colors.white.withValues(alpha: 0.06),
                                                     ),
-                                                    Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        const Text(
-                                                          'Monthly equivalent',
-                                                          style: TextStyle(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w500,
-                                                            color: OneUITheme.textSecondary,
-                                                          ),
-                                                        ),
-                                                        Text(
-                                                          '~${_sub.currency}${_sub.monthlyCost.toStringAsFixed(2)} / mo',
-                                                          style: const TextStyle(
-                                                            fontSize: 13,
-                                                            fontWeight: FontWeight.w700,
-                                                            color: OneUITheme.textPrimary,
-                                                          ),
-                                                        ),
-                                                      ],
+                                                    _keyValueRow(
+                                                      'Monthly equivalent',
+                                                      '~${_sub.currency}${_sub.monthlyCost.toStringAsFixed(2)} / mo',
                                                     ),
                                                   ],
                                                 ),
@@ -1179,6 +1160,32 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
           ),
         );
       },
+    );
+  }
+
+  /// Device Care style key-value row. The label shrinks with an ellipsis and the value wraps,
+  /// so long amounts never overflow on narrow phones.
+  Widget _keyValueRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: OneUITheme.textSecondary),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
+          ),
+        ),
+      ],
     );
   }
 
