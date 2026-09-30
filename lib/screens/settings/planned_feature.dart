@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../theme/one_ui_theme.dart';
 
 /// Features that have a "Soon" placeholder in Settings. Each opens [ComingSoonScreen].
@@ -17,19 +18,12 @@ enum PlannedFeature {
     'Keep your spending private with your fingerprint, face or device PIN.',
     ['Unlock with biometrics', 'Lock when the app goes to the background', 'Hide amounts in the recent apps view'],
   ),
-  cloudBackup(
-    'Backup & sync',
-    Icons.cloud_sync_rounded,
+  driveBackup(
+    'Google Drive backup',
+    Icons.add_to_drive_rounded,
     OneUITheme.accentTeal,
-    'Back up to your Google Drive and keep your subscriptions in sync across devices.',
-    ['Automatic daily backups', 'Restore on a new phone', 'Sync between devices'],
-  ),
-  import(
-    'Import',
-    Icons.file_upload_outlined,
-    OneUITheme.accentGreen,
-    'Bring your subscriptions in from a file instead of adding them one by one.',
-    ['Import a OneSpend backup', 'Import from CSV', 'Preview before importing'],
+    'Automatic backups to a private folder in your Google Drive. Part of OneSpend Pro.',
+    ['Daily or weekly automatic backups', 'Keeps several versions', 'Restore on a new phone in one tap'],
   ),
   multiCurrency(
     'Multiple currencies',

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/core/config/app_info.dart';
+import 'package:onespend/core/config/feature_flags.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/di/injection.dart';
 import 'package:onespend/models/subscription.dart';
@@ -16,6 +17,7 @@ import 'package:onespend/screens/settings_screen.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
 import 'package:onespend/widgets/one_ui_group_card.dart';
+import 'package:onespend/widgets/one_ui_subpage.dart';
 import 'package:onespend/widgets/one_ui_switch.dart';
 import 'package:onespend/widgets/one_ui_toast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,6 +41,7 @@ void main() {
     HomeChrome.reset();
     SubscriptionStore.instance.resetForTesting();
     OneUIEffectsController.instance.floating3dEffect = false;
+    FeatureFlags.showPlannedFeatures = true;
   });
 
   tearDown(OneUIToast.dismiss);
@@ -99,7 +102,7 @@ void main() {
       'Appearance': '3D floating elements',
       'Widgets': 'Coming soon',
       'Security & privacy': 'App lock',
-      'Backup & data': 'Export backup',
+      'Backup & data': 'Save backup to device',
       'Help & feedback': 'Send feedback',
       'About OneSpend': 'Open source licences',
     };
@@ -165,6 +168,43 @@ void main() {
     await tester.tap(find.text('Export as spreadsheet'));
     await tester.pumpAndSettle();
     expect(find.text('Clear all subscriptions'), findsOneWidget);
+  });
+
+  testWidgets('release builds hide every placeholder', (tester) async {
+    FeatureFlags.showPlannedFeatures = false;
+    addTearDown(() => FeatureFlags.showPlannedFeatures = true);
+    await pumpSettings(tester);
+
+    expect(find.text('Widgets'), findsNothing);
+    expect(find.text('Security & privacy'), findsNothing);
+    expect(find.byType(OneUISoonChip), findsNothing);
+    expect(SettingsCatalog.search('app lock', developerOptions: false), isEmpty);
+    expect(SettingsCatalog.search('drive', developerOptions: false), isEmpty);
+    expect(SettingsCatalog.search('restore', developerOptions: false), isNotEmpty);
+
+    // Subpages drop their placeholder rows too.
+    await tester.tap(find.text('Budget & currency'));
+    await tester.pumpAndSettle();
+    expect(find.text('Multiple currencies'), findsNothing);
+    await back(tester);
+    await tester.tap(find.text('Backup & data'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUIProChip), findsNothing);
+    expect(find.text('Save backup to device'), findsOneWidget);
+    await back(tester);
+    await tester.scrollUntilVisible(find.text('Help & feedback'), 200);
+    await tester.tap(find.text('Help & feedback'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rate OneSpend'), findsNothing);
+  });
+
+  testWidgets('debug builds show the Drive backup as Pro', (tester) async {
+    await pumpSettings(tester);
+    await tester.scrollUntilVisible(find.text('Backup & data'), 200);
+    await tester.tap(find.text('Backup & data'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OneUIProChip), findsOneWidget);
+    expect(find.text('Never saved'), findsOneWidget);
   });
 
   test('catalog search is case-insensitive and lists rows before options', () {

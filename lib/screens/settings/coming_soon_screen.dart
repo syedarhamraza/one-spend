@@ -28,10 +28,7 @@ class ComingSoonScreen extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
-          decoration: BoxDecoration(
-            color: OneUITheme.cardColor,
-            borderRadius: OneUITheme.cardBorderRadius,
-          ),
+          decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.cardBorderRadius),
           child: Column(
             children: [
               Container(

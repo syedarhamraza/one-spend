@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/backup/domain/backup_snapshot.dart';
 import '../../features/payment_methods/domain/entities/payment_method.dart';
 import '../../features/subscriptions/domain/entities/subscription_enums.dart';
 import '../../features/subscriptions/presentation/controllers/subscription_controller.dart';
@@ -28,6 +29,7 @@ import '../../screens/settings/help_feedback_screen.dart';
 import '../../screens/settings/licenses_screen.dart';
 import '../../screens/settings/notification_settings_screen.dart';
 import '../../screens/settings/planned_feature.dart';
+import '../../screens/settings/restore_preview_screen.dart';
 import '../../screens/settings/security_settings_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/subscription_card_customizer_screen.dart';
@@ -76,6 +78,7 @@ class AppRoutes {
   static const settingsAppearance = '/settings/appearance';
   static const settingsSecurity = '/settings/security';
   static const settingsData = '/settings/data';
+  static const settingsRestore = '/settings/data/restore';
   static const settingsHelp = '/settings/help';
   static const settingsAbout = '/settings/about';
   static const settingsAuthor = '/settings/about/developer';
@@ -234,6 +237,10 @@ List<RouteBase> buildPageRoutes() {
     GoRoute(path: AppRoutes.settingsAppearance, builder: (context, state) => const AppearanceSettingsScreen()),
     GoRoute(path: AppRoutes.settingsSecurity, builder: (context, state) => const SecuritySettingsScreen()),
     GoRoute(path: AppRoutes.settingsData, builder: (context, state) => const BackupDataScreen()),
+    GoRoute(
+      path: AppRoutes.settingsRestore,
+      builder: (context, state) => RestorePreviewScreen(backup: state.extra! as BackupSnapshot),
+    ),
     GoRoute(path: AppRoutes.settingsHelp, builder: (context, state) => const HelpFeedbackScreen()),
     GoRoute(path: AppRoutes.settingsAbout, builder: (context, state) => const AboutScreen()),
     GoRoute(path: AppRoutes.settingsAuthor, builder: (context, state) => const AuthorScreen()),

@@ -104,10 +104,7 @@ class _LicenseDetailScreenState extends State<LicenseDetailScreen> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: OneUITheme.cardColor,
-                  borderRadius: OneUITheme.cardBorderRadius,
-                ),
+                decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.cardBorderRadius),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -119,8 +116,9 @@ class _LicenseDetailScreenState extends State<LicenseDetailScreen> {
                         ),
                         child: Text(
                           paragraph.text,
-                          textAlign:
-                              paragraph.indent == LicenseParagraph.centeredIndent ? TextAlign.center : TextAlign.start,
+                          textAlign: paragraph.indent == LicenseParagraph.centeredIndent
+                              ? TextAlign.center
+                              : TextAlign.start,
                           style: const TextStyle(fontSize: 12.5, height: 1.45, color: OneUITheme.textSecondary),
                         ),
                       ),

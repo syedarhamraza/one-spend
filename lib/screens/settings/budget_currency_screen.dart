@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
 import '../../models/subscription.dart';
 import '../../theme/one_ui_theme.dart';
@@ -83,11 +84,12 @@ class BudgetCurrencyScreen extends StatelessWidget {
                 subtitleColor: OneUITheme.accentBlue,
                 onTap: () => _pickCurrency(context, store),
               ),
-              OneUIGroupItem(
-                title: PlannedFeature.multiCurrency.title,
-                trailing: const OneUISoonChip(),
-                onTap: () => ComingSoonScreen.open(context, PlannedFeature.multiCurrency),
-              ),
+              if (FeatureFlags.showPlannedFeatures)
+                OneUIGroupItem(
+                  title: PlannedFeature.multiCurrency.title,
+                  trailing: const OneUISoonChip(),
+                  onTap: () => ComingSoonScreen.open(context, PlannedFeature.multiCurrency),
+                ),
             ],
           ),
         ),

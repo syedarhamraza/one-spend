@@ -73,6 +73,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> setDismissedInsights(List<String> keys) => _dataSource.setDismissedInsights(keys);
 
   @override
+  Future<DateTime?> getLastBackupAt() => _dataSource.getLastBackupAt();
+
+  @override
+  Future<void> setLastBackupAt(DateTime value) => _dataSource.setLastBackupAt(value);
+
+  @override
   Future<Map<String, String>> getAppearanceSettings() => _dataSource.getAppearanceSettings();
 
   @override

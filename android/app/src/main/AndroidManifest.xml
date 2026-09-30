@@ -2,11 +2,16 @@
     <!-- Local renewal reminders: Android 13+ runtime permission, and rescheduling after reboot -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Android Auto Backup is off: backups are the in-app "Save backup to device" file only,
+         so nothing restores silently over the user's data. -->
     <application
         android:label="onespend"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round">
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

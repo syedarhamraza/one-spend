@@ -14,6 +14,7 @@ class SettingsDriftDataSource {
   static const String keyGroupByDate = 'onespend_group_by_date';
   static const String keyRecentSearches = 'onespend_recent_searches';
   static const String keyDismissedInsights = 'onespend_dismissed_insights';
+  static const String keyLastBackupAt = 'onespend_last_backup_at';
   static const String keyNotificationsEnabled = 'onespend_notifications_enabled';
   static const String keyReminderTime = 'onespend_reminder_time_minutes';
   static const int defaultReminderTimeMinutes = 9 * 60;
@@ -124,6 +125,15 @@ class SettingsDriftDataSource {
 
   Future<void> setDismissedInsights(List<String> keys) async {
     await db.setSetting(keyDismissedInsights, jsonEncode(keys));
+  }
+
+  Future<DateTime?> getLastBackupAt() async {
+    final val = await db.getSetting(keyLastBackupAt);
+    return val == null ? null : DateTime.tryParse(val);
+  }
+
+  Future<void> setLastBackupAt(DateTime value) async {
+    await db.setSetting(keyLastBackupAt, value.toIso8601String());
   }
 
   Future<Map<String, String>> getAppearanceSettings() {
