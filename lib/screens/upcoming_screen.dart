@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../core/router/app_router.dart';
 import '../features/notifications/domain/notification_planner.dart';
 import '../features/subscriptions/data/ics_exporter.dart';
+import '../features/subscriptions/domain/services/billing_schedule.dart';
 import '../features/subscriptions/domain/services/charge_schedule.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
@@ -19,13 +20,17 @@ import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
+import '../widgets/one_ui_floating_action_bar.dart';
 import '../widgets/one_ui_floating_menu.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_month_calendar.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_segmented_pills.dart';
+import '../widgets/one_ui_selection_header_pills.dart';
 import '../widgets/one_ui_toast.dart';
+import '../widgets/one_ui_upcoming_hero_card.dart';
+import 'home_screen.dart';
 
 /// How far ahead the Upcoming timeline looks.
 enum UpcomingHorizon {
@@ -72,6 +77,17 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   DateTime? _selectedDay;
   DateTime? _calendarMonth;
 
+  /// Multi-select mode (entered by long-pressing a charge). Selection is by subscription id,
+  /// because actions apply to a subscription's current due date.
+  bool _isSelectionMode = false;
+  final Set<String> _selectedIds = {};
+
+  @override
+  void dispose() {
+    HomeChrome.upcomingSelectionActive.value = false;
+    super.dispose();
+  }
+
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
   String _money(String currency, double amount) => '$currency${amount.toStringAsFixed(2)}';
@@ -97,90 +113,145 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
 
   // --- Actions -------------------------------------------------------------
 
-  void _markPaid(SubscriptionStore store, Subscription sub) {
-    HapticFeedback.mediumImpact();
-    final snapshot = store.getSubscription(sub.id) ?? sub;
-    store.markSubscriptionPaid(sub.id);
-    OneUIToast.show(
-      context,
-      '${sub.name} marked as paid',
-      actionLabel: 'Undo',
-      onAction: () => store.updateSubscription(snapshot),
-    );
-  }
+  String _plural(int count, String noun) => '$count $noun${count == 1 ? '' : 's'}';
 
-  void _skipCycle(SubscriptionStore store, Subscription sub) {
-    HapticFeedback.mediumImpact();
-    final snapshot = store.getSubscription(sub.id) ?? sub;
-    store.skipSubscriptionCycle(sub.id);
-    final next = store.getSubscription(sub.id)?.nextBillingDate;
-    OneUIToast.show(
-      context,
-      next == null ? 'Skipped ${sub.name}' : 'Skipped · next ${_monthDay.format(next)}',
-      actionLabel: 'Undo',
-      onAction: () => store.updateSubscription(snapshot),
-    );
-  }
-
-  void _showChargeActions(SubscriptionStore store, UpcomingCharge charge, {required bool isNextCharge}) {
-    HapticFeedback.mediumImpact();
-    final sub = charge.subscription;
-    OneUIFloatingModal.show<void>(
+  /// ✓ on a row: confirm, then log the payment and move to the next cycle.
+  void _confirmMarkPaid(SubscriptionStore store, Subscription sub) {
+    HapticFeedback.lightImpact();
+    final next = BillingSchedule.nextDueDate(sub);
+    OneUIFloatingModal.showConfirmationDialog(
       context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            sub.name,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-              color: OneUITheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            '${_money(sub.currency, sub.price)} · ${_weekdayMonthDay.format(charge.date)}',
-            style: const TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-          ),
-          const SizedBox(height: 14),
-          OneUIGroupCard(
-            margin: EdgeInsets.zero,
-            items: [
-              if (isNextCharge && !charge.isPaid) ...[
-                OneUIGroupItem(
-                  leading: _actionBadge(Icons.check_rounded, OneUITheme.accentGreen),
-                  title: 'Mark as paid',
-                  subtitle: 'Logs the payment and moves to the next cycle',
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _markPaid(store, sub);
-                  },
-                ),
-                OneUIGroupItem(
-                  leading: _actionBadge(Icons.redo_rounded, OneUITheme.accentAmber),
-                  title: 'Skip this cycle',
-                  subtitle: 'Moves to the next cycle without logging a payment',
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _skipCycle(store, sub);
-                  },
-                ),
-              ],
-              OneUIGroupItem(
-                leading: _actionBadge(Icons.open_in_new_rounded, OneUITheme.accentBlue),
-                title: 'View details',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.push(AppRoutes.subscriptionDetail(sub.id));
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
+      title: 'Mark ${sub.name} as paid?',
+      message: 'Logs a ${_money(sub.currency, sub.price)} payment and moves the next renewal to '
+          '${_monthDay.format(next)}.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Mark paid',
+      confirmTextColor: OneUITheme.accentGreen,
+      onConfirm: () {
+        HapticFeedback.mediumImpact();
+        store.markSubscriptionPaid(sub.id);
+        OneUIToast.show(context, '${sub.name} marked as paid');
+      },
+    );
+  }
+
+  // --- Selection mode --------------------------------------------------------
+
+  void _setSelectionMode(bool active) {
+    _isSelectionMode = active;
+    HomeChrome.upcomingSelectionActive.value = active;
+  }
+
+  void _enterSelectionMode(String subscriptionId) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _setSelectionMode(true);
+      _selectedIds
+        ..clear()
+        ..add(subscriptionId);
+    });
+  }
+
+  void _exitSelectionMode() {
+    if (!_isSelectionMode) return;
+    setState(() {
+      _setSelectionMode(false);
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelected(String subscriptionId) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (!_selectedIds.remove(subscriptionId)) _selectedIds.add(subscriptionId);
+    });
+  }
+
+  void _toggleSelectAll(Set<String> visibleIds) {
+    setState(() {
+      if (_selectedIds.length == visibleIds.length) {
+        _selectedIds.clear();
+      } else {
+        _selectedIds
+          ..clear()
+          ..addAll(visibleIds);
+      }
+    });
+  }
+
+  List<Subscription> _selectedSubscriptions(SubscriptionStore store) => [
+        for (final id in _selectedIds) ?store.getSubscription(id),
+      ];
+
+  void _markSelectedPaid(SubscriptionStore store) {
+    final subs = _selectedSubscriptions(store);
+    if (subs.isEmpty) return;
+    final total = subs.fold(0.0, (sum, s) => sum + s.price);
+    OneUIFloatingModal.showConfirmationDialog(
+      context: context,
+      title: 'Mark ${_plural(subs.length, 'subscription')} as paid?',
+      message: 'Logs a payment for each (${_money(store.currency, total)} in total) and moves them to their next '
+          'renewal.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Mark paid',
+      confirmTextColor: OneUITheme.accentGreen,
+      onConfirm: () {
+        HapticFeedback.mediumImpact();
+        for (final sub in subs) {
+          store.markSubscriptionPaid(sub.id);
+        }
+        _exitSelectionMode();
+        OneUIToast.show(context, '${_plural(subs.length, 'subscription')} marked as paid');
+      },
+    );
+  }
+
+  void _skipSelected(SubscriptionStore store) {
+    final subs = _selectedSubscriptions(store);
+    if (subs.isEmpty) return;
+    OneUIFloatingModal.showConfirmationDialog(
+      context: context,
+      title: 'Skip the current cycle?',
+      message: '${_plural(subs.length, 'subscription')} will move to their next renewal without logging a payment.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Skip',
+      confirmTextColor: OneUITheme.accentAmber,
+      onConfirm: () {
+        HapticFeedback.mediumImpact();
+        for (final sub in subs) {
+          store.skipSubscriptionCycle(sub.id);
+        }
+        _exitSelectionMode();
+        OneUIToast.show(context, 'Skipped ${_plural(subs.length, 'subscription')}');
+      },
+    );
+  }
+
+  void _pauseSelected(SubscriptionStore store) {
+    final count = _selectedIds.length;
+    if (count == 0) return;
+    HapticFeedback.mediumImpact();
+    store.batchTogglePause(Set.of(_selectedIds));
+    _exitSelectionMode();
+    OneUIToast.show(context, 'Paused ${_plural(count, 'subscription')}');
+  }
+
+  void _deleteSelected(SubscriptionStore store) {
+    final ids = Set.of(_selectedIds);
+    if (ids.isEmpty) return;
+    HapticFeedback.mediumImpact();
+    OneUIFloatingModal.showConfirmationDialog(
+      context: context,
+      title: 'Delete ${_plural(ids.length, 'subscription')}?',
+      message: 'These subscriptions will be permanently deleted from your spend list.',
+      cancelLabel: 'Cancel',
+      confirmLabel: 'Delete',
+      onConfirm: () {
+        HapticFeedback.mediumImpact();
+        store.batchDelete(ids);
+        _exitSelectionMode();
+        OneUIToast.show(context, 'Deleted ${_plural(ids.length, 'subscription')}');
+      },
     );
   }
 
@@ -257,7 +328,24 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         final window = unfilteredWindow.where(_matchesCard).toList();
         final dueTotal = overdue.dueTotal + window.dueTotal;
 
-        return Scaffold(
+        // Drop selections whose subscriptions were deleted or paused elsewhere.
+        _selectedIds.removeWhere((id) => store.getSubscription(id) == null);
+        final selectedDay = _selectedDay ?? today;
+        final visibleIds = <String>{
+          for (final c in isCalendar
+              ? ChargeSchedule.between(store.subscriptions, from: selectedDay, to: selectedDay, now: now)
+                  .where(_matchesCard)
+              : [...overdue, ...window])
+            c.subscription.id,
+        };
+
+        return PopScope(
+          // System back leaves selection mode before leaving the tab.
+          canPop: !_isSelectionMode,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _exitSelectionMode();
+          },
+          child: Scaffold(
           backgroundColor: OneUITheme.surfacePitch,
           body: Stack(
             children: [
@@ -268,16 +356,30 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                     pinned: true,
                     delegate: OneUICollapsibleHeaderDelegate(
                       title: 'Upcoming',
-                      subtitle: '${_money(store.currency, dueTotal)} due in the ${_horizon.phrase}',
+                      subtitle: _isSelectionMode
+                          ? (_selectedIds.length == visibleIds.length
+                              ? 'All selected • Tap (O) to deselect'
+                              : 'Tap (O) to select all')
+                          : '${_money(store.currency, dueTotal)} due in the ${_horizon.phrase}',
                       hasBigHeader: true,
                       expandedHeight: 270.0,
                       actionsPillKey: _headerActionsKey,
-                      actions: [
+                      isSelectionMode: _isSelectionMode,
+                      selectionLeading: _isSelectionMode
+                          ? OneUISelectionCountPill(
+                              selectedCount: _selectedIds.length,
+                              totalCount: visibleIds.length,
+                              onToggleSelectAll: () => _toggleSelectAll(visibleIds),
+                            )
+                          : null,
+                      selectionTrailing: _isSelectionMode ? OneUISelectionCancelPill(onCancel: _exitSelectionMode) : null,
+                      actions: _isSelectionMode ? null : [
                         OneUIHeaderAction(
                           icon: isCalendar ? Icons.view_agenda_outlined : Icons.calendar_month_outlined,
                           tooltip: isCalendar ? 'Timeline view' : 'Calendar view',
                           onTap: () {
                             HapticFeedback.lightImpact();
+                            _exitSelectionMode();
                             effects.upcomingViewMode = isCalendar ? UpcomingViewMode.timeline : UpcomingViewMode.calendar;
                           },
                         ),
@@ -299,7 +401,57 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                 ],
               ),
               const Positioned(left: 0, right: 0, bottom: 0, child: OneUIBottomVignette()),
+
+              // Floating selection action bar (replaces the tab bar while selecting)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOutCubic,
+                left: 0,
+                right: 0,
+                bottom: _isSelectionMode ? 0 : -120,
+                child: IgnorePointer(
+                  ignoring: !_isSelectionMode,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOutCubic,
+                    opacity: _isSelectionMode ? 1.0 : 0.0,
+                    child: Center(
+                      child: OneUIFloatingActionBar(
+                        items: [
+                          OneUIFloatingActionBarItem(
+                            label: 'Mark paid',
+                            icon: Icons.check_circle_outline_rounded,
+                            color: OneUITheme.accentGreen,
+                            isEnabled: _selectedIds.isNotEmpty,
+                            onTap: () => _markSelectedPaid(store),
+                          ),
+                          OneUIFloatingActionBarItem(
+                            label: 'Skip',
+                            icon: Icons.redo_rounded,
+                            isEnabled: _selectedIds.isNotEmpty,
+                            onTap: () => _skipSelected(store),
+                          ),
+                          OneUIFloatingActionBarItem(
+                            label: 'Pause',
+                            icon: Icons.pause_circle_outline_rounded,
+                            isEnabled: _selectedIds.isNotEmpty,
+                            onTap: () => _pauseSelected(store),
+                          ),
+                          OneUIFloatingActionBarItem(
+                            label: 'Delete',
+                            icon: Icons.delete_outline_rounded,
+                            color: OneUITheme.accentRed,
+                            isEnabled: _selectedIds.isNotEmpty,
+                            onTap: () => _deleteSelected(store),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
+          ),
           ),
         );
       },
@@ -324,13 +476,29 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         OneUISegmentedPills<UpcomingHorizon>(
           segments: [for (final h in UpcomingHorizon.values) (value: h, label: h.label)],
           selected: _horizon,
-          onChanged: (h) => setState(() => _horizon = h),
+          onChanged: (h) {
+            _exitSelectionMode();
+            setState(() => _horizon = h);
+          },
         ),
         top: 6,
       ),
       if (_cardFilter != null) _padded(_filterPill(store), top: 10),
       if (window.unpaid.isNotEmpty || overdue.isNotEmpty)
-        SliverToBoxAdapter(child: _insightStrip(store, now, [...overdue, ...window])),
+        _padded(
+          OneUIUpcomingHeroCard(
+            horizonPhrase: _horizon.phrase,
+            charges: [...overdue, ...window],
+            annualSoon: ChargeSchedule.annualRenewalsWithin(store.subscriptions, now: now).where(_matchesCard).toList(),
+            currency: store.currency,
+            cardColor: (id) {
+              final method = store.getPaymentMethod(id);
+              return method == null ? OneUITheme.textTertiary : Color(method.cardColorValue);
+            },
+            onOpenSubscription: _isSelectionMode ? null : (sub) => context.push(AppRoutes.subscriptionDetail(sub.id)),
+          ),
+          top: 14,
+        ),
       if (_cardFilter == null && byCard.isNotEmpty) _padded(_byCardSection(store, byCard), top: 4),
       if (overdue.isNotEmpty)
         _padded(
@@ -369,6 +537,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
           borderRadius: OneUITheme.pillBorderRadius,
           onTap: () {
             HapticFeedback.selectionClick();
+            _exitSelectionMode();
             setState(() => _cardFilter = null);
           },
           child: Padding(
@@ -392,138 +561,6 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                 const Icon(Icons.close_rounded, size: 16, color: OneUITheme.accentBlue),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _insightStrip(SubscriptionStore store, DateTime now, List<UpcomingCharge> charges) {
-    final biggest = charges.biggest;
-    final busiest = charges.busiestWeek();
-    final annual = ChargeSchedule.annualRenewalsWithin(store.subscriptions, now: now).where(_matchesCard).toList();
-    final cards = <Widget>[
-      _insightCard(
-        icon: Icons.payments_rounded,
-        color: OneUITheme.accentTeal,
-        label: 'Total due',
-        value: _money(store.currency, charges.dueTotal),
-        caption: '${charges.unpaid.length} charge${charges.unpaid.length == 1 ? '' : 's'}',
-      ),
-      if (biggest != null)
-        _insightCard(
-          leading: OneUIBrandIcon(subscription: biggest.subscription, size: 30, borderRadius: 9),
-          label: 'Biggest charge',
-          value: _money(biggest.currency, biggest.amount),
-          caption: '${biggest.subscription.name} · ${_monthDay.format(biggest.date)}',
-          onTap: () => context.push(AppRoutes.subscriptionDetail(biggest.subscription.id)),
-        ),
-      if (busiest != null && busiest.count > 1)
-        _insightCard(
-          icon: Icons.local_fire_department_rounded,
-          color: OneUITheme.accentOrange,
-          label: 'Busiest week',
-          value: _money(store.currency, busiest.total),
-          caption:
-              '${_monthDay.format(busiest.start)} – ${_monthDay.format(busiest.start.add(const Duration(days: 6)))} · ${busiest.count} charges',
-        ),
-      if (annual.isNotEmpty)
-        _insightCard(
-          icon: Icons.event_repeat_rounded,
-          color: OneUITheme.accentPurple,
-          label: 'Yearly renewal soon',
-          value: _money(annual.first.currency, annual.first.amount),
-          caption: '${annual.first.subscription.name} · ${_monthDay.format(annual.first.date)}',
-          onTap: () => context.push(AppRoutes.subscriptionDetail(annual.first.subscription.id)),
-        ),
-    ];
-
-    // Height grows with the user's font size so card text never overflows.
-    final textScale = MediaQuery.textScalerOf(context).scale(1);
-    return SizedBox(
-      height: 84 + 64 * textScale,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-        itemCount: cards.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (_, i) => cards[i],
-      ),
-    );
-  }
-
-  Widget _insightCard({
-    IconData? icon,
-    Color? color,
-    Widget? leading,
-    required String label,
-    required String value,
-    required String caption,
-    VoidCallback? onTap,
-  }) {
-    return Material(
-      color: OneUITheme.cardColor,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: onTap == null
-            ? null
-            : () {
-                HapticFeedback.lightImpact();
-                onTap();
-              },
-        child: Container(
-          width: 168,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: OneUITheme.cardBorder,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  leading ??
-                      Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: color!.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(9),
-                        ),
-                        child: Icon(icon, size: 17, color: color),
-                      ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: OneUITheme.textSecondary),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.4,
-                  color: OneUITheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                caption,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: OneUITheme.textSecondary),
-              ),
-            ],
           ),
         ),
       ),
@@ -582,6 +619,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
               ),
               onTap: () {
                 HapticFeedback.selectionClick();
+                _exitSelectionMode();
                 setState(() => _cardFilter = entry.key ?? _noCardFilter);
               },
             ),
@@ -763,8 +801,14 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
               decorationColor: OneUITheme.textSecondary,
             ),
           ),
-          if (charge.isPaid || isNextCharge) const SizedBox(width: 8),
-          if (charge.isPaid)
+          if (_isSelectionMode) ...[
+            const SizedBox(width: 10),
+            _selectionCircle(isSelected: _selectedIds.contains(sub.id), name: sub.name),
+          ] else if (charge.isPaid || isNextCharge)
+            const SizedBox(width: 8),
+          if (_isSelectionMode)
+            const SizedBox.shrink()
+          else if (charge.isPaid)
             const Icon(Icons.check_circle_rounded, color: OneUITheme.accentGreen, size: 22)
           else if (isNextCharge)
             Semantics(
@@ -774,7 +818,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20),
-                  onTap: () => _markPaid(store, sub),
+                  onTap: () => _confirmMarkPaid(store, sub),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -789,10 +833,39 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         ],
       ),
       onTap: () {
+        if (_isSelectionMode) {
+          _toggleSelected(sub.id);
+          return;
+        }
         HapticFeedback.lightImpact();
         context.push(AppRoutes.subscriptionDetail(sub.id));
       },
-      onLongPress: () => _showChargeActions(store, charge, isNextCharge: isNextCharge),
+      onLongPress: () => _isSelectionMode ? _toggleSelected(sub.id) : _enterSelectionMode(sub.id),
+    );
+  }
+
+  /// One UI selection circle shown in place of row actions while selecting.
+  Widget _selectionCircle({required bool isSelected, required String name}) {
+    return Semantics(
+      container: true,
+      checked: isSelected,
+      label: isSelected ? '$name selected' : 'Select $name',
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        width: 24,
+        height: 24,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? const Color(0xFF2C69FF) : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? const Color(0xFF2C69FF) : Colors.white.withValues(alpha: 0.45),
+            width: 2,
+          ),
+        ),
+        child: isSelected ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : null,
+      ),
     );
   }
 
@@ -890,16 +963,6 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
     return Padding(
       padding: const EdgeInsets.only(right: 16),
       child: Text(text, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: color)),
-    );
-  }
-
-  Widget _actionBadge(IconData icon, Color color) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      alignment: Alignment.center,
-      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 

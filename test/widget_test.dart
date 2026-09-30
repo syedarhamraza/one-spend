@@ -78,7 +78,7 @@ void main() {
     await tester.tap(find.text('Upcoming'));
     await tester.pumpAndSettle();
     expect(find.text('30 days'), findsOneWidget);
-    expect(find.text('Total due'), findsOneWidget);
+    expect(find.text('Due in the next 30 days'), findsOneWidget);
 
     // Switch to Analytics tab
     await tester.tap(find.text('Analytics'));
@@ -216,7 +216,9 @@ void main() {
     store.renewSubscription('rollover_test');
     final renewed = store.subscriptions.firstWhere((s) => s.id == 'rollover_test');
     // Month should advance and day should be clamped to valid days of that month (e.g. 28, not overflowing to Mar 3)
-    expect(renewed.nextBillingDate.isAfter(DateTime.now()), isTrue);
+    // "Due today" counts as the next date (e.g. an anchor-31 sub lands on Sep 30), so compare by day.
+    final now = DateTime.now();
+    expect(renewed.nextBillingDate.isBefore(DateTime(now.year, now.month, now.day)), isFalse);
     expect(renewed.paymentHistory.isNotEmpty, isTrue);
 
     // 2. Test Pause/Resume Status Preservation (trial preserved after unpause)

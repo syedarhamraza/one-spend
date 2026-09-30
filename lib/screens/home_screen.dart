@@ -15,9 +15,13 @@ class HomeChrome {
   static final ValueNotifier<bool> selectionActive = ValueNotifier<bool>(false);
   static final ValueNotifier<bool> searchActive = ValueNotifier<bool>(false);
 
+  /// Multi-select mode on the Upcoming tab.
+  static final ValueNotifier<bool> upcomingSelectionActive = ValueNotifier<bool>(false);
+
   static void reset() {
     selectionActive.value = false;
     searchActive.value = false;
+    upcomingSelectionActive.value = false;
   }
 }
 
@@ -35,12 +39,14 @@ class HomeScreen extends StatelessWidget {
         OneUIFloatingModal.isModalOpen,
         HomeChrome.selectionActive,
         HomeChrome.searchActive,
+        HomeChrome.upcomingSelectionActive,
       ]),
       builder: (context, _) {
         final currentIndex = navigationShell.currentIndex;
         final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
         final isNavHidden =
             (currentIndex == 0 && (HomeChrome.selectionActive.value || HomeChrome.searchActive.value)) ||
+            (currentIndex == 1 && HomeChrome.upcomingSelectionActive.value) ||
             isKeyboardOpen ||
             OneUIFloatingModal.isModalOpen.value;
 

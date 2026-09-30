@@ -112,6 +112,8 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUITimeWheel` | `one_ui_time_wheel.dart` | Time-of-day selection (hour : minute AM/PM wheels). Use it via `TimePickerScreen.open` |
 | `OneUIDateWheel` | `one_ui_date_wheel.dart` | Date selection (month / day / year wheels, clamped to a range). Use it via `DatePickerScreen.open` |
 | `OneUIWheelColumn` | `one_ui_wheel_column.dart` | The single flat scroll-wheel column both pickers are built from. Reuse it for any new wheel picker |
+| `OneUIUpcomingHeroCard` | `one_ui_upcoming_hero_card.dart` | Upcoming tab hero: the budget card's glass + glow recipe, hero amount, 12dp track split by payment method, Device Care key-value rows |
+| `OneUISelectionCountPill`, `OneUISelectionCancelPill` | `one_ui_selection_header_pills.dart` | Selection-mode header capsules (select-all + count, Cancel). Pass them as `selectionLeading` / `selectionTrailing` |
 | `OneUISegmentedPills` | `one_ui_segmented_pills.dart` | A few mutually exclusive ranges/modes in one capsule with a sliding thumb (e.g. Upcoming's 7 days · 30 days · 3 months · 12 months) |
 | `OneUIMonthCalendar` + `CalendarDayMarker` | `one_ui_month_calendar.dart` | Samsung Calendar style swipeable month grid: today ring, filled selected day, up to 3 colour dots + "+N", and a heat tint per day |
 | `OneUIFloatingModal` | `one_ui_floating_modal.dart` | Floating bottom sheets: `show`, `showTextInputDialog`, `showConfirmationDialog` (destructive confirms) |
@@ -154,13 +156,14 @@ Add an `OneUIGroupItem` to the right list in `settings_screen.dart`, with:
 
 Rows are filtered by the Settings search, so keep titles descriptive.
 
-### 5.3 Make a quick action reversible
-Prefer **Undo over confirmation** for single-item, easily reversed actions (mark paid, skip a cycle):
-1. Take a snapshot of the entity before mutating it.
-2. Perform the action.
-3. Call `OneUIToast.show(context, 'Netflix marked as paid', actionLabel: 'Undo', onAction: () => store.updateSubscription(snapshot))`.
-
-Offer secondary actions on **long-press**, in a `OneUIFloatingModal.show` sheet containing a `OneUIGroupCard` of actions.
+### 5.3 Quick actions, confirmation, and long-press
+- **Money-moving actions** (mark paid, skip a cycle) use a **confirmation**: `OneUIFloatingModal.showConfirmationDialog`. The title is a question ("Mark Netflix as paid?"), the message says what will happen ("Logs a $15.49 payment and moves the next renewal to Nov 5"), and `confirmTextColor` uses the action's accent. Follow it with a plain `OneUIToast`.
+- **Undo** (`OneUIToast.show(…, actionLabel: 'Undo', onAction: …)`) suits cheap, non-financial changes, where a snapshot restores the previous state.
+- **Long-press always enters selection mode**, never a sheet or menu. The recipe (see `upcoming_screen.dart` and `subscriptions_screen.dart`):
+  1. Track `_isSelectionMode` and `_selectedIds`. Tapping toggles selection, and rows show a selection circle instead of their actions.
+  2. Pass `isSelectionMode`, `selectionLeading: OneUISelectionCountPill(…)` and `selectionTrailing: OneUISelectionCancelPill(…)` to the header.
+  3. Slide the tab bar away via the tab's `HomeChrome` flag, and slide in a `OneUIFloatingActionBar` with the batch actions.
+  4. Wrap the scaffold in `PopScope(canPop: !_isSelectionMode)`, so system back exits selection first.
 
 ### 5.4 Confirm a destructive action
 Use `OneUIFloatingModal.showConfirmationDialog(title, message, confirmLabel: 'Delete', …)`, then `OneUIToast.show(context, '… deleted')`.
