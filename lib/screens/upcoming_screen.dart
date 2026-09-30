@@ -92,15 +92,40 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
 
   String _money(String currency, double amount) => '$currency${amount.toStringAsFixed(2)}';
 
+  /// Distinct, high-contrast colours for the per-card split (in rank order); "No card" is grey.
+  static const List<Color> _cardPalette = [
+    OneUITheme.accentBlue,
+    OneUITheme.accentTeal,
+    OneUITheme.accentPurple,
+    OneUITheme.accentAmber,
+    Color(0xFFEF6C9A), // Rose
+    OneUITheme.accentGreen,
+  ];
+  static const Color _noCardColor = Color(0xFF6A6A70);
+
+  /// A charge's card id if that card still exists; deleted or unknown cards count as "no card".
+  String? _cardKey(String? methodId) =>
+      methodId != null && SubscriptionStore.instance.getPaymentMethod(methodId) != null ? methodId : null;
+
   bool _matchesCard(UpcomingCharge c) {
     final filter = _cardFilter;
     if (filter == null) return true;
-    return filter == _noCardFilter ? c.paymentMethodId == null : c.paymentMethodId == filter;
+    final key = _cardKey(c.paymentMethodId);
+    return filter == _noCardFilter ? key == null : key == filter;
   }
 
   String _cardName(SubscriptionStore store, String? methodId) {
     if (methodId == null || methodId == _noCardFilter) return 'No card';
-    return store.getPaymentMethod(methodId)?.displayName ?? 'Removed card';
+    return store.getPaymentMethod(methodId)?.displayName ?? 'No card';
+  }
+
+  /// Colour per card key, assigned by share of spend so the biggest card is always blue.
+  Map<String?, Color> _cardColors(Map<String?, ({double total, int count})> byCard) {
+    var next = 0;
+    return {
+      for (final key in byCard.keys)
+        key: key == null ? _noCardColor : _cardPalette[next++ % _cardPalette.length],
+    };
   }
 
   String _dayLabel(DateTime day, DateTime today) {
@@ -469,7 +494,9 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
     List<UpcomingCharge> unfilteredWindow,
   ) {
     final days = window.byDay();
-    final byCard = [...overdue, ...unfilteredWindow].byPaymentMethod();
+    final byCard = [...overdue, ...unfilteredWindow].byPaymentMethod(normalizeId: _cardKey);
+    final cardColors = _cardColors(byCard);
+    final filteredByCard = [...overdue, ...window].byPaymentMethod(normalizeId: _cardKey);
 
     return [
       _padded(
@@ -491,15 +518,15 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
             charges: [...overdue, ...window],
             annualSoon: ChargeSchedule.annualRenewalsWithin(store.subscriptions, now: now).where(_matchesCard).toList(),
             currency: store.currency,
-            cardColor: (id) {
-              final method = store.getPaymentMethod(id);
-              return method == null ? OneUITheme.textTertiary : Color(method.cardColorValue);
-            },
+            cardSegments: [
+              for (final entry in filteredByCard.entries)
+                (color: cardColors[entry.key] ?? _noCardColor, total: entry.value.total),
+            ],
             onOpenSubscription: _isSelectionMode ? null : (sub) => context.push(AppRoutes.subscriptionDetail(sub.id)),
           ),
           top: 14,
         ),
-      if (_cardFilter == null && byCard.isNotEmpty) _padded(_byCardSection(store, byCard), top: 4),
+      if (_cardFilter == null && byCard.isNotEmpty) _padded(_byCardSection(store, byCard, cardColors), top: 4),
       if (overdue.isNotEmpty)
         _padded(
           OneUISection(
@@ -567,7 +594,11 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
     );
   }
 
-  Widget _byCardSection(SubscriptionStore store, Map<String?, ({double total, int count})> byCard) {
+  Widget _byCardSection(
+    SubscriptionStore store,
+    Map<String?, ({double total, int count})> byCard,
+    Map<String?, Color> cardColors,
+  ) {
     final grandTotal = byCard.values.fold(0.0, (sum, v) => sum + v.total);
     return OneUISection(
       title: 'By payment method',
@@ -607,7 +638,8 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                         value: grandTotal <= 0 ? 0 : entry.value.total / grandTotal,
                         minHeight: 4,
                         backgroundColor: OneUITheme.surfacePill,
-                        color: OneUITheme.accentBlue,
+                        // Same colour as this card's segment in the hero card's split bar.
+                        color: cardColors[entry.key] ?? _noCardColor,
                       ),
                     ),
                   ],

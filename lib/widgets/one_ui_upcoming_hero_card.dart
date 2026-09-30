@@ -21,8 +21,8 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
   final List<UpcomingCharge> annualSoon;
   final String currency;
 
-  /// Track colour for a payment method id (null = no card).
-  final Color Function(String? paymentMethodId) cardColor;
+  /// Per-card split for the track, in display order (colours match the "By payment method" list).
+  final List<({Color color, double total})> cardSegments;
   final ValueChanged<Subscription>? onOpenSubscription;
 
   static const Color trackBackground = Color(0xFF2C2D30);
@@ -34,7 +34,7 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
     required this.charges,
     required this.annualSoon,
     required this.currency,
-    required this.cardColor,
+    required this.cardSegments,
     this.onOpenSubscription,
   });
 
@@ -47,7 +47,6 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
     final unpaid = charges.unpaid;
     final total = unpaid.fold(0.0, (sum, c) => sum + c.amount);
     final overdueCount = unpaid.where((c) => c.status == ChargeStatus.overdue).length;
-    final byCard = charges.byPaymentMethod();
     final biggest = charges.biggest;
     final busiest = charges.busiestWeek();
     final annual = annualSoon.isEmpty ? null : annualSoon.first;
@@ -152,7 +151,7 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _cardTrack(byCard, total),
+                  _cardTrack(total),
                   if (rows.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Container(
@@ -183,7 +182,7 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
   }
 
   /// 12dp One UI track split into one segment per payment method, sized by its share.
-  Widget _cardTrack(Map<String?, ({double total, int count})> byCard, double total) {
+  Widget _cardTrack(double total) {
     return Semantics(
       label: 'Split by payment method',
       child: Container(
@@ -194,12 +193,12 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
             ? null
             : Row(
                 children: [
-                  for (final (i, entry) in byCard.entries.indexed)
+                  for (final (i, segment) in cardSegments.indexed)
                     Expanded(
-                      flex: (entry.value.total / total * 1000).round().clamp(1, 1000),
+                      flex: (segment.total / total * 1000).round().clamp(1, 1000),
                       child: Container(
                         margin: EdgeInsets.only(left: i == 0 ? 0 : 2),
-                        color: cardColor(entry.key),
+                        color: segment.color,
                       ),
                     ),
                 ],
