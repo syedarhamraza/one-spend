@@ -83,7 +83,7 @@ void main() {
     // Switch to Analytics tab
     await tester.tap(find.text('Analytics'));
     await tester.pumpAndSettle();
-    expect(find.text('Estimated Annual Cost'), findsOneWidget);
+    expect(find.text('Yearly cost'), findsOneWidget);
 
     // Switch to Menu / Settings tab
     await tester.tap(find.text('Menu'));
@@ -2022,38 +2022,37 @@ void main() {
     expect(freeSub.yearlyCost, equals(0.0));
   });
 
-  test('SpendingTrendsEngine calculates 6M, 12M, and Forecast trajectory accurately', () {
+  test('SpendingTrendsEngine spans past months, the current month and a forecast', () {
     final ref = DateTime(2026, 9, 24);
     final store = SubscriptionStore.instance;
 
-    // 6 Months horizon
+    // 6M: Jun..Nov 2026 (3 past, current, 2 ahead)
     final points6M = store.getSpendingTrends(SpendingTrendHorizon.sixMonths, ref);
     expect(points6M.length, equals(6));
-    expect(points6M.last.month.year, equals(2026));
-    expect(points6M.last.month.month, equals(9));
-    expect(points6M.first.month.month, equals(4)); // Apr to Sep
+    expect(points6M.first.month, equals(DateTime(2026, 6, 1)));
+    expect(points6M.last.month, equals(DateTime(2026, 11, 1)));
+    expect(points6M[3].isCurrent, isTrue);
+    expect(points6M.take(3).every((p) => !p.isProjected), isTrue);
+    expect(points6M.skip(4).every((p) => p.isForecast), isTrue);
 
-    // Summary calculation
     final summary6M = store.getSpendingTrendSummary(SpendingTrendHorizon.sixMonths, ref);
     expect(summary6M.hasData, isTrue);
     expect(summary6M.averageMonthlySpend, greaterThan(0));
     expect(summary6M.peakMonth, isNotNull);
-    expect(summary6M.lowestMonth, isNotNull);
+    expect(summary6M.currentMonth?.month, equals(DateTime(2026, 9, 1)));
+    expect(summary6M.forecastMonths, equals(2));
 
-    // 12 Months horizon
+    // 1Y: Mar 2026..Feb 2027
     final points1Y = store.getSpendingTrends(SpendingTrendHorizon.oneYear, ref);
     expect(points1Y.length, equals(12));
-    expect(points1Y.last.month.month, equals(9));
-    expect(points1Y.first.month.month, equals(10)); // Oct 2025 to Sep 2026
-    expect(points1Y.first.month.year, equals(2025));
+    expect(points1Y.first.month, equals(DateTime(2026, 3, 1)));
+    expect(points1Y.last.month, equals(DateTime(2027, 2, 1)));
 
-    // Forecast horizon
-    final pointsForecast = store.getSpendingTrends(SpendingTrendHorizon.forecastSixMonths, ref);
-    expect(pointsForecast.length, equals(6));
-    expect(pointsForecast.first.month.month, equals(9)); // Sep
-    expect(pointsForecast.last.month.month, equals(2));  // Feb 2027
-    expect(pointsForecast.last.month.year, equals(2027));
-    expect(pointsForecast.first.isProjected, isTrue);
+    // 2Y: Sep 2025..Aug 2027
+    final points2Y = store.getSpendingTrends(SpendingTrendHorizon.twoYears, ref);
+    expect(points2Y.length, equals(24));
+    expect(points2Y.first.month, equals(DateTime(2025, 9, 1)));
+    expect(points2Y.last.month, equals(DateTime(2027, 8, 1)));
   });
 
   test('SpendingTrendsEngine respects paymentHistory charges and MoM calculation', () {
@@ -2104,39 +2103,26 @@ void main() {
     await tester.tap(find.text('Analytics'));
     await tester.pumpAndSettle();
 
-    // Verify Spending trajectory card header and components
     expect(find.text('Spending trajectory'), findsOneWidget);
     expect(find.text('6M'), findsOneWidget);
     expect(find.text('1Y'), findsOneWidget);
-    expect(find.text('Forecast'), findsOneWidget);
+    expect(find.text('2Y'), findsOneWidget);
     expect(find.byType(OneUILineChart), findsOneWidget);
-    expect(find.text('Monthly Avg'), findsWidgets);
+    expect(find.text('This month'), findsOneWidget);
 
-    // Switch to 1Y horizon
     await tester.tap(find.text('1Y'));
     await tester.pumpAndSettle();
     expect(find.byType(OneUILineChart), findsOneWidget);
 
-    // Switch to Forecast horizon
-    await tester.tap(find.text('Forecast'));
+    await tester.tap(find.text('2Y'));
     await tester.pumpAndSettle();
-    expect(find.text('Projected'), findsWidgets);
 
-    // Test chart scrubbing / touch gesture
+    // Scrub to the last (forecast) month.
     final chartFinder = find.byType(OneUILineChart);
-    final chartTopLeft = tester.getTopLeft(chartFinder);
-    await tester.tapAt(chartTopLeft + const Offset(40, 40));
+    await tester.tapAt(tester.getTopRight(chartFinder) + const Offset(-4, 60));
     await tester.pumpAndSettle();
-
-    // Verify share report dialog includes MoM trajectory
-    await tester.tap(find.byTooltip('Share report'));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('MoM Trajectory'), findsOneWidget);
-    expect(find.text('Copy Report'), findsOneWidget);
-
-    await tester.tap(find.text('Close'));
-    await tester.pumpAndSettle();
+    expect(find.text('Forecast'), findsWidgets);
+    expect(find.textContaining('Due in'), findsOneWidget);
   });
 
   testWidgets('OneUISpendingTrendsCard displays empty state when all subscriptions removed', (WidgetTester tester) async {

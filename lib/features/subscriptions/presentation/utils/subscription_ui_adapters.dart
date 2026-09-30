@@ -110,9 +110,9 @@ extension SubscriptionCategoryUIAdapter on SubscriptionCategory {
       case SubscriptionCategory.gaming:
         return const Color(0xFF7E57C2);
       case SubscriptionCategory.design:
-        return const Color(0xFFFF4B4B);
+        return const Color(0xFFEF6C9A);
       case SubscriptionCategory.developer:
-        return const Color(0xFF6E5494);
+        return const Color(0xFFFFD166);
       case SubscriptionCategory.utilities:
         return const Color(0xFF48B5A0);
       case SubscriptionCategory.finance:

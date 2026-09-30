@@ -1,18 +1,26 @@
 import 'package:intl/intl.dart';
 import '../features/subscriptions/domain/entities/subscription.dart';
 import '../features/subscriptions/domain/entities/subscription_enums.dart';
+import '../features/subscriptions/domain/services/charge_schedule.dart';
 
-/// Supported time horizons for the spending trends chart
+/// Ranges for the spending trajectory chart. Each range shows past months, the current
+/// month and a forecast, so the chart always reads "where I was → where I'm heading".
 enum SpendingTrendHorizon {
-  sixMonths('6M', 'Past 6 Months', 6),
-  oneYear('1Y', 'Past 12 Months', 12),
-  forecastSixMonths('Forecast', 'Next 6 Months', 6);
+  sixMonths('6M', 'Last 3 months · next 2', 3, 2),
+  oneYear('1Y', 'Last 6 months · next 5', 6, 5),
+  twoYears('2Y', 'Last 12 months · next 11', 12, 11);
 
   final String label;
   final String title;
-  final int monthCount;
-  const SpendingTrendHorizon(this.label, this.title, this.monthCount);
+  final int pastMonths;
+  final int futureMonths;
+  const SpendingTrendHorizon(this.label, this.title, this.pastMonths, this.futureMonths);
+
+  int get monthCount => pastMonths + 1 + futureMonths;
 }
+
+/// One subscription's contribution to a month.
+typedef MonthCharge = ({Subscription subscription, double amount});
 
 /// Represents spending data for a single calendar month
 class MonthlySpendPoint {
@@ -24,8 +32,16 @@ class MonthlySpendPoint {
   final double momPercentage; // e.g. +4.5% or -2.1%
   final double momDifference; // amount - previousAmount
   final int renewalCount;
+
+  /// The current month or later (partly or fully forecast).
   final bool isProjected;
+
+  /// The calendar month containing the reference date.
+  final bool isCurrent;
   final Map<SubscriptionCategory, double> categoryBreakdown;
+
+  /// Per-subscription totals for the month, largest first.
+  final List<MonthCharge> topCharges;
 
   const MonthlySpendPoint({
     required this.month,
@@ -37,27 +53,55 @@ class MonthlySpendPoint {
     required this.momDifference,
     required this.renewalCount,
     required this.isProjected,
+    this.isCurrent = false,
     required this.categoryBreakdown,
+    this.topCharges = const [],
   });
 
   bool get isIncrease => momDifference > 0.001;
   bool get isDecrease => momDifference < -0.001;
   bool get isNeutral => !isIncrease && !isDecrease;
+
+  /// Strictly after the current month.
+  bool get isForecast => isProjected && !isCurrent;
 }
 
 /// Overall trajectory summary across a given horizon
 class TrendSummary {
+  /// Average over every point in the range.
   final double averageMonthlySpend;
+
+  /// Average over months before the current one (0 when there are none).
+  final double pastAverage;
+
+  /// Sum of the months after the current one.
+  final double forecastTotal;
+  final int forecastMonths;
+
+  /// Months whose total exceeds the monthly budget (0 without a budget).
+  final int overBudgetCount;
   final MonthlySpendPoint? peakMonth;
   final MonthlySpendPoint? lowestMonth;
+
+  /// The most expensive month after the current one.
+  final MonthlySpendPoint? heaviestForecast;
+  final MonthlySpendPoint? currentMonth;
+
+  /// Month-over-month change of the current month.
   final double latestMoMPercentage;
   final double latestMoMDifference;
   final bool hasData;
 
   const TrendSummary({
     required this.averageMonthlySpend,
+    this.pastAverage = 0.0,
+    this.forecastTotal = 0.0,
+    this.forecastMonths = 0,
+    this.overBudgetCount = 0,
     this.peakMonth,
     this.lowestMonth,
+    this.heaviestForecast,
+    this.currentMonth,
     required this.latestMoMPercentage,
     required this.latestMoMDifference,
     required this.hasData,
@@ -65,8 +109,6 @@ class TrendSummary {
 
   static const empty = TrendSummary(
     averageMonthlySpend: 0.0,
-    peakMonth: null,
-    lowestMonth: null,
     latestMoMPercentage: 0.0,
     latestMoMDifference: 0.0,
     hasData: false,
@@ -78,7 +120,14 @@ class SpendingTrendsEngine {
   static final DateFormat _shortMonthFormat = DateFormat('MMM');
   static final DateFormat _fullMonthFormat = DateFormat('MMMM yyyy');
 
-  /// Computes month-over-month data points for the given subscriptions and horizon
+  /// Computes one point per calendar month in [horizon] around [referenceDate].
+  ///
+  /// - **Past months** use logged `paymentHistory`; a subscription with no history at all
+  ///   contributes its `monthlyCost` as an estimate.
+  /// - **Current and future months** use payments already logged in the month plus the
+  ///   unpaid charges from [ChargeSchedule], so the forecast matches the Upcoming tab.
+  ///
+  /// Paused, free-trial and free subscriptions are excluded.
   static List<MonthlySpendPoint> calculateTrends({
     required List<Subscription> subscriptions,
     required SpendingTrendHorizon horizon,
@@ -86,80 +135,77 @@ class SpendingTrendsEngine {
   }) {
     final now = referenceDate ?? DateTime.now();
     final currentMonthStart = DateTime(now.year, now.month, 1);
+    final months = [
+      for (var i = -horizon.pastMonths; i <= horizon.futureMonths; i++) DateTime(now.year, now.month + i, 1),
+    ];
 
-    // Build the list of target months (first day of each calendar month)
-    final List<DateTime> months = [];
-    if (horizon == SpendingTrendHorizon.forecastSixMonths) {
-      // Current month and next 5 months (6 total)
-      for (int i = 0; i < horizon.monthCount; i++) {
-        final targetMonth = currentMonthStart.month + i;
-        final targetYear = currentMonthStart.year + ((targetMonth - 1) ~/ 12);
-        final normalizedMonth = ((targetMonth - 1) % 12) + 1;
-        months.add(DateTime(targetYear, normalizedMonth, 1));
-      }
-    } else {
-      // Past N-1 months up to current month (e.g. 6 or 12 total)
-      for (int i = horizon.monthCount - 1; i >= 0; i--) {
-        // Correct year and month for negative offset
-        int y = currentMonthStart.year;
-        int m = currentMonthStart.month - i;
-        while (m <= 0) {
-          m += 12;
-          y -= 1;
-        }
-        months.add(DateTime(y, m, 1));
-      }
+    final activeSubs = subscriptions
+        .where((s) => s.status != SubscriptionStatus.paused && s.status != SubscriptionStatus.trial && s.price > 0)
+        .toList();
+
+    // Unpaid charges from the start of this month to the end of the range, bucketed by month.
+    final lastMonth = months.last;
+    final scheduled = ChargeSchedule.between(
+      activeSubs,
+      from: currentMonthStart,
+      to: DateTime(lastMonth.year, lastMonth.month + 1, 0),
+      now: now,
+      includePaid: false,
+    );
+    final scheduledByMonth = <DateTime, List<UpcomingCharge>>{};
+    for (final c in scheduled) {
+      (scheduledByMonth[DateTime(c.date.year, c.date.month, 1)] ??= []).add(c);
     }
-
-    final activeSubs = subscriptions.where((s) =>
-        s.status != SubscriptionStatus.paused &&
-        s.status != SubscriptionStatus.trial &&
-        s.price > 0).toList();
 
     final List<MonthlySpendPoint> points = [];
     double? lastAmount;
 
     for (final monthDate in months) {
-      final isFutureOrCurrent = !monthDate.isBefore(currentMonthStart);
-      final isStrictlyPast = monthDate.isBefore(currentMonthStart);
-
-      double monthTotal = 0.0;
-      int renewalCount = 0;
-      final Map<SubscriptionCategory, double> catBreakdown = {};
+      final isPast = monthDate.isBefore(currentMonthStart);
+      final perSub = <String, ({Subscription subscription, double amount, int count})>{};
+      void add(Subscription sub, double amount, int count) {
+        final current = perSub[sub.id];
+        perSub[sub.id] = (
+          subscription: sub,
+          amount: (current?.amount ?? 0) + amount,
+          count: (current?.count ?? 0) + count,
+        );
+      }
 
       for (final sub in activeSubs) {
-        // 1. Check explicit paymentHistory for this month
-        final loggedInMonth = sub.paymentHistory.where((d) =>
-            d.year == monthDate.year && d.month == monthDate.month).toList();
-
-        if (loggedInMonth.isNotEmpty) {
-          final paidAmount = loggedInMonth.length * sub.price;
-          monthTotal += paidAmount;
-          renewalCount += loggedInMonth.length;
-          catBreakdown[sub.category] = (catBreakdown[sub.category] ?? 0.0) + paidAmount;
-        } else if (isStrictlyPast) {
-          // If no explicit log in this past month, use regular recurring baseline
-          // if this subscription has no recorded payments at all in the past
-          if (sub.paymentHistory.isEmpty) {
-            final cost = sub.monthlyCost;
-            monthTotal += cost;
-            renewalCount += 1;
-            catBreakdown[sub.category] = (catBreakdown[sub.category] ?? 0.0) + cost;
-          }
-        } else {
-          // Current or future projected month:
-          // Calculate occurrences based on billing cycle
-          final occurrences = _calculateOccurrencesInMonth(sub, monthDate);
-          if (occurrences > 0) {
-            final charge = sub.price * occurrences;
-            monthTotal += charge;
-            renewalCount += occurrences;
-            catBreakdown[sub.category] = (catBreakdown[sub.category] ?? 0.0) + charge;
-          }
+        final logged = sub.paymentHistory.where((d) => d.year == monthDate.year && d.month == monthDate.month).length;
+        if (logged > 0) {
+          add(sub, logged * sub.price, logged);
+        } else if (isPast && sub.paymentHistory.isEmpty) {
+          add(sub, sub.monthlyCost, 1);
+        }
+      }
+      if (!isPast) {
+        for (final c in scheduledByMonth[monthDate] ?? const <UpcomingCharge>[]) {
+          add(c.subscription, c.amount, 1);
+        }
+      }
+      if (monthDate == currentMonthStart) {
+        // Like the past-month estimate: a subscription with no history at all that already
+        // renewed earlier this month still counts, otherwise the current month dips to zero.
+        final today = DateTime(now.year, now.month, now.day);
+        for (final sub in activeSubs) {
+          if (sub.paymentHistory.isNotEmpty) continue;
+          final earlier = _cycleDatesBefore(sub, from: currentMonthStart, until: today);
+          if (earlier > 0) add(sub, earlier * sub.price, earlier);
         }
       }
 
-      // Calculate Month-over-Month deltas
+      final charges = [for (final v in perSub.values) (subscription: v.subscription, amount: v.amount)]
+        ..sort((a, b) => b.amount.compareTo(a.amount));
+      final monthTotal = charges.fold(0.0, (sum, c) => sum + c.amount);
+      final renewalCount = perSub.values.fold(0, (sum, v) => sum + v.count);
+      final catBreakdown = <SubscriptionCategory, double>{};
+      for (final c in charges) {
+        catBreakdown[c.subscription.category] = (catBreakdown[c.subscription.category] ?? 0.0) + c.amount;
+      }
+
+      // Month-over-month deltas
       double momPct = 0.0;
       double momDiff = 0.0;
       if (lastAmount != null) {
@@ -180,8 +226,10 @@ class SpendingTrendsEngine {
         momPercentage: momPct,
         momDifference: momDiff,
         renewalCount: renewalCount,
-        isProjected: isFutureOrCurrent,
+        isProjected: !isPast,
+        isCurrent: monthDate == currentMonthStart,
         categoryBreakdown: catBreakdown,
+        topCharges: charges,
       ));
 
       lastAmount = monthTotal;
@@ -190,70 +238,73 @@ class SpendingTrendsEngine {
     return points;
   }
 
-  /// Calculates how many billing occurrences of a subscription fall in a target calendar month
-  static int _calculateOccurrencesInMonth(Subscription sub, DateTime targetMonth) {
-    final monthStart = DateTime(targetMonth.year, targetMonth.month, 1);
-    final monthEnd = DateTime(targetMonth.year, targetMonth.month + 1, 0, 23, 59, 59);
-
-    switch (sub.billingCycle) {
-      case BillingCycle.monthly:
-        return 1;
-
-      case BillingCycle.weekly:
-        // Project weekly recurrences
-        int count = 0;
-        DateTime cur = sub.nextBillingDate;
-        // Align backward or forward into the window
-        while (cur.isAfter(monthEnd)) {
-          cur = cur.subtract(const Duration(days: 7));
-        }
-        while (cur.isBefore(monthStart)) {
-          cur = cur.add(const Duration(days: 7));
-        }
-        while (cur.isAfter(monthStart.subtract(const Duration(seconds: 1))) &&
-            cur.isBefore(monthEnd.add(const Duration(seconds: 1)))) {
-          count++;
-          cur = cur.add(const Duration(days: 7));
-        }
-        return count > 0 ? count : 4; // Default to ~4 weekly cycles if outside bounds
-
-      case BillingCycle.quarterly:
-        // Hits every 3 months from next billing date
-        final diffMonths = (targetMonth.year - sub.nextBillingDate.year) * 12 +
-            (targetMonth.month - sub.nextBillingDate.month);
-        return (diffMonths % 3 == 0) ? 1 : 0;
-
-      case BillingCycle.yearly:
-        // Hits in the same month of the year
-        return (sub.nextBillingDate.month == targetMonth.month) ? 1 : 0;
+  /// Number of billing dates of [sub] in `[from, until)`, stepping back from its next due date.
+  static int _cycleDatesBefore(Subscription sub, {required DateTime from, required DateTime until}) {
+    var count = 0;
+    var date = DateTime(sub.nextBillingDate.year, sub.nextBillingDate.month, sub.nextBillingDate.day);
+    for (var i = 0; i < 60; i++) {
+      final anchor = sub.anchorDay ?? sub.nextBillingDate.day;
+      date = switch (sub.billingCycle) {
+        BillingCycle.weekly => DateTime(date.year, date.month, date.day - 7),
+        BillingCycle.monthly => _clampedDay(date.year, date.month - 1, anchor),
+        BillingCycle.quarterly => _clampedDay(date.year, date.month - 3, anchor),
+        BillingCycle.yearly => _clampedDay(date.year - 1, date.month, anchor),
+      };
+      if (date.isBefore(from)) break;
+      if (date.isBefore(until)) count++;
     }
+    return count;
   }
 
-  /// Calculates statistical trajectory summary across a list of points
-  static TrendSummary calculateSummary(List<MonthlySpendPoint> points) {
+  static DateTime _clampedDay(int year, int month, int day) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    return DateTime(year, month, day.clamp(1, lastDay));
+  }
+
+  /// Statistical summary across [points]; pass [monthlyBudget] to count over-budget months.
+  static TrendSummary calculateSummary(List<MonthlySpendPoint> points, {double monthlyBudget = 0}) {
     if (points.isEmpty) return TrendSummary.empty;
 
     double sum = 0.0;
+    double pastSum = 0.0;
+    int pastCount = 0;
+    double forecastSum = 0.0;
+    int forecastCount = 0;
+    int overBudget = 0;
     MonthlySpendPoint? peak;
     MonthlySpendPoint? lowest;
+    MonthlySpendPoint? heaviest;
+    MonthlySpendPoint? current;
 
     for (final p in points) {
       sum += p.amount;
-      if (peak == null || p.amount > peak.amount) {
-        peak = p;
+      if (peak == null || p.amount > peak.amount) peak = p;
+      if (lowest == null || p.amount < lowest.amount) lowest = p;
+      if (!p.isProjected) {
+        pastSum += p.amount;
+        pastCount++;
       }
-      if (lowest == null || p.amount < lowest.amount) {
-        lowest = p;
+      if (p.isForecast) {
+        forecastSum += p.amount;
+        forecastCount++;
+        if (heaviest == null || p.amount > heaviest.amount) heaviest = p;
       }
+      if (p.isCurrent) current = p;
+      if (monthlyBudget > 0.01 && p.amount > monthlyBudget + 0.001) overBudget++;
     }
 
-    final avg = sum / points.length;
-    final latest = points.last;
+    final latest = current ?? points.last;
 
     return TrendSummary(
-      averageMonthlySpend: avg,
+      averageMonthlySpend: sum / points.length,
+      pastAverage: pastCount == 0 ? 0.0 : pastSum / pastCount,
+      forecastTotal: forecastSum,
+      forecastMonths: forecastCount,
+      overBudgetCount: overBudget,
       peakMonth: peak,
       lowestMonth: lowest,
+      heaviestForecast: heaviest,
+      currentMonth: current,
       latestMoMPercentage: latest.momPercentage,
       latestMoMDifference: latest.momDifference,
       hasData: sum > 0.001,

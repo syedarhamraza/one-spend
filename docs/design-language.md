@@ -113,8 +113,11 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIDateWheel` | `one_ui_date_wheel.dart` | Date selection (month / day / year wheels, clamped to a range). Use it via `DatePickerScreen.open` |
 | `OneUIWheelColumn` | `one_ui_wheel_column.dart` | The single flat scroll-wheel column both pickers are built from. Reuse it for any new wheel picker |
 | `OneUIUpcomingHeroCard` | `one_ui_upcoming_hero_card.dart` | Upcoming tab hero: the budget card's glass + glow recipe, hero amount, 12dp track split by payment method, Device Care key-value rows |
+| `OneUIAnalyticsHeroCard` | `one_ui_analytics_hero_card.dart` | Analytics tab hero: same glass + glow recipe, yearly amount, 12dp track split by category colour, key-value rows (per month, budget, paused) |
+| `OneUISpendingTrendsCard` + `OneUILineChart` | `one_ui_spending_chart.dart` | Spending trajectory: 6M · 1Y · 2Y of past months (solid) and forecast (dashed, from `ChargeSchedule`), budget guide, scrubbing with a tooltip, and the charges behind the highlighted month |
+| `OneUICategoryRing` | `one_ui_category_ring.dart` | Donut split with a centre label; `highlightedIndex` dims the other segments. Colours come from `SubscriptionCategory.color` |
 | `OneUISelectionCountPill`, `OneUISelectionCancelPill` | `one_ui_selection_header_pills.dart` | Selection-mode header capsules (select-all + count, Cancel). Pass them as `selectionLeading` / `selectionTrailing` |
-| `OneUISegmentedPills` | `one_ui_segmented_pills.dart` | A few mutually exclusive ranges/modes in one capsule with a sliding thumb (e.g. Upcoming's 7 days · 30 days · 3 months · 12 months) |
+| `OneUISegmentedPills` | `one_ui_segmented_pills.dart` | A few mutually exclusive ranges/modes in one capsule with a sliding thumb (e.g. Upcoming's 7 days · 30 days · 3 months · 12 months). Pass `dense: true` for a compact 34dp version inside a card |
 | `OneUIMonthCalendar` + `CalendarDayMarker` | `one_ui_month_calendar.dart` | Samsung Calendar style swipeable month grid: today ring, filled selected day, up to 3 colour dots + "+N", and a heat tint per day |
 | `OneUIFloatingModal` | `one_ui_floating_modal.dart` | Floating bottom sheets: `show`, `showTextInputDialog`, `showConfirmationDialog` (destructive confirms) |
 | `OneUIToast` | `one_ui_toast.dart` | Brief feedback ("Netflix added"). Replaces snackbars. Pass `actionLabel: 'Undo', onAction: …` for reversible actions; it then stays up for 4 s |

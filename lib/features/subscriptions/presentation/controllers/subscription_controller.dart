@@ -171,7 +171,7 @@ class SubscriptionController extends ChangeNotifier {
 
   TrendSummary getSpendingTrendSummary(SpendingTrendHorizon horizon, [DateTime? referenceDate]) {
     final trends = getSpendingTrends(horizon, referenceDate);
-    return SpendingTrendsEngine.calculateSummary(trends);
+    return SpendingTrendsEngine.calculateSummary(trends, monthlyBudget: _monthlyBudget);
   }
 
   // --- Persistence Integration ---

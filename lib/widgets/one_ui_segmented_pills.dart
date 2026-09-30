@@ -10,25 +10,31 @@ class OneUISegmentedPills<T> extends StatelessWidget {
   final T selected;
   final ValueChanged<T> onChanged;
 
+  /// Compact variant for use inside a card: 34dp tall on a `surfacePill` capsule.
+  final bool dense;
+
   const OneUISegmentedPills({
     super.key,
     required this.segments,
     required this.selected,
     required this.onChanged,
+    this.dense = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final selectedIndex = segments.indexWhere((s) => s.value == selected).clamp(0, segments.length - 1);
     return Container(
-      height: 44,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: OneUITheme.cardColor,
-        borderRadius: OneUITheme.pillBorderRadius,
-        border: OneUITheme.cardBorder,
-        boxShadow: OneUITheme.cardShadow,
-      ),
+      height: dense ? 34 : 44,
+      padding: EdgeInsets.all(dense ? 3 : 4),
+      decoration: dense
+          ? BoxDecoration(color: OneUITheme.surfacePill, borderRadius: OneUITheme.pillBorderRadius)
+          : BoxDecoration(
+              color: OneUITheme.cardColor,
+              borderRadius: OneUITheme.pillBorderRadius,
+              border: OneUITheme.cardBorder,
+              boxShadow: OneUITheme.cardShadow,
+            ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final segmentWidth = constraints.maxWidth / segments.length;
@@ -66,7 +72,7 @@ class OneUISegmentedPills<T> extends StatelessWidget {
                             child: Text(
                               segments[i].label,
                               style: TextStyle(
-                                fontSize: 13.5,
+                                fontSize: dense ? 12.5 : 13.5,
                                 fontWeight: i == selectedIndex ? FontWeight.w700 : FontWeight.w500,
                                 color: i == selectedIndex ? OneUITheme.textPrimary : OneUITheme.textSecondary,
                               ),
