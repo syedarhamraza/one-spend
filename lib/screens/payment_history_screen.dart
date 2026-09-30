@@ -44,7 +44,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       firstDate: DateTime(2018),
       lastDate: now,
       title: 'Payment date',
-      subtitle: 'Logs a past ${sub.name} charge of ${sub.currency}${sub.price.toStringAsFixed(2)}',
+      subtitle: 'Logs a past ${sub.name} charge of ${formatMoney(sub.price, sub.currency)}',
     );
 
     if (picked != null && mounted) {
@@ -170,7 +170,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                       ),
                                       const SizedBox(height: 3),
                                       Text(
-                                        '${sub.currency}${sub.price.toStringAsFixed(2)} • ${sub.billingCycle.label}',
+                                        '${formatMoney(sub.price, sub.currency)} • ${sub.billingCycle.label}',
                                         style: const TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w500,
@@ -204,7 +204,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${sub.currency}${totalPaid.toStringAsFixed(2)}',
+                                      formatMoney(totalPaid, sub.currency, style: MoneyStyle.summary),
                                       style: const TextStyle(
                                         fontSize: 26,
                                         fontWeight: FontWeight.w700,
@@ -353,7 +353,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                                   ),
                                 ),
                                 title: _dateFormat.format(sub.paymentHistory[i]),
-                                subtitle: '${sub.currency}${sub.price.toStringAsFixed(2)} • ${linkedCard?.nickname ?? 'Paid'}',
+                                subtitle: '${formatMoney(sub.price, sub.currency)} • ${linkedCard?.nickname ?? 'Paid'}',
                                 subtitleColor: OneUITheme.textSecondary,
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,

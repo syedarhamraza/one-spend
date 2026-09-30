@@ -5,6 +5,7 @@ import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import 'one_ui_brand_icon.dart';
 import 'one_ui_card.dart';
+import 'one_ui_fit_amount.dart';
 import 'one_ui_group_card.dart';
 
 /// Samsung One UI Upcoming Renewals Section
@@ -186,7 +187,7 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    '${sub.currency}${sub.price.toStringAsFixed(2)}',
+                                    formatMoney(sub.price, sub.currency),
                                     style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
@@ -321,7 +322,7 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '${OneUIDateFormats.monthDayYear.format(nextSub.nextBillingDate)} • ${nextSub.currency}${nextSub.price.toStringAsFixed(2)}',
+                        '${OneUIDateFormats.monthDayYear.format(nextSub.nextBillingDate)} • ${formatMoney(nextSub.price, nextSub.currency)}',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -395,8 +396,8 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
                       ? 'Due today (${dateFormat.format(sub.nextBillingDate)})'
                       : 'Due in $days days (${dateFormat.format(sub.nextBillingDate)})'),
               subtitleColor: days <= 5 ? OneUITheme.accentRed : OneUITheme.accentBlue,
-              trailing: Text(
-                '${sub.currency}${sub.price.toStringAsFixed(2)}',
+              trailing: OneUIFitAmount(
+                formatMoney(sub.price, sub.currency),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

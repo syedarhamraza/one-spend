@@ -115,18 +115,18 @@ void main() {
     }
   });
 
-  testWidgets('currency picker saves the chosen symbol', (tester) async {
+  testWidgets('main currency picker saves the chosen ISO code', (tester) async {
     await pumpSettings(tester);
     await tester.tap(find.text('Budget & currency'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Currency').last);
+    await tester.tap(find.text('Main currency'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Euro'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    expect(SubscriptionStore.instance.currency, '€');
-    expect(find.text('€  Euro'), findsOneWidget);
+    expect(SubscriptionStore.instance.currency, 'EUR');
+    expect(find.text('EUR · Euro'), findsOneWidget);
   });
 
   testWidgets('Appearance has one 3D switch that drives floating3dEffect', (tester) async {

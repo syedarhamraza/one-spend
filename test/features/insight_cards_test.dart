@@ -43,7 +43,7 @@ void main() {
     final over = byKey(build(subs, budget: 30), 'all|over:')!;
     expect(over.key, 'all|over:2026-09');
     expect(over.tone, InsightTone.negative);
-    expect(over.title, 'You\'re \$5.00 over budget');
+    expect(over.title, 'You\'re \$5 over budget');
     expect(over.action, InsightAction.showTopSubscriptions);
 
     expect(byKey(build(subs, budget: 30, includeBudget: false), 'all|over:'), isNull);
@@ -97,7 +97,7 @@ void main() {
     final heavy = byKey(cards, 'all|heavy:')!;
     expect(heavy.key, 'all|heavy:2026-11');
     expect(heavy.title, 'November will be a heavy month');
-    expect(heavy.message, contains('including annual \$120.00'));
+    expect(heavy.message, contains('including annual \$120'));
     expect(byKey(cards, 'all|yearly:'), isNull, reason: '39 days away is outside the 30-day window');
   });
 
@@ -108,7 +108,7 @@ void main() {
       sub('held', price: 12, status: SubscriptionStatus.paused),
     ]);
     final paused = byKey(cards, 'all|paused:')!;
-    expect(paused.title, 'Pausing saves \$12.00 a month');
+    expect(paused.title, 'Pausing saves \$12 a month');
     final top = byKey(cards, 'all|top:big')!;
     expect(top.tone, InsightTone.info);
     expect(top.title, 'big is 86% of your spending');

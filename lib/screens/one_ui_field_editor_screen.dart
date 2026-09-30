@@ -29,6 +29,8 @@ class OneUIFieldEditorScreen<T> extends StatefulWidget {
   final T initialValue;
   final String? prefixText;
   final String? hintText;
+
+  /// ISO code; its symbol prefixes number fields unless [prefixText] is given.
   final String currency;
 
   const OneUIFieldEditorScreen({
@@ -39,7 +41,7 @@ class OneUIFieldEditorScreen<T> extends StatefulWidget {
     required this.initialValue,
     this.prefixText,
     this.hintText,
-    this.currency = '\$',
+    this.currency = 'USD',
   });
 
   static Future<T?> open<T>({
@@ -50,7 +52,7 @@ class OneUIFieldEditorScreen<T> extends StatefulWidget {
     required T initialValue,
     String? prefixText,
     String? hintText,
-    String currency = '\$',
+    String currency = 'USD',
   }) {
     HapticFeedback.lightImpact();
     return Navigator.push<T>(
@@ -120,7 +122,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
       case FieldEditorType.number:
         final normalized = _textController.text.trim().replaceAll(',', '.');
         final parsed = double.tryParse(normalized);
-        result = parsed != null ? parsed.clamp(0.0, 999999.0) : (widget.initialValue as double? ?? 0.0);
+        result = parsed != null ? parsed.clamp(0.0, SubscriptionStore.maxAmount) : (widget.initialValue as double? ?? 0.0);
         break;
       case FieldEditorType.category:
       case FieldEditorType.billingCycle:
@@ -211,7 +213,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
                         canSave = _textController.text.length <= 500;
                       } else if (widget.type == FieldEditorType.number) {
                         final parsed = double.tryParse(_textController.text.trim().replaceAll(',', '.'));
-                        canSave = parsed != null && parsed >= 0 && parsed <= 999999.0;
+                        canSave = parsed != null && parsed >= 0 && parsed <= SubscriptionStore.maxAmount;
                       }
                       return OneUIFloatingCancelSavePill(
                         onCancel: _onCancel,
@@ -270,7 +272,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
           child: Row(
             children: [
               Text(
-                widget.prefixText ?? widget.currency,
+                widget.prefixText ?? currencyPrefix(widget.currency).trim(),
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,

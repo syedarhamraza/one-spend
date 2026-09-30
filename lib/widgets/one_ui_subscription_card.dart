@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../core/di/injection.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
@@ -605,24 +606,23 @@ class OneUISubscriptionCard extends StatelessWidget {
     final currency = sub.currency;
     final price = sub.price;
 
-    String text;
-    switch (priceMode) {
-      case SubscriptionPriceMode.monthlyEquivalent:
-        text = '$currency${sub.monthlyCost.toStringAsFixed(2)}/mo';
-        break;
-      case SubscriptionPriceMode.billedAmount:
-        final cycleSuffix = switch (sub.billingCycle) {
-          BillingCycle.monthly => '/mo',
-          BillingCycle.yearly => '/yr',
-          BillingCycle.weekly => '/wk',
-          BillingCycle.quarterly => '/qtr',
-        };
-        text = '$currency${price.toStringAsFixed(2)}$cycleSuffix';
-        break;
-      case SubscriptionPriceMode.rawAmount:
-        text = '$currency${price.toStringAsFixed(2)}';
-        break;
-    }
+    final (double amount, String suffix) = switch (priceMode) {
+      SubscriptionPriceMode.monthlyEquivalent => (sub.monthlyCost, '/mo'),
+      SubscriptionPriceMode.billedAmount => (
+          price,
+          switch (sub.billingCycle) {
+            BillingCycle.monthly => '/mo',
+            BillingCycle.yearly => '/yr',
+            BillingCycle.weekly => '/wk',
+            BillingCycle.quarterly => '/qtr',
+          },
+        ),
+      SubscriptionPriceMode.rawAmount => (price, ''),
+    };
+    final text = '${formatMoney(amount, currency)}$suffix';
+    // Billed in another currency: show roughly what it costs in the main one. Skipped when
+    // the store isn't set up (standalone previews), so a card never builds the app's DI graph.
+    final approx = sl.isRegistered<SubscriptionStore>() ? SubscriptionStore.instance.approxInMain(amount, currency) : null;
 
     final priceWidget = Text(
       text,
@@ -636,11 +636,11 @@ class OneUISubscriptionCard extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
     );
 
-    if (!showDaily) {
+    if (!showDaily && approx == null) {
       return priceWidget;
     }
 
-    final dailyText = '$currency${sub.dailyCost.toStringAsFixed(2)}/day';
+    final dailyText = approx != null ? '$approx$suffix' : '${formatMoney(sub.dailyCost, currency)}/day';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,

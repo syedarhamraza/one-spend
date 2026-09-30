@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/currency/domain/currency.dart';
 import '../../features/backup/domain/backup_snapshot.dart';
 import '../../features/payment_methods/domain/entities/payment_method.dart';
 import '../../features/subscriptions/domain/entities/subscription_enums.dart';
@@ -24,6 +25,7 @@ import '../../screens/settings/backup_data_screen.dart';
 import '../../screens/settings/budget_currency_screen.dart';
 import '../../screens/settings/coming_soon_screen.dart';
 import '../../screens/settings/currency_picker_screen.dart';
+import '../../screens/settings/exchange_rates_screen.dart';
 import '../../screens/settings/developer_options_screen.dart';
 import '../../screens/settings/help_feedback_screen.dart';
 import '../../screens/settings/licenses_screen.dart';
@@ -74,6 +76,7 @@ class AppRoutes {
   // Settings subpages
   static const settingsBudget = '/settings/budget';
   static const settingsCurrency = '/settings/budget/currency';
+  static const settingsExchangeRates = '/settings/budget/rates';
   static const settingsNotifications = '/settings/notifications';
   static const settingsAppearance = '/settings/appearance';
   static const settingsSecurity = '/settings/security';
@@ -90,6 +93,9 @@ class AppRoutes {
 
 /// Arguments for [AppRoutes.paymentMethods].
 typedef PaymentMethodPickerArgs = ({String? currentMethodId, bool isManageOnly});
+
+/// Arguments for [AppRoutes.settingsCurrency].
+typedef CurrencyPickerArgs = ({String initialCode, String title, String? footnote});
 
 /// Arguments for [AppRoutes.timePicker]; times are minutes after midnight.
 typedef TimePickerArgs = ({int initialMinutes, String title, String? subtitle});
@@ -231,8 +237,16 @@ List<RouteBase> buildPageRoutes() {
     GoRoute(path: AppRoutes.settingsBudget, builder: (context, state) => const BudgetCurrencyScreen()),
     GoRoute(
       path: AppRoutes.settingsCurrency,
-      builder: (context, state) => CurrencyPickerScreen(initialSymbol: state.extra as String? ?? '\$'),
+      builder: (context, state) {
+        final args = state.extra as CurrencyPickerArgs?;
+        return CurrencyPickerScreen(
+          initialCode: args?.initialCode ?? CurrencyCatalog.defaultCode,
+          title: args?.title ?? 'Currency',
+          footnote: args?.footnote,
+        );
+      },
     ),
+    GoRoute(path: AppRoutes.settingsExchangeRates, builder: (context, state) => const ExchangeRatesScreen()),
     GoRoute(path: AppRoutes.settingsNotifications, builder: (context, state) => const NotificationSettingsScreen()),
     GoRoute(path: AppRoutes.settingsAppearance, builder: (context, state) => const AppearanceSettingsScreen()),
     GoRoute(path: AppRoutes.settingsSecurity, builder: (context, state) => const SecuritySettingsScreen()),

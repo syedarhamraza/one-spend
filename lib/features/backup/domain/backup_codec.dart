@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../../currency/data/exchange_rate_repository.dart';
+import '../../currency/domain/currency.dart';
 import '../../payment_methods/domain/entities/payment_method.dart';
 import '../../subscriptions/domain/entities/subscription.dart';
 import '../../subscriptions/domain/entities/subscription_enums.dart';
@@ -59,6 +61,8 @@ class BackupCodec {
             'groupByDate': settings.groupByDate,
           },
         'appearance': snapshot.appearance,
+        if (snapshot.rateOverrides case final overrides?)
+          'exchangeRateOverrides': ExchangeRateRepository.encodeOverrides(overrides),
       },
     });
   }
@@ -96,6 +100,9 @@ class BackupCodec {
         appearance: {
           for (final e in (data['appearance'] as Map<String, dynamic>? ?? const {}).entries) e.key: e.value.toString(),
         },
+        rateOverrides: data.containsKey('exchangeRateOverrides')
+            ? ExchangeRateRepository.decodeOverrides(data['exchangeRateOverrides'])
+            : null,
       );
     } on BackupFormatException {
       rethrow;
@@ -120,7 +127,7 @@ class BackupCodec {
 
   static BackupSettings _decodeSettings(Map<String, dynamic> s) => (
         monthlyBudget: (s['monthlyBudget'] as num?)?.toDouble() ?? 0,
-        currency: s['currency'] as String? ?? '\$',
+        currency: CurrencyCatalog.normalize(s['currency'] as String?),
         defaultReminderDays: s['defaultReminderDays'] as int? ?? 2,
         defaultReminderTimeMinutes: s['defaultReminderTimeMinutes'] as int? ?? 9 * 60,
         notificationsEnabled: s['notificationsEnabled'] as bool? ?? true,

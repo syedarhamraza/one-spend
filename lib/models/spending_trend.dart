@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import '../features/currency/domain/exchange_rates.dart';
 import '../features/subscriptions/domain/entities/subscription.dart';
 import '../features/subscriptions/domain/entities/subscription_enums.dart';
 import '../features/subscriptions/domain/services/charge_schedule.dart';
@@ -127,11 +128,13 @@ class SpendingTrendsEngine {
   /// - **Current and future months** use payments already logged in the month plus the
   ///   unpaid charges from [ChargeSchedule], so the forecast matches the Upcoming tab.
   ///
-  /// Paused, free-trial and free subscriptions are excluded.
+  /// Paused, free-trial and free subscriptions are excluded. Amounts are converted to the
+  /// main currency with [toMain].
   static List<MonthlySpendPoint> calculateTrends({
     required List<Subscription> subscriptions,
     required SpendingTrendHorizon horizon,
     DateTime? referenceDate,
+    ToMainCurrency toMain = sameCurrency,
   }) {
     final now = referenceDate ?? DateTime.now();
     final currentMonthStart = DateTime(now.year, now.month, 1);
@@ -167,7 +170,7 @@ class SpendingTrendsEngine {
         final current = perSub[sub.id];
         perSub[sub.id] = (
           subscription: sub,
-          amount: (current?.amount ?? 0) + amount,
+          amount: (current?.amount ?? 0) + toMain(amount, sub.currency),
           count: (current?.count ?? 0) + count,
         );
       }

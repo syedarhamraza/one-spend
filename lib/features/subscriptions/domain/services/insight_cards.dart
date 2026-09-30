@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 
 import '../../../../models/spending_trend.dart';
+import '../../../currency/domain/exchange_rates.dart';
+import '../../../currency/domain/money_format.dart';
 import '../entities/subscription.dart';
 import 'spending_insights.dart';
 import 'subscription_stats.dart';
@@ -56,7 +58,8 @@ class InsightCards {
   static String _period(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}';
 
   /// Cards sorted by [InsightTone] priority. Budget cards need [includeBudget] and a budget.
-  /// [categoryLabel] names the active category filter, if any.
+  /// [categoryLabel] names the active category filter, if any. [currency] is the main
+  /// currency; [toMain] converts each subscription's amounts into it.
   static List<InsightCardData> build(
     Iterable<Subscription> subscriptions, {
     required DateTime now,
@@ -64,13 +67,14 @@ class InsightCards {
     double monthlyBudget = 0,
     bool includeBudget = true,
     String? categoryLabel,
+    ToMainCurrency toMain = sameCurrency,
   }) {
     final subs = subscriptions.toList();
-    String money(double v) => '$currency${v.toStringAsFixed(2)}';
+    String money(double v) => formatMoney(v, currency, style: MoneyStyle.summary);
     final scope = categoryLabel ?? 'all';
     final month = _period(now);
     final today = DateTime(now.year, now.month, now.day);
-    final monthly = SubscriptionStats.totalMonthlySpend(subs);
+    final monthly = SubscriptionStats.totalMonthlySpend(subs, toMain);
     final spending = categoryLabel == null ? 'your spending' : 'your $categoryLabel spending';
     final cards = <InsightCardData>[];
 
@@ -103,6 +107,7 @@ class InsightCards {
       subscriptions: subs,
       horizon: SpendingTrendHorizon.sixMonths,
       referenceDate: now,
+      toMain: toMain,
     );
     final currentIndex = points.indexWhere((p) => p.isCurrent);
     if (currentIndex > 0) {
@@ -134,7 +139,7 @@ class InsightCards {
     }
 
     // Yearly renewal heads-up
-    final yearly = SpendingInsights.yearlyRenewalsSoon(subs, now: now, days: yearlyHeadsUpDays);
+    final yearly = SpendingInsights.yearlyRenewalsSoon(subs, now: now, days: yearlyHeadsUpDays, toMain: toMain);
     if (yearly != null) {
       final charge = yearly.charges.first;
       final sub = charge.subscription;
@@ -148,7 +153,7 @@ class InsightCards {
         key: '$scope|yearly:${sub.id}:${charge.date.toIso8601String().substring(0, 10)}',
         tone: InsightTone.caution,
         title: '${sub.name} renews $when',
-        message: '${money(charge.amount)} on ${_monthDay.format(charge.date)}. '
+        message: '${formatMoney(charge.amount, charge.currency)} on ${_monthDay.format(charge.date)}. '
             'Cancel before then if you don\'t need it.',
         actionLabel: 'View subscription',
         action: InsightAction.openSubscription,
@@ -157,7 +162,7 @@ class InsightCards {
     }
 
     // Heavy month ahead
-    final heaviest = SpendingInsights.heaviestMonthAhead(subs, now: now);
+    final heaviest = SpendingInsights.heaviestMonthAhead(subs, now: now, toMain: toMain);
     if (heaviest != null &&
         monthly > 0 &&
         heaviest.total >= monthly * heavyMonthFactor &&
@@ -169,7 +174,7 @@ class InsightCards {
         tone: InsightTone.caution,
         title: '$name will be a heavy month',
         message: heaviest.charges.length > 1
-            ? '${money(heaviest.total)} is due, including ${top.subscription.name} ${money(top.amount)}.'
+            ? '${money(heaviest.total)} is due, including ${top.subscription.name} ${formatMoney(top.amount, top.currency)}.'
             : '${money(heaviest.total)} is due for ${top.subscription.name}.',
         actionLabel: 'Open Upcoming',
         action: InsightAction.openUpcoming,
@@ -177,7 +182,7 @@ class InsightCards {
     }
 
     // Paused savings
-    final paused = SpendingInsights.pausedSavings(subs);
+    final paused = SpendingInsights.pausedSavings(subs, toMain);
     if (paused.count > 0 && paused.monthly > 0) {
       cards.add(InsightCardData(
         key: '$scope|paused:${paused.count}:${paused.monthly.toStringAsFixed(2)}',
@@ -191,14 +196,14 @@ class InsightCards {
     }
 
     // Top expense
-    final ranked = SpendingInsights.ranked(subs);
-    final top = SpendingInsights.topExpense(subs);
+    final ranked = SpendingInsights.ranked(subs, toMain);
+    final top = SpendingInsights.topExpense(subs, toMain);
     if (top != null && ranked.length > 1) {
       cards.add(InsightCardData(
         key: '$scope|top:${top.subscription.id}',
         tone: InsightTone.info,
         title: '${top.subscription.name} is ${(top.share * 100).round()}% of $spending',
-        message: 'That\'s ${money(top.subscription.yearlyCost)} a year.',
+        message: 'That\'s ${formatMoney(top.subscription.yearlyCost, top.subscription.currency)} a year.',
         actionLabel: 'View ${top.subscription.name}',
         action: InsightAction.openSubscription,
         subscription: top.subscription,

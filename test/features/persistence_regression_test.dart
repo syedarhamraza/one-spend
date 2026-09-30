@@ -104,7 +104,7 @@ void main() {
       first.batchAdd(popularCatalog.take(3));
       first.updateSubscription(popularCatalog[1].copyWith(price: 42.0));
       first.batchDelete([popularCatalog[2].id]);
-      first.setCurrency('€');
+      first.setCurrency('EUR');
       first.setUserProfile('Test User', 'test@example.com');
       await first.pendingWrites;
 
@@ -112,7 +112,7 @@ void main() {
       await relaunched.load();
       expect(relaunched.subscriptions.map((s) => s.id).toSet(), {popularCatalog[0].id, popularCatalog[1].id});
       expect(relaunched.getSubscription(popularCatalog[1].id)!.price, 42.0);
-      expect(relaunched.currency, '€');
+      expect(relaunched.currency, 'EUR');
       expect(relaunched.userName, 'Test User');
     });
 

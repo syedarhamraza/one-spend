@@ -88,7 +88,7 @@ class UpcomingScheduleScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      '${subscription.currency}${subscription.price.toStringAsFixed(2)} / ${subscription.billingCycle.label}',
+                                      '${formatMoney(subscription.price, subscription.currency)} / ${subscription.billingCycle.label}',
                                       style: const TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w500,
@@ -117,7 +117,7 @@ class UpcomingScheduleScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 1),
                                     Text(
-                                      '${subscription.currency}${totalProjected.toStringAsFixed(2)}',
+                                      formatMoney(totalProjected, subscription.currency, style: MoneyStyle.summary),
                                       style: const TextStyle(
                                         fontSize: 14.5,
                                         fontWeight: FontWeight.w700,
@@ -292,7 +292,7 @@ class UpcomingScheduleScreen extends StatelessWidget {
             ),
           ],
           Text(
-            '${subscription.currency}${subscription.price.toStringAsFixed(2)}',
+            formatMoney(subscription.price, subscription.currency),
             style: TextStyle(
               fontSize: 14.5,
               fontWeight: FontWeight.w700,

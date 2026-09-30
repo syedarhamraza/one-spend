@@ -74,11 +74,11 @@ void main() {
     expect(find.byIcon(Icons.mode_edit_outline_rounded), findsNothing);
 
     // 2. Single status badge on top right (no separate pill for percentage)
-    expect(find.text('${store.currency}66 left'), findsOneWidget);
+    expect(find.text('${formatMoney(66, store.currency, decimals: 0)} left'), findsOneWidget);
 
     // 3. Primary spend metric 32pt bold, inline budget limit without redundant word, and right-aligned percentage
-    expect(find.text('${store.currency}83.96'), findsOneWidget);
-    expect(find.text('/ ${store.currency}150'), findsOneWidget);
+    expect(find.text(formatMoney(83.96, store.currency)), findsOneWidget);
+    expect(find.text('/ ${formatMoney(150, store.currency, decimals: 0)}'), findsOneWidget);
     expect(find.text('56%'), findsOneWidget);
 
     // 4. Track bar is rendered
@@ -130,7 +130,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('50%'), findsOneWidget);
-    expect(find.text('${store.currency}50 left'), findsOneWidget);
+    expect(find.text('${formatMoney(50, store.currency, decimals: 0)} left'), findsOneWidget);
 
     // State 2: 75% to 90% -> Soft Amber / Warning
     store.addSubscription(
@@ -155,7 +155,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('80%'), findsOneWidget);
-    expect(find.text('${store.currency}20 left'), findsOneWidget);
+    expect(find.text('${formatMoney(20, store.currency, decimals: 0)} left'), findsOneWidget);
 
     // State 3: Over 90% / Over budget -> Vibrant Crimson
     store.addSubscription(
@@ -180,7 +180,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('115%'), findsOneWidget);
-    expect(find.text('${store.currency}15 over'), findsOneWidget);
+    expect(find.text('${formatMoney(15, store.currency, decimals: 0)} over'), findsOneWidget);
   });
 
   testWidgets('Renders properly when no budget is set', (WidgetTester tester) async {

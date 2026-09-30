@@ -59,6 +59,7 @@ class BackupService {
         groupByDate: controller.groupByDate,
       ),
       appearance: await settings.getAppearanceSettings(),
+      rateOverrides: controller.rates.overrides,
     );
   }
 
@@ -100,6 +101,8 @@ class BackupService {
       subscriptions: backup.subscriptions,
       paymentMethods: backup.isLegacy ? List.of(controller.paymentMethods) : backup.paymentMethods,
       settings: backup.settings,
+      // Older backups have no pinned rates (null); the current ones are kept then.
+      rateOverrides: backup.isLegacy ? null : backup.rateOverrides,
     );
     if (backup.appearance.isNotEmpty) {
       await settings.setAppearanceSettings(backup.appearance);

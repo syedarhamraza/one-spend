@@ -68,7 +68,7 @@ void main() {
         settingsRepository: SettingsRepositoryImpl(SettingsDriftDataSource(db)),
       );
 
-  BackupSnapshot backupWith(List<Subscription> subs, {String currency = '€'}) => BackupSnapshot(
+  BackupSnapshot backupWith(List<Subscription> subs, {String currency = 'EUR'}) => BackupSnapshot(
         createdAt: DateTime(2026, 9, 1),
         appVersion: '1.0.0 (1)',
         subscriptions: subs,
@@ -96,7 +96,7 @@ void main() {
   test('add missing keeps everything and adds only new items', () async {
     await service.restore(backupWith([sub('mine1'), sub('new1')]), RestoreMode.addMissing);
     expect(controller.subscriptions.map((s) => s.id), ['mine1', 'mine2', 'new1']);
-    expect(controller.currency, '\$', reason: 'settings are not touched');
+    expect(controller.currency, 'USD', reason: 'settings are not touched');
     expect(await service.restorePoints(), isEmpty);
   });
 
@@ -106,19 +106,19 @@ void main() {
 
     expect(controller.subscriptions.map((s) => s.id), ['fromBackup']);
     expect(controller.paymentMethods, isEmpty);
-    expect(controller.currency, '€');
+    expect(controller.currency, 'EUR');
     expect(controller.monthlyBudget, 42);
     expect(await service.restorePoints(), hasLength(1));
 
     final reloaded = reloadedController();
     await reloaded.load();
     expect(reloaded.subscriptions.map((s) => s.id), ['fromBackup']);
-    expect(reloaded.currency, '€');
+    expect(reloaded.currency, 'EUR');
 
     expect(await service.undoLast(), isTrue);
     expect(controller.subscriptions.map((s) => s.id), ['mine1', 'mine2']);
     expect(controller.paymentMethods.length, cardsBefore);
-    expect(controller.currency, '\$');
+    expect(controller.currency, 'USD');
     expect(await service.restorePoints(), isEmpty);
     expect(await service.undoLast(), isFalse);
   });
@@ -134,7 +134,7 @@ void main() {
     await service.restore(legacy, RestoreMode.replace);
     expect(controller.subscriptions.map((s) => s.id), ['old']);
     expect(controller.paymentMethods.length, cardsBefore);
-    expect(controller.currency, '\$');
+    expect(controller.currency, 'USD');
   });
 
   test('clear all can be undone', () async {

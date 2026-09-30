@@ -152,7 +152,7 @@ void main() {
       expect(plan.map((n) => n.fireAt), [DateTime(2026, 10, 20, 9), DateTime(2026, 11, 20, 9)]);
       expect(plan.first.title, 'Over budget on Oct 20');
       expect(plan.first.body, contains('iCloud+'));
-      expect(plan.first.body, contains('over your \$30.00 budget'));
+      expect(plan.first.body, contains('over your \$30 budget'));
     });
 
     test('counts charges already paid this month', () {

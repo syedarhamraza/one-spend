@@ -139,11 +139,11 @@ class OneUIBudgetCard extends StatelessWidget {
     } else if (isOverBudget) {
       statusBadgeBg = colorCrimson.withValues(alpha: 0.15);
       statusBadgeText = colorCrimson;
-      statusBadgeLabel = '${store.currency}${(totalSpend - budget).toStringAsFixed(0)} over';
+      statusBadgeLabel = '${formatMoney((totalSpend - budget), store.currency, decimals: 0)} over';
     } else {
       statusBadgeBg = colorGreen.withValues(alpha: 0.15);
       statusBadgeText = colorGreen;
-      statusBadgeLabel = '${store.currency}${remaining.toStringAsFixed(0)} left';
+      statusBadgeLabel = '${formatMoney(remaining, store.currency, decimals: 0)} left';
     }
 
     return Padding(
@@ -197,18 +197,26 @@ class OneUIBudgetCard extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: statusBadgeBg,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                statusBadgeLabel,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: statusBadgeText,
+                            const SizedBox(width: 8),
+                            // Large-unit currencies (Rp, ₫) shrink to fit instead of overflowing.
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: statusBadgeBg,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    statusBadgeLabel,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: statusBadgeText,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -218,41 +226,51 @@ class OneUIBudgetCard extends StatelessWidget {
 
                         // Main Spend Metric & Right-Aligned Percentage
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
                           children: [
-                            Text(
-                              '${store.currency}${totalSpend.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.8,
-                                color: OneUITheme.textPrimary,
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    Text(
+                                      formatMoney(totalSpend, store.currency, style: MoneyStyle.summary),
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.8,
+                                        color: OneUITheme.textPrimary,
+                                      ),
+                                    ),
+                                    if (budget > 0) ...[
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '/ ${formatMoney(budget, store.currency, decimals: 0)}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white54,
+                                        ),
+                                      ),
+                                    ] else ...[
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'spent this month',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white54,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
                               ),
                             ),
                             if (budget > 0) ...[
                               const SizedBox(width: 8),
-                              Text(
-                                '/ ${store.currency}${budget.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white54,
-                                ),
-                              ),
-                            ] else ...[
-                              const SizedBox(width: 8),
-                              const Text(
-                                'spent this month',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white54,
-                                ),
-                              ),
-                            ],
-                            const Spacer(),
-                            if (budget > 0)
                               Text(
                                 '$budgetPercent%',
                                 style: TextStyle(
@@ -261,6 +279,7 @@ class OneUIBudgetCard extends StatelessWidget {
                                   color: trackColor,
                                 ),
                               ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -352,12 +371,20 @@ class OneUIBudgetCard extends StatelessWidget {
                                       color: OneUITheme.textSecondary,
                                     ),
                                   ),
-                                  Text(
-                                    '~${store.currency}${dailyAvg.toStringAsFixed(2)} / day',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: OneUITheme.textPrimary,
+                                  const SizedBox(width: 12),
+                                  Flexible(
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        '~${formatMoney(dailyAvg, store.currency, style: MoneyStyle.approximate)} / day',
+                                        maxLines: 1,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: OneUITheme.textPrimary,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],

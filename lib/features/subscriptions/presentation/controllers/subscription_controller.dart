@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import '../../../backup/domain/backup_snapshot.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../models/spending_trend.dart';
+import '../../../currency/data/exchange_rate_repository.dart';
+import '../../../currency/domain/currency.dart';
+import '../../../currency/domain/exchange_rates.dart';
+import '../../../currency/domain/money_format.dart';
 import '../../../payment_methods/data/fixtures/default_payment_methods.dart';
 import '../../../payment_methods/domain/entities/payment_method.dart';
 import '../../../payment_methods/domain/repositories/payment_method_repository.dart';
@@ -19,10 +23,14 @@ import '../../domain/services/subscription_stats.dart';
 ///
 /// State is held in memory; each mutation persists only what it changed through
 /// an ordered write queue, so writes land in the order they were made.
+///
+/// Each subscription is billed in its own currency; totals, budget and analytics are in
+/// the main [currency], converted with [rates].
 class SubscriptionController extends ChangeNotifier {
   final SubscriptionRepository subscriptionRepository;
   final PaymentMethodRepository paymentMethodRepository;
   final SettingsRepository settingsRepository;
+  final ExchangeRateRepository rates;
 
   static SubscriptionController get instance {
     if (!sl.isRegistered<SubscriptionController>()) {
@@ -35,10 +43,22 @@ class SubscriptionController extends ChangeNotifier {
     required this.subscriptionRepository,
     required this.paymentMethodRepository,
     required this.settingsRepository,
-  });
+    ExchangeRateRepository? rates,
+  }) : rates = rates ?? ExchangeRateRepository() {
+    this.rates.addListener(notifyListeners);
+  }
+
+  @override
+  void dispose() {
+    rates.removeListener(notifyListeners);
+    super.dispose();
+  }
 
   static const double _defaultBudget = 150.0;
-  static const String _defaultCurrency = '\$';
+
+  /// Largest price or budget accepted (fits IDR/VND-sized amounts).
+  static const double maxAmount = 999999999.0;
+  static const String _defaultCurrency = CurrencyCatalog.defaultCode;
   static const int _defaultReminder = 2;
   static const int _defaultReminderTime = 9 * 60;
 
@@ -127,6 +147,8 @@ class SubscriptionController extends ChangeNotifier {
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
   Set<String> get dismissedInsights => Set.unmodifiable(_dismissedInsights);
   double get monthlyBudget => _monthlyBudget;
+
+  /// The main currency (ISO code): totals, budget and analytics are shown in it.
   String get currency => _currency;
   String get userName => _userName;
   String get userEmail => _userEmail;
@@ -142,8 +164,46 @@ class SubscriptionController extends ChangeNotifier {
   DateTime? get lastBackupAt => _lastBackupAt;
   bool get isLoaded => _isLoaded;
 
+  // --- Currency ---
+
+  CurrencyConverter get converter => rates.converter;
+
+  /// [amount] of [code] in the main currency, or null when no rate is known.
+  double? toMainOrNull(double amount, String code) => converter.convert(amount, code, _currency);
+
+  /// [amount] of [code] in the main currency; 0 when no rate is known (see [hasRate]).
+  double toMain(double amount, String code) => toMainOrNull(amount, code) ?? 0;
+
+  bool hasRate(String code) => code == _currency || toMainOrNull(1, code) != null;
+
+  /// "≈ Rs 4,300" for an amount billed in another currency; null for the main currency or
+  /// when no rate is known.
+  String? approxInMain(double amount, String code) {
+    if (code == _currency) return null;
+    final converted = toMainOrNull(amount, code);
+    return converted == null ? null : '≈ ${formatMoney(converted, _currency, style: MoneyStyle.approximate)}';
+  }
+
+  /// [sub]'s monthly cost in the main currency.
+  double monthlyCostInMain(Subscription sub) => SubscriptionStats.monthlyCost(sub, toMain);
+
+  /// Currencies used by subscriptions, main currency first, then by number of subscriptions.
+  List<String> get currenciesInUse {
+    final counts = <String, int>{};
+    for (final s in _subscriptions) {
+      counts[s.currency] = (counts[s.currency] ?? 0) + 1;
+    }
+    counts.remove(_currency);
+    final others = counts.keys.toList()..sort((a, b) => counts[b]!.compareTo(counts[a]!));
+    return [_currency, ...others];
+  }
+
+  /// Subscriptions left out of totals because their currency has no exchange rate.
+  List<Subscription> get subscriptionsMissingRate =>
+      _subscriptions.where((s) => !hasRate(s.currency)).toList();
+
   double get totalMonthlySpend =>
-      _cachedTotalMonthlySpend ??= SubscriptionStats.totalMonthlySpend(_subscriptions);
+      _cachedTotalMonthlySpend ??= SubscriptionStats.totalMonthlySpend(_subscriptions, toMain);
 
   double get totalYearlySpend => totalMonthlySpend * 12;
 
@@ -154,16 +214,16 @@ class SubscriptionController extends ChangeNotifier {
   List<Subscription> get upcomingDue => _cachedUpcomingDue ??= SubscriptionStats.upcomingDue(_subscriptions);
 
   List<Subscription> get sortedSubscriptions =>
-      _cachedSortedSubscriptions ??= SubscriptionStats.sorted(_subscriptions, _sortOption);
+      _cachedSortedSubscriptions ??= SubscriptionStats.sorted(_subscriptions, _sortOption, toMain);
 
   Subscription? get highestCostSubscription {
     if (_highestCostCalculated) return _cachedHighestCostSubscription;
     _highestCostCalculated = true;
-    return _cachedHighestCostSubscription = SubscriptionStats.highestCost(_subscriptions);
+    return _cachedHighestCostSubscription = SubscriptionStats.highestCost(_subscriptions, toMain);
   }
 
   Map<SubscriptionCategory, double> get categorySpendMap =>
-      _cachedCategorySpendMap ??= SubscriptionStats.categorySpend(_subscriptions);
+      _cachedCategorySpendMap ??= SubscriptionStats.categorySpend(_subscriptions, toMain);
 
   List<MonthlySpendPoint> getSpendingTrends(SpendingTrendHorizon horizon, [DateTime? referenceDate]) {
     if (referenceDate == null && _cachedTrends.containsKey(horizon)) {
@@ -173,6 +233,7 @@ class SubscriptionController extends ChangeNotifier {
       subscriptions: _subscriptions,
       horizon: horizon,
       referenceDate: referenceDate,
+      toMain: toMain,
     );
     if (referenceDate == null) {
       _cachedTrends[horizon] = trends;
@@ -443,16 +504,38 @@ class SubscriptionController extends ChangeNotifier {
   }
 
   void setMonthlyBudget(double amount) {
-    _monthlyBudget = amount.clamp(0.0, 999999.0);
+    _monthlyBudget = amount.clamp(0.0, maxAmount);
     notifyListeners();
     final value = _monthlyBudget;
     _persist(() => settingsRepository.setMonthlyBudget(value));
   }
 
+  /// Changes the main currency. The budget is converted into it (when a rate is known);
+  /// subscriptions keep their own currency.
   void setCurrency(String newCurrency) {
-    _currency = newCurrency;
+    final code = CurrencyCatalog.normalize(newCurrency);
+    if (code == _currency) return;
+    final converted = converter.convert(_monthlyBudget, _currency, code);
+    _currency = code;
+    if (converted != null) _monthlyBudget = _roundBudget(converted, code);
     notifyListeners();
-    _persist(() => settingsRepository.setCurrency(newCurrency));
+    final budget = _monthlyBudget;
+    _persist(() async {
+      await settingsRepository.setCurrency(code);
+      await settingsRepository.setMonthlyBudget(budget);
+    });
+  }
+
+  /// Rounds a converted budget to a tidy figure: whole units below 1,000, otherwise two
+  /// significant figures (41,873 → 42,000).
+  static double _roundBudget(double amount, String code) {
+    if (amount <= 0) return 0;
+    if (amount < 1000) return amount.roundToDouble();
+    var step = 1.0;
+    while (amount / step >= 100) {
+      step *= 10;
+    }
+    return ((amount / step).round() * step).clamp(0.0, maxAmount);
   }
 
   void setUserProfile(String name, String email) {
@@ -541,6 +624,7 @@ class SubscriptionController extends ChangeNotifier {
     required List<Subscription> subscriptions,
     required List<PaymentMethod> paymentMethods,
     BackupSettings? settings,
+    Map<String, RateOverride>? rateOverrides,
   }) {
     _subscriptions
       ..clear()
@@ -550,8 +634,8 @@ class SubscriptionController extends ChangeNotifier {
       ..addAll(paymentMethods);
     _prePauseStatus.clear();
     if (settings != null) {
-      _monthlyBudget = settings.monthlyBudget.clamp(0.0, 999999.0);
-      _currency = settings.currency;
+      _monthlyBudget = settings.monthlyBudget.clamp(0.0, maxAmount);
+      _currency = CurrencyCatalog.normalize(settings.currency);
       _defaultReminderDays = settings.defaultReminderDays;
       _defaultReminderTimeMinutes = settings.defaultReminderTimeMinutes.clamp(0, 24 * 60 - 1);
       _notificationsEnabled = settings.notificationsEnabled;
@@ -577,6 +661,7 @@ class SubscriptionController extends ChangeNotifier {
         await settingsRepository.setSortOption(sort);
         await settingsRepository.setGroupByDate(group);
       }
+      if (rateOverrides != null) await rates.replaceOverrides(rateOverrides);
     });
   }
 

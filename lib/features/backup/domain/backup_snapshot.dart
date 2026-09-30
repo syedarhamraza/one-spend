@@ -1,3 +1,4 @@
+import '../../currency/domain/exchange_rates.dart';
 import '../../payment_methods/domain/entities/payment_method.dart';
 import '../../subscriptions/domain/entities/subscription.dart';
 import '../../subscriptions/domain/entities/subscription_enums.dart';
@@ -30,6 +31,10 @@ class BackupSnapshot {
   /// Raw appearance key/values (without the `appearance.` prefix).
   final Map<String, String> appearance;
 
+  /// Exchange rates the user pinned, by currency code; null for backups made before
+  /// multi-currency support.
+  final Map<String, RateOverride>? rateOverrides;
+
   const BackupSnapshot({
     required this.createdAt,
     required this.appVersion,
@@ -37,6 +42,7 @@ class BackupSnapshot {
     required this.paymentMethods,
     this.settings,
     this.appearance = const {},
+    this.rateOverrides,
   });
 
   /// True for files produced by the old subscriptions-only "Export backup".

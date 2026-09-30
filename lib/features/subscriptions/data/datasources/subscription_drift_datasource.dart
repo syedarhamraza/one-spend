@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../currency/domain/currency.dart';
 import '../../domain/entities/subscription_enums.dart';
 import '../models/subscription_model.dart';
 import 'subscription_local_datasource.dart';
@@ -21,7 +22,7 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
           name: row.name,
           description: row.description,
           price: row.price,
-          currency: row.currency,
+          currency: CurrencyCatalog.normalize(row.currency),
           billingCycle: BillingCycle.fromString(row.billingCycle),
           category: SubscriptionCategory.fromString(row.category),
           brandColorValue: row.brandColorValue,

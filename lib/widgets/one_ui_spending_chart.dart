@@ -7,14 +7,20 @@ import '../theme/one_ui_theme.dart';
 import 'one_ui_brand_icon.dart';
 import 'one_ui_segmented_pills.dart';
 
-/// "$1.2k" / "$85" style labels for chart axes.
+/// "$1.2k" / "Rs 42k" / "Rp 2.4M" style labels for chart axes.
 String compactMoney(String currency, double value) {
-  if (value >= 1000) {
-    final k = value / 1000;
-    final text = k >= 10 ? k.toStringAsFixed(0) : k.toStringAsFixed(1);
-    return '$currency${text.endsWith('.0') ? text.substring(0, text.length - 2) : text}k';
+  String scaled(double v, String suffix) {
+    final text = v >= 10 ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
+    return '${text.endsWith('.0') ? text.substring(0, text.length - 2) : text}$suffix';
   }
-  return '$currency${value.round()}';
+
+  final number = value >= 1e6
+      ? scaled(value / 1e6, 'M')
+      : value >= 1000
+          ? scaled(value / 1000, 'k')
+          : '${value.round()}';
+  final c = CurrencyCatalog.of(currency);
+  return c.symbolAfter ? '$number ${c.symbol}' : '${currencyPrefix(currency)}$number';
 }
 
 /// Samsung One UI spending trajectory card: past months as a solid line, the current month,
@@ -94,7 +100,7 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
     }
   }
 
-  String _money(String currency, double v) => '$currency${v.toStringAsFixed(2)}';
+  String _money(String currency, double v) => formatMoney(v, currency, style: MoneyStyle.summary);
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +116,7 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
           subscriptions: subs,
           horizon: _currentHorizon,
           referenceDate: widget.referenceDate,
+          toMain: store.toMain,
         );
         final summary = SpendingTrendsEngine.calculateSummary(points, monthlyBudget: budget);
 
@@ -795,7 +802,7 @@ class OneUILineChartPainter extends CustomPainter {
   /// Capsule above the scrubbed point with its month and amount.
   void _drawTooltip(Canvas canvas, Size size, Offset pt, MonthlySpendPoint point) {
     final tp = _text(
-      '${point.label} · $currency${point.amount.toStringAsFixed(2)}',
+      '${point.label} · ${formatMoney(point.amount, currency, style: MoneyStyle.summary)}',
       const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
     );
     final w = tp.width + 16;

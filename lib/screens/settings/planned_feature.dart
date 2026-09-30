@@ -25,13 +25,6 @@ enum PlannedFeature {
     'Automatic backups to a private folder in your Google Drive. Part of OneSpend Pro.',
     ['Daily or weekly automatic backups', 'Keeps several versions', 'Restore on a new phone in one tap'],
   ),
-  multiCurrency(
-    'Multiple currencies',
-    Icons.currency_exchange_rounded,
-    OneUITheme.accentAmber,
-    'Track each subscription in the currency you pay in, with totals converted to your main currency.',
-    ['Per-subscription currency', 'Automatic exchange rates', 'Totals in your main currency'],
-  ),
   rateApp(
     'Rate OneSpend',
     Icons.star_rounded,

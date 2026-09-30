@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
+import 'settings/currency_picker_screen.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_brand_catalog.dart';
 import '../utils/one_ui_date_formats.dart';
@@ -365,7 +366,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '$_currency${_price.toStringAsFixed(2)} • ${_billingCycle.label}',
+                                    '${formatMoney(_price, _currency)} • ${_billingCycle.label}',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -443,7 +444,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                             OneUIGroupItem(
                               leading: _buildCategoryIconBadge(Icons.attach_money_rounded, OneUITheme.accentGreen),
                               title: 'Price / Cost',
-                              subtitle: '$_currency${_price.toStringAsFixed(2)} / ${_billingCycle.label}',
+                              subtitle: '${formatMoney(_price, _currency)} / ${_billingCycle.label}',
                               subtitleColor: OneUITheme.accentGreen,
                               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                               onTap: () => _editField<double>(
@@ -452,6 +453,22 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                                 initialValue: _price,
                                 onApply: (val) => _price = val,
                               ),
+                            ),
+                            OneUIGroupItem(
+                              leading: _buildCategoryIconBadge(Icons.currency_exchange_rounded, OneUITheme.accentAmber),
+                              title: 'Currency',
+                              subtitle: currencyLabel(_currency),
+                              subtitleColor: OneUITheme.textSecondary,
+                              trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                              onTap: () async {
+                                final picked = await CurrencyPickerScreen.open(
+                                  context,
+                                  initialCode: _currency,
+                                  footnote: 'The currency this subscription is billed in. Totals are converted '
+                                      'to your main currency.',
+                                );
+                                if (picked != null && mounted) setState(() => _currency = picked);
+                              },
                             ),
                             OneUIGroupItem(
                               leading: _buildCategoryIconBadge(Icons.repeat_rounded, OneUITheme.accentPurple),

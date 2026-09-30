@@ -119,7 +119,7 @@ void main() {
     // Hero card: horizon title, total, charge count and the biggest charge.
     expect(find.byType(OneUIUpcomingHeroCard), findsOneWidget);
     expect(find.text('Due in the next 30 days'), findsOneWidget);
-    expect(find.text('\$36.00'), findsOneWidget); // 5 x \$5 gym + \$11 music
+    expect(find.text('\$36'), findsOneWidget); // 5 x \$5 gym + \$11 music
     expect(find.text('6 charges'), findsOneWidget);
     expect(find.text('Biggest charge'), findsOneWidget);
   });
@@ -129,7 +129,7 @@ void main() {
 
     await tester.tap(find.text('7 days'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('\$16.00 due in the next 7 days'), findsOneWidget);
+    expect(find.textContaining('\$16 due in the next 7 days'), findsOneWidget);
     expect(row('Weekly Gym'), findsOneWidget);
 
     await tester.tap(find.text('3 months'));

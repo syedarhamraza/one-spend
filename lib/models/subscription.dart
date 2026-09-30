@@ -10,6 +10,9 @@ export '../features/subscriptions/presentation/controllers/subscription_controll
 export '../features/payment_methods/domain/entities/payment_method.dart';
 export '../features/payment_methods/presentation/utils/payment_brand_ui_adapters.dart';
 export '../features/payment_methods/data/fixtures/default_payment_methods.dart';
+export '../features/currency/domain/currency.dart';
+export '../features/currency/domain/exchange_rates.dart';
+export '../features/currency/domain/money_format.dart';
 export 'payment_method.dart';
 export 'spending_trend.dart';
 

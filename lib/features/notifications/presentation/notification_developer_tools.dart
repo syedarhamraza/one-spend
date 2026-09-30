@@ -5,6 +5,7 @@ import '../../../theme/one_ui_theme.dart';
 import '../../../widgets/one_ui_floating_modal.dart';
 import '../../../widgets/one_ui_group_card.dart';
 import '../../../widgets/one_ui_toast.dart';
+import '../../currency/domain/money_format.dart';
 import '../../subscriptions/presentation/controllers/subscription_controller.dart';
 import '../data/notification_service.dart';
 import '../domain/planned_notification.dart';
@@ -61,7 +62,7 @@ class NotificationDeveloperTools {
       title: sub == null ? 'OneSpend test notification' : 'Test: ${sub.name} renews tomorrow',
       body: sub == null
           ? 'Notifications are working.'
-          : '${sub.currency}${sub.price.toStringAsFixed(2)} will be charged. Tap to open it.',
+          : '${formatMoney(sub.price, sub.currency)} will be charged. Tap to open it.',
       subjectId: sub?.id,
     );
   }

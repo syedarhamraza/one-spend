@@ -133,7 +133,7 @@ void main() {
 
     test('dueTotal and unpaid ignore paid charges', () {
       expect(charges.unpaid, hasLength(4));
-      expect(charges.dueTotal, closeTo(15.49 + 10.99 + 2.99 + 59.99, 1e-9));
+      expect(charges.dueTotal(), closeTo(15.49 + 10.99 + 2.99 + 59.99, 1e-9));
     });
 
     test('byDay groups charges in date order', () {
@@ -151,7 +151,7 @@ void main() {
     });
 
     test('biggest is the largest unpaid charge', () {
-      expect(charges.biggest!.subscription.name, 'Adobe');
+      expect(charges.biggest()!.subscription.name, 'Adobe');
     });
 
     test('busiestWeek finds the heaviest 7-day window', () {
@@ -163,8 +163,8 @@ void main() {
 
     test('summaries of an empty list are empty', () {
       const empty = <UpcomingCharge>[];
-      expect(empty.dueTotal, 0);
-      expect(empty.biggest, isNull);
+      expect(empty.dueTotal(), 0);
+      expect(empty.biggest(), isNull);
       expect(empty.busiestWeek(), isNull);
       expect(empty.byPaymentMethod(), isEmpty);
     });
