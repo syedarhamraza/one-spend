@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/config/app_info.dart';
+import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../utils/external_links.dart';
@@ -103,11 +104,12 @@ class AboutScreen extends StatelessWidget {
               trailing: const Icon(Icons.open_in_new_rounded, size: 18, color: OneUITheme.textSecondary),
               onTap: () => openExternalLink(context, AppInfo.repositoryUrl),
             ),
-            OneUIGroupItem(
-              title: PlannedFeature.privacyPolicy.title,
-              trailing: const OneUISoonChip(),
-              onTap: () => ComingSoonScreen.open(context, PlannedFeature.privacyPolicy),
-            ),
+            if (FeatureFlags.showPlannedFeatures)
+              OneUIGroupItem(
+                title: PlannedFeature.privacyPolicy.title,
+                trailing: const OneUISoonChip(),
+                onTap: () => ComingSoonScreen.open(context, PlannedFeature.privacyPolicy),
+              ),
           ],
         ),
         const SizedBox(height: 24),

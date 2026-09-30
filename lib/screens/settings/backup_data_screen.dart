@@ -1,13 +1,21 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/config/feature_flags.dart';
+import '../../core/di/injection.dart';
 import '../../core/router/app_router.dart';
+import '../../features/backup/data/backup_service.dart';
+import '../../features/backup/domain/backup_codec.dart';
+import '../../features/backup/domain/backup_snapshot.dart';
 import '../../models/subscription.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_card.dart';
@@ -17,32 +25,82 @@ import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
 import 'coming_soon_screen.dart';
 import 'planned_feature.dart';
+import 'restore_preview_screen.dart';
 
-/// Settings › Backup & data: export, placeholders for import and cloud sync, and clearing data.
+/// Settings › Backup & data.
+///
+/// One backup file, used both ways: "Save backup to device" writes it and "Restore from
+/// backup" reads it. Replacing data or clearing it always saves a restore point first,
+/// so the toast can offer Undo.
 class BackupDataScreen extends StatelessWidget {
   const BackupDataScreen({super.key});
+
+  static final DateFormat _savedFormat = DateFormat('MMM d, y');
 
   static Future<void> open(BuildContext context) {
     HapticFeedback.lightImpact();
     return context.push(AppRoutes.settingsData);
   }
 
-  Future<void> _export(BuildContext context, {required bool csv}) async {
+  Future<void> _saveBackup(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final now = DateTime.now();
+    try {
+      final contents = await sl<BackupService>().exportBackup(now: now);
+      final uri = await FilePicker.saveFile(
+        fileName: BackupService.fileName(now),
+        bytes: Uint8List.fromList(utf8.encode(contents)),
+        mimeType: 'application/json',
+      );
+      if (uri == null) return; // cancelled
+      SubscriptionStore.instance.markBackupSaved(now);
+      if (context.mounted) OneUIToast.show(context, 'Backup saved');
+    } catch (_) {
+      if (context.mounted) OneUIToast.show(context, 'Couldn\'t save the backup');
+    }
+  }
+
+  Future<void> _restoreBackup(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final BackupSnapshot backup;
+    try {
+      final files = await FilePicker.pickFiles();
+      if (files.isEmpty) return; // cancelled
+      backup = BackupCodec.decode(utf8.decode(await files.first.readAsBytes()));
+    } on BackupFormatException catch (e) {
+      if (context.mounted) OneUIToast.show(context, e.message);
+      return;
+    } catch (_) {
+      if (context.mounted) OneUIToast.show(context, BackupFormatException.damaged.message);
+      return;
+    }
+    if (!context.mounted) return;
+
+    final outcome = await RestorePreviewScreen.open(context, backup);
+    if (outcome == null || !context.mounted) return;
+    if (outcome.mode == RestoreMode.replace) {
+      OneUIToast.show(context, 'Backup restored', actionLabel: 'Undo', onAction: () => sl<BackupService>().undoLast());
+    } else {
+      final added = outcome.addedSubscriptions + outcome.addedPaymentMethods;
+      OneUIToast.show(context, added == 0 ? 'Nothing new to add' : 'Added $added item${added == 1 ? '' : 's'}');
+    }
+  }
+
+  Future<void> _exportCsv(BuildContext context) async {
     final store = SubscriptionStore.instance;
     if (store.subscriptions.isEmpty) {
       OneUIToast.show(context, 'No subscriptions to export');
       return;
     }
     HapticFeedback.lightImpact();
-    final content = csv ? store.exportDataAsCsv() : store.exportDataAsJson();
     try {
       final dir = await getTemporaryDirectory();
-      final file = File(p.join(dir.path, csv ? 'onespend-subscriptions.csv' : 'onespend-backup.json'));
-      await file.writeAsString(content);
+      final file = File(p.join(dir.path, 'onespend-subscriptions.csv'));
+      await file.writeAsString(store.exportDataAsCsv());
       await SharePlus.instance.share(
         ShareParams(
-          files: [XFile(file.path, mimeType: csv ? 'text/csv' : 'application/json')],
-          subject: csv ? 'OneSpend subscriptions' : 'OneSpend backup',
+          files: [XFile(file.path, mimeType: 'text/csv')],
+          subject: 'OneSpend subscriptions',
         ),
       );
     } catch (_) {
@@ -51,8 +109,7 @@ class BackupDataScreen extends StatelessWidget {
   }
 
   void _clearAll(BuildContext context) {
-    final store = SubscriptionStore.instance;
-    final count = store.subscriptions.length;
+    final count = SubscriptionStore.instance.subscriptions.length;
     if (count == 0) {
       OneUIToast.show(context, 'There are no subscriptions to clear');
       return;
@@ -60,73 +117,104 @@ class BackupDataScreen extends StatelessWidget {
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
       title: 'Clear all subscriptions?',
-      message: '$count subscription${count == 1 ? '' : 's'} and their payment history will be deleted. '
-          'This can\'t be undone.',
+      message:
+          '$count subscription${count == 1 ? '' : 's'} and their payment history will be removed. '
+          'A restore point is saved first, so you can undo.',
       cancelLabel: 'Cancel',
       confirmLabel: 'Clear all',
-      onConfirm: () {
+      onConfirm: () async {
         HapticFeedback.mediumImpact();
-        store.clearAllData();
-        OneUIToast.show(context, 'All subscriptions cleared');
+        await sl<BackupService>().clearAll();
+        if (!context.mounted) return;
+        OneUIToast.show(
+          context,
+          'All subscriptions cleared',
+          actionLabel: 'Undo',
+          onAction: () => sl<BackupService>().undoLast(),
+        );
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final store = SubscriptionStore.instance;
     return OneUISubpage(
       title: 'Backup & data',
-      builder: (context) => [
-        OneUISection(
-          title: 'Export',
-          child: OneUIGroupCard(
-            margin: EdgeInsets.zero,
-            items: [
-              OneUIGroupItem(
-                title: 'Export backup',
-                subtitle: 'JSON file with everything, for restoring later',
-                trailing: const SizedBox.shrink(),
-                onTap: () => _export(context, csv: false),
-              ),
-              OneUIGroupItem(
-                title: 'Export as spreadsheet',
-                subtitle: 'CSV file for Excel or Google Sheets',
-                trailing: const SizedBox.shrink(),
-                onTap: () => _export(context, csv: true),
-              ),
-            ],
-          ),
-        ),
-        OneUISection(
-          title: 'Restore',
-          child: OneUIGroupCard(
-            margin: EdgeInsets.zero,
-            items: [
-              OneUIGroupItem(
-                title: PlannedFeature.import.title,
-                trailing: const OneUISoonChip(),
-                onTap: () => ComingSoonScreen.open(context, PlannedFeature.import),
-              ),
-              OneUIGroupItem(
-                title: PlannedFeature.cloudBackup.title,
-                trailing: const OneUISoonChip(),
-                onTap: () => ComingSoonScreen.open(context, PlannedFeature.cloudBackup),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        OneUIGroupCard(
-          margin: EdgeInsets.zero,
-          items: [
-            OneUIGroupItem(
-              title: 'Clear all subscriptions',
-              trailing: const Icon(Icons.delete_outline_rounded, color: OneUITheme.accentRed, size: 22),
-              onTap: () => _clearAll(context),
+      listenable: store,
+      builder: (context) {
+        final lastSaved = store.lastBackupAt;
+        return [
+          OneUISection(
+            title: 'Backup',
+            child: OneUIGroupCard(
+              margin: EdgeInsets.zero,
+              items: [
+                OneUIGroupItem(
+                  title: 'Save backup to device',
+                  subtitle: lastSaved == null ? 'Never saved' : 'Last saved ${_savedFormat.format(lastSaved)}',
+                  subtitleColor: OneUITheme.accentBlue,
+                  trailing: const SizedBox.shrink(),
+                  onTap: () => _saveBackup(context),
+                ),
+                OneUIGroupItem(
+                  title: 'Restore from backup',
+                  trailing: const SizedBox.shrink(),
+                  onTap: () => _restoreBackup(context),
+                ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: Text(
+              'Saves subscriptions, cards and settings in one file. Keep it somewhere safe, like Downloads or '
+              'your own cloud storage.',
+              style: TextStyle(fontSize: 13, height: 1.35, color: OneUITheme.textSecondary),
+            ),
+          ),
+          if (FeatureFlags.showPlannedFeatures)
+            OneUISection(
+              title: 'Google Drive',
+              child: OneUIGroupCard(
+                margin: EdgeInsets.zero,
+                items: [
+                  OneUIGroupItem(
+                    title: 'Automatic backups',
+                    trailing: const OneUIProChip(),
+                    onTap: () => ComingSoonScreen.open(context, PlannedFeature.driveBackup),
+                  ),
+                ],
+              ),
+            ),
+          OneUISection(
+            title: 'Export',
+            child: OneUIGroupCard(
+              margin: EdgeInsets.zero,
+              items: [
+                OneUIGroupItem(
+                  title: 'Export as spreadsheet',
+                  subtitle: 'CSV file for Excel or Google Sheets',
+                  subtitleColor: OneUITheme.textSecondary,
+                  trailing: const SizedBox.shrink(),
+                  onTap: () => _exportCsv(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          OneUIGroupCard(
+            margin: EdgeInsets.zero,
+            items: [
+              OneUIGroupItem(
+                title: 'Clear all subscriptions',
+                trailing: const Icon(Icons.delete_outline_rounded, color: OneUITheme.accentRed, size: 22),
+                onTap: () => _clearAll(context),
+              ),
+            ],
+          ),
+        ];
+      },
     );
   }
 }

@@ -98,6 +98,26 @@ class OneUISoonChip extends StatelessWidget {
   }
 }
 
+/// Small amber "Pro" capsule for features that will need OneSpend Pro.
+class OneUIProChip extends StatelessWidget {
+  const OneUIProChip({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: OneUITheme.accentAmber.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(OneUITheme.radiusBadge),
+      ),
+      child: const Text(
+        'Pro',
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: OneUITheme.accentAmber),
+      ),
+    );
+  }
+}
+
 /// 36dp solid circle list badge with a white icon (design doc §4, "Leading icon badges").
 class OneUIIconBadge extends StatelessWidget {
   final IconData icon;

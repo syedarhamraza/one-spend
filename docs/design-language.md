@@ -133,7 +133,7 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) |
 | `OneUIFloatingSearchPill` | `one_ui_floating_search_pill.dart` | In-screen search |
 | `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open |
-| `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge) and `OneUISoonChip` |
+| `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge), `OneUISoonChip` and `OneUIProChip` (amber, for future Pro features) |
 | `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar |
 | `OneUISortBottomSheet`, `OneUIFilterBottomSheet`, `OneUIFloatingMenu` | respective files | Sort / filter sheets and overflow menus |
 | `OneUIScrollToTopButton` | `one_ui_scroll_to_top_button.dart` | Long lists |
@@ -165,7 +165,7 @@ Settings follows Samsung Settings: the **main page is titles only**. Each row is
 
 - **New option in an existing area:** add a row to that subpage (built on `OneUISubpage`). Subpage rows show the **current value** as their subtitle, and a `OneUISwitch` is fine here. Also add it to that destination's `options` in `settings_catalog.dart` so search finds it (results show the path, e.g. "Settings › Notifications").
 - **New area:** add a `SettingsDestination` to a group in `SettingsCatalog.groups` (icon, colour, `open`, keywords, options), plus a subpage with a route and an `open()` helper (§5.1).
-- **Not built yet:** add a `PlannedFeature` and point the row at `ComingSoonScreen.open`; show `OneUISoonChip` as the trailing widget.
+- **Not built yet:** add a `PlannedFeature` and point the row at `ComingSoonScreen.open`; show `OneUISoonChip` (or `OneUIProChip`) as the trailing widget. Wrap the row in `if (FeatureFlags.showPlannedFeatures)` and mark catalog options `placeholder: true`: placeholders appear in **debug builds only**, so release users never see features that don't work yet.
 - **Debug-only tools** go in Developer options, which only exists in debug builds.
 
 ### 5.3 Quick actions, confirmation, and long-press
@@ -179,6 +179,8 @@ Settings follows Samsung Settings: the **main page is titles only**. Each row is
 
 ### 5.4 Confirm a destructive action
 Use `OneUIFloatingModal.showConfirmationDialog(title, message, confirmLabel: 'Delete', …)`, then `OneUIToast.show(context, '… deleted')`.
+
+**Bulk data changes are always undoable.** Anything that replaces or wipes the user's data (restoring a backup with "Replace everything", "Clear all subscriptions") goes through `BackupService`, which saves a restore point first. Follow it with a toast offering **Undo** (`BackupService.undoLast`). There is exactly one backup mechanism: the in-app backup file (Android Auto Backup is disabled in the manifest).
 
 ---
 

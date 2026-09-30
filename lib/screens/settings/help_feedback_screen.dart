@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_info.dart';
+import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../utils/external_links.dart';
@@ -41,12 +42,13 @@ class HelpFeedbackScreen extends StatelessWidget {
               trailing: openIcon,
               onTap: () => openExternalLink(context, AppInfo.issuesUrl),
             ),
-            OneUIGroupItem(
-              leading: const OneUIIconBadge(Icons.star_rounded, OneUITheme.accentAmber),
-              title: PlannedFeature.rateApp.title,
-              trailing: const OneUISoonChip(),
-              onTap: () => ComingSoonScreen.open(context, PlannedFeature.rateApp),
-            ),
+            if (FeatureFlags.showPlannedFeatures)
+              OneUIGroupItem(
+                leading: const OneUIIconBadge(Icons.star_rounded, OneUITheme.accentAmber),
+                title: PlannedFeature.rateApp.title,
+                trailing: const OneUISoonChip(),
+                onTap: () => ComingSoonScreen.open(context, PlannedFeature.rateApp),
+              ),
           ],
         ),
       ],

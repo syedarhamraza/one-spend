@@ -34,6 +34,10 @@ abstract class SettingsRepository {
   Future<List<String>> getDismissedInsights();
   Future<void> setDismissedInsights(List<String> keys);
 
+  /// When a backup was last saved to the device, if ever.
+  Future<DateTime?> getLastBackupAt();
+  Future<void> setLastBackupAt(DateTime value);
+
   /// Raw appearance (card studio / effects) values, keyed by setting name.
   Future<Map<String, String>> getAppearanceSettings();
   Future<void> setAppearanceSettings(Map<String, String> values);

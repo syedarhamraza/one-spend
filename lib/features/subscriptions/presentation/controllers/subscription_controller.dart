@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../backup/domain/backup_snapshot.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../models/spending_trend.dart';
 import '../../../payment_methods/data/fixtures/default_payment_methods.dart';
@@ -56,6 +57,7 @@ class SubscriptionController extends ChangeNotifier {
   bool _notificationsEnabled = true;
   SubscriptionSortOption _sortOption = SubscriptionSortOption.renewalAsc;
   bool _groupByDate = false;
+  DateTime? _lastBackupAt;
   bool _isLoaded = false;
   final Map<String, SubscriptionStatus> _prePauseStatus = {};
 
@@ -107,6 +109,7 @@ class SubscriptionController extends ChangeNotifier {
     _groupByDate = false;
     _recentSearches.clear();
     _dismissedInsights.clear();
+    _lastBackupAt = null;
     _prePauseStatus.clear();
     _isLoaded = true;
     notifyListeners();
@@ -134,6 +137,9 @@ class SubscriptionController extends ChangeNotifier {
   bool get notificationsEnabled => _notificationsEnabled;
   SubscriptionSortOption get sortOption => _sortOption;
   bool get groupByDate => _groupByDate;
+
+  /// When a backup was last saved to the device, if ever.
+  DateTime? get lastBackupAt => _lastBackupAt;
   bool get isLoaded => _isLoaded;
 
   double get totalMonthlySpend =>
@@ -210,6 +216,7 @@ class SubscriptionController extends ChangeNotifier {
       _dismissedInsights
         ..clear()
         ..addAll(await settingsRepository.getDismissedInsights());
+      _lastBackupAt = await settingsRepository.getLastBackupAt();
     } catch (e) {
       debugPrint('OneSpend: Failed to load data from repository: $e');
     }
@@ -519,6 +526,68 @@ class SubscriptionController extends ChangeNotifier {
     _recentSearches.clear();
     notifyListeners();
     _saveRecentSearches();
+  }
+
+  // --- Backup & restore ---
+
+  void markBackupSaved(DateTime at) {
+    _lastBackupAt = at;
+    notifyListeners();
+    _persist(() => settingsRepository.setLastBackupAt(at));
+  }
+
+  /// Replaces all subscriptions and cards, and the settings when given (restoring a backup).
+  void replaceAllData({
+    required List<Subscription> subscriptions,
+    required List<PaymentMethod> paymentMethods,
+    BackupSettings? settings,
+  }) {
+    _subscriptions
+      ..clear()
+      ..addAll(subscriptions);
+    _paymentMethods
+      ..clear()
+      ..addAll(paymentMethods);
+    _prePauseStatus.clear();
+    if (settings != null) {
+      _monthlyBudget = settings.monthlyBudget.clamp(0.0, 999999.0);
+      _currency = settings.currency;
+      _defaultReminderDays = settings.defaultReminderDays;
+      _defaultReminderTimeMinutes = settings.defaultReminderTimeMinutes.clamp(0, 24 * 60 - 1);
+      _notificationsEnabled = settings.notificationsEnabled;
+      _sortOption = settings.sortOption;
+      _groupByDate = settings.groupByDate;
+    }
+    notifyListeners();
+
+    final subs = List<Subscription>.from(_subscriptions);
+    final methods = List<PaymentMethod>.from(_paymentMethods);
+    final budget = _monthlyBudget, currency = _currency, days = _defaultReminderDays;
+    final time = _defaultReminderTimeMinutes, notify = _notificationsEnabled;
+    final sort = _sortOption, group = _groupByDate;
+    _persist(() async {
+      await subscriptionRepository.replaceAll(subs);
+      await paymentMethodRepository.replaceAll(methods);
+      if (settings != null) {
+        await settingsRepository.setMonthlyBudget(budget);
+        await settingsRepository.setCurrency(currency);
+        await settingsRepository.setDefaultReminderDays(days);
+        await settingsRepository.setDefaultReminderTimeMinutes(time);
+        await settingsRepository.setNotificationsEnabled(notify);
+        await settingsRepository.setSortOption(sort);
+        await settingsRepository.setGroupByDate(group);
+      }
+    });
+  }
+
+  /// Appends subscriptions and cards (restoring a backup with "Add missing items").
+  void addItems({required List<Subscription> subscriptions, required List<PaymentMethod> paymentMethods}) {
+    if (subscriptions.isEmpty && paymentMethods.isEmpty) return;
+    _subscriptions.addAll(subscriptions);
+    _paymentMethods.addAll(paymentMethods);
+    notifyListeners();
+    _persistSubscriptions(subscriptions);
+    _persistPaymentMethods(paymentMethods);
   }
 
   // --- Dismissed insights ---

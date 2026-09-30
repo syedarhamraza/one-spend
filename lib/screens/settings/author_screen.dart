@@ -27,31 +27,56 @@ class AuthorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const openIcon = Icon(Icons.open_in_new_rounded, size: 18, color: OneUITheme.textSecondary);
     OneUIGroupItem link(IconData icon, Color color, String title, String value, String url) => OneUIGroupItem(
-          leading: OneUIIconBadge(icon, color),
-          title: title,
-          subtitle: value,
-          subtitleColor: OneUITheme.textSecondary,
-          trailing: openIcon,
-          onTap: () => openExternalLink(context, url),
-        );
+      leading: OneUIIconBadge(icon, color),
+      title: title,
+      subtitle: value,
+      subtitleColor: OneUITheme.textSecondary,
+      trailing: openIcon,
+      onTap: () => openExternalLink(context, url),
+    );
 
     final contact = [
       if (AuthorInfo.email.isNotEmpty)
-        link(Icons.mail_rounded, OneUITheme.accentBlue, 'Email', AuthorInfo.email,
-            mailtoUrl(AuthorInfo.email, subject: 'Hello from OneSpend')),
+        link(
+          Icons.mail_rounded,
+          OneUITheme.accentBlue,
+          'Email',
+          AuthorInfo.email,
+          mailtoUrl(AuthorInfo.email, subject: 'Hello from OneSpend'),
+        ),
       if (AuthorInfo.linkedInUrl.isNotEmpty)
-        link(Icons.work_rounded, const Color(0xFF0A66C2), 'LinkedIn', _shortUrl(AuthorInfo.linkedInUrl),
-            AuthorInfo.linkedInUrl),
+        link(
+          Icons.work_rounded,
+          const Color(0xFF0A66C2),
+          'LinkedIn',
+          _shortUrl(AuthorInfo.linkedInUrl),
+          AuthorInfo.linkedInUrl,
+        ),
       if (AuthorInfo.websiteUrl.isNotEmpty)
-        link(Icons.language_rounded, OneUITheme.accentTeal, 'Website', _shortUrl(AuthorInfo.websiteUrl),
-            AuthorInfo.websiteUrl),
+        link(
+          Icons.language_rounded,
+          OneUITheme.accentTeal,
+          'Website',
+          _shortUrl(AuthorInfo.websiteUrl),
+          AuthorInfo.websiteUrl,
+        ),
     ];
     final code = [
       if (AuthorInfo.githubUrl.isNotEmpty)
-        link(Icons.code_rounded, OneUITheme.accentPurple, 'GitHub', '@${AuthorInfo.githubUsername}',
-            AuthorInfo.githubUrl),
-      link(Icons.folder_open_rounded, OneUITheme.accentGreen, 'OneSpend source code',
-          _shortUrl(AppInfo.repositoryUrl), AppInfo.repositoryUrl),
+        link(
+          Icons.code_rounded,
+          OneUITheme.accentPurple,
+          'GitHub',
+          '@${AuthorInfo.githubUsername}',
+          AuthorInfo.githubUrl,
+        ),
+      link(
+        Icons.folder_open_rounded,
+        OneUITheme.accentGreen,
+        'OneSpend source code',
+        _shortUrl(AppInfo.repositoryUrl),
+        AppInfo.repositoryUrl,
+      ),
     ];
 
     return OneUISubpage(
@@ -64,7 +89,12 @@ class AuthorScreen extends StatelessWidget {
           child: Text(
             AuthorInfo.name,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: OneUITheme.textPrimary),
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+              color: OneUITheme.textPrimary,
+            ),
           ),
         ),
         if (AuthorInfo.role.isNotEmpty || AuthorInfo.location.isNotEmpty) ...[
@@ -90,8 +120,14 @@ class AuthorScreen extends StatelessWidget {
         ],
         const SizedBox(height: 18),
         if (contact.isNotEmpty)
-          OneUISection(title: 'Contact', child: OneUIGroupCard(margin: EdgeInsets.zero, items: contact)),
-        OneUISection(title: 'Code', child: OneUIGroupCard(margin: EdgeInsets.zero, items: code)),
+          OneUISection(
+            title: 'Contact',
+            child: OneUIGroupCard(margin: EdgeInsets.zero, items: contact),
+          ),
+        OneUISection(
+          title: 'Code',
+          child: OneUIGroupCard(margin: EdgeInsets.zero, items: code),
+        ),
       ],
     );
   }
@@ -99,7 +135,9 @@ class AuthorScreen extends StatelessWidget {
   Widget _avatar() {
     const size = 104.0;
     if (AuthorInfo.photoAsset.isNotEmpty) {
-      return ClipOval(child: Image.asset(AuthorInfo.photoAsset, width: size, height: size, fit: BoxFit.cover));
+      return ClipOval(
+        child: Image.asset(AuthorInfo.photoAsset, width: size, height: size, fit: BoxFit.cover),
+      );
     }
     return Container(
       width: size,

@@ -17,6 +17,7 @@ import '../../features/subscriptions/data/datasources/subscription_drift_datasou
 import '../../features/subscriptions/data/datasources/subscription_local_datasource.dart';
 import '../../features/subscriptions/data/repositories/subscription_repository_impl.dart';
 import '../../features/subscriptions/domain/repositories/subscription_repository.dart';
+import '../../features/backup/data/backup_service.dart';
 import '../../features/subscriptions/presentation/controllers/subscription_controller.dart';
 import '../../theme/one_ui_theme.dart';
 
@@ -24,6 +25,9 @@ final sl = GetIt.instance;
 
 void setupDependencies({AppDatabase? database}) {
   if (database != null) {
+    if (sl.isRegistered<BackupService>()) {
+      sl.unregister<BackupService>();
+    }
     if (sl.isRegistered<SubscriptionController>()) {
       sl.unregister<SubscriptionController>();
     }
@@ -88,6 +92,12 @@ void setupDependencies({AppDatabase? database}) {
         paymentMethodRepository: sl<PaymentMethodRepository>(),
         settingsRepository: sl<SettingsRepository>(),
       ),
+    );
+  }
+
+  if (!sl.isRegistered<BackupService>()) {
+    sl.registerLazySingleton<BackupService>(
+      () => BackupService(controller: sl<SubscriptionController>(), settings: sl<SettingsRepository>()),
     );
   }
 
