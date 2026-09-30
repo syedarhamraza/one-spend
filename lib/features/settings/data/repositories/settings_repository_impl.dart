@@ -67,6 +67,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> saveRecentSearches(List<String> searches) => _dataSource.saveRecentSearches(searches);
 
   @override
+  Future<List<String>> getDismissedInsights() => _dataSource.getDismissedInsights();
+
+  @override
+  Future<void> setDismissedInsights(List<String> keys) => _dataSource.setDismissedInsights(keys);
+
+  @override
   Future<Map<String, String>> getAppearanceSettings() => _dataSource.getAppearanceSettings();
 
   @override

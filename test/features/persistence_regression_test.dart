@@ -54,6 +54,25 @@ void main() {
       expect(controller.userEmail, isEmpty);
     });
 
+    test('dismissed insights survive a relaunch and can be restored', () async {
+      final first = _controllerFor(db);
+      await first.load();
+      first.dismissInsight('all|over:2026-09');
+      first.dismissInsight('all|top:netflix');
+      first.undismissInsight('all|top:netflix');
+      await first.pendingWrites;
+
+      final second = _controllerFor(db);
+      await second.load();
+      expect(second.dismissedInsights, {'all|over:2026-09'});
+
+      second.restoreDismissedInsights();
+      await second.pendingWrites;
+      final third = _controllerFor(db);
+      await third.load();
+      expect(third.dismissedInsights, isEmpty);
+    });
+
     test('cleared subscriptions stay cleared after relaunch', () async {
       final first = _controllerFor(db);
       first.resetForTesting();

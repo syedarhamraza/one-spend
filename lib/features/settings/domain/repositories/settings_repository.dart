@@ -30,6 +30,10 @@ abstract class SettingsRepository {
   Future<List<String>> getRecentSearches();
   Future<void> saveRecentSearches(List<String> searches);
 
+  /// Keys of Analytics insight cards the user dismissed, oldest first.
+  Future<List<String>> getDismissedInsights();
+  Future<void> setDismissedInsights(List<String> keys);
+
   /// Raw appearance (card studio / effects) values, keyed by setting name.
   Future<Map<String, String>> getAppearanceSettings();
   Future<void> setAppearanceSettings(Map<String, String> values);

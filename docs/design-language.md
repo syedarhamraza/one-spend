@@ -27,6 +27,7 @@ Everything below is backed by real code: tokens live in [`lib/theme/one_ui_theme
 | `surfaceCardHighlight` | `#262628` | Pressed / nested surfaces |
 | `surfacePill` | `#2C2C2E` | Floating capsules, chips |
 | `surfacePillActive` | `#3E3E42` | Active tab capsule, selected pill |
+| `surfaceButtonLight` | `#B5B5BA` | Light grey pill button on tip cards, with `textOnLight` (`#0E0E10`) labels |
 
 **Dynamic getters.** Always use these for cards and floating UI:
 - cards: `cardColor`, `cardBorder`, `cardShadow`
@@ -44,6 +45,10 @@ They follow `OneUIEffectsController`, which holds the user's 3D-effects settings
 | `accentAmber` | `#F4A261` | Notifications, warnings that aren't errors |
 | `accentPurple` | `#7E57C2` | Appearance / customisation, help |
 | `accentOrange` | `#FB8C00` | Reset / restore actions |
+
+**Insight tone.** Tip cards reuse the accents by meaning: `accentRed` = bad news (over budget, spending up), `accentAmber` = heads-up (renewal soon, heavy month), `accentGreen` = good news (under budget, savings), `accentBlue` = neutral information.
+
+**Hero glow.** The glass hero cards glow in a colour that reflects state, never decoration: the Budget card follows its track (blue → orange → red as spending nears the limit), the Upcoming hero takes the biggest charge's brand colour (crimson when anything is overdue), and the Analytics hero takes the largest (or selected) category's colour. Pass raw brand/category colours through `OneUITheme.glowTint` so dark or grey ones still read on black; `glowDefault` (`#0381FE`) is the fallback.
 
 Need a new colour? Add a token to `OneUITheme` first. Don't inline `Color(0x…)` in screens.
 
@@ -115,6 +120,10 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIUpcomingHeroCard` | `one_ui_upcoming_hero_card.dart` | Upcoming tab hero: the budget card's glass + glow recipe, hero amount, 12dp track split by payment method, Device Care key-value rows |
 | `OneUIAnalyticsHeroCard` | `one_ui_analytics_hero_card.dart` | Analytics tab hero: same glass + glow recipe, yearly amount, 12dp track split by category colour, key-value rows (per month, budget, paused) |
 | `OneUISpendingTrendsCard` + `OneUILineChart` | `one_ui_spending_chart.dart` | Spending trajectory: 6M · 1Y · 2Y of past months (solid) and forecast (dashed, from `ChargeSchedule`), budget guide, scrubbing with a tooltip, and the charges behind the highlighted month |
+| `OneUIAmbientGlow` | `one_ui_ambient_glow.dart` | The radial glow behind glass hero cards (first child of the card's `Stack`); cross-fades when its `color` changes |
+| `OneUISliverScrollAnchor` + `OneUISliverScrollAnchorSpacer` | `one_ui_sliver_scroll_anchor.dart` | Keeps a tapped card still while content above it resizes (e.g. a filter). Put the anchor right before that card's sliver, the spacer at the end instead of the 140 px `SizedBox`, and call `controller.hold()` before the change |
+| `OneUIInsightCard` + `InsightCards` | `one_ui_insight_card.dart`, `domain/services/insight_cards.dart` | Digital Wellbeing style tip: tone-coloured centred headline, message, light grey pill action, glow in the tone colour. One at a time; swipe or ✕ to dismiss (with Undo). Dismissed keys persist in `SubscriptionController.dismissedInsights` |
+| `OneUICategoryBreakdownCard` | `one_ui_category_breakdown_card.dart` | "Screen time" style card: big total beside a donut, legend of colour bar · icon · name · amount; tapping a row selects that category |
 | `OneUICategoryRing` | `one_ui_category_ring.dart` | Donut split with a centre label; `highlightedIndex` dims the other segments. Colours come from `SubscriptionCategory.color` |
 | `OneUISelectionCountPill`, `OneUISelectionCancelPill` | `one_ui_selection_header_pills.dart` | Selection-mode header capsules (select-all + count, Cancel). Pass them as `selectionLeading` / `selectionTrailing` |
 | `OneUISegmentedPills` | `one_ui_segmented_pills.dart` | A few mutually exclusive ranges/modes in one capsule with a sliding thumb (e.g. Upcoming's 7 days · 30 days · 3 months · 12 months). Pass `dense: true` for a compact 34dp version inside a card |
@@ -161,7 +170,7 @@ Rows are filtered by the Settings search, so keep titles descriptive.
 
 ### 5.3 Quick actions, confirmation, and long-press
 - **Money-moving actions** (mark paid, skip a cycle) use a **confirmation**: `OneUIFloatingModal.showConfirmationDialog`. The title is a question ("Mark Netflix as paid?"), the message says what will happen ("Logs a $15.49 payment and moves the next renewal to Nov 5"), and `confirmTextColor` uses the action's accent. Follow it with a plain `OneUIToast`.
-- **Undo** (`OneUIToast.show(…, actionLabel: 'Undo', onAction: …)`) suits cheap, non-financial changes, where a snapshot restores the previous state.
+- **Undo** (`OneUIToast.show(…, actionLabel: 'Undo', onAction: …)`) suits cheap, non-financial changes, where a snapshot restores the previous state. Dismissing a tip card is one of these: toast "Tip dismissed" with Undo, and offer a "Show dismissed tips" menu item to bring them all back.
 - **Long-press always enters selection mode**, never a sheet or menu. The recipe (see `upcoming_screen.dart` and `subscriptions_screen.dart`):
   1. Track `_isSelectionMode` and `_selectedIds`. Tapping toggles selection, and rows show a selection circle instead of their actions.
   2. Pass `isSelectionMode`, `selectionLeading: OneUISelectionCountPill(…)` and `selectionTrailing: OneUISelectionCancelPill(…)` to the header.

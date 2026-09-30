@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_ambient_glow.dart';
 
 /// One row of the hero card's key-value panel.
 typedef AnalyticsHeroRow = ({String label, String value, String? caption, Color? valueColor});
@@ -20,6 +21,9 @@ class OneUIAnalyticsHeroCard extends StatelessWidget {
   final List<({Color color, double total})> segments;
   final List<AnalyticsHeroRow> rows;
 
+  /// Ambient glow colour, e.g. the tinted colour of the largest category.
+  final Color glowColor;
+
   static const Color trackBackground = Color(0xFF2C2D30);
 
   const OneUIAnalyticsHeroCard({
@@ -29,6 +33,7 @@ class OneUIAnalyticsHeroCard extends StatelessWidget {
     required this.badge,
     required this.segments,
     required this.rows,
+    this.glowColor = OneUITheme.glowDefault,
   });
 
   @override
@@ -37,23 +42,7 @@ class OneUIAnalyticsHeroCard extends StatelessWidget {
       borderRadius: OneUITheme.cardBorderRadius,
       child: Stack(
         children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0.0, -0.2),
-                  radius: 1.05,
-                  colors: [
-                    const Color(0xFF0381FE).withValues(alpha: 0.26),
-                    const Color(0xFF0381FE).withValues(alpha: 0.11),
-                    const Color(0xFF0381FE).withValues(alpha: 0.02),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.50, 0.85, 1.0],
-                ),
-              ),
-            ),
-          ),
+          OneUIAmbientGlow(color: glowColor),
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(

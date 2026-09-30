@@ -11,6 +11,8 @@ class OneUITheme {
   static const Color surfaceCardHighlight = Color(0xFF262628);
   static const Color surfacePill = Color(0xFF2C2C2E); // Distinct One UI Gray Floating Capsule Surface
   static const Color surfacePillActive = Color(0xFF3E3E42); // Active Tab Capsule
+  static const Color surfaceButtonLight = Color(0xFFB5B5BA); // Light grey pill button (Digital Wellbeing tip cards)
+  static const Color textOnLight = Color(0xFF0E0E10); // Label on surfaceButtonLight
   static const Color surfacePillBorder = Colors.transparent;
 
   // --- 3D Floating Navbar Tokens (Matching Samsung One UI Phone Dialer Screenshot 1:1) ---
@@ -28,6 +30,20 @@ class OneUITheme {
   static const Color accentPurple = Color(0xFF7E57C2);
   static const Color accentAmber = Color(0xFFF4A261);
   static const Color accentOrange = Color(0xFFFB8C00);
+
+  // --- Ambient Glow (hero cards) ---
+  static const Color glowDefault = Color(0xFF0381FE); // Samsung Signature Blue
+
+  /// Turns a brand or category colour into a glow that reads on black: greys, near-black
+  /// and near-white fall back to [glowDefault]; others get a mid lightness and enough saturation.
+  static Color glowTint(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    if (hsl.saturation < 0.18 || hsl.lightness < 0.12 || hsl.lightness > 0.92) return glowDefault;
+    return hsl
+        .withLightness(hsl.lightness.clamp(0.45, 0.62))
+        .withSaturation(hsl.saturation < 0.55 ? 0.55 : hsl.saturation)
+        .toColor();
+  }
 
   // --- High-Legibility Typography Colors ---
   static const Color textPrimary = Color(0xFFFFFFFF);
