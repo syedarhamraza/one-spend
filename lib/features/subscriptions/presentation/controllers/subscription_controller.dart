@@ -44,6 +44,9 @@ class SubscriptionController extends ChangeNotifier {
   final List<Subscription> _subscriptions = [];
   final List<PaymentMethod> _paymentMethods = [];
   final List<String> _recentSearches = [];
+
+  /// Dismissed Analytics insight keys, oldest first (insertion ordered).
+  final Set<String> _dismissedInsights = <String>{};
   double _monthlyBudget = _defaultBudget;
   String _currency = _defaultCurrency;
   String _userName = '';
@@ -103,6 +106,7 @@ class SubscriptionController extends ChangeNotifier {
     _sortOption = SubscriptionSortOption.renewalAsc;
     _groupByDate = false;
     _recentSearches.clear();
+    _dismissedInsights.clear();
     _prePauseStatus.clear();
     _isLoaded = true;
     notifyListeners();
@@ -118,6 +122,7 @@ class SubscriptionController extends ChangeNotifier {
   List<Subscription> get subscriptions => List.unmodifiable(_subscriptions);
   List<PaymentMethod> get paymentMethods => List.unmodifiable(_paymentMethods);
   List<String> get recentSearches => List.unmodifiable(_recentSearches);
+  Set<String> get dismissedInsights => Set.unmodifiable(_dismissedInsights);
   double get monthlyBudget => _monthlyBudget;
   String get currency => _currency;
   String get userName => _userName;
@@ -202,6 +207,9 @@ class SubscriptionController extends ChangeNotifier {
       _recentSearches
         ..clear()
         ..addAll(await settingsRepository.getRecentSearches());
+      _dismissedInsights
+        ..clear()
+        ..addAll(await settingsRepository.getDismissedInsights());
     } catch (e) {
       debugPrint('OneSpend: Failed to load data from repository: $e');
     }
@@ -511,6 +519,36 @@ class SubscriptionController extends ChangeNotifier {
     _recentSearches.clear();
     notifyListeners();
     _saveRecentSearches();
+  }
+
+  // --- Dismissed insights ---
+  static const int _maxDismissedInsights = 100;
+
+  void _saveDismissedInsights() {
+    final snapshot = List<String>.from(_dismissedInsights);
+    _persist(() => settingsRepository.setDismissedInsights(snapshot));
+  }
+
+  void dismissInsight(String key) {
+    if (!_dismissedInsights.add(key)) return;
+    while (_dismissedInsights.length > _maxDismissedInsights) {
+      _dismissedInsights.remove(_dismissedInsights.first);
+    }
+    notifyListeners();
+    _saveDismissedInsights();
+  }
+
+  void undismissInsight(String key) {
+    if (!_dismissedInsights.remove(key)) return;
+    notifyListeners();
+    _saveDismissedInsights();
+  }
+
+  void restoreDismissedInsights() {
+    if (_dismissedInsights.isEmpty) return;
+    _dismissedInsights.clear();
+    notifyListeners();
+    _saveDismissedInsights();
   }
 
   void restoreDefaultCatalog() {

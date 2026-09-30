@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_ambient_glow.dart';
 import '../utils/one_ui_date_formats.dart';
 
 /// Samsung One UI Monthly Budget Card
@@ -26,6 +27,58 @@ class OneUIBudgetCard extends StatelessWidget {
   static const Color color75to90 = Color(0xFFF59E0B);  // Soft Amber / Warning
   static const Color colorCrimson = Color(0xFFFF5C5C); // Vibrant One UI Crimson
   static const Color colorGreen = Color(0xFF00C05A);   // One UI Green
+
+  /// Budget track gradient, blue → orange → red as spending approaches the limit.
+  static const List<Color> trackColors = [
+    // Several Blues (0% to ~45%)
+    Color(0xFF0044B2), // Deep Royal Blue
+    Color(0xFF0066FF), // Vivid Electric Blue
+    Color(0xFF0381FE), // Samsung Signature Blue
+    Color(0xFF4791FF), // Soft Bright Azure
+
+    // Smooth Warm Transition (avoids green tint entirely)
+    Color(0xFFE59078), // Warm Apricot Transition
+
+    // Several Oranges (~55% to ~82%)
+    Color(0xFFFF9E00), // Rich Golden Orange
+    Color(0xFFFF8500), // Vivid One UI Orange
+    Color(0xFFFF6200), // Deep Tangerine Orange
+    Color(0xFFFF4500), // Sunset Fiery Orange
+
+    // Several Reds (~82% to 100%)
+    Color(0xFFFF2A2A), // Bright Warning Crimson
+    Color(0xFFE50914), // Pure Vibrant Red
+    Color(0xFFDC2626), // Deep Signal Red
+    Color(0xFF8B0000), // Dark Ruby Red
+  ];
+  static const List<double> trackStops = [
+    0.0,
+    0.15,
+    0.30,
+    0.42,
+    0.50,
+    0.58,
+    0.68,
+    0.76,
+    0.83,
+    0.89,
+    0.93,
+    0.97,
+    1.0,
+  ];
+
+  /// The track colour at progress [t] (0–1): the colour at the fill's leading edge.
+  static Color trackColorAt(double t) {
+    final x = t.clamp(0.0, 1.0);
+    for (var i = 1; i < trackStops.length; i++) {
+      if (x <= trackStops[i]) {
+        final span = trackStops[i] - trackStops[i - 1];
+        final f = span <= 0 ? 1.0 : (x - trackStops[i - 1]) / span;
+        return Color.lerp(trackColors[i - 1], trackColors[i], f)!;
+      }
+    }
+    return trackColors.last;
+  }
 
   const OneUIBudgetCard({
     super.key,
@@ -99,23 +152,10 @@ class OneUIBudgetCard extends StatelessWidget {
         borderRadius: OneUITheme.cardBorderRadius,
         child: Stack(
           children: [
-            // 1. Soft, understated Samsung Blue ambient glow positioned BENEATH the card
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0.0, -0.2),
-                    radius: 1.05,
-                    colors: [
-                      const Color(0xFF0381FE).withValues(alpha: 0.26), // Understated soft blue core
-                      const Color(0xFF0381FE).withValues(alpha: 0.11), // Subtle ambient fade
-                      const Color(0xFF0381FE).withValues(alpha: 0.02), // Faint outer halo
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.50, 0.85, 1.0],
-                  ),
-                ),
-              ),
+            // 1. Ambient glow beneath the glass, tinted like the track's leading edge.
+            OneUIAmbientGlow(
+              // glowTint lifts the dark ends of the gradient (deep blue, ruby) so they still glow.
+              color: budget > 0 ? OneUITheme.glowTint(trackColorAt(budgetProgress)) : OneUITheme.glowDefault,
             ),
 
             // 2. Frosted glass blur & translucent card body (completely flat, no 3D borders or shadows)
@@ -272,43 +312,8 @@ class OneUIBudgetCard extends StatelessWidget {
                                                   gradient: LinearGradient(
                                                     begin: Alignment.centerLeft,
                                                     end: Alignment.centerRight,
-                                                    colors: [
-                                                      // Several Blues (0% to ~45%)
-                                                      Color(0xFF0044B2), // Deep Royal Blue
-                                                      Color(0xFF0066FF), // Vivid Electric Blue
-                                                      Color(0xFF0381FE), // Samsung Signature Blue
-                                                      Color(0xFF4791FF), // Soft Bright Azure
-
-                                                      // Smooth Warm Transition (avoids green tint entirely)
-                                                      Color(0xFFE59078), // Warm Apricot Transition
-
-                                                      // Several Oranges (~55% to ~82%)
-                                                      Color(0xFFFF9E00), // Rich Golden Orange
-                                                      Color(0xFFFF8500), // Vivid One UI Orange
-                                                      Color(0xFFFF6200), // Deep Tangerine Orange
-                                                      Color(0xFFFF4500), // Sunset Fiery Orange
-
-                                                      // Several Reds (~82% to 100%)
-                                                      Color(0xFFFF2A2A), // Bright Warning Crimson
-                                                      Color(0xFFE50914), // Pure Vibrant Red
-                                                      Color(0xFFDC2626), // Deep Signal Red
-                                                      Color(0xFF8B0000), // Dark Ruby Red
-                                                    ],
-                                                    stops: [
-                                                      0.0,
-                                                      0.15,
-                                                      0.30,
-                                                      0.42,
-                                                      0.50,
-                                                      0.58,
-                                                      0.68,
-                                                      0.76,
-                                                      0.83,
-                                                      0.89,
-                                                      0.93,
-                                                      0.97,
-                                                      1.0,
-                                                    ],
+                                                    colors: trackColors,
+                                                    stops: trackStops,
                                                   ),
                                                 ),
                                               ),

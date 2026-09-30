@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../features/subscriptions/domain/entities/subscription.dart';
 import '../features/subscriptions/domain/services/charge_schedule.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_ambient_glow.dart';
 import 'one_ui_brand_icon.dart';
 
 /// Samsung One UI hero card for the Upcoming tab, the sibling of [OneUIBudgetCard]:
@@ -85,23 +86,13 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
       borderRadius: OneUITheme.cardBorderRadius,
       child: Stack(
         children: [
-          // Soft Samsung Blue ambient glow beneath the glass (matches the budget card).
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0.0, -0.2),
-                  radius: 1.05,
-                  colors: [
-                    const Color(0xFF0381FE).withValues(alpha: 0.26),
-                    const Color(0xFF0381FE).withValues(alpha: 0.11),
-                    const Color(0xFF0381FE).withValues(alpha: 0.02),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.50, 0.85, 1.0],
-                ),
-              ),
-            ),
+          // Glow tinted by what matters most: red when overdue, else the biggest charge's brand.
+          OneUIAmbientGlow(
+            color: overdueCount > 0
+                ? colorCrimson
+                : biggest == null
+                    ? OneUITheme.glowDefault
+                    : OneUITheme.glowTint(Color(biggest.subscription.brandColorValue)),
           ),
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),

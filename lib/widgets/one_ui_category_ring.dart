@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
 import '../theme/one_ui_theme.dart';
 
 /// Samsung Health style donut: one arc per segment with small gaps, a centre label, and
@@ -9,16 +11,18 @@ class OneUICategoryRing extends StatelessWidget {
 
   /// Index of the emphasised segment, or null for none.
   final int? highlightedIndex;
-  final String centerValue;
-  final String centerLabel;
+
+  /// Optional centre text; omit both for a plain ring.
+  final String? centerValue;
+  final String? centerLabel;
   final double size;
   final double strokeWidth;
 
   const OneUICategoryRing({
     super.key,
     required this.segments,
-    required this.centerValue,
-    required this.centerLabel,
+    this.centerValue,
+    this.centerLabel,
     this.highlightedIndex,
     this.size = 132,
     this.strokeWidth = 16,
@@ -41,33 +45,35 @@ class OneUICategoryRing extends StatelessWidget {
           ),
           child: child,
         ),
-        child: Padding(
-          padding: EdgeInsets.all(strokeWidth + 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  centerValue,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                    color: OneUITheme.textPrimary,
-                  ),
+        child: centerValue == null
+            ? null
+            : Padding(
+                padding: EdgeInsets.all(strokeWidth + 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        centerValue!,
+                        maxLines: 1,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.4,
+                          color: OneUITheme.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      centerLabel ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11.5, color: OneUITheme.textSecondary),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                centerLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11.5, color: OneUITheme.textSecondary),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

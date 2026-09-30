@@ -9,6 +9,7 @@ import 'package:onespend/models/subscription.dart';
 import 'package:onespend/screens/home_screen.dart';
 import 'package:onespend/screens/upcoming_screen.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
+import 'package:onespend/widgets/one_ui_ambient_glow.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
 import 'package:onespend/widgets/one_ui_group_card.dart';
 import 'package:onespend/widgets/one_ui_selection_header_pills.dart';
@@ -87,6 +88,24 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   }
+
+  Color heroGlow(WidgetTester tester) => tester
+      .widget<OneUIAmbientGlow>(
+          find.descendant(of: find.byType(OneUIUpcomingHeroCard), matching: find.byType(OneUIAmbientGlow)))
+      .color;
+
+  testWidgets('hero glow takes the brand colour of the biggest charge', (tester) async {
+    await pumpUpcoming(tester);
+    // Music Plus ($11) is the biggest single charge in the next 30 days.
+    final music = SubscriptionStore.instance.getSubscription('music')!;
+    expect(heroGlow(tester), OneUITheme.glowTint(Color(music.brandColorValue)));
+  });
+
+  testWidgets('hero glow turns crimson when something is overdue', (tester) async {
+    SubscriptionStore.instance.batchAdd([sub('late', 'Late Service', next: inDays(-3))]);
+    await pumpUpcoming(tester);
+    expect(heroGlow(tester), OneUIUpcomingHeroCard.colorCrimson);
+  });
 
   testWidgets('timeline lists every charge, so a weekly subscription repeats', (tester) async {
     await pumpUpcoming(tester);
