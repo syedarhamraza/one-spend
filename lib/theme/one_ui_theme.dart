@@ -71,7 +71,6 @@ class OneUITheme {
   static List<BoxShadow> get navbarShadow => OneUIEffectsController.instance.navbarShadow;
   static List<BoxShadow> get fabShadow => OneUIEffectsController.instance.fabShadow;
   static double get blurSigma => OneUIEffectsController.instance.blurSigma;
-  static bool get bottomVignetteEffect => OneUIEffectsController.instance.bottomVignetteEffect;
 
   // --- Card Studio Properties ---
   static SubscriptionCardBackground get cardBackground => OneUIEffectsController.instance.cardBackground;

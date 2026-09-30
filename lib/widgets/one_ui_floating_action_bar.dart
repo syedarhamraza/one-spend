@@ -32,7 +32,7 @@ class OneUIFloatingActionBar extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.navbar3dEffect || OneUIEffectsController.instance.floating3dEffect;
+        final is3d = OneUIEffectsController.instance.floating3dEffect;
 
         return SafeArea(
           child: Padding(

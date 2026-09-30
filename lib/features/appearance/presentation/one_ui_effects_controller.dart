@@ -83,11 +83,9 @@ class OneUIEffectsController extends ChangeNotifier {
   SettingsRepository? get _repository =>
       sl.isRegistered<SettingsRepository>() ? sl<SettingsRepository>() : null;
 
-  // 3D & Vignette Effect Toggles
-  bool _card3dEffect = false;       // All cards across UI (disabled by default matching One UI settings)
-  bool _floating3dEffect = true;    // Floating pills, buttons, and navbar
-  bool _navbar3dEffect = true;      // 3D tactile navbar matching One UI phone dialer screenshot
-  bool _bottomVignetteEffect = true;// Edge-to-edge progressive bottom gradient vignette
+  /// "3D floating elements": raised glass look for the nav bar, floating buttons and pills.
+  /// Off by default. Cards are always flat and the bottom vignette is always on.
+  bool _floating3dEffect = false;
 
   // Card Studio Customizations
   SubscriptionCardBackground _cardBackground = SubscriptionCardBackground.oneUiDark;
@@ -122,10 +120,7 @@ class OneUIEffectsController extends ChangeNotifier {
       final repository = _repository;
       if (repository == null) return;
       final prefs = _StoredSettings(await repository.getAppearanceSettings());
-      _card3dEffect = prefs.getBool('card3dEffect') ?? false;
-      _floating3dEffect = prefs.getBool('floating3dEffect') ?? true;
-      _navbar3dEffect = prefs.getBool('navbar3dEffect') ?? true;
-      _bottomVignetteEffect = prefs.getBool('bottomVignetteEffect') ?? true;
+      _floating3dEffect = prefs.getBool('floating3dEffect') ?? false;
 
       final bgStr = prefs.getString('cardBackground');
       if (bgStr != null) {
@@ -501,16 +496,6 @@ class OneUIEffectsController extends ChangeNotifier {
     }
   }
 
-  bool get card3dEffect => _card3dEffect;
-  set card3dEffect(bool val) {
-    if (_card3dEffect != val) {
-      _card3dEffect = val;
-      _saveSetting('card3dEffect', val);
-      _invalidateCache();
-      notifyListeners();
-    }
-  }
-
   bool get floating3dEffect => _floating3dEffect;
   set floating3dEffect(bool val) {
     if (_floating3dEffect != val) {
@@ -521,29 +506,7 @@ class OneUIEffectsController extends ChangeNotifier {
     }
   }
 
-  bool get navbar3dEffect => _navbar3dEffect;
-  set navbar3dEffect(bool val) {
-    if (_navbar3dEffect != val) {
-      _navbar3dEffect = val;
-      _saveSetting('navbar3dEffect', val);
-      _invalidateCache();
-      notifyListeners();
-    }
-  }
-
-  bool get bottomVignetteEffect => _bottomVignetteEffect;
-  set bottomVignetteEffect(bool val) {
-    if (_bottomVignetteEffect != val) {
-      _bottomVignetteEffect = val;
-      _saveSetting('bottomVignetteEffect', val);
-      _invalidateCache();
-      notifyListeners();
-    }
-  }
-
   // Caching variables
-  Border? _cachedCardBorder;
-  List<BoxShadow>? _cachedCardShadow;
   Gradient? _cachedFloatingGradient;
   Border? _cachedFloatingBorder;
   List<BoxShadow>? _cachedFloatingShadow;
@@ -551,8 +514,6 @@ class OneUIEffectsController extends ChangeNotifier {
   List<BoxShadow>? _cachedFabShadow;
 
   void _invalidateCache() {
-    _cachedCardBorder = null;
-    _cachedCardShadow = null;
     _cachedFloatingGradient = null;
     _cachedFloatingBorder = null;
     _cachedFloatingShadow = null;
@@ -563,33 +524,10 @@ class OneUIEffectsController extends ChangeNotifier {
   // Compatibility getter
   double get depthIntensity => 1.2;
 
-  // Dynamic Card Properties
-  Color get cardColor => _card3dEffect ? const Color(0xFF222224) : const Color(0xFF1C1C1E);
-  
-  Border? get cardBorder {
-    if (!_card3dEffect) return null;
-    return _cachedCardBorder ??= Border.all(
-      color: Colors.white.withValues(alpha: 0.09),
-      width: 0.85,
-    );
-  }
-  
-  List<BoxShadow> get cardShadow {
-    if (!_card3dEffect) return const [];
-    return _cachedCardShadow ??= [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.45),
-        blurRadius: 16,
-        offset: const Offset(0, 6),
-        spreadRadius: 1.0,
-      ),
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.20),
-        blurRadius: 5,
-        offset: const Offset(0, 2),
-      ),
-    ];
-  }
+  // Cards are always flat (the card 3D option was removed).
+  Color get cardColor => const Color(0xFF1C1C1E);
+  Border? get cardBorder => null;
+  List<BoxShadow> get cardShadow => const [];
 
   // Dynamic Floating Elements Properties
   Color get floatingColor => _floating3dEffect
@@ -650,7 +588,7 @@ class OneUIEffectsController extends ChangeNotifier {
   }
 
   List<BoxShadow> get navbarShadow {
-    final is3d = _navbar3dEffect || _floating3dEffect;
+    final is3d = _floating3dEffect;
     if (!is3d) {
       return _cachedNavbarShadow ??= [
         // Upward ambient lift over content entering from the top of the navbar

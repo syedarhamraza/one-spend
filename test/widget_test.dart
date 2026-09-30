@@ -88,9 +88,9 @@ void main() {
     // Switch to Menu / Settings tab
     await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
-    expect(find.text('Currency'), findsOneWidget);
-    expect(find.text('Monthly budget threshold'), findsOneWidget);
-    expect(find.text('Navigation bar 3D effect'), findsOneWidget);
+    expect(find.text('Budget & currency'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
+    expect(find.text('Appearance'), findsOneWidget);
 
     // Switch back to Spend tab
     await tester.tap(find.text('Spend'));
@@ -272,12 +272,12 @@ void main() {
     await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
 
-    // Tap Monthly budget threshold
-    await tester.tap(find.text('Monthly budget threshold'));
+    // Settings › Budget & currency › Monthly budget opens the editor subpage
+    await tester.tap(find.text('Budget & currency'));
     await tester.pumpAndSettle();
-
-    // Verify dialog is open
-    expect(find.text('Monthly Budget Limit'), findsOneWidget);
+    await tester.tap(find.text('Monthly budget'));
+    await tester.pumpAndSettle();
+    expect(find.text('Set to 0 for no limit'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
 
     // Tap Cancel
@@ -285,6 +285,11 @@ void main() {
     await tester.pump(); // Start pop animation
     await tester.pump(const Duration(milliseconds: 100)); // Halfway through exit
     await tester.pump(const Duration(milliseconds: 200)); // Finished exit
+    await tester.pumpAndSettle();
+    expect(find.text('Set to 0 for no limit'), findsNothing);
+
+    // Back to the Settings tab
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
 
     // Now test from Spend screen
@@ -328,201 +333,6 @@ void main() {
     await tester.drag(find.byType(CustomScrollView).first, const Offset(0, 400));
     await tester.pumpAndSettle();
     expect(find.text('Subscriptions'), findsWidgets);
-  });
-
-  testWidgets('Settings page Navigation bar 3D effect toggle', (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 2.0;
-    addTearDown(tester.view.resetPhysicalSize);
-
-    // Start with 3D effect enabled
-    OneUIEffectsController.instance.navbar3dEffect = true;
-
-    await tester.pumpWidget(const OneSpendApp());
-    await tester.pumpAndSettle();
-
-    // Navigate to Menu / Settings tab
-    await tester.tap(find.text('Menu'));
-    await tester.pumpAndSettle();
-
-    // Verify Navigation bar 3D effect item is present in Settings
-    expect(find.text('Navigation bar 3D effect'), findsOneWidget);
-    expect(find.text('3D floating pill elevation & top rim highlight'), findsOneWidget);
-
-    // Tap the setting to toggle it OFF
-    await tester.tap(find.text('Navigation bar 3D effect'));
-    await tester.pumpAndSettle();
-
-    // Verify it updated to false and subtitle changed to classic flat
-    expect(OneUIEffectsController.instance.navbar3dEffect, isFalse);
-    expect(find.text('Classic flat appearance'), findsWidgets);
-
-    // Tap the setting to toggle it back ON
-    await tester.tap(find.text('Navigation bar 3D effect'));
-    await tester.pumpAndSettle();
-
-    // Verify it updated back to true
-    expect(OneUIEffectsController.instance.navbar3dEffect, isTrue);
-    expect(find.text('3D floating pill elevation & top rim highlight'), findsOneWidget);
-
-    // Verify Floating buttons & pills 3D effect item is present
-    expect(find.text('Floating buttons & pills 3D effect'), findsOneWidget);
-    expect(find.text('3D elevation & rim highlight on search, back & action pills'), findsOneWidget);
-
-    // Center it so it isn't underneath the floating nav bar, then toggle Floating buttons & pills OFF
-    await Scrollable.ensureVisible(tester.element(find.text('Floating buttons & pills 3D effect')), alignment: 0.5);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Floating buttons & pills 3D effect'));
-    await tester.pumpAndSettle();
-
-    expect(OneUIEffectsController.instance.floating3dEffect, isFalse);
-
-    // Toggle Floating buttons & pills back ON
-    await tester.tap(find.text('Floating buttons & pills 3D effect'));
-    await tester.pumpAndSettle();
-
-    expect(OneUIEffectsController.instance.floating3dEffect, isTrue);
-    expect(find.text('3D elevation & rim highlight on search, back & action pills'), findsOneWidget);
-
-    // Verify Cards 3D depth effect item is present and starts OFF
-    expect(find.text('Cards 3D depth effect'), findsOneWidget);
-    expect(OneUIEffectsController.instance.card3dEffect, isFalse);
-    expect(OneUITheme.cardBorder, isNull);
-    expect(OneUITheme.cardShadow, isEmpty);
-
-    // Scroll into view and toggle Cards 3D depth effect ON
-    await tester.ensureVisible(find.text('Cards 3D depth effect'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Cards 3D depth effect'));
-    await tester.pumpAndSettle();
-
-    expect(OneUIEffectsController.instance.card3dEffect, isTrue);
-    expect(find.text('3D elevation, rim highlight & soft shadows on all cards'), findsOneWidget);
-    expect(OneUITheme.cardBorder, isNotNull);
-    expect(OneUITheme.cardShadow, isNotEmpty);
-
-    // Toggle Cards 3D depth effect back OFF
-    await tester.tap(find.text('Cards 3D depth effect'));
-    await tester.pumpAndSettle();
-
-    expect(OneUIEffectsController.instance.card3dEffect, isFalse);
-    expect(OneUITheme.cardBorder, isNull);
-    expect(OneUITheme.cardShadow, isEmpty);
-  });
-
-  testWidgets('Cards 3D depth effect updates all cards across screens simultaneously', (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 2.0;
-    addTearDown(tester.view.resetPhysicalSize);
-
-    // Ensure started in flat mode
-    OneUIEffectsController.instance.card3dEffect = false;
-
-    await tester.pumpWidget(const OneSpendApp());
-    await tester.pumpAndSettle();
-
-    // Verify multiple OneUIGroupCard exist on home page
-    expect(find.byType(OneUIGroupCard), findsWidgets);
-
-    // Go to Settings tab
-    await tester.tap(find.text('Menu'));
-    await tester.pumpAndSettle();
-
-    // Multiple OneUIGroupCards on Settings page
-    final groupCardsFinder = find.byType(OneUIGroupCard);
-    expect(groupCardsFinder, findsWidgets);
-
-    // Find Containers inside OneUIGroupCards and confirm they have no border/shadow initially
-    final initialContainers = tester.widgetList<Container>(
-      find.descendant(of: groupCardsFinder, matching: find.byType(Container)),
-    );
-    final cardContainersBefore = initialContainers.where((c) {
-      final decoration = c.decoration;
-      if (decoration is BoxDecoration) {
-        return decoration.borderRadius == OneUITheme.cardBorderRadius;
-      }
-      return false;
-    }).toList();
-
-    expect(cardContainersBefore.isNotEmpty, isTrue);
-    for (var c in cardContainersBefore) {
-      final dec = c.decoration as BoxDecoration;
-      expect(dec.border, isNull);
-      expect(dec.boxShadow ?? const [], isEmpty);
-    }
-
-    // Scroll down and toggle Cards 3D effect ON
-    await tester.ensureVisible(find.text('Cards 3D depth effect'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Cards 3D depth effect'));
-    await tester.pumpAndSettle();
-
-    expect(OneUIEffectsController.instance.card3dEffect, isTrue);
-
-    // Verify ALL OneUIGroupCards on Settings screen now have border and boxShadow
-    final updatedContainers = tester.widgetList<Container>(
-      find.descendant(of: groupCardsFinder, matching: find.byType(Container)),
-    );
-    final cardContainersAfter = updatedContainers.where((c) {
-      final decoration = c.decoration;
-      if (decoration is BoxDecoration) {
-        return decoration.borderRadius == OneUITheme.cardBorderRadius;
-      }
-      return false;
-    }).toList();
-
-    expect(cardContainersAfter.isNotEmpty, isTrue);
-    for (var c in cardContainersAfter) {
-      final dec = c.decoration as BoxDecoration;
-      expect(dec.border, isNotNull, reason: 'Every card must have 3D rim border');
-      expect((dec.boxShadow ?? const []).isNotEmpty, isTrue, reason: 'Every card must have 3D elevation shadow');
-    }
-
-    // Switch to Spend tab and verify cards there have 3D depth
-    await tester.tap(find.text('Spend'));
-    await tester.pumpAndSettle();
-
-    final spendGroupCards = find.byType(OneUIGroupCard);
-    final spendContainers = tester.widgetList<Container>(
-      find.descendant(of: spendGroupCards, matching: find.byType(Container)),
-    );
-    final spendCards = spendContainers.where((c) {
-      final decoration = c.decoration;
-      if (decoration is BoxDecoration) {
-        return decoration.borderRadius == OneUITheme.cardBorderRadius;
-      }
-      return false;
-    }).toList();
-
-    expect(spendCards.isNotEmpty, isTrue);
-    for (var c in spendCards) {
-      final dec = c.decoration as BoxDecoration;
-      expect(dec.border, isNotNull, reason: 'Spend cards must have 3D rim border');
-      expect((dec.boxShadow ?? const []).isNotEmpty, isTrue, reason: 'Spend cards must have 3D elevation shadow');
-    }
-
-    // Switch to Upcoming tab and verify cards there also have 3D depth
-    await tester.tap(find.text('Upcoming'));
-    await tester.pumpAndSettle();
-
-    final upcomingGroupCards = find.byType(OneUIGroupCard);
-    final upcomingContainers = tester.widgetList<Container>(
-      find.descendant(of: upcomingGroupCards, matching: find.byType(Container)),
-    );
-    final upcomingCards = upcomingContainers.where((c) {
-      final decoration = c.decoration;
-      if (decoration is BoxDecoration) {
-        return decoration.borderRadius == OneUITheme.cardBorderRadius;
-      }
-      return false;
-    }).toList();
-
-    expect(upcomingCards.isNotEmpty, isTrue);
-    for (var c in upcomingCards) {
-      final dec = c.decoration as BoxDecoration;
-      expect(dec.border, isNotNull, reason: 'Upcoming cards must have 3D rim border');
-      expect((dec.boxShadow ?? const []).isNotEmpty, isTrue, reason: 'Upcoming cards must have 3D elevation shadow');
-    }
   });
 
   testWidgets('OneUIFloatingActionBar dynamically sizes to fit item count', (WidgetTester tester) async {
@@ -1089,7 +899,15 @@ void main() {
     AnimatedContainer animatedContainer = tester.widget(animatedContainerFinder);
     BoxDecoration dec = animatedContainer.decoration as BoxDecoration;
     expect(dec.borderRadius, equals(BorderRadius.circular(28)));
-    expect(dec.gradient, isNotNull); // 3D on by default
+    expect(dec.gradient, isNull); // flat by default
+
+    // Toggle 3D effect on
+    OneUIEffectsController.instance.floating3dEffect = true;
+    await tester.pumpAndSettle();
+
+    animatedContainer = tester.widget(animatedContainerFinder);
+    dec = animatedContainer.decoration as BoxDecoration;
+    expect(dec.gradient, isNotNull);
 
     // Toggle 3D effect off
     OneUIEffectsController.instance.floating3dEffect = false;
@@ -1159,7 +977,7 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('Settings screen header search icon toggle and live search filtering', (WidgetTester tester) async {
+  testWidgets('Settings search uses the floating pill and finds options inside subpages', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -1167,44 +985,35 @@ void main() {
     await tester.pumpWidget(const OneSpendApp());
     await tester.pumpAndSettle();
 
-    // Go to Settings / Menu tab
     await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
 
-    // Verify search icon in header actions pill
     final searchIconFinder = find.byTooltip('Search settings');
     expect(searchIconFinder, findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
 
-    // Verify bottom search pill is removed (as requested by user)
-    expect(find.text('Search settings...'), findsNothing);
-
-    // Tap search icon to toggle inline search bar
     await tester.tap(searchIconFinder);
     await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byType(OneUIFloatingNavBar).hitTestable(), findsNothing, reason: 'nav bar hides while searching');
 
-    expect(find.text('Search settings...'), findsOneWidget);
-
-    // Type query "currency"
-    await tester.enterText(find.byType(TextField), 'currency');
+    // An option inside a subpage is found, with its path
+    await tester.enterText(find.byType(TextField), 'reminder');
     await tester.pumpAndSettle();
+    expect(find.text('Default reminder'), findsOneWidget);
+    expect(find.text('Settings › Notifications'), findsOneWidget);
+    expect(find.text('Appearance'), findsNothing);
 
-    // Currency should be visible, other cards like Navigation bar 3D effect should be hidden
-    expect(find.text('Currency'), findsOneWidget);
-    expect(find.text('Navigation bar 3D effect'), findsNothing);
-
-    // Type a query that yields no results
+    // No results
     await tester.enterText(find.byType(TextField), 'xyznonexistent');
     await tester.pumpAndSettle();
+    expect(find.textContaining('No results for "xyznonexistent"'), findsOneWidget);
 
-    expect(find.textContaining('No settings found for "xyznonexistent"'), findsOneWidget);
-
-    // Close search
-    await tester.tap(searchIconFinder);
+    // Close search: all rows come back
+    await tester.tap(find.byTooltip('Close search'));
     await tester.pumpAndSettle();
-
-    // All settings restored
-    expect(find.text('Currency'), findsOneWidget);
-    expect(find.text('Navigation bar 3D effect'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('Appearance'), findsOneWidget);
   });
 
   testWidgets('OneUIFieldEditorScreen modular subpage editor and floating stadium pill', (WidgetTester tester) async {
@@ -1308,10 +1117,10 @@ void main() {
     await tester.pumpWidget(const OneSpendApp());
     await tester.pumpAndSettle();
 
-    // Verify Menu (Settings) does not have Payment methods anymore
+    // Settings has a Payment methods row
     await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
-    expect(find.text('Payment methods'), findsNothing);
+    expect(find.text('Payment methods'), findsOneWidget);
 
     // Return to Spend tab
     await tester.tap(find.text('Spend'));
@@ -2180,41 +1989,6 @@ void main() {
     expect(find.byType(OneUIBottomVignette), findsWidgets);
   });
 
-  testWidgets('OneUIBottomVignette respects OneUIEffectsController toggle and Settings appearance switch', (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 2.0;
-    addTearDown(tester.view.resetPhysicalSize);
-
-    OneUIEffectsController.instance.bottomVignetteEffect = true;
-
-    await tester.pumpWidget(const OneSpendApp());
-    await tester.pumpAndSettle();
-
-    // Navigate to Menu tab
-    await tester.tap(find.text('Menu'));
-    await tester.pumpAndSettle();
-
-    // Verify Settings displays 'Bottom gradient vignette'
-    expect(find.text('Bottom gradient vignette'), findsOneWidget);
-    expect(OneUIEffectsController.instance.bottomVignetteEffect, isTrue);
-
-    // Toggle switch off
-    await tester.dragUntilVisible(find.text('Bottom gradient vignette'), find.byType(CustomScrollView), const Offset(0, -100));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Bottom gradient vignette'));
-    await tester.pumpAndSettle();
-
-    expect(OneUIEffectsController.instance.bottomVignetteEffect, isFalse);
-
-    // Reset appearance effects
-    await tester.drag(find.byType(CustomScrollView), const Offset(0, -200));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Reset appearance effects'));
-    await tester.pumpAndSettle();
-
-    expect(OneUIEffectsController.instance.bottomVignetteEffect, isTrue);
-  });
-
   testWidgets('OneUIBottomVignette is layered behind OneUIScrollToTopButton and floating navigation pill', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
@@ -2237,8 +2011,6 @@ void main() {
   testWidgets('Floating pill and navbar shadows are elevated in both 3D and Flat modes so they never dissolve', (WidgetTester tester) async {
     // 3D Mode Check
     OneUIEffectsController.instance.floating3dEffect = true;
-    OneUIEffectsController.instance.navbar3dEffect = true;
-    OneUIEffectsController.instance.card3dEffect = true;
 
     final shadow3d = OneUITheme.floatingShadow;
     expect(shadow3d, isNotEmpty);
@@ -2253,15 +2025,12 @@ void main() {
     expect(navShadow3d.first.offset.dy, lessThan(0)); // Upward lift
     expect(navShadow3d.first.spreadRadius, 1.0);
 
-    final cardShadow3d = OneUITheme.cardShadow;
-    expect(cardShadow3d, isNotEmpty);
-    expect(cardShadow3d.first.blurRadius, 16);
-    expect(cardShadow3d.first.offset.dy, 6);
+    // Cards are always flat, whatever the 3D setting.
+    expect(OneUITheme.cardShadow, isEmpty);
+    expect(OneUITheme.cardBorder, isNull);
 
     // Flat Mode Check
     OneUIEffectsController.instance.floating3dEffect = false;
-    OneUIEffectsController.instance.navbar3dEffect = false;
-    OneUIEffectsController.instance.card3dEffect = false;
 
     final shadowFlat = OneUITheme.floatingShadow;
     expect(shadowFlat, isNotEmpty);
@@ -2279,10 +2048,8 @@ void main() {
     final cardShadowFlat = OneUITheme.cardShadow;
     expect(cardShadowFlat, isEmpty);
 
-    // Reset back to defaults
-    OneUIEffectsController.instance.floating3dEffect = true;
-    OneUIEffectsController.instance.navbar3dEffect = true;
-    OneUIEffectsController.instance.card3dEffect = true;
+    // Reset back to the default (flat)
+    OneUIEffectsController.instance.floating3dEffect = false;
   });
 
   testWidgets('Top selection capsules render with ambient floating shadow matching Samsung One UI reference screenshot', (WidgetTester tester) async {

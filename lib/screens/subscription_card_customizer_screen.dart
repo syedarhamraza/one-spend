@@ -45,7 +45,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: OneUICollapsibleHeaderDelegate(
-                      title: 'Card details & indicators',
+                      title: 'Subscription cards',
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {

@@ -49,7 +49,7 @@ class OneUIStatusBarScrim extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final isEnabled = OneUIEffectsController.instance.bottomVignetteEffect && isVisible;
+        final isEnabled = isVisible;
         if (!isEnabled) return const SizedBox.shrink();
 
         final topPadding = MediaQuery.of(context).padding.top;

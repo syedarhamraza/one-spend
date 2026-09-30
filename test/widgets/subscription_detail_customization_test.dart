@@ -281,7 +281,7 @@ void main() {
   });
 
   group('SubscriptionDetailCustomizerScreen & Settings Integration', () {
-    testWidgets('Settings screen contains Detail screen styling and navigates to customizer', (WidgetTester tester) async {
+    testWidgets('Settings › Appearance › Subscription details opens the customizer', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -292,7 +292,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final detailItemFinder = find.text('Detail screen styling');
+      await tester.tap(find.text('Appearance'));
+      await tester.pumpAndSettle();
+
+      final detailItemFinder = find.text('Subscription details');
       expect(detailItemFinder, findsOneWidget);
 
       await tester.tap(detailItemFinder);
