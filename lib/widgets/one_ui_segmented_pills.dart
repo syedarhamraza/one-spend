@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 
-/// Samsung One UI segmented control: a single `surfacePill` capsule with an animated
-/// `surfacePillActive` thumb behind the selected segment (e.g. 7 days · 30 days · 3 months).
+/// Samsung One UI segmented control: a capsule in the card surface colour (matching the
+/// cards around it) with an animated `surfacePillActive` thumb behind the selected segment
+/// (e.g. 7 days · 30 days · 3 months).
 class OneUISegmentedPills<T> extends StatelessWidget {
   final List<({T value, String label})> segments;
   final T selected;
@@ -23,8 +24,10 @@ class OneUISegmentedPills<T> extends StatelessWidget {
       height: 44,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: OneUITheme.surfacePill,
+        color: OneUITheme.cardColor,
         borderRadius: OneUITheme.pillBorderRadius,
+        border: OneUITheme.cardBorder,
+        boxShadow: OneUITheme.cardShadow,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {

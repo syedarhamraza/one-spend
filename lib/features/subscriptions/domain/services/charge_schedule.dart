@@ -116,11 +116,14 @@ extension ChargeListSummary on List<UpcomingCharge> {
   }
 
   /// Unpaid totals per payment method id (null = no card), largest first.
-  Map<String?, ({double total, int count})> byPaymentMethod() {
+  ///
+  /// [normalizeId] maps raw ids before grouping, e.g. so ids of deleted cards fold into null.
+  Map<String?, ({double total, int count})> byPaymentMethod({String? Function(String? id)? normalizeId}) {
     final totals = <String?, ({double total, int count})>{};
     for (final c in unpaid) {
-      final current = totals[c.paymentMethodId] ?? (total: 0.0, count: 0);
-      totals[c.paymentMethodId] = (total: current.total + c.amount, count: current.count + 1);
+      final key = normalizeId == null ? c.paymentMethodId : normalizeId(c.paymentMethodId);
+      final current = totals[key] ?? (total: 0.0, count: 0);
+      totals[key] = (total: current.total + c.amount, count: current.count + 1);
     }
     final entries = totals.entries.toList()..sort((a, b) => b.value.total.compareTo(a.value.total));
     return Map.fromEntries(entries);

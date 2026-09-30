@@ -298,6 +298,24 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('charges on deleted cards fold into a single "No card" row', (tester) async {
+    SubscriptionStore.instance.batchAdd([
+      sub('old1', 'Old Card Sub A', next: inDays(3), paymentMethodId: 'deleted_card_1'),
+      sub('old2', 'Old Card Sub B', next: inDays(4), paymentMethodId: 'deleted_card_2'),
+    ]);
+    await pumpUpcoming(tester);
+
+    expect(find.text('Removed card'), findsNothing);
+    // Weekly Gym (no card) + the two subs on deleted cards share one row.
+    expect(find.text('No card'), findsOneWidget);
+
+    await tester.tap(find.text('No card'));
+    await tester.pumpAndSettle();
+    expect(row('Old Card Sub A'), findsOneWidget);
+    expect(row('Old Card Sub B'), findsOneWidget);
+    expect(row('Music Plus'), findsNothing);
+  });
+
   testWidgets('shows the empty state with no subscriptions', (tester) async {
     SubscriptionStore.instance.clearAllData();
     await pumpUpcoming(tester);
