@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
 import '../../models/subscription.dart';
 import '../../theme/one_ui_theme.dart';
@@ -11,9 +10,8 @@ import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
 import '../one_ui_field_editor_screen.dart';
-import 'coming_soon_screen.dart';
 import 'currency_picker_screen.dart';
-import 'planned_feature.dart';
+import 'exchange_rates_screen.dart';
 
 /// Settings › Budget & currency.
 class BudgetCurrencyScreen extends StatelessWidget {
@@ -25,7 +23,13 @@ class BudgetCurrencyScreen extends StatelessWidget {
   }
 
   Future<void> _pickCurrency(BuildContext context, SubscriptionStore store) async {
-    final picked = await CurrencyPickerScreen.open(context, initialSymbol: store.currency);
+    final picked = await CurrencyPickerScreen.open(
+      context,
+      initialCode: store.currency,
+      title: 'Main currency',
+      footnote: 'Totals, budget and analytics use this currency. Your budget is converted; '
+          'subscriptions keep their own currency.',
+    );
     if (picked != null && picked != store.currency) store.setCurrency(picked);
   }
 
@@ -36,17 +40,16 @@ class BudgetCurrencyScreen extends StatelessWidget {
       subtitle: 'Set to 0 for no limit',
       type: FieldEditorType.number,
       initialValue: store.monthlyBudget,
-      prefixText: '${store.currency} ',
       hintText: '0',
       currency: store.currency,
     );
     if (result == null || !context.mounted) return;
-    store.setMonthlyBudget(result.clamp(0.0, 999999.0));
+    store.setMonthlyBudget(result);
     OneUIToast.show(
       context,
       store.monthlyBudget <= 0
           ? 'Budget limit removed'
-          : 'Budget set to ${store.currency}${store.monthlyBudget.toStringAsFixed(0)} a month',
+          : 'Budget set to ${formatMoney(store.monthlyBudget, store.currency, decimals: 0)} a month',
     );
   }
 
@@ -66,7 +69,7 @@ class BudgetCurrencyScreen extends StatelessWidget {
                 title: 'Monthly budget',
                 subtitle: store.monthlyBudget <= 0
                     ? 'No limit'
-                    : '${store.currency}${store.monthlyBudget.toStringAsFixed(0)} a month',
+                    : '${formatMoney(store.monthlyBudget, store.currency, decimals: 0)} a month',
                 subtitleColor: OneUITheme.accentBlue,
                 onTap: () => _editBudget(context, store),
               ),
@@ -79,17 +82,17 @@ class BudgetCurrencyScreen extends StatelessWidget {
             margin: EdgeInsets.zero,
             items: [
               OneUIGroupItem(
-                title: 'Currency',
+                title: 'Main currency',
                 subtitle: currencyLabel(store.currency),
                 subtitleColor: OneUITheme.accentBlue,
                 onTap: () => _pickCurrency(context, store),
               ),
-              if (FeatureFlags.showPlannedFeatures)
-                OneUIGroupItem(
-                  title: PlannedFeature.multiCurrency.title,
-                  trailing: const OneUISoonChip(),
-                  onTap: () => ComingSoonScreen.open(context, PlannedFeature.multiCurrency),
-                ),
+              OneUIGroupItem(
+                title: 'Exchange rates',
+                subtitle: ExchangeRatesScreen.statusText(store),
+                subtitleColor: OneUITheme.textSecondary,
+                onTap: () => ExchangeRatesScreen.open(context),
+              ),
             ],
           ),
         ),

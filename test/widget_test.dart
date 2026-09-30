@@ -1785,8 +1785,8 @@ void main() {
     store.setMonthlyBudget(-50.0);
     expect(store.monthlyBudget, equals(0.0));
 
-    store.setMonthlyBudget(1500000.0);
-    expect(store.monthlyBudget, equals(999999.0));
+    store.setMonthlyBudget(2000000000.0);
+    expect(store.monthlyBudget, equals(SubscriptionStore.maxAmount));
 
     store.setMonthlyBudget(150.0);
     expect(store.monthlyBudget, equals(150.0));

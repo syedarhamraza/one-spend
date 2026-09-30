@@ -10,7 +10,8 @@ class SubscriptionsTable extends Table {
   TextColumn get name => text()();
   TextColumn get description => text()();
   RealColumn get price => real()();
-  TextColumn get currency => text().withDefault(const Constant('\$'))();
+  /// ISO 4217 code (schema v3; earlier versions stored a display symbol such as `$`).
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
   TextColumn get billingCycle => text()();
   TextColumn get category => text()();
   IntColumn get brandColorValue => integer()();

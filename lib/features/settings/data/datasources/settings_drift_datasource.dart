@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../../../../core/database/app_database.dart';
+import '../../../currency/domain/currency.dart';
 
 /// Drift SQLite key/value storage for user preferences, backed by the app_settings table.
 class SettingsDriftDataSource {
@@ -33,7 +34,7 @@ class SettingsDriftDataSource {
   }
 
   Future<String> getCurrency() async {
-    return (await db.getSetting(keyCurrency)) ?? '\$';
+    return CurrencyCatalog.normalize(await db.getSetting(keyCurrency));
   }
 
   Future<void> setCurrency(String currency) async {

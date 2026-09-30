@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import '../../currency/domain/money_format.dart';
 import '../domain/services/charge_schedule.dart';
 
 /// Builds an iCalendar (.ics, RFC 5545) file with one all-day event per upcoming charge,
@@ -33,7 +34,7 @@ class IcsExporter {
       final sub = charge.subscription;
       final day = _day.format(charge.date);
       final nextDay = _day.format(DateTime(charge.date.year, charge.date.month, charge.date.day + 1));
-      final amount = '${sub.currency}${sub.price.toStringAsFixed(2)}';
+      final amount = formatMoney(sub.price, sub.currency);
       final card = paymentMethodName?.call(sub.paymentMethodId);
       final description = [
         '${sub.billingCycle.label} subscription · $amount',

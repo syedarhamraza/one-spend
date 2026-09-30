@@ -1,4 +1,6 @@
 import 'package:intl/intl.dart';
+import '../../currency/domain/exchange_rates.dart';
+import '../../currency/domain/money_format.dart';
 import '../../payment_methods/domain/entities/payment_method.dart';
 import '../../subscriptions/domain/entities/subscription.dart';
 import '../../subscriptions/domain/entities/subscription_enums.dart';
@@ -26,6 +28,7 @@ class NotificationPlanner {
     required String currency,
     required int defaultReminderTimeMinutes,
     required DateTime now,
+    ToMainCurrency toMain = sameCurrency,
   }) {
     final horizon = now.add(window);
     final planned = <PlannedNotification>[
@@ -33,7 +36,7 @@ class NotificationPlanner {
         ..._subscriptionReminders(sub, defaultReminderTimeMinutes, now, horizon),
       for (final method in paymentMethods)
         ?_cardExpiry(method, defaultReminderTimeMinutes, now, horizon),
-      ..._budgetAlerts(subscriptions, monthlyBudget, currency, defaultReminderTimeMinutes, now, horizon),
+      ..._budgetAlerts(subscriptions, monthlyBudget, currency, toMain, defaultReminderTimeMinutes, now, horizon),
     ]..sort((a, b) => a.fireAt.compareTo(b.fireAt));
     return planned.length > maxCount ? planned.sublist(0, maxCount) : planned;
   }
@@ -44,8 +47,6 @@ class NotificationPlanner {
 
   static DateTime _at(DateTime day, int minutes) =>
       DateTime(day.year, day.month, day.day, minutes ~/ 60, minutes % 60);
-
-  static String _money(String currency, double amount) => '$currency${amount.toStringAsFixed(2)}';
 
   static String _relativeDay(int days) => switch (days) {
         0 => 'today',
@@ -61,7 +62,7 @@ class NotificationPlanner {
   ) sync* {
     if (sub.status == SubscriptionStatus.paused) return;
     final minutes = effectiveReminderMinutes(sub, defaultMinutes);
-    final price = _money(sub.currency, sub.price);
+    final price = formatMoney(sub.price, sub.currency);
 
     var due = sub.nextBillingDate;
     // Bounded loop: billing dates only move forward, and we stop once past the horizon.
@@ -109,6 +110,7 @@ class NotificationPlanner {
     List<Subscription> subscriptions,
     double budget,
     String currency,
+    ToMainCurrency toMain,
     int minutes,
     DateTime now,
     DateTime horizon,
@@ -125,7 +127,7 @@ class NotificationPlanner {
 
       var total = 0.0;
       for (final charge in charges) {
-        total += charge.amount;
+        total += toMain(charge.amount, charge.currency);
         if (total <= budget) continue;
         // Only alert about a crossing that is still ahead of us.
         final fireAt = _at(charge.date, minutes);
@@ -136,9 +138,9 @@ class NotificationPlanner {
             kind: NotificationKind.budget,
             fireAt: fireAt,
             title: 'Over budget on ${_dayFormat.format(charge.date)}',
-            body: '${charge.subscription.name} (${_money(currency, charge.amount)}) takes '
-                '${_monthFormat.format(monthStart)} spending to ${_money(currency, total)}, '
-                'over your ${_money(currency, budget)} budget.',
+            body: '${charge.subscription.name} (${formatMoney(charge.amount, charge.currency)}) takes '
+                '${_monthFormat.format(monthStart)} spending to ${formatMoney(total, currency, style: MoneyStyle.summary)}, '
+                'over your ${formatMoney(budget, currency, style: MoneyStyle.summary)} budget.',
             subjectId: monthKey,
           );
         }

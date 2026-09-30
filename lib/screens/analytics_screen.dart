@@ -34,12 +34,12 @@ class AnalyticsScreen extends StatefulWidget {
   /// Plain-text report for sharing; [category] narrows it to one category.
   static String buildReport(SubscriptionStore store, {SubscriptionCategory? category, DateTime? now}) {
     final currency = store.currency;
-    String money(double v) => '$currency${v.toStringAsFixed(2)}';
+    String money(double v) => formatMoney(v, currency, style: MoneyStyle.summary);
     final subs = [
       for (final s in store.subscriptions)
         if (category == null || s.category == category) s,
     ];
-    final monthly = SubscriptionStats.totalMonthlySpend(subs);
+    final monthly = SubscriptionStats.totalMonthlySpend(subs, store.toMain);
 
     final buffer = StringBuffer()
       ..writeln('OneSpend spending report')
@@ -54,6 +54,7 @@ class AnalyticsScreen extends StatefulWidget {
       subscriptions: subs,
       horizon: SpendingTrendHorizon.oneYear,
       referenceDate: now,
+      toMain: store.toMain,
     );
     final summary = SpendingTrendsEngine.calculateSummary(points, monthlyBudget: store.monthlyBudget);
     if (summary.hasData && summary.currentMonth != null) {
@@ -65,18 +66,18 @@ class AnalyticsScreen extends StatefulWidget {
         ..writeln('Forecast, next ${summary.forecastMonths} months: ${money(summary.forecastTotal)}');
     }
 
-    final categories = SpendingInsights.byCategory(subs);
+    final categories = SpendingInsights.byCategory(subs, store.toMain);
     if (category == null && categories.isNotEmpty) {
       buffer.writeln('\nBy category:');
       for (final c in categories) {
         buffer.writeln('• ${c.category.label}: ${money(c.monthly)}/mo (${(c.share * 100).toStringAsFixed(0)}%)');
       }
     }
-    final top = SpendingInsights.ranked(subs).take(5).toList();
+    final top = SpendingInsights.ranked(subs, store.toMain).take(5).toList();
     if (top.isNotEmpty) {
       buffer.writeln('\nTop subscriptions:');
       for (final s in top) {
-        buffer.writeln('• ${s.name}: ${money(s.monthlyCost)}/mo');
+        buffer.writeln('• ${s.name}: ${money(store.monthlyCostInMain(s))}/mo');
       }
     }
     return buffer.toString().trimRight();
@@ -117,7 +118,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   SubscriptionCategory? _category;
   bool _showAllTop = false;
 
-  String _money(String currency, double amount) => '$currency${amount.toStringAsFixed(2)}';
+  /// Totals and headline figures (prices use [formatMoney] directly).
+  String _money(String currency, double amount) => formatMoney(amount, currency, style: MoneyStyle.summary);
+
+  double _toMain(double amount, String currency) => SubscriptionStore.instance.toMain(amount, currency);
+
+  double _mainMonthly(Subscription sub) => SubscriptionStore.instance.monthlyCostInMain(sub);
   String _percent(double share) => '${(share * 100).round()}%';
   String _plural(int count, String noun) => '$count $noun${count == 1 ? '' : 's'}';
 
@@ -184,7 +190,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         if (_category != null && !all.any((s) => s.category == _category)) _category = null;
         final category = _category;
         final subs = category == null ? all : [for (final s in all) if (s.category == category) s];
-        final monthly = SubscriptionStats.totalMonthlySpend(subs);
+        final monthly = SubscriptionStats.totalMonthlySpend(subs, store.toMain);
 
         final subtitle = category == null
             ? '${_money(store.currency, monthly)}/mo · ${store.totalActiveCount} active'
@@ -235,13 +241,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<Widget> _contentSlivers(SubscriptionStore store, List<Subscription> subs, double monthly) {
     final now = DateTime.now();
     final currency = store.currency;
-    final allCategories = SpendingInsights.byCategory(store.subscriptions);
-    final ranked = SpendingInsights.ranked(subs);
-    final cycles = SpendingInsights.byCycle(subs);
+    final allCategories = SpendingInsights.byCategory(store.subscriptions, store.toMain);
+    final ranked = SpendingInsights.ranked(subs, store.toMain);
+    final cycles = SpendingInsights.byCycle(subs, store.toMain);
     final insights = InsightCards.build(
       subs,
       now: now,
       currency: currency,
+      toMain: store.toMain,
       monthlyBudget: store.monthlyBudget,
       includeBudget: _category == null,
       categoryLabel: _category?.label,
@@ -291,7 +298,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _hero(SubscriptionStore store, List<Subscription> subs, double monthly) {
     final currency = store.currency;
     final category = _category;
-    final paused = SpendingInsights.pausedSavings(subs);
+    final paused = SpendingInsights.pausedSavings(subs, store.toMain);
     final budget = store.monthlyBudget;
 
     final rows = <AnalyticsHeroRow>[
@@ -331,12 +338,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       amount: _money(currency, monthly * 12),
       badge: '${SubscriptionStats.billable(subs).length} active',
       segments: [
-        for (final c in SpendingInsights.byCategory(subs)) (color: c.category.color, total: c.monthly),
+        for (final c in SpendingInsights.byCategory(subs, store.toMain)) (color: c.category.color, total: c.monthly),
       ],
       rows: rows,
       // Glow in the colour of the biggest category (the selected one when filtered).
       glowColor: () {
-        final categories = SpendingInsights.byCategory(subs);
+        final categories = SpendingInsights.byCategory(subs, store.toMain);
         return categories.isEmpty ? OneUITheme.glowDefault : OneUITheme.glowTint(categories.first.category.color);
       }(),
     );
@@ -485,7 +492,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${sub.billingCycle.label} · ${_money(sub.currency, sub.price)}',
+                      '${sub.billingCycle.label} · ${formatMoney(sub.price, sub.currency)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
@@ -494,7 +501,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(3),
                       child: LinearProgressIndicator(
-                        value: monthly <= 0 ? 0 : (sub.monthlyCost / monthly).clamp(0.0, 1.0),
+                        value: monthly <= 0 ? 0 : (_mainMonthly(sub) / monthly).clamp(0.0, 1.0),
                         minHeight: 4,
                         backgroundColor: OneUITheme.surfacePill,
                         color: sub.category.color,
@@ -504,7 +511,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ),
               ),
               trailing: Text(
-                '${_money(currency, sub.monthlyCost)}/mo',
+                '${_money(currency, _mainMonthly(sub))}/mo',
                 style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
               ),
               onTap: () => _openSubscription(sub),
@@ -531,7 +538,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _cycleSection(String currency, List<Subscription> subs, List<CycleSpend> cycles) {
     final billed = <BillingCycle, double>{};
     for (final s in SubscriptionStats.billable(subs)) {
-      billed[s.billingCycle] = (billed[s.billingCycle] ?? 0) + s.price;
+      billed[s.billingCycle] = (billed[s.billingCycle] ?? 0) + _toMain(s.price, s.currency);
     }
     final total = cycles.fold(0.0, (sum, c) => sum + c.monthly);
     String per(BillingCycle cycle) => switch (cycle) {
@@ -639,7 +646,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     final payments = SpendingInsights.recentPayments(subs);
     final paidThisMonth = payments
         .where((p) => p.date.year == now.year && p.date.month == now.month)
-        .fold(0.0, (sum, p) => sum + p.subscription.price);
+        .fold(0.0, (sum, p) => sum + store.toMain(p.subscription.price, p.subscription.currency));
 
     return OneUISection(
       title: 'Recent payments',
@@ -693,7 +700,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     }(),
                     subtitleColor: OneUITheme.textSecondary,
                     trailing: Text(
-                      _money(p.subscription.currency, p.subscription.price),
+                      formatMoney(p.subscription.price, p.subscription.currency),
                       style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
                     ),
                     onTap: () {

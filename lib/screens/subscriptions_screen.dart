@@ -277,7 +277,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     final subs = SubscriptionStore.instance.subscriptions.where((s) => _selectedIds.contains(s.id));
     final buffer = StringBuffer('Subscriptions Summary (${_selectedIds.length} items):\n\n');
     for (var sub in subs) {
-      buffer.writeln('• ${sub.name}: ${sub.currency}${sub.price.toStringAsFixed(2)} / ${sub.billingCycle.label} (${sub.category.label}) - Due in ${sub.daysRemaining} days');
+      buffer.writeln('• ${sub.name}: ${formatMoney(sub.price, sub.currency)} / ${sub.billingCycle.label} (${sub.category.label}) - Due in ${sub.daysRemaining} days');
     }
     buffer.writeln('\nTracked with OneSpend');
 
@@ -391,16 +391,15 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       subtitle: 'Enter your monthly subscription budget limit:',
       type: FieldEditorType.number,
       initialValue: store.monthlyBudget,
-      prefixText: '${store.currency} ',
       hintText: '0',
       currency: store.currency,
     );
 
     if (result != null && mounted) {
-      store.setMonthlyBudget(result.clamp(0.0, 999999.0));
+      store.setMonthlyBudget(result);
       OneUIToast.show(
         context,
-        'Budget updated to ${store.currency}${store.monthlyBudget.toStringAsFixed(0)}',
+        'Budget updated to ${formatMoney(store.monthlyBudget, store.currency, decimals: 0)}',
       );
     }
   }
@@ -707,8 +706,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                     ? 'All selected • Tap (O) to deselect'
                                     : 'Tap (O) to select all')
                                 : (isCardFilter
-                                    ? '${filteredSubs.length} linked • ${store.currency}${filteredSubs.fold<double>(0.0, (sum, s) => sum + s.monthlyCost).toStringAsFixed(2)} / month'
-                                    : '${store.totalActiveCount} active • ${store.currency}${store.totalMonthlySpend.toStringAsFixed(2)} / month')),
+                                    ? '${filteredSubs.length} linked • ${formatMoney(filteredSubs.fold<double>(0.0, (sum, s) => sum + store.monthlyCostInMain(s)), store.currency, style: MoneyStyle.summary)} / month'
+                                    : '${store.totalActiveCount} active • ${formatMoney(store.totalMonthlySpend, store.currency, style: MoneyStyle.summary)} / month')),
                         hasBigHeader: !_showSearch && !isCardFilter,
                         showBackButton: _showSearch || isCardFilter,
                         onBack: () {

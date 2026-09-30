@@ -79,7 +79,7 @@ void main() {
   testWidgets('hero shows the yearly total and trajectory card renders', (tester) async {
     await pumpScreen(tester);
     // (20 + 12 + 120 / 12) * 12 = 504
-    expect(find.descendant(of: find.byType(OneUIAnalyticsHeroCard), matching: find.text('\$504.00')), findsOneWidget);
+    expect(find.descendant(of: find.byType(OneUIAnalyticsHeroCard), matching: find.text('\$504')), findsOneWidget);
     expect(find.byType(OneUISpendingTrendsCard), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Spending by category'), 300);
     expect(find.text('Spending by category'), findsOneWidget);
@@ -104,10 +104,10 @@ void main() {
     await tester.pumpAndSettle();
     // The pill comes before the insight card, whose ✕ uses the same icon.
     final pill = find.byIcon(Icons.close_rounded).first;
-    expect(find.text('Music & Audio · \$12.00/mo'), findsOneWidget);
+    expect(find.text('Music & Audio · \$12/mo'), findsOneWidget);
     await tester.tap(pill);
     await tester.pumpAndSettle();
-    expect(find.text('Music & Audio · \$12.00/mo'), findsNothing);
+    expect(find.text('Music & Audio · \$12/mo'), findsNothing);
   });
 
   List<InsightCardData> expectedCards() {
@@ -229,7 +229,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(OneUIFloatingMenu.isOpen.value, isFalse);
-    expect(copied, contains('Yearly cost: \$504.00'));
+    expect(copied, contains('Yearly cost: \$504'));
     expect(copied, contains('Month-over-month'));
     await tester.pump(const Duration(seconds: 3));
   });

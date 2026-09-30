@@ -57,7 +57,7 @@ class $SubscriptionsTableTable extends SubscriptionsTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('\$'),
+    defaultValue: const Constant('USD'),
   );
   static const VerificationMeta _billingCycleMeta = const VerificationMeta(
     'billingCycle',
@@ -629,6 +629,8 @@ class SubscriptionEntry extends DataClass
   final String name;
   final String description;
   final double price;
+
+  /// ISO 4217 code (schema v3; earlier versions stored a display symbol such as `$`).
   final String currency;
   final String billingCycle;
   final String category;

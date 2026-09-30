@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../theme/one_ui_theme.dart';
 import '../../../../widgets/one_ui_brand_icon.dart';
 import '../../../../widgets/one_ui_group_card.dart';
+import '../../../currency/domain/money_format.dart';
 import '../../../payment_methods/domain/entities/payment_method.dart';
 import '../../domain/entities/subscription.dart';
 import '../../domain/entities/subscription_enums.dart';
@@ -13,14 +14,13 @@ class SubscriptionGroupItem extends OneUIGroupItem {
     bool isSelected = false,
     bool isSelectionMode = false,
     PaymentMethod? linkedMethod,
-    String currency = '\$',
     required VoidCallback onTap,
     required VoidCallback onLongPress,
   }) : super(
           leading: _buildLeading(subscription, isSelected, isSelectionMode),
           title: subscription.name,
           customSubtitle: _buildSubtitle(subscription, isSelectionMode, linkedMethod),
-          trailing: _buildTrailing(subscription, isSelectionMode, currency),
+          trailing: _buildTrailing(subscription, isSelectionMode),
           onTap: onTap,
           onLongPress: onLongPress,
         );
@@ -133,7 +133,7 @@ class SubscriptionGroupItem extends OneUIGroupItem {
     );
   }
 
-  static Widget? _buildTrailing(Subscription sub, bool isSelectionMode, String currency) {
+  static Widget? _buildTrailing(Subscription sub, bool isSelectionMode) {
     if (isSelectionMode) return null;
 
     final days = sub.daysRemaining;
@@ -169,7 +169,7 @@ class SubscriptionGroupItem extends OneUIGroupItem {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          '$currency${sub.price.toStringAsFixed(2)}',
+          formatMoney(sub.price, sub.currency),
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:equatable/equatable.dart';
+import '../../../currency/domain/currency.dart';
 import 'subscription_enums.dart';
 
 /// Pure Dart Subscription Domain Entity (Zero Flutter framework dependencies)
@@ -36,7 +37,7 @@ class Subscription extends Equatable {
     required this.name,
     required this.description,
     required this.price,
-    this.currency = '\$',
+    this.currency = CurrencyCatalog.defaultCode,
     required this.billingCycle,
     required this.category,
     required this.brandColorValue,
@@ -63,7 +64,7 @@ class Subscription extends Equatable {
     required this.name,
     required this.description,
     required this.price,
-    this.currency = '\$',
+    this.currency = CurrencyCatalog.defaultCode,
     required this.billingCycle,
     required this.category,
     int? brandColorValue,
@@ -300,7 +301,7 @@ class Subscription extends Equatable {
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      currency: json['currency'] as String? ?? '\$',
+      currency: CurrencyCatalog.normalize(json['currency'] as String?),
       billingCycle: BillingCycle.fromString(json['billingCycle'] as String?),
       category: category,
       brandColorValue: colorVal,

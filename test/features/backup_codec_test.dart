@@ -39,7 +39,7 @@ void main() {
     paymentMethods: [card('card1')],
     settings: (
       monthlyBudget: 120,
-      currency: '€',
+      currency: 'EUR',
       defaultReminderDays: 3,
       defaultReminderTimeMinutes: 20 * 60,
       notificationsEnabled: false,

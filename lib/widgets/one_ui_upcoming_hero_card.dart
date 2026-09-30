@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../features/currency/domain/exchange_rates.dart';
+import '../features/currency/domain/money_format.dart';
 import '../features/subscriptions/domain/entities/subscription.dart';
 import '../features/subscriptions/domain/services/charge_schedule.dart';
 import '../theme/one_ui_theme.dart';
@@ -20,7 +22,10 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
 
   /// Yearly subscriptions renewing soon (see [ChargeSchedule.annualRenewalsWithin]).
   final List<UpcomingCharge> annualSoon;
+
+  /// Main currency; totals are converted into it with [toMain].
   final String currency;
+  final ToMainCurrency toMain;
 
   /// Per-card split for the track, in display order (colours match the "By payment method" list).
   final List<({Color color, double total})> cardSegments;
@@ -35,21 +40,22 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
     required this.charges,
     required this.annualSoon,
     required this.currency,
+    this.toMain = sameCurrency,
     required this.cardSegments,
     this.onOpenSubscription,
   });
 
   static final DateFormat _monthDay = DateFormat('MMM d');
 
-  String _money(double amount) => '$currency${amount.toStringAsFixed(2)}';
+  String _money(double amount) => formatMoney(amount, currency, style: MoneyStyle.summary);
 
   @override
   Widget build(BuildContext context) {
     final unpaid = charges.unpaid;
-    final total = unpaid.fold(0.0, (sum, c) => sum + c.amount);
+    final total = charges.dueTotal(toMain);
     final overdueCount = unpaid.where((c) => c.status == ChargeStatus.overdue).length;
-    final biggest = charges.biggest;
-    final busiest = charges.busiestWeek();
+    final biggest = charges.biggest(toMain);
+    final busiest = charges.busiestWeek(toMain);
     final annual = annualSoon.isEmpty ? null : annualSoon.first;
 
     final (String badgeLabel, Color badgeColor) = overdueCount > 0
@@ -62,7 +68,7 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
           label: 'Biggest charge',
           leading: OneUIBrandIcon(subscription: biggest.subscription, size: 20, borderRadius: 6),
           title: biggest.subscription.name,
-          subtitle: '${_monthDay.format(biggest.date)} · ${_money(biggest.amount)}',
+          subtitle: '${_monthDay.format(biggest.date)} · ${formatMoney(biggest.amount, biggest.currency)}',
           onTap: onOpenSubscription == null ? null : () => onOpenSubscription!(biggest.subscription),
         ),
       if (busiest != null && busiest.count > 1)
@@ -77,7 +83,7 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
           label: 'Yearly renewal',
           leading: OneUIBrandIcon(subscription: annual.subscription, size: 20, borderRadius: 6),
           title: annual.subscription.name,
-          subtitle: '${_monthDay.format(annual.date)} · ${_money(annual.amount)}',
+          subtitle: '${_monthDay.format(annual.date)} · ${formatMoney(annual.amount, annual.currency)}',
           onTap: onOpenSubscription == null ? null : () => onOpenSubscription!(annual.subscription),
         ),
     ];
@@ -132,13 +138,22 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Text(
-                    _money(total),
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.8,
-                      color: OneUITheme.textPrimary,
+                  // One line; large-unit currencies (Rp, ₫) shrink to fit.
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _money(total),
+                        maxLines: 1,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.8,
+                          color: OneUITheme.textPrimary,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),

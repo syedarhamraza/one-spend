@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import '../../features/currency/domain/currency.dart';
 import 'converters/date_time_list_converter.dart';
 import 'tables/app_settings_table.dart';
 import 'tables/payment_methods_table.dart';
@@ -14,7 +15,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -23,8 +24,30 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2 && !await _hasColumn('subscriptions', 'reminder_time_minutes')) {
             await m.addColumn(subscriptionsTable, subscriptionsTable.reminderTimeMinutes);
           }
+          if (from < 3) await _migrateCurrencySymbolsToCodes();
         },
       );
+
+  /// v3: currencies are ISO codes instead of display symbols (`$` → `USD`, `Rs` → `PKR`).
+  Future<void> _migrateCurrencySymbolsToCodes() async {
+    final rows = await customSelect('SELECT DISTINCT currency FROM subscriptions').get();
+    for (final row in rows) {
+      final stored = row.read<String>('currency');
+      final code = CurrencyCatalog.normalize(stored);
+      if (code != stored) {
+        await customUpdate(
+          'UPDATE subscriptions SET currency = ? WHERE currency = ?',
+          variables: [Variable.withString(code), Variable.withString(stored)],
+          updates: {subscriptionsTable},
+        );
+      }
+    }
+    final setting = await getSetting('onespend_currency');
+    if (setting != null) {
+      final code = CurrencyCatalog.normalize(setting);
+      if (code != setting) await setSetting('onespend_currency', code);
+    }
+  }
 
   /// Makes upgrades idempotent: a column may already exist if a previous upgrade was interrupted.
   Future<bool> _hasColumn(String table, String column) async {

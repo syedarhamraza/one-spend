@@ -1,8 +1,12 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
 import '../database/migration/shared_preferences_migrator.dart';
+import '../../features/currency/data/exchange_rate_repository.dart';
+import '../../features/currency/data/rates_remote_datasource.dart';
 import '../../features/payment_methods/data/datasources/payment_method_drift_datasource.dart';
 import '../../features/payment_methods/data/datasources/payment_method_local_datasource.dart';
 import '../../features/payment_methods/data/repositories/payment_method_repository_impl.dart';
@@ -30,6 +34,9 @@ void setupDependencies({AppDatabase? database}) {
     }
     if (sl.isRegistered<SubscriptionController>()) {
       sl.unregister<SubscriptionController>();
+    }
+    if (sl.isRegistered<ExchangeRateRepository>()) {
+      sl.unregister<ExchangeRateRepository>();
     }
     if (sl.isRegistered<SubscriptionRepository>()) {
       sl.unregister<SubscriptionRepository>();
@@ -84,6 +91,18 @@ void setupDependencies({AppDatabase? database}) {
     );
   }
 
+  // Exchange rates: offline unless configureDependencies() registered the HTTP source
+  if (!sl.isRegistered<ExchangeRateRepository>()) {
+    sl.registerLazySingleton<ExchangeRateRepository>(
+      () => ExchangeRateRepository(
+        database: sl<AppDatabase>(),
+        remote: sl.isRegistered<RatesRemoteDataSource>()
+            ? sl<RatesRemoteDataSource>()
+            : const OfflineRatesRemoteDataSource(),
+      ),
+    );
+  }
+
   // 3. Controllers / State (Managed via GetIt)
   if (!sl.isRegistered<SubscriptionController>()) {
     sl.registerLazySingleton<SubscriptionController>(
@@ -91,6 +110,7 @@ void setupDependencies({AppDatabase? database}) {
         subscriptionRepository: sl<SubscriptionRepository>(),
         paymentMethodRepository: sl<PaymentMethodRepository>(),
         settingsRepository: sl<SettingsRepository>(),
+        rates: sl<ExchangeRateRepository>(),
       ),
     );
   }
@@ -147,9 +167,17 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   }
 
   // 5. Wire dependencies
+  if (!sl.isRegistered<RatesRemoteDataSource>()) {
+    sl.registerSingleton<RatesRemoteDataSource>(HttpRatesRemoteDataSource());
+  }
   setupDependencies();
 
-  // 6. Load persisted state before the first frame so nothing renders stale data
+  // 6. Load persisted state before the first frame so nothing renders stale data.
+  // Cached exchange rates load first; fresh ones download in the background.
+  final rates = sl<ExchangeRateRepository>();
+  await rates.load();
+  unawaited(rates.refresh());
+  AppLifecycleListener(onResume: () => unawaited(rates.refresh()));
   await sl<SubscriptionController>().load();
   await sl<OneUIEffectsController>().init();
 

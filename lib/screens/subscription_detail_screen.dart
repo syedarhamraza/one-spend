@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/subscription.dart';
+import 'settings/currency_picker_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
@@ -189,13 +190,13 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     final formattedDate = OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate);
     final summaryText = '''
 ${_sub.name} Subscription Details:
-• Price: ${_sub.currency}${_sub.price.toStringAsFixed(2)} / ${_sub.billingCycle.label}
+• Price: ${formatMoney(_sub.price, _sub.currency)} / ${_sub.billingCycle.label}
 • Category: ${_sub.category.label}
 • Next Renewal: $formattedDate (${_sub.daysRemaining} days remaining)
 • Status: ${_sub.status.label}
 • Payment Method: ${_sub.paymentMethod}
-• Monthly Equivalent: ${_sub.currency}${_sub.monthlyCost.toStringAsFixed(2)}/mo
-• Annual Equivalent: ${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)}/yr
+• Monthly Equivalent: ${formatMoney(_sub.monthlyCost, _sub.currency, style: MoneyStyle.summary)}/mo
+• Annual Equivalent: ${formatMoney(_sub.yearlyCost, _sub.currency, style: MoneyStyle.summary)}/yr
 ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpend
 '''.trim();
 
@@ -287,7 +288,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
         final upcomingDates = _sub.getUpcomingBillingDates(6);
         final shortFormat = OneUIDateFormats.monthDay;
         final upcomingSubtitle = upcomingDates.length >= 2
-            ? '${shortFormat.format(upcomingDates[0])} (${_sub.currency}${_sub.price.toStringAsFixed(2)}) • ${shortFormat.format(upcomingDates[1])} (${_sub.currency}${_sub.price.toStringAsFixed(2)})'
+            ? '${shortFormat.format(upcomingDates[0])} (${formatMoney(_sub.price, _sub.currency)}) • ${shortFormat.format(upcomingDates[1])} (${formatMoney(_sub.price, _sub.currency)})'
             : (upcomingDates.isNotEmpty ? shortFormat.format(upcomingDates[0]) : formattedDate);
 
         final heroGlowColor = OneUIBrandCatalog.getGlowColor(
@@ -412,7 +413,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                       ),
                                                       const SizedBox(height: 4),
                                                       Text(
-                                                        '${_sub.currency}${_sub.price.toStringAsFixed(2)} • ${_sub.billingCycle.label}',
+                                                        '${formatMoney(_sub.price, _sub.currency)} • ${_sub.billingCycle.label}',
                                                         style: const TextStyle(
                                                           fontSize: 14,
                                                           fontWeight: FontWeight.w500,
@@ -639,7 +640,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              '${_sub.currency}${_sub.price.toStringAsFixed(2)} • ${linkedCard?.nickname ?? 'Linked payment method'}',
+                                              '${formatMoney(_sub.price, _sub.currency)} • ${linkedCard?.nickname ?? 'Linked payment method'}',
                                               style: const TextStyle(
                                                 fontSize: 12.5,
                                                 color: OneUITheme.textSecondary,
@@ -737,7 +738,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                 OneUIGroupItem(
                                   leading: _buildDetailIcon(Icons.attach_money_rounded, OneUITheme.accentGreen),
                                   title: 'Price / Cost',
-                                  subtitle: '${_sub.currency}${_sub.price.toStringAsFixed(2)} / ${_sub.billingCycle.label}',
+                                  subtitle: '${formatMoney(_sub.price, _sub.currency)} / ${_sub.billingCycle.label}',
                                   subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.accentGreen),
                                   trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                   onTap: () => _editField<double>(
@@ -746,6 +747,25 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                     initialValue: _sub.price,
                                     onApply: (val) => _sub = _sub.copyWith(price: val),
                                   ),
+                                ),
+                                OneUIGroupItem(
+                                  leading: _buildDetailIcon(Icons.currency_exchange_rounded, OneUITheme.accentAmber),
+                                  title: 'Currency',
+                                  subtitle: currencyLabel(_sub.currency),
+                                  subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textSecondary),
+                                  trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                                  onTap: () async {
+                                    final picked = await CurrencyPickerScreen.open(
+                                      context,
+                                      initialCode: _sub.currency,
+                                      footnote: 'The currency this subscription is billed in. The price stays '
+                                          'the same number; totals are converted to your main currency.',
+                                    );
+                                    if (picked == null || picked == _sub.currency || !mounted) return;
+                                    setState(() => _sub = _sub.copyWith(currency: picked));
+                                    SubscriptionStore.instance.updateSubscription(_sub);
+                                    if (context.mounted) OneUIToast.show(context, 'Currency updated');
+                                  },
                                 ),
                                 OneUIGroupItem(
                                   leading: _buildDetailIcon(Icons.repeat_rounded, OneUITheme.accentPurple),
@@ -1014,7 +1034,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                 crossAxisAlignment: WrapCrossAlignment.end,
                                                 children: [
                                                   Text(
-                                                    '${_sub.currency}${totalPaid.toStringAsFixed(2)}',
+                                                    formatMoney(totalPaid, _sub.currency, style: MoneyStyle.summary),
                                                     style: const TextStyle(
                                                       fontSize: 32,
                                                       fontWeight: FontWeight.w700,
@@ -1056,7 +1076,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                   children: [
                                                     _keyValueRow(
                                                       'Estimated annual',
-                                                      '${_sub.currency}${_sub.yearlyCost.toStringAsFixed(2)} / yr',
+                                                      '${formatMoney(_sub.yearlyCost, _sub.currency, style: MoneyStyle.summary)} / yr',
                                                     ),
                                                     Divider(
                                                       height: 14,
@@ -1065,8 +1085,20 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                     ),
                                                     _keyValueRow(
                                                       'Monthly equivalent',
-                                                      '~${_sub.currency}${_sub.monthlyCost.toStringAsFixed(2)} / mo',
+                                                      '~${formatMoney(_sub.monthlyCost, _sub.currency, style: MoneyStyle.approximate)} / mo',
                                                     ),
+                                                    if (SubscriptionStore.instance.approxInMain(_sub.monthlyCost, _sub.currency)
+                                                        case final approx?) ...[
+                                                      Divider(
+                                                        height: 14,
+                                                        thickness: 0.6,
+                                                        color: Colors.white.withValues(alpha: 0.06),
+                                                      ),
+                                                      _keyValueRow(
+                                                        'In ${SubscriptionStore.instance.currency}',
+                                                        '$approx / mo',
+                                                      ),
+                                                    ],
                                                   ],
                                                 ),
                                               ),

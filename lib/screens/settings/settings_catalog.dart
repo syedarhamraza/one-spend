@@ -70,8 +70,8 @@ class SettingsCatalog {
         keywords: ['money', 'limit', 'spending'],
         options: [
           (title: 'Monthly budget', keywords: ['limit', 'spending cap'], placeholder: false),
-          (title: 'Currency', keywords: ['symbol', 'dollar', 'euro', 'pound', 'rupee', 'yen'], placeholder: false),
-          (title: PlannedFeature.multiCurrency.title, keywords: ['exchange', 'conversion'], placeholder: true),
+          (title: 'Main currency', keywords: ['currency', 'symbol', 'dollar', 'euro', 'pound', 'rupee', 'yen'], placeholder: false),
+          (title: 'Exchange rates', keywords: ['exchange', 'conversion', 'convert', 'rate', 'multi-currency'], placeholder: false),
         ],
       ),
       SettingsDestination(

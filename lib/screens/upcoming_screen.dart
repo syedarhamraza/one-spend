@@ -20,6 +20,7 @@ import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
+import '../widgets/one_ui_fit_amount.dart';
 import '../widgets/one_ui_floating_action_bar.dart';
 import '../widgets/one_ui_floating_menu.dart';
 import '../widgets/one_ui_floating_modal.dart';
@@ -90,7 +91,8 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
 
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  String _money(String currency, double amount) => '$currency${amount.toStringAsFixed(2)}';
+  /// Totals (prices use [formatMoney] directly).
+  String _money(String currency, double amount) => formatMoney(amount, currency, style: MoneyStyle.summary);
 
   /// Distinct, high-contrast colours for the per-card split (in rank order); "No card" is grey.
   static const List<Color> _cardPalette = [
@@ -147,7 +149,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
       title: 'Mark ${sub.name} as paid?',
-      message: 'Logs a ${_money(sub.currency, sub.price)} payment and moves the next renewal to '
+      message: 'Logs a ${formatMoney(sub.price, sub.currency)} payment and moves the next renewal to '
           '${_monthDay.format(next)}.',
       cancelLabel: 'Cancel',
       confirmLabel: 'Mark paid',
@@ -211,7 +213,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   void _markSelectedPaid(SubscriptionStore store) {
     final subs = _selectedSubscriptions(store);
     if (subs.isEmpty) return;
-    final total = subs.fold(0.0, (sum, s) => sum + s.price);
+    final total = subs.fold(0.0, (sum, s) => sum + store.toMain(s.price, s.currency));
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
       title: 'Mark ${_plural(subs.length, 'subscription')} as paid?',
@@ -351,7 +353,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         ).where(_matchesCard).toList();
         final unfilteredWindow = ChargeSchedule.between(store.subscriptions, from: today, to: horizonEnd, now: now);
         final window = unfilteredWindow.where(_matchesCard).toList();
-        final dueTotal = overdue.dueTotal + window.dueTotal;
+        final dueTotal = overdue.dueTotal(store.toMain) + window.dueTotal(store.toMain);
 
         // Drop selections whose subscriptions were deleted or paused elsewhere.
         _selectedIds.removeWhere((id) => store.getSubscription(id) == null);
@@ -494,9 +496,9 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
     List<UpcomingCharge> unfilteredWindow,
   ) {
     final days = window.byDay();
-    final byCard = [...overdue, ...unfilteredWindow].byPaymentMethod(normalizeId: _cardKey);
+    final byCard = [...overdue, ...unfilteredWindow].byPaymentMethod(normalizeId: _cardKey, toMain: store.toMain);
     final cardColors = _cardColors(byCard);
-    final filteredByCard = [...overdue, ...window].byPaymentMethod(normalizeId: _cardKey);
+    final filteredByCard = [...overdue, ...window].byPaymentMethod(normalizeId: _cardKey, toMain: store.toMain);
 
     return [
       _padded(
@@ -518,6 +520,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
             charges: [...overdue, ...window],
             annualSoon: ChargeSchedule.annualRenewalsWithin(store.subscriptions, now: now).where(_matchesCard).toList(),
             currency: store.currency,
+            toMain: store.toMain,
             cardSegments: [
               for (final entry in filteredByCard.entries)
                 (color: cardColors[entry.key] ?? _noCardColor, total: entry.value.total),
@@ -531,7 +534,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         _padded(
           OneUISection(
             title: 'Overdue (${overdue.length})',
-            trailing: _sectionAmount(_money(store.currency, overdue.dueTotal), color: OneUITheme.accentRed),
+            trailing: _sectionAmount(_money(store.currency, overdue.dueTotal(store.toMain)), color: OneUITheme.accentRed),
             child: OneUIGroupCard(
               margin: EdgeInsets.zero,
               items: [for (final c in overdue) _chargeItem(store, c, now, today)],
@@ -542,7 +545,9 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         _padded(
           OneUISection(
             title: _dayLabel(entry.key, today),
-            trailing: entry.value.dueTotal > 0 ? _sectionAmount(_money(store.currency, entry.value.dueTotal)) : null,
+            trailing: entry.value.dueTotal(store.toMain) > 0
+                ? _sectionAmount(_money(store.currency, entry.value.dueTotal(store.toMain)))
+                : null,
             child: OneUIGroupCard(
               margin: EdgeInsets.zero,
               items: [for (final c in entry.value) _chargeItem(store, c, now, today)],
@@ -645,7 +650,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                   ],
                 ),
               ),
-              trailing: Text(
+              trailing: OneUIFitAmount(
                 _money(store.currency, entry.value.total),
                 style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
               ),
@@ -706,7 +711,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       for (final entry in byDay.entries)
         entry.key: CalendarDayMarker(
           dotColors: [for (final c in entry.value) Color(c.subscription.brandColorValue)],
-          amount: entry.value.dueTotal,
+          amount: entry.value.dueTotal(store.toMain),
           settled: entry.value.every((c) => c.isPaid),
         ),
     };
@@ -750,8 +755,8 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
           child: Text(
-            '${_monthYear.format(visibleMonth)} · ${_money(store.currency, monthCharges.dueTotal)} due'
-            '${monthCharges.any((c) => c.isPaid) ? ' · ${_money(store.currency, monthCharges.where((c) => c.isPaid).fold(0.0, (s, c) => s + c.amount))} paid' : ''}',
+            '${_monthYear.format(visibleMonth)} · ${_money(store.currency, monthCharges.dueTotal(store.toMain))} due'
+            '${monthCharges.any((c) => c.isPaid) ? ' · ${_money(store.currency, monthCharges.paidTotal(store.toMain))} paid' : ''}',
             style: const TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
           ),
         ),
@@ -760,7 +765,9 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       _padded(
         OneUISection(
           title: _dayLabel(selected, today),
-          trailing: dayCharges.dueTotal > 0 ? _sectionAmount(_money(store.currency, dayCharges.dueTotal)) : null,
+          trailing: dayCharges.dueTotal(store.toMain) > 0
+              ? _sectionAmount(_money(store.currency, dayCharges.dueTotal(store.toMain)))
+              : null,
           child: dayCharges.isEmpty
               ? Container(
                   width: double.infinity,
@@ -823,8 +830,8 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            _money(sub.currency, sub.price),
+          OneUIFitAmount(
+            formatMoney(sub.price, sub.currency),
             style: TextStyle(
               fontSize: 15.5,
               fontWeight: FontWeight.w700,
@@ -994,7 +1001,11 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   Widget _sectionAmount(String text, {Color color = OneUITheme.textSecondary}) {
     return Padding(
       padding: const EdgeInsets.only(right: 16),
-      child: Text(text, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: color)),
+      child: OneUIFitAmount(
+        text,
+        maxWidth: 160,
+        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: color),
+      ),
     );
   }
 

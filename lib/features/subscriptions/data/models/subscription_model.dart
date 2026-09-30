@@ -1,3 +1,4 @@
+import '../../../currency/domain/currency.dart';
 import '../../domain/entities/subscription.dart';
 import '../../domain/entities/subscription_enums.dart';
 
@@ -8,7 +9,7 @@ class SubscriptionModel extends Subscription {
     required super.name,
     required super.description,
     required super.price,
-    super.currency = '\$',
+    super.currency = CurrencyCatalog.defaultCode,
     required super.billingCycle,
     required super.category,
     required super.brandColorValue,
@@ -73,7 +74,7 @@ class SubscriptionModel extends Subscription {
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      currency: json['currency'] as String? ?? '\$',
+      currency: CurrencyCatalog.normalize(json['currency'] as String?),
       billingCycle: BillingCycle.fromString(json['billingCycle'] as String?),
       category: category,
       brandColorValue: colorVal,

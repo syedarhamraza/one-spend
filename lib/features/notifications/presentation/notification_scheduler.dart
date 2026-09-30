@@ -96,6 +96,7 @@ class NotificationScheduler with WidgetsBindingObserver {
       paymentMethods: controller.paymentMethods,
       monthlyBudget: controller.monthlyBudget,
       currency: controller.currency,
+      toMain: controller.toMain,
       defaultReminderTimeMinutes: controller.defaultReminderTimeMinutes,
       now: clock(),
     );

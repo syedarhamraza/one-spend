@@ -107,13 +107,15 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
 
   /// "$83.96 /mo" with whole units large, as in "53 m".
   Widget _bigAmount(double amount) {
-    final text = amount.toStringAsFixed(2);
-    final dot = text.indexOf('.');
+    final text = formatMoney(amount, widget.currency, style: MoneyStyle.summary);
+    final decimals = RegExp(r'\.\d+').firstMatch(text);
+    final whole = decimals == null ? text : text.substring(0, decimals.start);
+    final rest = decimals == null ? '' : text.substring(decimals.start);
     return Text.rich(
       TextSpan(
         children: [
-          TextSpan(text: '${widget.currency}${text.substring(0, dot)}'),
-          TextSpan(text: text.substring(dot), style: const TextStyle(fontSize: 26)),
+          TextSpan(text: whole),
+          if (rest.isNotEmpty) TextSpan(text: rest, style: const TextStyle(fontSize: 26)),
           const TextSpan(
             text: ' /mo',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: OneUITheme.textSecondary),
@@ -174,7 +176,7 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${widget.currency}${c.monthly.toStringAsFixed(2)}',
+                  formatMoney(c.monthly, widget.currency, style: MoneyStyle.summary),
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: OneUITheme.textPrimary),
                 ),
               ],

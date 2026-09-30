@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../currency/domain/exchange_rates.dart';
 import '../entities/subscription.dart';
 import '../entities/subscription_enums.dart';
 
@@ -14,6 +15,7 @@ class UpcomingCharge extends Equatable {
 
   const UpcomingCharge({required this.subscription, required this.date, required this.status});
 
+  /// In the subscription's own [currency].
   double get amount => subscription.price;
   String get currency => subscription.currency;
   String? get paymentMethodId => subscription.paymentMethodId;
@@ -103,8 +105,13 @@ extension ChargeListSummary on List<UpcomingCharge> {
   /// Charges still to be paid (upcoming + overdue).
   List<UpcomingCharge> get unpaid => where((c) => !c.isPaid).toList();
 
-  /// Sum of unpaid charge amounts.
-  double get dueTotal => unpaid.fold(0.0, (sum, c) => sum + c.amount);
+  /// Sum of unpaid charge amounts, converted with [toMain].
+  double dueTotal([ToMainCurrency toMain = sameCurrency]) =>
+      unpaid.fold(0.0, (sum, c) => sum + toMain(c.amount, c.currency));
+
+  /// Sum of paid charge amounts, converted with [toMain].
+  double paidTotal([ToMainCurrency toMain = sameCurrency]) =>
+      where((c) => c.isPaid).fold(0.0, (sum, c) => sum + toMain(c.amount, c.currency));
 
   /// Charges grouped by calendar day, in date order.
   Map<DateTime, List<UpcomingCharge>> byDay() {
@@ -115,37 +122,45 @@ extension ChargeListSummary on List<UpcomingCharge> {
     return map;
   }
 
-  /// Unpaid totals per payment method id (null = no card), largest first.
+  /// Unpaid totals per payment method id (null = no card), largest first, converted with [toMain].
   ///
   /// [normalizeId] maps raw ids before grouping, e.g. so ids of deleted cards fold into null.
-  Map<String?, ({double total, int count})> byPaymentMethod({String? Function(String? id)? normalizeId}) {
+  Map<String?, ({double total, int count})> byPaymentMethod({
+    String? Function(String? id)? normalizeId,
+    ToMainCurrency toMain = sameCurrency,
+  }) {
     final totals = <String?, ({double total, int count})>{};
     for (final c in unpaid) {
       final key = normalizeId == null ? c.paymentMethodId : normalizeId(c.paymentMethodId);
       final current = totals[key] ?? (total: 0.0, count: 0);
-      totals[key] = (total: current.total + c.amount, count: current.count + 1);
+      totals[key] = (total: current.total + toMain(c.amount, c.currency), count: current.count + 1);
     }
     final entries = totals.entries.toList()..sort((a, b) => b.value.total.compareTo(a.value.total));
     return Map.fromEntries(entries);
   }
 
-  /// The largest unpaid charge (earliest on ties).
-  UpcomingCharge? get biggest {
+  /// The largest unpaid charge (earliest on ties), compared after [toMain].
+  UpcomingCharge? biggest([ToMainCurrency toMain = sameCurrency]) {
     UpcomingCharge? best;
+    var bestAmount = 0.0;
     for (final c in unpaid) {
-      if (best == null || c.amount > best.amount) best = c;
+      final amount = toMain(c.amount, c.currency);
+      if (best == null || amount > bestAmount) {
+        best = c;
+        bestAmount = amount;
+      }
     }
     return best;
   }
 
-  /// The 7-day window (starting on a charge day) with the highest unpaid total.
-  ({DateTime start, double total, int count})? busiestWeek() {
+  /// The 7-day window (starting on a charge day) with the highest unpaid total (after [toMain]).
+  ({DateTime start, double total, int count})? busiestWeek([ToMainCurrency toMain = sameCurrency]) {
     final charges = unpaid;
     ({DateTime start, double total, int count})? best;
     for (final anchor in charges) {
       final windowEnd = anchor.date.add(const Duration(days: 6));
       final inWindow = charges.where((c) => !c.date.isBefore(anchor.date) && !c.date.isAfter(windowEnd));
-      final total = inWindow.fold(0.0, (sum, c) => sum + c.amount);
+      final total = inWindow.fold(0.0, (sum, c) => sum + toMain(c.amount, c.currency));
       if (best == null || total > best.total) {
         best = (start: anchor.date, total: total, count: inWindow.length);
       }

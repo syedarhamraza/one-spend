@@ -133,7 +133,7 @@ void main() {
 
       // Default values
       expect(await dataSource.getMonthlyBudget(), equals(150.0));
-      expect(await dataSource.getCurrency(), equals('\$'));
+      expect(await dataSource.getCurrency(), equals('USD'));
       final defaultProfile = await dataSource.getUserProfile();
       expect(defaultProfile.name, isEmpty);
       expect(defaultProfile.email, isEmpty);
@@ -143,7 +143,7 @@ void main() {
 
       // Mutate
       await dataSource.setMonthlyBudget(300.0);
-      await dataSource.setCurrency('€');
+      await dataSource.setCurrency('EUR');
       await dataSource.setUserProfile('Jane Doe', 'jane@example.com');
       await dataSource.setDefaultReminderDays(5);
       await dataSource.setSortOptionName('priceDesc');
@@ -151,7 +151,7 @@ void main() {
 
       // Verify persistence
       expect(await dataSource.getMonthlyBudget(), equals(300.0));
-      expect(await dataSource.getCurrency(), equals('€'));
+      expect(await dataSource.getCurrency(), equals('EUR'));
       final updatedProfile = await dataSource.getUserProfile();
       expect(updatedProfile.name, equals('Jane Doe'));
       expect(updatedProfile.email, equals('jane@example.com'));
@@ -254,7 +254,7 @@ void main() {
       // Verify Drift DB contains the migrated settings
       final settingsDs = SettingsDriftDataSource(db);
       expect(await settingsDs.getMonthlyBudget(), equals(200.0));
-      expect(await settingsDs.getCurrency(), equals('£'));
+      expect(await settingsDs.getCurrency(), equals('GBP'), reason: 'legacy symbols become ISO codes');
       final profile = await settingsDs.getUserProfile();
       expect(profile.name, equals('Legacy User'));
       expect(profile.email, equals('legacy@onespend.app'));
