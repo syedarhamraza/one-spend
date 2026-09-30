@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import '../../payment_methods/domain/entities/payment_method.dart';
 import '../../subscriptions/domain/entities/subscription.dart';
 import '../../subscriptions/domain/entities/subscription_enums.dart';
+import '../../subscriptions/domain/services/charge_schedule.dart';
 import '../../subscriptions/domain/services/subscription_stats.dart';
 import 'planned_notification.dart';
 
@@ -117,25 +118,14 @@ class NotificationPlanner {
 
     for (var offset = 0; offset < 2; offset++) {
       final monthStart = DateTime(now.year, now.month + offset, 1);
-      final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
-      bool inMonth(DateTime d) => !d.isBefore(monthStart) && d.isBefore(monthEnd);
+      final monthLastDay = DateTime(monthStart.year, monthStart.month + 1, 0);
 
-      // Charges already paid this month (history) plus projected billing dates.
-      final charges = <({DateTime date, Subscription sub})>[];
-      for (final sub in billable) {
-        for (final paid in sub.paymentHistory.where(inMonth)) {
-          charges.add((date: paid, sub: sub));
-        }
-        var due = sub.nextBillingDate;
-        for (var i = 0; i < 60 && due.isBefore(monthEnd); i++, due = sub.calculateNextDateFrom(due)) {
-          if (inMonth(due)) charges.add((date: due, sub: sub));
-        }
-      }
-      charges.sort((a, b) => a.date.compareTo(b.date));
+      // Charges already paid this month (history) plus projected and overdue billing dates.
+      final charges = ChargeSchedule.between(billable, from: monthStart, to: monthLastDay, now: now);
 
       var total = 0.0;
       for (final charge in charges) {
-        total += charge.sub.price;
+        total += charge.amount;
         if (total <= budget) continue;
         // Only alert about a crossing that is still ahead of us.
         final fireAt = _at(charge.date, minutes);
@@ -146,7 +136,7 @@ class NotificationPlanner {
             kind: NotificationKind.budget,
             fireAt: fireAt,
             title: 'Over budget on ${_dayFormat.format(charge.date)}',
-            body: '${charge.sub.name} (${_money(currency, charge.sub.price)}) takes '
+            body: '${charge.subscription.name} (${_money(currency, charge.amount)}) takes '
                 '${_monthFormat.format(monthStart)} spending to ${_money(currency, total)}, '
                 'over your ${_money(currency, budget)} budget.',
             subjectId: monthKey,
