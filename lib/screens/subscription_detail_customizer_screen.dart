@@ -32,7 +32,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: OneUICollapsibleHeaderDelegate(
-                      title: 'Detail screen styling',
+                      title: 'Subscription details',
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {

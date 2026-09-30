@@ -1,0 +1,193 @@
+import 'package:flutter/material.dart';
+
+import '../../theme/one_ui_theme.dart';
+import '../payment_methods_screen.dart';
+import 'about_screen.dart';
+import 'appearance_settings_screen.dart';
+import 'backup_data_screen.dart';
+import 'budget_currency_screen.dart';
+import 'coming_soon_screen.dart';
+import 'developer_options_screen.dart';
+import 'help_feedback_screen.dart';
+import 'notification_settings_screen.dart';
+import 'planned_feature.dart';
+import 'security_settings_screen.dart';
+
+/// An option inside a subpage, listed so Settings search can find it.
+typedef SettingsOption = ({String title, List<String> keywords});
+
+/// One row on the main Settings page and the subpage it opens.
+class SettingsDestination {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final void Function(BuildContext context) open;
+
+  /// Shows a "Soon" chip (the destination is a [ComingSoonScreen]).
+  final bool soon;
+  final List<String> keywords;
+  final List<SettingsOption> options;
+
+  const SettingsDestination({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.open,
+    this.soon = false,
+    this.keywords = const [],
+    this.options = const [],
+  });
+}
+
+/// A search hit: a main row, or an option inside one (with the row as its path).
+typedef SettingsSearchResult = ({String title, String? path, SettingsDestination destination});
+
+class SettingsCatalog {
+  const SettingsCatalog._();
+
+  /// Main page groups, top to bottom.
+  static List<List<SettingsDestination>> groups({required bool developerOptions}) => [
+        [
+          SettingsDestination(
+            title: 'Budget & currency',
+            icon: Icons.account_balance_wallet_rounded,
+            color: OneUITheme.accentGreen,
+            open: BudgetCurrencyScreen.open,
+            keywords: ['money', 'limit', 'spending'],
+            options: [
+              (title: 'Monthly budget', keywords: ['limit', 'spending cap']),
+              (title: 'Currency', keywords: ['symbol', 'dollar', 'euro', 'pound', 'rupee', 'yen']),
+              (title: PlannedFeature.multiCurrency.title, keywords: ['exchange', 'conversion']),
+            ],
+          ),
+          SettingsDestination(
+            title: 'Notifications',
+            icon: Icons.notifications_rounded,
+            color: OneUITheme.accentOrange,
+            open: NotificationSettingsScreen.open,
+            keywords: ['alerts'],
+            options: [
+              (title: 'Default reminder', keywords: ['reminder time', 'days before', 'alert', 'renewal']),
+            ],
+          ),
+          SettingsDestination(
+            title: 'Payment methods',
+            icon: Icons.credit_card_rounded,
+            color: OneUITheme.accentBlue,
+            open: PaymentMethodsScreen.open,
+            keywords: ['cards', 'credit', 'debit', 'wallet', 'bank'],
+          ),
+        ],
+        [
+          SettingsDestination(
+            title: 'Appearance',
+            icon: Icons.palette_rounded,
+            color: OneUITheme.accentPurple,
+            open: AppearanceSettingsScreen.open,
+            keywords: ['theme', 'style', 'customise', 'customize', 'look'],
+            options: [
+              (title: '3D floating elements', keywords: ['3d', 'effects', 'navigation bar', 'glass', 'depth']),
+              (title: 'Subscription cards', keywords: ['card studio', 'price display', 'renewal badge', 'chips']),
+              (title: 'Subscription details', keywords: ['icons', 'highlight', 'detail screen']),
+              (title: 'Reset appearance', keywords: ['defaults']),
+            ],
+          ),
+          SettingsDestination(
+            title: PlannedFeature.widgets.title,
+            icon: PlannedFeature.widgets.icon,
+            color: OneUITheme.accentAmber,
+            open: (context) => ComingSoonScreen.open(context, PlannedFeature.widgets),
+            soon: true,
+            keywords: ['home screen'],
+          ),
+        ],
+        [
+          SettingsDestination(
+            title: 'Security & privacy',
+            icon: Icons.shield_rounded,
+            color: OneUITheme.accentBlue,
+            open: SecuritySettingsScreen.open,
+            options: [
+              (title: PlannedFeature.appLock.title, keywords: ['fingerprint', 'biometric', 'pin', 'password']),
+              (title: PlannedFeature.privacyPolicy.title, keywords: ['data']),
+            ],
+          ),
+          SettingsDestination(
+            title: 'Backup & data',
+            icon: Icons.cloud_rounded,
+            color: OneUITheme.accentTeal,
+            open: BackupDataScreen.open,
+            keywords: ['storage'],
+            options: [
+              (title: 'Export backup', keywords: ['json', 'save']),
+              (title: 'Export as spreadsheet', keywords: ['csv', 'excel', 'sheets']),
+              (title: PlannedFeature.import.title, keywords: ['restore']),
+              (title: PlannedFeature.cloudBackup.title, keywords: ['cloud', 'google drive', 'sync']),
+              (title: 'Clear all subscriptions', keywords: ['delete', 'erase', 'reset']),
+            ],
+          ),
+        ],
+        [
+          SettingsDestination(
+            title: 'Help & feedback',
+            icon: Icons.help_rounded,
+            color: OneUITheme.textTertiary,
+            open: HelpFeedbackScreen.open,
+            keywords: ['support', 'contact'],
+            options: [
+              (title: 'Send feedback', keywords: ['email', 'contact']),
+              (title: 'Report a problem', keywords: ['bug', 'issue']),
+              (title: PlannedFeature.rateApp.title, keywords: ['review', 'play store']),
+            ],
+          ),
+          SettingsDestination(
+            title: 'About OneSpend',
+            icon: Icons.info_rounded,
+            color: OneUITheme.textTertiary,
+            open: AboutScreen.open,
+            keywords: ['version'],
+            options: [
+              (title: 'Developer', keywords: ['author', 'made by']),
+              (title: 'Open source licences', keywords: ['licenses', 'legal']),
+              (title: 'Source code', keywords: ['github', 'repository']),
+            ],
+          ),
+        ],
+        if (developerOptions)
+          [
+            SettingsDestination(
+              title: 'Developer options',
+              icon: Icons.code_rounded,
+              color: OneUITheme.textTertiary,
+              open: DeveloperOptionsScreen.open,
+              keywords: ['debug'],
+              options: [
+                (title: 'Send test notification now', keywords: ['notification']),
+                (title: 'Pending notifications', keywords: ['scheduled']),
+                (title: 'Load sample subscriptions', keywords: ['demo', 'catalog']),
+                (title: 'Restore dismissed tips', keywords: ['insights']),
+              ],
+            ),
+          ],
+      ];
+
+  /// Rows and subpage options matching [query] (case-insensitive), rows first.
+  static List<SettingsSearchResult> search(String query, {required bool developerOptions}) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    bool hit(String title, List<String> keywords) =>
+        title.toLowerCase().contains(q) || keywords.any((k) => k.toLowerCase().contains(q));
+
+    final rows = <SettingsSearchResult>[];
+    final options = <SettingsSearchResult>[];
+    for (final group in groups(developerOptions: developerOptions)) {
+      for (final d in group) {
+        if (hit(d.title, d.keywords)) rows.add((title: d.title, path: null, destination: d));
+        for (final o in d.options) {
+          if (hit(o.title, o.keywords)) options.add((title: o.title, path: d.title, destination: d));
+        }
+      }
+    }
+    return [...rows, ...options];
+  }
+}

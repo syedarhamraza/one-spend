@@ -13,7 +13,7 @@ Everything below is backed by real code: tokens live in [`lib/theme/one_ui_theme
 3. **Every option is a subpage.** Tapping a setting opens a full **subpage** with a small header, a back button and a floating **Cancel | Save** pill. Never use a Material dialog, date/time picker or snackbar (see §7).
 4. **One accent per meaning.** Colour signals meaning (action, success, danger); it isn't decoration. See §2.2.
 5. **Tactile.** Every interaction has a haptic (§6).
-6. **Respect the user's style settings.** Cards and floating elements get their colour, border and shadow from `OneUITheme` getters, because users can switch 3D effects on and off in Settings. Don't hardcode them.
+6. **Respect the user's style settings.** Floating elements get their colour, border and shadow from `OneUITheme` getters, because users can switch **3D floating elements** on in Settings › Appearance (off by default). Cards are always flat and the bottom vignette is always on. Don't hardcode these values.
 
 ---
 
@@ -33,7 +33,7 @@ Everything below is backed by real code: tokens live in [`lib/theme/one_ui_theme
 - cards: `cardColor`, `cardBorder`, `cardShadow`
 - floating UI: `floatingColor`, `floatingGradient`, `floatingBorder`, `floatingShadow`, `navbarShadow`, `fabShadow`
 
-They follow `OneUIEffectsController`, which holds the user's 3D-effects settings.
+The floating getters follow `OneUIEffectsController.floating3dEffect` (one setting for the nav bar, buttons and pills). The card getters always return the flat look (`#1C1C1E`, no border, no shadow).
 
 ### 2.2 Accents
 | Token | Value | Meaning |
@@ -132,6 +132,8 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIToast` | `one_ui_toast.dart` | Brief feedback ("Netflix added"). Replaces snackbars. Pass `actionLabel: 'Undo', onAction: …` for reversible actions; it then stays up for 4 s |
 | `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) |
 | `OneUIFloatingSearchPill` | `one_ui_floating_search_pill.dart` | In-screen search |
+| `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open |
+| `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge) and `OneUISoonChip` |
 | `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar |
 | `OneUISortBottomSheet`, `OneUIFilterBottomSheet`, `OneUIFloatingMenu` | respective files | Sort / filter sheets and overflow menus |
 | `OneUIScrollToTopButton` | `one_ui_scroll_to_top_button.dart` | Long lists |
@@ -158,15 +160,13 @@ Use [`billing_cycle_picker_screen.dart`](../lib/screens/billing_cycle_picker_scr
 4. **Entry point:** add `static Future<T?> open(BuildContext context, {…})` on the screen. It calls `HapticFeedback.lightImpact()`, then `context.push<T>(AppRoutes.x, extra: …)`. Callers use only `open()`.
 5. **Test:** host the caller with `routedTestApp(...)` from `test/helpers/test_app.dart`.
 
-### 5.2 Add a settings row
-Add an `OneUIGroupItem` to the right list in `settings_screen.dart`, with:
-- a solid circular badge
-- a title
-- a subtitle showing the **current value**
-- a trailing chevron, or a `OneUISwitch` for booleans
-- an `onTap` that opens a subpage via its `open()`
+### 5.2 Add a setting
+Settings follows Samsung Settings: the **main page is titles only**. Each row is a solid circular badge and a short title: no subtitle, no switch, no chevron, and it never opens a dialog. Every option lives on the **subpage** that row opens (`lib/screens/settings/`).
 
-Rows are filtered by the Settings search, so keep titles descriptive.
+- **New option in an existing area:** add a row to that subpage (built on `OneUISubpage`). Subpage rows show the **current value** as their subtitle, and a `OneUISwitch` is fine here. Also add it to that destination's `options` in `settings_catalog.dart` so search finds it (results show the path, e.g. "Settings › Notifications").
+- **New area:** add a `SettingsDestination` to a group in `SettingsCatalog.groups` (icon, colour, `open`, keywords, options), plus a subpage with a route and an `open()` helper (§5.1).
+- **Not built yet:** add a `PlannedFeature` and point the row at `ComingSoonScreen.open`; show `OneUISoonChip` as the trailing widget.
+- **Debug-only tools** go in Developer options, which only exists in debug builds.
 
 ### 5.3 Quick actions, confirmation, and long-press
 - **Money-moving actions** (mark paid, skip a cycle) use a **confirmation**: `OneUIFloatingModal.showConfirmationDialog`. The title is a question ("Mark Netflix as paid?"), the message says what will happen ("Logs a $15.49 payment and moves the next renewal to Nov 5"), and `confirmTextColor` uses the action's accent. Follow it with a plain `OneUIToast`.

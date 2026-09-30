@@ -16,6 +16,7 @@ import '../widgets/one_ui_filter_bottom_sheet.dart';
 import '../widgets/one_ui_floating_menu.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_floating_search_field.dart';
 import '../widgets/one_ui_scroll_to_top_button.dart';
 import '../widgets/one_ui_selection_action_bar.dart';
 import '../widgets/one_ui_sort_bottom_sheet.dart';
@@ -569,94 +570,18 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   Widget _buildFloatingSearchPill() {
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: OneUITheme.floatingShadow,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: OneUITheme.blurSigma,
-            sigmaY: OneUITheme.blurSigma,
-          ),
-          child: Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: is3d ? null : OneUITheme.floatingColor,
-              gradient: is3d ? OneUITheme.floatingGradient : null,
-              borderRadius: BorderRadius.circular(32),
-              border: OneUITheme.floatingBorder,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (val) {
-                      _searchFocusNode.unfocus();
-                      if (val.trim().isNotEmpty) {
-                        SubscriptionStore.instance.addRecentSearch(val.trim());
-                      }
-                    },
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: 'What are you looking for?',
-                      hintStyle: TextStyle(
-                        color: Color(0xFF8E95B8),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onChanged: (val) {
-                      setState(() {
-                        _searchQuery = val;
-                      });
-                    },
-                  ),
-                ),
-                if (_searchQuery.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      setState(() {
-                        _searchQuery = '';
-                        _searchController.clear();
-                      });
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.close_rounded,
-                        color: Colors.white70,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return OneUIFloatingSearchField(
+      controller: _searchController,
+      focusNode: _searchFocusNode,
+      onSubmitted: (val) {
+        _searchFocusNode.unfocus();
+        if (val.trim().isNotEmpty) {
+          SubscriptionStore.instance.addRecentSearch(val.trim());
+        }
+      },
+      onChanged: (val) => setState(() => _searchQuery = val),
     );
   }
-
 
   Widget _buildSubscriptionSection({
     required String title,

@@ -85,7 +85,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify Screen Header
-      expect(find.text('Card details & indicators'), findsWidgets);
+      expect(find.text('Subscription cards'), findsWidgets);
 
       // Verify Price display row with current default subtitle (Amount only)
       expect(find.text('Price display'), findsOneWidget);

@@ -62,7 +62,7 @@ class OneUIBottomVignette extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final isEnabled = OneUIEffectsController.instance.bottomVignetteEffect && isVisible;
+        final isEnabled = isVisible;
         final bottomPadding = MediaQuery.paddingOf(context).bottom;
         final normalHeight = bottomPadding + 160.0;
         final decreasedHeight = bottomPadding + 105.0;

@@ -16,6 +16,19 @@ import '../../screens/payment_method_editor_screen.dart';
 import '../../screens/payment_method_picker_screen.dart';
 import '../../screens/popular_presets_screen.dart';
 import '../../screens/reminder_picker_screen.dart';
+import '../../screens/settings/about_screen.dart';
+import '../../screens/settings/appearance_settings_screen.dart';
+import '../../screens/settings/author_screen.dart';
+import '../../screens/settings/backup_data_screen.dart';
+import '../../screens/settings/budget_currency_screen.dart';
+import '../../screens/settings/coming_soon_screen.dart';
+import '../../screens/settings/currency_picker_screen.dart';
+import '../../screens/settings/developer_options_screen.dart';
+import '../../screens/settings/help_feedback_screen.dart';
+import '../../screens/settings/licenses_screen.dart';
+import '../../screens/settings/notification_settings_screen.dart';
+import '../../screens/settings/planned_feature.dart';
+import '../../screens/settings/security_settings_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/subscription_card_customizer_screen.dart';
 import '../../screens/subscription_detail_customizer_screen.dart';
@@ -55,6 +68,21 @@ class AppRoutes {
   static const datePicker = '/pickers/date';
   static const cardStudio = '/settings/card-studio';
   static const detailStudio = '/settings/detail-studio';
+
+  // Settings subpages
+  static const settingsBudget = '/settings/budget';
+  static const settingsCurrency = '/settings/budget/currency';
+  static const settingsNotifications = '/settings/notifications';
+  static const settingsAppearance = '/settings/appearance';
+  static const settingsSecurity = '/settings/security';
+  static const settingsData = '/settings/data';
+  static const settingsHelp = '/settings/help';
+  static const settingsAbout = '/settings/about';
+  static const settingsAuthor = '/settings/about/developer';
+  static const settingsLicenses = '/settings/about/licenses';
+  static const settingsLicenseDetail = '/settings/about/licenses/detail';
+  static const settingsDeveloperOptions = '/settings/developer-options';
+  static const comingSoon = '/settings/coming-soon';
 }
 
 /// Arguments for [AppRoutes.paymentMethods].
@@ -197,6 +225,28 @@ List<RouteBase> buildPageRoutes() {
     ),
     GoRoute(path: AppRoutes.cardStudio, builder: (context, state) => const SubscriptionCardCustomizerScreen()),
     GoRoute(path: AppRoutes.detailStudio, builder: (context, state) => const SubscriptionDetailCustomizerScreen()),
+    GoRoute(path: AppRoutes.settingsBudget, builder: (context, state) => const BudgetCurrencyScreen()),
+    GoRoute(
+      path: AppRoutes.settingsCurrency,
+      builder: (context, state) => CurrencyPickerScreen(initialSymbol: state.extra as String? ?? '\$'),
+    ),
+    GoRoute(path: AppRoutes.settingsNotifications, builder: (context, state) => const NotificationSettingsScreen()),
+    GoRoute(path: AppRoutes.settingsAppearance, builder: (context, state) => const AppearanceSettingsScreen()),
+    GoRoute(path: AppRoutes.settingsSecurity, builder: (context, state) => const SecuritySettingsScreen()),
+    GoRoute(path: AppRoutes.settingsData, builder: (context, state) => const BackupDataScreen()),
+    GoRoute(path: AppRoutes.settingsHelp, builder: (context, state) => const HelpFeedbackScreen()),
+    GoRoute(path: AppRoutes.settingsAbout, builder: (context, state) => const AboutScreen()),
+    GoRoute(path: AppRoutes.settingsAuthor, builder: (context, state) => const AuthorScreen()),
+    GoRoute(path: AppRoutes.settingsLicenses, builder: (context, state) => const LicensesScreen()),
+    GoRoute(
+      path: AppRoutes.settingsLicenseDetail,
+      builder: (context, state) => LicenseDetailScreen(packageName: state.extra as String? ?? ''),
+    ),
+    GoRoute(path: AppRoutes.settingsDeveloperOptions, builder: (context, state) => const DeveloperOptionsScreen()),
+    GoRoute(
+      path: AppRoutes.comingSoon,
+      builder: (context, state) => ComingSoonScreen(feature: state.extra as PlannedFeature? ?? PlannedFeature.widgets),
+    ),
   ];
 }
 

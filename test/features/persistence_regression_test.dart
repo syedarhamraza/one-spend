@@ -169,25 +169,25 @@ void main() {
   group('Appearance settings', () {
     test('legacy SharedPreferences effects migrate into Drift and load', () async {
       SharedPreferences.setMockInitialValues({
-        'card3dEffect': true,
+        'floating3dEffect': true,
         'cardLayout': 'compact',
         'customCardBackgroundColorValue': 0xFF112233,
       });
       final prefs = await SharedPreferences.getInstance();
       await SharedPreferencesMigrator(prefs: prefs, db: db).checkAndMigrate();
 
-      expect(prefs.containsKey('card3dEffect'), isFalse);
+      expect(prefs.containsKey('floating3dEffect'), isFalse);
       expect(prefs.getBool(SharedPreferencesMigrator.keyAppearanceMigrated), isTrue);
 
       setupDependencies(database: db);
       final effects = OneUIEffectsController.instance;
       await effects.init();
-      expect(effects.card3dEffect, isTrue);
+      expect(effects.floating3dEffect, isTrue);
       expect(effects.cardLayout, SubscriptionCardLayout.compact);
       expect(effects.customCardBackgroundColorValue, 0xFF112233);
 
       effects.resetCardStyle();
-      effects.card3dEffect = false;
+      effects.floating3dEffect = false;
     });
   });
 }

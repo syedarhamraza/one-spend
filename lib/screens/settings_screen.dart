@@ -1,1033 +1,182 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/subscription.dart';
-import 'package:go_router/go_router.dart';
-import '../core/router/app_router.dart';
+
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_collapsible_header.dart';
-import '../widgets/one_ui_floating_modal.dart';
+import '../widgets/one_ui_floating_search_field.dart';
 import '../widgets/one_ui_group_card.dart';
-import '../widgets/one_ui_toast.dart';
-import '../core/di/injection.dart';
-import '../features/notifications/data/notification_service.dart';
-import '../features/notifications/presentation/notification_developer_tools.dart';
-import '../features/notifications/presentation/notification_permission.dart';
-import '../utils/reminder_format.dart';
-import '../widgets/one_ui_switch.dart';
-import 'one_ui_field_editor_screen.dart';
-import 'time_picker_screen.dart';
+import '../widgets/one_ui_subpage.dart';
+import 'home_screen.dart';
+import 'settings/settings_catalog.dart';
 
+/// Settings tab, laid out like Samsung Settings: grouped rows with just an icon and a title.
+/// Every row opens a subpage; options, switches and dialogs live there, never here.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  /// Shows "Developer options". Debug builds only by default.
+  final bool showDeveloperOptions;
+
+  const SettingsScreen({super.key, this.showDeveloperOptions = kDebugMode});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
-  bool _showSearch = false;
-  String _searchQuery = '';
+class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final GlobalKey _actionPillKey = GlobalKey();
-
-  /// Whether Android currently allows OneSpend to post notifications (null until checked).
-  bool? _systemNotificationsAllowed;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _refreshSystemNotificationState();
-  }
+  final FocusNode _searchFocus = FocusNode();
+  bool _searching = false;
+  String _query = '';
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    HomeChrome.settingsSearchActive.value = false;
     _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
+  void _openSearch() {
+    HapticFeedback.lightImpact();
+    setState(() => _searching = true);
+    HomeChrome.settingsSearchActive.value = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _searchFocus.requestFocus());
+  }
+
+  void _closeSearch() {
+    if (!_searching) return;
+    _searchFocus.unfocus();
+    _searchController.clear();
+    setState(() {
+      _searching = false;
+      _query = '';
+    });
+    HomeChrome.settingsSearchActive.value = false;
+  }
+
+  void _open(SettingsDestination destination) {
+    _searchFocus.unfocus();
+    destination.open(context);
+  }
+
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // The user may have changed the permission in system settings while away.
-    if (state == AppLifecycleState.resumed) _refreshSystemNotificationState();
-  }
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final searchPillBottom = math.max(bottomPadding + 16, bottomInset + 14);
+    final groups = SettingsCatalog.groups(developerOptions: widget.showDeveloperOptions);
 
-  Future<void> _refreshSystemNotificationState() async {
-    if (!sl.isRegistered<NotificationService>()) return;
-    final allowed = await sl<NotificationService>().areEnabled();
-    if (mounted) setState(() => _systemNotificationsAllowed = allowed);
-  }
-
-  Future<void> _setNotificationsEnabled(SubscriptionStore store, bool enabled) async {
-    HapticFeedback.selectionClick();
-    store.setNotificationsEnabled(enabled);
-    if (enabled) {
-      await ensureNotificationPermission();
-      await _refreshSystemNotificationState();
-    }
-  }
-
-  Future<void> _pickDefaultReminderTime(SubscriptionStore store) async {
-    final picked = await TimePickerScreen.open(
-      context,
-      initialMinutes: store.defaultReminderTimeMinutes,
-      title: 'Default reminder time',
-      subtitle: 'Used for new subscriptions, card and budget alerts',
-    );
-    if (picked != null) store.setDefaultReminderTimeMinutes(picked);
-  }
-
-
-  String _notificationsSubtitle(SubscriptionStore store) {
-    if (!store.notificationsEnabled) return 'Off';
-    if (_systemNotificationsAllowed == false) return 'Blocked in system settings';
-    return 'Renewals, card expiry & budget';
-  }
-
-  void _editProfile(BuildContext context, SubscriptionStore store) {
-    OneUIFloatingModal.show(
-      context: context,
-      builder: (ctx) => _ProfileEditModal(
-        initialName: store.userName,
-        initialEmail: store.userEmail,
-        onSave: (name, email) => store.setUserProfile(name, email),
-      ),
-    );
-  }
-
-  void _pickCurrency(BuildContext context, SubscriptionStore store) {
-    final currencies = [
-      {'symbol': '\$', 'name': r'USD / AUD / CAD ($)'},
-      {'symbol': '€', 'name': 'Euro (€)'},
-      {'symbol': '£', 'name': 'British Pound (£)'},
-      {'symbol': '¥', 'name': 'Japanese Yen / Yuan (¥)'},
-      {'symbol': '₹', 'name': 'Indian Rupee (₹)'},
-      {'symbol': '₩', 'name': 'Korean Won (₩)'},
-      {'symbol': 'CHF', 'name': 'Swiss Franc (CHF)'},
-      {'symbol': 'AED', 'name': 'UAE Dirham (AED)'},
-    ];
-
-    OneUIFloatingModal.show(
-      context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Select Currency',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: OneUITheme.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.40,
-            ),
-            child: SingleChildScrollView(
+    return PopScope(
+      // System back closes search before leaving the tab.
+      canPop: !_searching,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _closeSearch();
+      },
+      child: Scaffold(
+        backgroundColor: OneUITheme.surfacePitch,
+        resizeToAvoidBottomInset: false,
+        body: Stack(
+          children: [
+            CustomScrollView(
               physics: const BouncingScrollPhysics(),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...currencies.map((curr) {
-                    final isSelected = store.currency == curr['symbol'];
-                    return InkWell(
-                      onTap: () {
-                        store.setCurrency(curr['symbol']!);
-                        Navigator.pop(ctx);
-                      },
-                      borderRadius: BorderRadius.circular(14),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? const Color(0xFF2C69FF)
-                                      : const Color(0xFF5E5E62),
-                                  width: isSelected ? 2.0 : 1.6,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: isSelected
-                                  ? Container(
-                                      width: 10,
-                                      height: 10,
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Color(0xFF2C69FF),
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                curr['name']!,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                  color: OneUITheme.textPrimary,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              slivers: [
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: OneUICollapsibleHeaderDelegate(
+                    title: 'Settings',
+                    hasBigHeader: true,
+                    expandedHeight: 270.0,
+                    actions: [
+                      _searching
+                          ? OneUIHeaderAction(icon: Icons.close_rounded, tooltip: 'Close search', onTap: _closeSearch)
+                          : OneUIHeaderAction(icon: Icons.search_rounded, tooltip: 'Search settings', onTap: _openSearch),
+                    ],
+                  ),
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 6, 16, _searching ? searchPillBottom + 80 : 140),
+                  sliver: SliverToBoxAdapter(
+                    child: _searching && _query.trim().isNotEmpty ? _results() : _groups(groups),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: OneUITheme.textPrimary,
-                  letterSpacing: -0.2,
+            const Positioned(left: 0, right: 0, bottom: 0, child: OneUIBottomVignette()),
+            if (_searching)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                left: 18,
+                right: 18,
+                bottom: searchPillBottom,
+                child: OneUIFloatingSearchField(
+                  controller: _searchController,
+                  focusNode: _searchFocus,
+                  hintText: 'Search settings',
+                  onChanged: (value) => setState(() => _query = value),
+                  onSubmitted: (_) => _searchFocus.unfocus(),
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _editBudget(SubscriptionStore store) async {
-    final result = await OneUIFieldEditorScreen.open<double>(
-      context: context,
-      title: 'Monthly Budget Limit',
-      subtitle: 'Set your monthly subscription limit threshold:',
-      type: FieldEditorType.number,
-      initialValue: store.monthlyBudget,
-      prefixText: '${store.currency} ',
-      hintText: '0',
-      currency: store.currency,
-    );
-
-    if (result != null && mounted) {
-      store.setMonthlyBudget(result.clamp(0.0, 999999.0));
-      OneUIToast.show(
-        context,
-        'Budget updated to ${store.currency}${store.monthlyBudget.toStringAsFixed(0)}',
-      );
-    }
-  }
-
-  void _pickReminderDays(BuildContext context, SubscriptionStore store) {
-    final days = [1, 2, 3, 7];
-
-    OneUIFloatingModal.show(
-      context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Default Renewal Notification',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: OneUITheme.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ...days.map((d) {
-            final isSelected = store.defaultReminderDays == d;
-            final label = d == 1 ? '1 day before' : (d == 7 ? '1 week before' : '$d days before');
-            return InkWell(
-              onTap: () {
-                store.setDefaultReminderDays(d);
-                Navigator.pop(ctx);
-              },
-              borderRadius: BorderRadius.circular(14),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF2C69FF)
-                              : const Color(0xFF5E5E62),
-                          width: isSelected ? 2.0 : 1.6,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: isSelected
-                          ? Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFF2C69FF),
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                          color: OneUITheme.textPrimary,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: OneUITheme.textPrimary,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _exportJson(BuildContext context, SubscriptionStore store) {
-    final jsonStr = store.exportDataAsJson();
-
-    OneUIFloatingModal.showConfirmationDialog(
-      context: context,
-      title: 'Export Subscriptions (JSON)',
-      message: 'Preview and copy your full JSON backup:',
-      customContent: Container(
-        height: 140,
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: OneUITheme.surfacePill, borderRadius: BorderRadius.circular(16)),
-        child: SingleChildScrollView(
-          child: Text(jsonStr, style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: OneUITheme.textSecondary)),
+          ],
         ),
       ),
-      cancelLabel: 'Close',
-      confirmLabel: 'Copy JSON',
-      onConfirm: () {
-        Clipboard.setData(ClipboardData(text: jsonStr));
-      },
     );
   }
 
-  void _clearData(BuildContext context, SubscriptionStore store) {
-    OneUIFloatingModal.showConfirmationDialog(
-      context: context,
-      title: 'Clear All Subscriptions?',
-      message: 'This will delete all your subscriptions from OneSpend. This action cannot be undone.',
-      cancelLabel: 'Cancel',
-      confirmLabel: 'Clear All',
-      onConfirm: () {
-        store.clearAllData();
-        OneUIToast.show(context, 'All subscriptions cleared');
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([
-        SubscriptionStore.instance,
-        OneUIEffectsController.instance,
-      ]),
-      builder: (context, _) {
-        final store = SubscriptionStore.instance;
-
-        return Scaffold(
-          backgroundColor: OneUITheme.surfacePitch,
-          body: Stack(
-            children: [
-              CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  // 1. One UI Signature Collapsible Header
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: OneUICollapsibleHeaderDelegate(
-                      title: 'Settings',
-                      hasBigHeader: true,
-                      expandedHeight: 270.0,
-                      actionsPillKey: _actionPillKey,
-                      actions: [
-                        OneUIHeaderAction(
-                          icon: Icons.search_rounded,
-                          tooltip: 'Search settings',
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            setState(() {
-                              _showSearch = !_showSearch;
-                              if (!_showSearch) {
-                                _searchQuery = '';
-                                _searchController.clear();
-                              }
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Search bar if toggled (matching SubscriptionsScreen)
-                  if (_showSearch)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: OneUITheme.cardColor,
-                            borderRadius: OneUITheme.pillBorderRadius,
-                            border: OneUITheme.cardBorder,
-                            boxShadow: OneUITheme.cardShadow,
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: TextField(
-                            controller: _searchController,
-                            autofocus: true,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: OneUITheme.textPrimary,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Search settings...',
-                              hintStyle: const TextStyle(color: OneUITheme.textSecondary),
-                              border: InputBorder.none,
-                              icon: const Icon(Icons.search_rounded, color: OneUITheme.textSecondary),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.close_rounded, size: 18, color: OneUITheme.textSecondary),
-                                      onPressed: () {
-                                        HapticFeedback.lightImpact();
-                                        setState(() {
-                                          _searchQuery = '';
-                                          _searchController.clear();
-                                        });
-                                      },
-                                    )
-                                  : null,
-                            ),
-                            onChanged: (val) {
-                              setState(() {
-                                _searchQuery = val.trim().toLowerCase();
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  // 2. Settings Content
-                  Builder(
-                    builder: (context) {
-                      bool matches(String? text) =>
-                          text != null && text.toLowerCase().contains(_searchQuery);
-                      bool itemMatches(OneUIGroupItem item) =>
-                          _searchQuery.isEmpty ||
-                          matches(item.title) ||
-                          matches(item.subtitle);
-
-                      final showProfile = _searchQuery.isEmpty ||
-                          matches(store.userName) ||
-                          matches(store.userEmail) ||
-                          matches('profile') ||
-                          matches('account');
-
-                      final appPrefItems = <OneUIGroupItem>[
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.monetization_on_rounded, OneUITheme.accentGreen),
-                          title: 'Currency',
-                          subtitle: 'Default currency symbol: ${store.currency}',
-                          onTap: () => _pickCurrency(context, store),
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.account_balance_wallet_rounded, OneUITheme.accentBlue),
-                          title: 'Monthly budget threshold',
-                          subtitle: '${store.currency}${store.monthlyBudget.toStringAsFixed(0)} limit',
-                          onTap: () => _editBudget(store),
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.notifications_rounded, OneUITheme.accentAmber),
-                          title: 'Notifications',
-                          subtitle: _notificationsSubtitle(store),
-                          subtitleColor: store.notificationsEnabled && _systemNotificationsAllowed == false
-                              ? OneUITheme.accentRed
-                              : null,
-                          trailing: OneUISwitch(
-                            value: store.notificationsEnabled,
-                            onChanged: (value) => _setNotificationsEnabled(store, value),
-                          ),
-                          onTap: () => _setNotificationsEnabled(store, !store.notificationsEnabled),
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.notifications_active_rounded, OneUITheme.accentAmber),
-                          title: 'Renewal notification alert',
-                          subtitle: '${store.defaultReminderDays} days before renewal date',
-                          onTap: () => _pickReminderDays(context, store),
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.schedule_rounded, OneUITheme.accentTeal),
-                          title: 'Default reminder time',
-                          subtitle: '${formatReminderTime(store.defaultReminderTimeMinutes)} · new subscriptions, cards & budget',
-                          onTap: () => _pickDefaultReminderTime(store),
-                        ),
-                      ].where(itemMatches).toList();
-
-                      final isNavbar3d = OneUIEffectsController.instance.navbar3dEffect;
-                      final isFloating3d = OneUIEffectsController.instance.floating3dEffect;
-                      final isCards3d = OneUIEffectsController.instance.card3dEffect;
-                      final isBottomVignette = OneUIEffectsController.instance.bottomVignetteEffect;
-
-                      final appearanceItems = <OneUIGroupItem>[
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.tune_rounded, OneUITheme.accentPurple),
-                          title: 'Card details & indicators',
-                          subtitle: 'Price format, cycle progress bar, and metadata chips',
-                          trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            context.push(AppRoutes.cardStudio);
-                          },
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.dashboard_customize_rounded, OneUITheme.accentTeal),
-                          title: 'Detail screen styling',
-                          subtitle: 'Icon visibility, shape, and blue highlight for selectable items',
-                          trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            context.push(AppRoutes.detailStudio);
-                          },
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.view_agenda_rounded, OneUITheme.accentBlue),
-                          title: 'Navigation bar 3D effect',
-                          subtitle: isNavbar3d
-                              ? '3D floating pill elevation & top rim highlight'
-                              : 'Classic flat appearance',
-                          trailing: Switch.adaptive(
-                            value: isNavbar3d,
-                            activeTrackColor: OneUITheme.accentBlue,
-                            onChanged: (val) {
-                              OneUIEffectsController.instance.navbar3dEffect = val;
-                            },
-                          ),
-                          onTap: () {
-                            OneUIEffectsController.instance.navbar3dEffect = !isNavbar3d;
-                          },
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.radio_button_checked_rounded, OneUITheme.accentPurple),
-                          title: 'Floating buttons & pills 3D effect',
-                          subtitle: isFloating3d
-                              ? '3D elevation & rim highlight on search, back & action pills'
-                              : 'Classic flat appearance',
-                          trailing: Switch.adaptive(
-                            value: isFloating3d,
-                            activeTrackColor: OneUITheme.accentPurple,
-                            onChanged: (val) {
-                              OneUIEffectsController.instance.floating3dEffect = val;
-                            },
-                          ),
-                          onTap: () {
-                            OneUIEffectsController.instance.floating3dEffect = !isFloating3d;
-                          },
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.layers_rounded, OneUITheme.accentTeal),
-                          title: 'Cards 3D depth effect',
-                          subtitle: isCards3d
-                              ? '3D elevation, rim highlight & soft shadows on all cards'
-                              : 'Classic flat appearance',
-                          trailing: Switch.adaptive(
-                            value: isCards3d,
-                            activeTrackColor: OneUITheme.accentTeal,
-                            onChanged: (val) {
-                              OneUIEffectsController.instance.card3dEffect = val;
-                            },
-                          ),
-                          onTap: () {
-                            OneUIEffectsController.instance.card3dEffect = !isCards3d;
-                          },
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.gradient_rounded, OneUITheme.accentBlue),
-                          title: 'Bottom gradient vignette',
-                          subtitle: isBottomVignette
-                              ? 'Smooth pitch-black fade behind floating navigation'
-                              : 'Classic flat appearance',
-                          trailing: Switch.adaptive(
-                            value: isBottomVignette,
-                            activeTrackColor: OneUITheme.accentBlue,
-                            onChanged: (val) {
-                              OneUIEffectsController.instance.bottomVignetteEffect = val;
-                            },
-                          ),
-                          onTap: () {
-                            OneUIEffectsController.instance.bottomVignetteEffect = !isBottomVignette;
-                          },
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.refresh_rounded, OneUITheme.accentOrange),
-                          title: 'Reset appearance effects',
-                          subtitle: 'Restore default visual effects across the app',
-                          onTap: () {
-                            OneUIEffectsController.instance.navbar3dEffect = true;
-                            OneUIEffectsController.instance.floating3dEffect = true;
-                            OneUIEffectsController.instance.card3dEffect = true;
-                            OneUIEffectsController.instance.bottomVignetteEffect = true;
-                            OneUIToast.show(context, 'Reset appearance to default effects');
-                          },
-                        ),
-                      ].where(itemMatches).toList();
-
-                      final dataItems = <OneUIGroupItem>[
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.file_download_outlined, OneUITheme.accentTeal),
-                          title: 'Export backup (JSON)',
-                          subtitle: 'Export subscriptions into JSON data format',
-                          onTap: () => _exportJson(context, store),
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.restore_rounded, OneUITheme.accentBlue),
-                          title: 'Restore sample subscriptions',
-                          subtitle: 'Reload default popular catalog presets',
-                          onTap: () {
-                            store.restoreDefaultCatalog();
-                            OneUIToast.show(context, 'Restored default catalog subscriptions');
-                          },
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.delete_sweep_rounded, OneUITheme.accentRed),
-                          title: 'Clear all subscriptions',
-                          subtitle: 'Reset and remove all tracked subscriptions',
-                          onTap: () => _clearData(context, store),
-                        ),
-                      ].where(itemMatches).toList();
-
-                      final aboutItems = <OneUIGroupItem>[
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.info_outline_rounded, const Color(0xFF1E88E5)),
-                          title: 'About OneSpend',
-                          subtitle: 'Version 1.0.0 • Samsung One UI 9 Engine',
-                          onTap: () {
-                            showAboutDialog(
-                              context: context,
-                              applicationName: 'OneSpend',
-                              applicationVersion: '1.0.0',
-                              applicationIcon: ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: Image.asset(
-                                  'assets/logos/app_logo.png',
-                                  width: 48,
-                                  height: 48,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              children: const [
-                                Text('A feature-rich subscription and spend manager designed to match Samsung One UI 9 aesthetics and ergonomics.'),
-                              ],
-                            );
-                          },
-                        ),
-                        OneUIGroupItem(
-                          leading: _buildIconBadge(Icons.help_outline_rounded, OneUITheme.accentPurple),
-                          title: 'Help & feedback',
-                          subtitle: 'Contact support at help@onespend.app',
-                          onTap: () {
-                            OneUIToast.show(context, 'Contact support at help@onespend.app');
-                          },
-                        ),
-                      ].where(itemMatches).toList();
-
-                      // Debug builds only: tools for testing notifications on a device.
-                      final developerItems = kDebugMode
-                          ? NotificationDeveloperTools.items(context, _buildIconBadge).where(itemMatches).toList()
-                          : const <OneUIGroupItem>[];
-
-                      final hasAnyResult = developerItems.isNotEmpty ||
-                          showProfile ||
-                          appPrefItems.isNotEmpty ||
-                          appearanceItems.isNotEmpty ||
-                          dataItems.isNotEmpty ||
-                          aboutItems.isNotEmpty;
-
-                      return SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 150),
-                          child: Column(
-                            children: [
-                              // Profile Card
-                              if (showProfile)
-                                GestureDetector(
-                                  onTap: () => _editProfile(context, store),
-                                  child: Container(
-                                    width: double.infinity,
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    decoration: BoxDecoration(
-                                      color: OneUITheme.cardColor,
-                                      borderRadius: OneUITheme.cardBorderRadius,
-                                      border: OneUITheme.cardBorder,
-                                      boxShadow: OneUITheme.cardShadow,
-                                    ),
-                                    padding: const EdgeInsets.all(18),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                store.userName.trim().isEmpty ? 'Your name' : store.userName,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: -0.3,
-                                                  color: OneUITheme.textPrimary,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 3),
-                                              Text(
-                                                '${store.userEmail.trim().isEmpty ? 'Tap to set up profile' : store.userEmail} • ${store.totalActiveCount} active subscriptions',
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  color: OneUITheme.textSecondary,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          width: 52,
-                                          height: 52,
-                                          decoration: const BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            gradient: LinearGradient(
-                                              colors: [Color(0xFF8B0000), Color(0xFF2C0A0A)],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            () {
-                                              final clean = store.userName.trim();
-                                              if (clean.isEmpty) return '?';
-                                              final parts = clean.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
-                                              if (parts.isEmpty) return '?';
-                                              if (parts.length == 1) {
-                                                return parts[0].substring(0, parts[0].length >= 2 ? 2 : 1).toUpperCase();
-                                              }
-                                              return (parts[0][0] + parts[1][0]).toUpperCase();
-                                            }(),
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                              // Card 1: App Preferences
-                              if (appPrefItems.isNotEmpty)
-                                OneUIGroupCard(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  items: appPrefItems,
-                                ),
-
-                              // Card 2: 3D Appearance & Visual Styling
-                              if (appearanceItems.isNotEmpty)
-                                OneUIGroupCard(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  items: appearanceItems,
-                                ),
-
-                              // Card 3: Data Management & Backup
-                              if (dataItems.isNotEmpty)
-                                OneUIGroupCard(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  items: dataItems,
-                                ),
-
-                              // Card 4: About OneSpend
-                              if (aboutItems.isNotEmpty)
-                                OneUIGroupCard(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  items: aboutItems,
-                                ),
-
-                              // Card 5: Developer tools (debug builds only)
-                              if (developerItems.isNotEmpty)
-                                OneUIGroupCard(
-                                  headerTitle: 'Developer',
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  items: developerItems,
-                                ),
-
-                              const SizedBox(height: 8),
-
-                              // Empty search state
-                              if (!hasAnyResult)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 48),
-                                  child: Column(
-                                    children: [
-                                      Icon(
-                                        Icons.search_off_rounded,
-                                        size: 48,
-                                        color: OneUITheme.textSecondary.withValues(alpha: 0.5),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'No settings found for "$_searchQuery"',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: OneUITheme.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: OneUIBottomVignette(),
-              ),
+  Widget _groups(List<List<SettingsDestination>> groups) {
+    return Column(
+      children: [
+        for (final group in groups)
+          OneUIGroupCard(
+            items: [
+              for (final d in group)
+                OneUIGroupItem(
+                  leading: OneUIIconBadge(d.icon, d.color),
+                  title: d.title,
+                  // Samsung Settings rows carry no chevron; "Soon" rows get a chip instead.
+                  trailing: d.soon ? const OneUISoonChip() : const SizedBox.shrink(),
+                  onTap: () => _open(d),
+                ),
             ],
           ),
-        );
-      },
+      ],
     );
   }
 
-  Widget _buildIconBadge(IconData icon, Color color) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Icon(icon, color: Colors.white, size: 20),
-    );
-  }
-}
-
-class _ProfileEditModal extends StatefulWidget {
-  final String initialName;
-  final String initialEmail;
-  final void Function(String name, String email) onSave;
-
-  const _ProfileEditModal({
-    required this.initialName,
-    required this.initialEmail,
-    required this.onSave,
-  });
-
-  @override
-  State<_ProfileEditModal> createState() => _ProfileEditModalState();
-}
-
-class _ProfileEditModalState extends State<_ProfileEditModal> {
-  late final TextEditingController _nameController;
-  late final TextEditingController _emailController;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.initialName);
-    _emailController = TextEditingController(text: widget.initialEmail);
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return OneUIFloatingModal(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Edit Profile',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              letterSpacing: -0.3,
+  Widget _results() {
+    final results = SettingsCatalog.search(_query, developerOptions: widget.showDeveloperOptions);
+    if (results.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        child: Column(
+          children: [
+            Icon(Icons.search_off_rounded, size: 48, color: OneUITheme.textSecondary.withValues(alpha: 0.5)),
+            const SizedBox(height: 12),
+            Text(
+              'No results for "${_query.trim()}"',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: OneUITheme.textSecondary),
             ),
+          ],
+        ),
+      );
+    }
+    return OneUIGroupCard(
+      items: [
+        for (final r in results)
+          OneUIGroupItem(
+            leading: OneUIIconBadge(r.destination.icon, r.destination.color),
+            title: r.title,
+            subtitle: r.path == null ? null : 'Settings › ${r.path}',
+            subtitleColor: OneUITheme.textSecondary,
+            trailing: r.destination.soon ? const OneUISoonChip() : const SizedBox.shrink(),
+            onTap: () => _open(r.destination),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'Update your display profile information:',
-            style: TextStyle(
-              fontSize: 15.5,
-              color: Color(0xFFC4C4CA),
-              height: 1.35,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: OneUITheme.surfacePill,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: _nameController,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                labelStyle: TextStyle(color: OneUITheme.textSecondary),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: OneUITheme.surfacePill,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: _emailController,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                labelStyle: TextStyle(color: OneUITheme.textSecondary),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 18,
-                color: Colors.white.withValues(alpha: 0.10),
-              ),
-              Expanded(
-                child: TextButton(
-                  onPressed: () {
-                    final name = _nameController.text.trim();
-                    final email = _emailController.text.trim();
-                    if (name.isNotEmpty && email.isNotEmpty) {
-                      widget.onSave(name, email);
-                    }
-                    Navigator.pop(context);
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
