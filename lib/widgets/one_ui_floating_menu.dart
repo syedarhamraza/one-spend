@@ -1,6 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 /// Item definition for the Samsung One UI Floating Expanded Menu.
 class OneUIFloatingMenuItem {
@@ -165,7 +165,6 @@ class _OneUIFloatingMenuContentState extends State<_OneUIFloatingMenuContent> {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.floating3dEffect;
 
         return Stack(
           children: [
@@ -183,35 +182,11 @@ class _OneUIFloatingMenuContentState extends State<_OneUIFloatingMenuContent> {
                       : const Alignment(0.85, -0.85),
                   child: Material(
                     color: Colors.transparent,
-                    child: DecoratedBox(
-                      decoration: is3d
-                          ? BoxDecoration(
-                              borderRadius: BorderRadius.circular(22),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.45),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            )
-                          : const BoxDecoration(),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(22),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(
-                            sigmaX: OneUITheme.blurSigma,
-                            sigmaY: OneUITheme.blurSigma,
-                          ),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: is3d ? null : OneUITheme.floatingColor,
-                              gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                              borderRadius: BorderRadius.circular(22),
-                              border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                            child: Column(
+                    child: OneUIGlassSurface(
+                      borderRadius: const BorderRadius.all(Radius.circular(22)),
+                      elevation: OneUIGlassElevation.modal,
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                      child: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -249,9 +224,6 @@ class _OneUIFloatingMenuContentState extends State<_OneUIFloatingMenuContent> {
                                   ),
                               ],
                             ),
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 ),

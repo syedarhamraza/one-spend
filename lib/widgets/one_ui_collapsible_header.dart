@@ -1,6 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 import 'one_ui_floating_menu.dart';
 import 'one_ui_status_bar_scrim.dart';
 
@@ -214,127 +214,54 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     }
   }
 
-  /// Builds the back button with clean 3D or flat One UI styling
+  /// Circular back button whose glass backing grows in as the header collapses.
   Widget _buildBackButton(BuildContext context, double pillProgress) {
     if (!widget.showBackButton) return const SizedBox.shrink();
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
-
-    final buttonContent = Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: pillProgress > 0.05
-            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))
-            : Colors.transparent,
-        gradient: (is3d && pillProgress > 0.05)
-            ? LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0x9935353A).withValues(alpha: pillProgress * 0.60),
-                  const Color(0xB31E1E22).withValues(alpha: pillProgress * 0.70),
-                ],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(24),
-        border: is3d
-            ? Border.all(
-                color: Colors.white.withValues(alpha: 0.15 * pillProgress),
-                width: 0.85,
-              )
-            : null,
-      ),
-      alignment: Alignment.center,
-      child: const Icon(
-        Icons.arrow_back_ios_new_rounded,
-        size: 20,
-        color: OneUITheme.textPrimary,
-      ),
-    );
 
     return RepaintBoundary(
-      child: GestureDetector(
-        onTap: widget.onBack ?? () => Navigator.maybePop(context),
-        behavior: HitTestBehavior.opaque,
-        child: pillProgress > 0.05
-            ? DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    for (final s in OneUITheme.floatingShadow)
-                      BoxShadow(
-                        color: s.color.withValues(alpha: s.color.a * pillProgress),
-                        blurRadius: s.blurRadius,
-                        offset: s.offset,
-                        spreadRadius: s.spreadRadius,
-                      ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: OneUITheme.blurSigma * pillProgress,
-                      sigmaY: OneUITheme.blurSigma * pillProgress,
-                    ),
-                    child: buttonContent,
-                  ),
-                ),
-              )
-            : buttonContent,
+      child: Semantics(
+        button: true,
+        label: 'Back',
+        child: GestureDetector(
+          onTap: widget.onBack ?? () => Navigator.maybePop(context),
+          behavior: HitTestBehavior.opaque,
+          child: OneUIGlassSurface.circle(
+            size: 44,
+            progress: pillProgress,
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: OneUITheme.textPrimary,
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  /// Builds the right action buttons pill with clean 3D or flat One UI styling
+  /// Right-hand action buttons, sharing one glass capsule that grows in as the
+  /// header collapses.
   Widget _buildActionPill(BuildContext context, double pillProgress) {
     if (widget.actions == null || widget.actions!.isEmpty) {
       return const SizedBox.shrink();
     }
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
     final isSingleAction = widget.actions!.length == 1;
-    final pillContent = Container(
+    final pill = OneUIGlassSurface(
       key: widget.actionsPillKey,
       height: 44,
       width: isSingleAction ? 44 : null,
       alignment: isSingleAction ? Alignment.center : null,
-      padding: isSingleAction
-          ? EdgeInsets.zero
-          : const EdgeInsets.symmetric(
-              horizontal: 6.0,
-              vertical: 4.0,
-            ),
-      decoration: BoxDecoration(
-        color: pillProgress > 0.05
-            ? (is3d ? null : OneUITheme.floatingColor.withValues(alpha: pillProgress * 0.65))
-            : Colors.transparent,
-        gradient: (is3d && pillProgress > 0.05)
-            ? LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0x9935353A).withValues(alpha: pillProgress * 0.60),
-                  const Color(0xB31E1E22).withValues(alpha: pillProgress * 0.70),
-                ],
-              )
-            : null,
-        borderRadius: BorderRadius.circular(24),
-        border: is3d
-            ? Border.all(
-                color: Colors.white.withValues(alpha: 0.15 * pillProgress),
-                width: 0.85,
-              )
-            : null,
-      ),
+      padding: isSingleAction ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+      borderRadius: const BorderRadius.all(Radius.circular(24)),
+      progress: pillProgress,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           for (int i = 0; i < widget.actions!.length; i++) ...[
             widget.actions![i],
-            if (i < widget.actions!.length - 1)
-              const SizedBox(width: 4.0),
+            if (i < widget.actions!.length - 1) const SizedBox(width: 4.0),
           ],
         ],
       ),
@@ -351,32 +278,7 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
             child: child!,
           );
         },
-        child: pillProgress > 0.05
-            ? DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    for (final s in OneUITheme.floatingShadow)
-                      BoxShadow(
-                        color: s.color.withValues(alpha: s.color.a * pillProgress),
-                        blurRadius: s.blurRadius,
-                        offset: s.offset,
-                        spreadRadius: s.spreadRadius,
-                      ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: OneUITheme.blurSigma * pillProgress,
-                      sigmaY: OneUITheme.blurSigma * pillProgress,
-                    ),
-                    child: pillContent,
-                  ),
-                ),
-              )
-            : pillContent,
+        child: pill,
       ),
     );
   }

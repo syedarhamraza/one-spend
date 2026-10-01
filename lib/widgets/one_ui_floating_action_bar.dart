@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 class OneUIFloatingActionBarItem {
   final IconData icon;
@@ -32,36 +32,17 @@ class OneUIFloatingActionBar extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.floating3dEffect;
 
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: RepaintBoundary(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(34),
-                  boxShadow: OneUITheme.navbarShadow,
-                ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(34),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: OneUITheme.blurSigma,
-                    sigmaY: OneUITheme.blurSigma,
-                  ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: is3d ? null : OneUITheme.floatingColor,
-                      gradient: is3d ? OneUITheme.floatingGradient : null,
-                      borderRadius: BorderRadius.circular(34),
-                      border: OneUITheme.floatingBorder,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    child: Material(
+              child: OneUIGlassSurface(
+                borderRadius: const BorderRadius.all(Radius.circular(34)),
+                elevation: OneUIGlassElevation.navbar,
+                height: 60,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                child: Material(
                       color: Colors.transparent,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -111,9 +92,6 @@ class OneUIFloatingActionBar extends StatelessWidget {
                         }).toList(),
                       ),
                     ),
-                  ),
-                ),
-              ),
               ),
             ),
           ),

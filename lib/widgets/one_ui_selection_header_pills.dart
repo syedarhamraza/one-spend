@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 /// Frosted floating capsule shared by the selection header pills.
 class _SelectionHeaderCapsule extends StatelessWidget {
@@ -12,32 +12,12 @@ class _SelectionHeaderCapsule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: OneUITheme.floatingShadow,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: OneUITheme.blurSigma, sigmaY: OneUITheme.blurSigma),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutCubic,
-            height: 42,
-            padding: padding,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: is3d ? null : OneUITheme.floatingColor,
-              gradient: is3d ? OneUITheme.floatingGradient : null,
-              borderRadius: BorderRadius.circular(24),
-              border: OneUITheme.floatingBorder,
-            ),
-            child: child,
-          ),
-        ),
-      ),
+    return OneUIGlassSurface(
+      borderRadius: const BorderRadius.all(Radius.circular(24)),
+      height: 42,
+      padding: padding,
+      alignment: Alignment.center,
+      child: child,
     );
   }
 }

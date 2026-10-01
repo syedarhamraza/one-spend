@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 /// Standardized Samsung One UI 9 Floating Stadium "Cancel | Save" Pill
 /// Matches reference screenshots with translucent smoked glass backdrop,
@@ -27,30 +27,13 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.floating3dEffect;
 
         return Center(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: OneUITheme.navbarShadow,
-            ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: OneUITheme.blurSigma,
-                sigmaY: OneUITheme.blurSigma,
-              ),
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  color: is3d ? null : OneUITheme.floatingColor,
-                  gradient: is3d ? OneUITheme.floatingGradient : null,
-                  borderRadius: BorderRadius.circular(30),
-                  border: OneUITheme.floatingBorder,
-                ),
-                child: Material(
+          child: OneUIGlassSurface(
+            borderRadius: const BorderRadius.all(Radius.circular(30)),
+            elevation: OneUIGlassElevation.navbar,
+            height: 52,
+            child: Material(
                   color: Colors.transparent,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -116,9 +99,6 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-            ),
-            ),
           ),
         );
       },

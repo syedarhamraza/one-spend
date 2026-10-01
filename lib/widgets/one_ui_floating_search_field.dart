@@ -1,7 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 /// Floating glass search capsule that sits above the keyboard (Subscriptions, Settings).
 /// Shows a clear button while [controller] has text.
@@ -29,27 +28,12 @@ class OneUIFloatingSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: OneUITheme.floatingShadow,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: OneUITheme.blurSigma, sigmaY: OneUITheme.blurSigma),
-          child: Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: is3d ? null : OneUITheme.floatingColor,
-              gradient: is3d ? OneUITheme.floatingGradient : null,
-              borderRadius: BorderRadius.circular(32),
-              border: OneUITheme.floatingBorder,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
+    return OneUIGlassSurface(
+      borderRadius: const BorderRadius.all(Radius.circular(32)),
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: Row(
               children: [
                 Expanded(
                   child: TextField(
@@ -94,9 +78,6 @@ class OneUIFloatingSearchField extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 }

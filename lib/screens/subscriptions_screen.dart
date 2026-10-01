@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -7,6 +6,7 @@ import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_glass_surface.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_budget_card.dart';
@@ -460,7 +460,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     required VoidCallback onToggleSelectAll,
   }) {
     final allSelected = selectedCount > 0 && selectedCount == totalCount;
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
     return GestureDetector(
       onTap: () {
@@ -468,30 +467,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         onToggleSelectAll();
       },
       behavior: HitTestBehavior.opaque,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: OneUITheme.floatingShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: OneUITheme.blurSigma,
-              sigmaY: OneUITheme.blurSigma,
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: is3d ? null : OneUITheme.floatingColor,
-                gradient: is3d ? OneUITheme.floatingGradient : null,
-                borderRadius: BorderRadius.circular(24),
-                border: OneUITheme.floatingBorder,
-              ),
-              child: Row(
+      child: OneUIGlassSurface(
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -529,9 +509,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -539,7 +516,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   Widget _buildSelectionCancelPill({
     required VoidCallback onCancel,
   }) {
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
     return GestureDetector(
       onTap: () {
@@ -547,31 +523,12 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         onCancel();
       },
       behavior: HitTestBehavior.opaque,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: OneUITheme.floatingShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: OneUITheme.blurSigma,
-              sigmaY: OneUITheme.blurSigma,
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              decoration: BoxDecoration(
-                color: is3d ? null : OneUITheme.floatingColor,
-                gradient: is3d ? OneUITheme.floatingGradient : null,
-                borderRadius: BorderRadius.circular(24),
-                border: OneUITheme.floatingBorder,
-              ),
-              alignment: Alignment.center,
-              child: const Text(
+      child: OneUIGlassSurface(
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        alignment: Alignment.center,
+        child: const Text(
                 'Cancel',
                 style: TextStyle(
                   fontSize: 15,
@@ -580,9 +537,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   letterSpacing: -0.2,
                 ),
               ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -1322,7 +1276,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   Positioned(
                     left: 0,
                     right: 0,
-                    bottom: MediaQuery.of(context).padding.bottom + (_isSelectionMode ? 86 : 94),
+                    // Nav/selection bar top edge is at padding + 68 (8 inset + 60 bar); keep a 12px gap.
+                    bottom: MediaQuery.of(context).padding.bottom + 80,
                     child: Center(
                       child: OneUIScrollToTopButton(
                         scrollController: _scrollController,

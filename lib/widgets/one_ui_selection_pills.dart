@@ -1,6 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 /// Top floating selection pill row matching Samsung One UI Screenshots 1 & 2.
 /// - Left: Stadium capsule showing selected count (`○ 2` or `○ 0`), taps to select all.
@@ -24,7 +24,6 @@ class OneUISelectionPills extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.floating3dEffect;
         final isAllSelected = totalCount > 0 && selectedCount == totalCount;
 
         return Row(
@@ -33,29 +32,11 @@ class OneUISelectionPills extends StatelessWidget {
             // Left Pill: Select Counter & Select All toggle
             GestureDetector(
               onTap: onToggleSelectAll,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: OneUITheme.floatingShadow,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: OneUITheme.blurSigma,
-                      sigmaY: OneUITheme.blurSigma,
-                    ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: is3d ? null : OneUITheme.floatingColor,
-                        gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                        borderRadius: BorderRadius.circular(24),
-                        border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-                      ),
-                      child: Row(
+              child: OneUIGlassSurface(
+                borderRadius: const BorderRadius.all(Radius.circular(24)),
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
@@ -86,39 +67,18 @@ class OneUISelectionPills extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ),
               ),
             ),
 
             // Right Pill: Cancel button
             GestureDetector(
               onTap: onCancel,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: OneUITheme.floatingShadow,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: OneUITheme.blurSigma,
-                      sigmaY: OneUITheme.blurSigma,
-                    ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      height: 44,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: is3d ? null : OneUITheme.floatingColor,
-                        gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                        borderRadius: BorderRadius.circular(24),
-                        border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
+              child: OneUIGlassSurface(
+                borderRadius: const BorderRadius.all(Radius.circular(24)),
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                alignment: Alignment.center,
+                child: const Text(
                         'Cancel',
                         style: TextStyle(
                           fontSize: 15.5,
@@ -127,9 +87,6 @@ class OneUISelectionPills extends StatelessWidget {
                           letterSpacing: -0.2,
                         ),
                       ),
-                    ),
-                  ),
-                ),
               ),
             ),
           ],
