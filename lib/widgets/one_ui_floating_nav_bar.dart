@@ -1,6 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 class OneUINavItem {
   final IconData activeIcon;
@@ -26,12 +26,34 @@ class OneUIFloatingNavBar extends StatelessWidget {
     required this.items,
   });
 
+  /// Width of each tab's tap target; the gap between tabs never changes.
+  static const double itemWidth = 74;
+
+  /// How far the selected capsule reaches past its own slot on each side. Only one
+  /// tab is selected at a time, so it can borrow a little of its neighbours' space
+  /// (like One UI 8.5) without widening the bar's item spacing.
+  static const double pillOverhang = 6;
+
+  static const double _barHeight = 60;
+  static const double _verticalInset = 4;
+
+  /// Edge padding: the first/last capsule's overhang plus the same gap the capsule
+  /// keeps above and below, so it sits evenly inset at the ends of the bar.
+  static const double _horizontalInset = pillOverhang + _verticalInset;
+
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.floating3dEffect;
+        final fx = OneUIEffectsController.instance;
+        final is3d = fx.floating3dEffect;
+        const pillWidth = itemWidth + pillOverhang * 2;
+        const pillRadius = BorderRadius.all(Radius.circular((_barHeight - _verticalInset * 2) / 2));
+        final pillGradient = fx.activePillGradient;
+        final pillRim = fx.activePillRimGradient;
 
         return SafeArea(
           child: Padding(
@@ -39,54 +61,59 @@ class OneUIFloatingNavBar extends StatelessWidget {
             child: Align(
               alignment: Alignment.bottomCenter,
               child: RepaintBoundary(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(34),
-                    boxShadow: OneUITheme.navbarShadow,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(34),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(
-                        sigmaX: OneUITheme.blurSigma,
-                        sigmaY: OneUITheme.blurSigma,
-                      ),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOutCubic,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: is3d ? null : OneUITheme.floatingColor,
-                          gradient: is3d ? OneUITheme.floatingGradient : null,
-                          borderRadius: BorderRadius.circular(34),
-                          border: OneUITheme.floatingBorder,
+                child: OneUIGlassSurface(
+                  elevation: OneUIGlassElevation.navbar,
+                  height: _barHeight,
+                  padding: const EdgeInsets.symmetric(horizontal: _horizontalInset, vertical: _verticalInset),
+                  child: SizedBox(
+                    width: itemWidth * items.length,
+                    child: Stack(
+                      // Expand so the tab row fills the bar's height and its labels
+                      // centre vertically (a loose Stack pins them to the top).
+                      fit: StackFit.expand,
+                      clipBehavior: Clip.none,
+                      children: [
+                        // One sliding capsule behind the row, so switching tabs glides
+                        // it across instead of fading one out and another in.
+                        AnimatedPositioned(
+                          duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 320),
+                          curve: Curves.easeOutCubic,
+                          top: 0,
+                          bottom: 0,
+                          left: currentIndex * itemWidth - pillOverhang,
+                          width: pillWidth,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: pillGradient == null ? fx.activePillColor : null,
+                              gradient: pillGradient,
+                              borderRadius: pillRadius,
+                            ),
+                            child: pillRim == null
+                                ? const SizedBox.expand()
+                                : CustomPaint(
+                                    painter: OneUIRimPainter(gradient: pillRim, borderRadius: pillRadius),
+                                    child: const SizedBox.expand(),
+                                  ),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: List.generate(items.length, (index) {
                             final item = items[index];
                             final isSelected = index == currentIndex;
+                            final inactiveColor = is3d ? OneUITheme.navbar3dInactiveIcon : OneUITheme.textSecondary;
+                            final inactiveText = is3d ? OneUITheme.navbar3dInactiveText : OneUITheme.textSecondary;
 
                             return SizedBox(
-                              width: 74,
-                              child: GestureDetector(
-                                onTap: () => onTap(index),
-                                behavior: HitTestBehavior.opaque,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  curve: Curves.easeOutCubic,
-                                  height: double.infinity,
-                                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? (is3d
-                                            ? OneUITheme.navbar3dActivePill
-                                            : OneUITheme.surfacePillActive)
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(26),
-                                  ),
+                              width: itemWidth,
+                              child: Semantics(
+                                selected: isSelected,
+                                button: true,
+                                label: item.label,
+                                excludeSemantics: true,
+                                child: GestureDetector(
+                                  onTap: () => onTap(index),
+                                  behavior: HitTestBehavior.opaque,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
@@ -94,29 +121,18 @@ class OneUIFloatingNavBar extends StatelessWidget {
                                       Icon(
                                         isSelected ? item.activeIcon : item.inactiveIcon,
                                         size: 21,
-                                        color: isSelected
-                                            ? OneUITheme.textPrimary
-                                            : (is3d
-                                                ? OneUITheme.navbar3dInactiveIcon
-                                                : OneUITheme.textSecondary),
+                                        color: isSelected ? OneUITheme.textPrimary : inactiveColor,
                                       ),
                                       const SizedBox(height: 3),
-                                      Text(
-                                        item.label,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                      AnimatedDefaultTextStyle(
+                                        duration: const Duration(milliseconds: 200),
                                         style: TextStyle(
                                           fontSize: 11.5,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                                           letterSpacing: -0.2,
-                                          color: isSelected
-                                              ? OneUITheme.textPrimary
-                                              : (is3d
-                                                  ? OneUITheme.navbar3dInactiveText
-                                                  : OneUITheme.textSecondary),
+                                          color: isSelected ? OneUITheme.textPrimary : inactiveText,
                                         ),
+                                        child: Text(item.label, maxLines: 1, overflow: TextOverflow.ellipsis),
                                       ),
                                     ],
                                   ),
@@ -125,7 +141,7 @@ class OneUIFloatingNavBar extends StatelessWidget {
                             );
                           }),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),

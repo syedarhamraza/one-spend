@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/main.dart';
@@ -2029,20 +2030,29 @@ void main() {
     expect(OneUITheme.cardShadow, isEmpty);
     expect(OneUITheme.cardBorder, isNull);
 
-    // Flat Mode Check
+    // 3D glass: top-lit rim, deep modal shadow, radial active capsule.
+    expect(OneUIEffectsController.instance.floatingRimGradient, isNotNull);
+    expect(OneUIEffectsController.instance.modalShadow, isNotEmpty);
+    expect(OneUIEffectsController.instance.activePillGradient, isNotNull);
+
+    // Flat Mode Check: one soft ambient halo, no outline, no gradients, flat modals.
     OneUIEffectsController.instance.floating3dEffect = false;
 
     final shadowFlat = OneUITheme.floatingShadow;
-    expect(shadowFlat, isNotEmpty);
-    expect(shadowFlat.length, 2);
-    expect(shadowFlat.first.blurRadius, 16);
-    expect(shadowFlat.first.spreadRadius, 1.0);
-    expect(shadowFlat.first.offset.dy, 3); // Soft ambient offset matching Samsung One UI reference
+    expect(shadowFlat, hasLength(1));
+    expect(shadowFlat.first.spreadRadius, 0);
+    expect(shadowFlat.first.offset.dy, lessThanOrEqualTo(2));
 
     final navShadowFlat = OneUITheme.navbarShadow;
     expect(navShadowFlat, isNotEmpty);
     expect(navShadowFlat.first.offset.dy, lessThan(0)); // Upward ambient lift in flat mode!
-    expect(navShadowFlat.first.spreadRadius, 0.5);
+
+    expect(OneUITheme.floatingBorder, isNull);
+    expect(OneUITheme.floatingGradient, isNull);
+    expect(OneUIEffectsController.instance.floatingRimGradient, isNull);
+    expect(OneUIEffectsController.instance.modalShadow, isEmpty);
+    expect(OneUIEffectsController.instance.modalGradient, isNull);
+    expect(OneUIEffectsController.instance.activePillGradient, isNull);
 
     // Cards remain flat in normal/flat mode
     final cardShadowFlat = OneUITheme.cardShadow;
@@ -2080,7 +2090,7 @@ void main() {
     final decoratedBoxes = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox));
     final selectionBox = decoratedBoxes.firstWhere((box) {
       final decoration = box.decoration;
-      return decoration is BoxDecoration && decoration.boxShadow == OneUITheme.floatingShadow;
+      return decoration is BoxDecoration && listEquals(decoration.boxShadow, OneUITheme.floatingShadow);
     });
     final shadows = (selectionBox.decoration as BoxDecoration).boxShadow!;
     expect(shadows, isNotEmpty);

@@ -35,6 +35,11 @@ Everything below is backed by real code: tokens live in [`lib/theme/one_ui_theme
 
 The floating getters follow `OneUIEffectsController.floating3dEffect` (one setting for the nav bar, buttons and pills). The card getters always return the flat look (`#1C1C1E`, no border, no shadow).
 
+**Floating surfaces: always use `OneUIGlassSurface`** (`one_ui_glass_surface.dart`). Don't hand-roll `DecoratedBox` + `ClipRRect` + `BackdropFilter` + gradient/border. Pick an `elevation` (`floating` for pills, circular buttons, search and menus; `navbar` for bottom bars and the Cancel | Save pill; `modal` for sheets and modals). Use `.circle(size:)` for round buttons and `progress` for backings that grow in as a header collapses.
+- **Flat:** translucent fill + blur, no outline or gradient, a single soft ambient shadow (none for modals).
+- **3D** (One UI 8.5): a top-lit gradient body, a gradient *rim light* (bright along the top edge, fading down the sides; `floatingRimGradient`, drawn by `OneUIRimPainter`), and a soft drop shadow.
+- **Selected capsule** (nav bar): `activePillColor` / `activePillGradient` (radial sheen in 3D) + `activePillRimGradient`. In the nav bar it is one sliding capsule, `pillOverhang` wider than its slot on each side; the gap between tabs never changes.
+
 ### 2.2 Accents
 | Token | Value | Meaning |
 |---|---|---|
@@ -130,7 +135,8 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIMonthCalendar` + `CalendarDayMarker` | `one_ui_month_calendar.dart` | Samsung Calendar style swipeable month grid: today ring, filled selected day, up to 3 colour dots + "+N", and a heat tint per day |
 | `OneUIFloatingModal` | `one_ui_floating_modal.dart` | Floating bottom sheets: `show`, `showTextInputDialog`, `showConfirmationDialog` (destructive confirms) |
 | `OneUIToast` | `one_ui_toast.dart` | Brief feedback ("Netflix added"). Replaces snackbars. Pass `actionLabel: 'Undo', onAction: …` for reversible actions; it then stays up for 4 s |
-| `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) |
+| `OneUIGlassSurface` | `one_ui_glass_surface.dart` | The only way to draw floating chrome (see §2.1): flat vs 3D glass, rim light, shadow per elevation |
+| `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) with a sliding active capsule |
 | `OneUIFloatingSearchPill` | `one_ui_floating_search_pill.dart` | In-screen search |
 | `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open |
 | `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge), `OneUISoonChip` and `OneUIProChip` (amber, for future Pro features) |

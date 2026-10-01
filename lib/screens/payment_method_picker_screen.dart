@@ -5,6 +5,7 @@ import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_glass_surface.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -135,24 +136,12 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
         builder: (modalCtx) {
           return StatefulBuilder(
             builder: (context, setModalState) {
-              return Container(
-                margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                decoration: BoxDecoration(
-                  color: OneUITheme.cardColor,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(22),
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+                child: OneUIGlassSurface(
+                  elevation: OneUIGlassElevation.modal,
+                  borderRadius: const BorderRadius.all(Radius.circular(28)),
+                  padding: const EdgeInsets.all(22),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,7 +293,8 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                     ),
                   ],
                 ),
-              );
+              ),
+            );
             },
           );
         },
@@ -363,24 +353,12 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
       builder: (modalCtx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-              decoration: BoxDecoration(
-                color: OneUITheme.cardColor,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(22),
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+              child: OneUIGlassSurface(
+                elevation: OneUIGlassElevation.modal,
+                borderRadius: const BorderRadius.all(Radius.circular(28)),
+                padding: const EdgeInsets.all(22),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -471,7 +449,8 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                   ),
                 ],
               ),
-            );
+            ),
+          );
           },
         );
       },
@@ -484,7 +463,6 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
     required VoidCallback onToggleSelectAll,
   }) {
     final allSelected = selectedCount > 0 && selectedCount == totalCount;
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
     return GestureDetector(
       onTap: () {
@@ -492,30 +470,11 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
         onToggleSelectAll();
       },
       behavior: HitTestBehavior.opaque,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: OneUITheme.floatingShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: OneUITheme.blurSigma,
-              sigmaY: OneUITheme.blurSigma,
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: is3d ? null : OneUITheme.floatingColor,
-                gradient: is3d ? OneUITheme.floatingGradient : null,
-                borderRadius: BorderRadius.circular(24),
-                border: OneUITheme.floatingBorder,
-              ),
-              child: Row(
+      child: OneUIGlassSurface(
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -557,15 +516,11 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
       ),
     );
   }
 
   Widget _buildSelectionCancelPill({required VoidCallback onCancel}) {
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
     return GestureDetector(
       onTap: () {
@@ -573,31 +528,12 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
         onCancel();
       },
       behavior: HitTestBehavior.opaque,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: OneUITheme.floatingShadow,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: OneUITheme.blurSigma,
-              sigmaY: OneUITheme.blurSigma,
-            ),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: is3d ? null : OneUITheme.floatingColor,
-                gradient: is3d ? OneUITheme.floatingGradient : null,
-                borderRadius: BorderRadius.circular(24),
-                border: OneUITheme.floatingBorder,
-              ),
-              alignment: Alignment.center,
-              child: const Text(
+      child: OneUIGlassSurface(
+        borderRadius: const BorderRadius.all(Radius.circular(24)),
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        alignment: Alignment.center,
+        child: const Text(
                 'Cancel',
                 style: TextStyle(
                   fontSize: 14.5,
@@ -605,9 +541,6 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                   color: OneUITheme.textPrimary,
                 ),
               ),
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -1,6 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 class OneUIFloatingSearchPill extends StatelessWidget {
   final String hintText;
@@ -22,30 +22,11 @@ class OneUIFloatingSearchPill extends StatelessWidget {
         return RepaintBoundary(
           child: GestureDetector(
             onTap: onTap,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(26),
-              boxShadow: OneUITheme.floatingShadow,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: OneUITheme.blurSigma,
-                  sigmaY: OneUITheme.blurSigma,
-                ),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOutCubic,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: is3d ? null : OneUITheme.floatingColor,
-                    gradient: is3d ? OneUITheme.floatingGradient : null,
-                    borderRadius: BorderRadius.circular(26),
-                    border: OneUITheme.floatingBorder,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: Row(
+          child: OneUIGlassSurface(
+            borderRadius: const BorderRadius.all(Radius.circular(26)),
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
                   children: [
                     Icon(
                       Icons.search_rounded,
@@ -69,10 +50,7 @@ class OneUIFloatingSearchPill extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            ),
           ),
-        ),
       ),
     );
   },

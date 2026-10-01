@@ -1,11 +1,11 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_glass_surface.dart';
 import '../utils/one_ui_brand_catalog.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_card.dart';
@@ -64,30 +64,12 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
   }
 
   Widget _buildFloatingSearchPill() {
-    final is3d = OneUIEffectsController.instance.floating3dEffect;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: OneUITheme.floatingShadow,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: OneUITheme.blurSigma,
-            sigmaY: OneUITheme.blurSigma,
-          ),
-          child: Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: is3d ? null : OneUITheme.floatingColor,
-              gradient: is3d ? OneUITheme.floatingGradient : null,
-              borderRadius: BorderRadius.circular(32),
-              border: OneUITheme.floatingBorder,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Row(
+    return OneUIGlassSurface(
+      borderRadius: const BorderRadius.all(Radius.circular(32)),
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: Row(
               children: [
                 Expanded(
                   child: TextField(
@@ -143,9 +125,6 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
                   ),
               ],
             ),
-          ),
-        ),
-      ),
     );
   }
 

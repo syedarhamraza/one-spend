@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 /// Samsung One UI 9 "Sort by" Modal Bottom Sheet matching Reference Screenshot 1:1.
 /// Features:
@@ -61,7 +61,6 @@ class _OneUISortBottomSheetState extends State<OneUISortBottomSheet> {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.floating3dEffect;
         final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
 
         return SafeArea(
@@ -69,53 +68,12 @@ class _OneUISortBottomSheetState extends State<OneUISortBottomSheet> {
             padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + keyboardInset),
             child: Material(
               color: Colors.transparent,
-              child: DecoratedBox(
-                decoration: is3d
-                    ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            blurRadius: 28,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      )
-                    : const BoxDecoration(),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: OneUITheme.blurSigma,
-                      sigmaY: OneUITheme.blurSigma,
-                    ),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      decoration: BoxDecoration(
-                        color: is3d ? null : const Color(0xC4202024),
-                        gradient: is3d
-                            ? const LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Color(0xB326262B),
-                                  Color(0xCC1A1A1E),
-                                ],
-                              )
-                            : null,
-                        borderRadius: BorderRadius.circular(28),
-                        border: is3d
-                            ? Border.all(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                width: 0.85,
-                              )
-                            : Border.all(
-                                color: Colors.white.withValues(alpha: 0.06),
-                                width: 0.85,
-                              ),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                      child: Column(
+              child: OneUIGlassSurface(
+                borderRadius: const BorderRadius.all(Radius.circular(28)),
+                elevation: OneUIGlassElevation.modal,
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -296,9 +254,6 @@ class _OneUISortBottomSheetState extends State<OneUISortBottomSheet> {
                 ),
               ],
                       ),
-                    ),
-                  ),
-                ),
               ),
             ),
           ),

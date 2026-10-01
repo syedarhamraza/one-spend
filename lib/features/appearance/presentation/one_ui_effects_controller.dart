@@ -3,6 +3,18 @@ import '../../../core/di/injection.dart';
 import '../../../theme/one_ui_theme.dart';
 import '../../settings/domain/repositories/settings_repository.dart';
 
+/// How high a floating glass surface sits, which picks its shadow.
+enum OneUIGlassElevation {
+  /// Pills, circular buttons, search capsules, action bars, menus.
+  floating,
+
+  /// The bottom tab bar (its shadow also lifts it over content scrolling under it).
+  navbar,
+
+  /// Bottom sheets and modals.
+  modal,
+}
+
 /// Card background color & surface style
 enum SubscriptionCardBackground {
   oneUiDark,       // Classic One UI charcoal surface (0xFF1C1C1E)
@@ -513,7 +525,10 @@ class OneUIEffectsController extends ChangeNotifier {
   List<BoxShadow>? _cachedNavbarShadow;
   List<BoxShadow>? _cachedFabShadow;
 
+  List<BoxShadow>? _cachedModalShadow;
+
   void _invalidateCache() {
+    _cachedModalShadow = null;
     _cachedFloatingGradient = null;
     _cachedFloatingBorder = null;
     _cachedFloatingShadow = null;
@@ -556,18 +571,12 @@ class OneUIEffectsController extends ChangeNotifier {
 
   List<BoxShadow> get floatingShadow {
     if (!_floating3dEffect) {
+      // Flat: a single soft ambient halo, just enough to separate from content.
       return _cachedFloatingShadow ??= [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.45),
-          blurRadius: 16,
-          offset: const Offset(0, 3),
-          spreadRadius: 1.0,
-        ),
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.25),
-          blurRadius: 6,
-          offset: const Offset(0, 1),
-          spreadRadius: 0.5,
+          color: Colors.black.withValues(alpha: 0.30),
+          blurRadius: 14,
+          offset: const Offset(0, 2),
         ),
       ];
     }
@@ -590,20 +599,12 @@ class OneUIEffectsController extends ChangeNotifier {
   List<BoxShadow> get navbarShadow {
     final is3d = _floating3dEffect;
     if (!is3d) {
+      // Flat: one soft ambient halo so content scrolling under the bar stays separated.
       return _cachedNavbarShadow ??= [
-        // Upward ambient lift over content entering from the top of the navbar
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.45),
+          color: Colors.black.withValues(alpha: 0.35),
           blurRadius: 16,
-          offset: const Offset(0, -2),
-          spreadRadius: 0.5,
-        ),
-        // Perimeter halo
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.30),
-          blurRadius: 8,
-          offset: const Offset(0, 1),
-          spreadRadius: 1.0,
+          offset: const Offset(0, -1),
         ),
       ];
     }
@@ -641,6 +642,72 @@ class OneUIEffectsController extends ChangeNotifier {
   }
 
   double get blurSigma => 20.0;
+
+  // --- Glass surfaces (see OneUIGlassSurface) --------------------------------
+
+  /// Shadow under a floating glass surface.
+  List<BoxShadow> glassShadow(OneUIGlassElevation elevation) => switch (elevation) {
+        OneUIGlassElevation.floating => floatingShadow,
+        OneUIGlassElevation.navbar => navbarShadow,
+        OneUIGlassElevation.modal => modalShadow,
+      };
+
+  /// Sheets and modals: no shadow when flat; a deep soft drop plus a contact shadow in 3D.
+  List<BoxShadow> get modalShadow {
+    if (!_floating3dEffect) return const [];
+    return _cachedModalShadow ??= [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.55),
+        blurRadius: 28,
+        offset: const Offset(0, 10),
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.30),
+        blurRadius: 6,
+        offset: const Offset(0, 2),
+      ),
+    ];
+  }
+
+  /// Flat fill for sheets and modals (denser than pills so long content stays legible).
+  Color get modalColor => const Color(0xC4202024);
+
+  /// 3D body for sheets and modals.
+  Gradient? get modalGradient => _floating3dEffect ? _modalGradient : null;
+  static const _modalGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xB326262B), Color(0xCC1A1A1E)],
+  );
+
+  /// 3D rim light: bright along the top edge, fading out down the sides, the way
+  /// One UI 8.5 glass catches light from above. Null when flat (no outline at all).
+  Gradient? get floatingRimGradient => _floating3dEffect ? _rimGradient : null;
+  static const _rimGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x3DFFFFFF), Color(0x12FFFFFF), Color(0x08FFFFFF)],
+    stops: [0.0, 0.45, 1.0],
+  );
+
+  /// Selected-item capsule (nav bar, segmented pills). 3D: a soft radial sheen that
+  /// is lighter near the top centre; flat: the plain active pill colour.
+  Gradient? get activePillGradient => _floating3dEffect ? _activePillGradient : null;
+  static const _activePillGradient = RadialGradient(
+    center: Alignment(0, -0.7),
+    radius: 1.4,
+    colors: [Color(0xFF4D4D52), Color(0xFF38383C)],
+  );
+
+  Color get activePillColor => _floating3dEffect ? OneUITheme.navbar3dActivePill : OneUITheme.surfacePillActive;
+
+  /// Rim on the selected capsule; fainter than the surface rim.
+  Gradient? get activePillRimGradient => _floating3dEffect ? _activePillRim : null;
+  static const _activePillRim = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x2EFFFFFF), Color(0x05FFFFFF)],
+  );
 
   // Backward compatibility
   Border? get subtleBorder => null;

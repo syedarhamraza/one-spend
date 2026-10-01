@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
+import 'one_ui_glass_surface.dart';
 
 /// Floating scroll-to-top circular button matching Screenshot 2.
 /// Appears when actively scrolling down past [threshold], and automatically
@@ -100,70 +100,32 @@ class _OneUIScrollToTopButtonState extends State<OneUIScrollToTopButton> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: OneUIEffectsController.instance,
-      builder: (context, _) {
-        final is3d = OneUIEffectsController.instance.floating3dEffect;
-
-        return IgnorePointer(
-          ignoring: !_isVisible,
-          child: AnimatedScale(
-            scale: _isVisible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutBack,
-            child: AnimatedOpacity(
-              opacity: _isVisible ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 180),
-              child: GestureDetector(
-                onTap: _scrollToTop,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                        spreadRadius: 1.0,
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        blurRadius: 6,
-                        offset: const Offset(0, 1),
-                        spreadRadius: 1.0,
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(
-                        sigmaX: OneUITheme.blurSigma,
-                        sigmaY: OneUITheme.blurSigma,
-                      ),
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: is3d ? null : OneUITheme.floatingColor,
-                          gradient: is3d ? OneUIEffectsController.instance.floatingGradient : null,
-                          border: is3d ? OneUIEffectsController.instance.floatingBorder : null,
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.keyboard_arrow_up_rounded,
-                          color: OneUITheme.textPrimary,
-                          size: 26,
-                        ),
-                      ),
-                    ),
-                  ),
+    return IgnorePointer(
+      ignoring: !_isVisible,
+      child: AnimatedScale(
+        scale: _isVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutBack,
+        child: AnimatedOpacity(
+          opacity: _isVisible ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 180),
+          child: Semantics(
+            button: true,
+            label: 'Scroll to top',
+            child: GestureDetector(
+              onTap: _scrollToTop,
+              child: const OneUIGlassSurface.circle(
+                size: 46,
+                child: Icon(
+                  Icons.keyboard_arrow_up_rounded,
+                  color: OneUITheme.textPrimary,
+                  size: 26,
                 ),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
