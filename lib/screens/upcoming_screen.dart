@@ -83,8 +83,17 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   bool _isSelectionMode = false;
   final Set<String> _selectedIds = {};
 
+  late final VoidCallback _shellBackHandler = _exitSelectionMode;
+
+  @override
+  void initState() {
+    super.initState();
+    HomeChrome.backHandlers[1] = _shellBackHandler;
+  }
+
   @override
   void dispose() {
+    if (HomeChrome.backHandlers[1] == _shellBackHandler) HomeChrome.backHandlers.remove(1);
     HomeChrome.upcomingSelectionActive.value = false;
     super.dispose();
   }

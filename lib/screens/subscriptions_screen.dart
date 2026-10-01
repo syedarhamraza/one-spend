@@ -24,6 +24,7 @@ import '../widgets/one_ui_subscription_card.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_upcoming_carousel.dart';
 import 'one_ui_field_editor_screen.dart';
+import 'home_screen.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -56,8 +57,17 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   final GlobalKey _moreButtonKey = GlobalKey();
   final GlobalKey _selectionMoreButtonKey = GlobalKey();
 
+  late final VoidCallback _shellBackHandler = _handleShellBack;
+
+  @override
+  void initState() {
+    super.initState();
+    HomeChrome.backHandlers[0] = _shellBackHandler;
+  }
+
   @override
   void dispose() {
+    if (HomeChrome.backHandlers[0] == _shellBackHandler) HomeChrome.backHandlers.remove(0);
     _searchController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
@@ -75,6 +85,15 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         _searchFocusNode.requestFocus();
       }
     });
+  }
+
+  /// System back inside the tab shell (see [HomeChrome.backHandlers]).
+  void _handleShellBack() {
+    if (_isSelectionMode) {
+      _exitSelectionMode();
+    } else if (_showSearch) {
+      _exitSearchMode();
+    }
   }
 
   void _exitSearchMode() {

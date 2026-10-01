@@ -31,8 +31,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _searching = false;
   String _query = '';
 
+  late final VoidCallback _shellBackHandler = _closeSearch;
+
+  @override
+  void initState() {
+    super.initState();
+    HomeChrome.backHandlers[3] = _shellBackHandler;
+  }
+
   @override
   void dispose() {
+    if (HomeChrome.backHandlers[3] == _shellBackHandler) HomeChrome.backHandlers.remove(3);
     HomeChrome.settingsSearchActive.value = false;
     _searchController.dispose();
     _searchFocus.dispose();

@@ -616,8 +616,18 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
   Widget build(BuildContext context) {
     final store = SubscriptionStore.instance;
 
-    return ListenableBuilder(
-      listenable: store,
+    return PopScope(
+      // System back leaves selection mode before leaving the screen.
+      canPop: !_isSelectionMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        setState(() {
+          _isSelectionMode = false;
+          _selectedIds.clear();
+        });
+      },
+      child: ListenableBuilder(
+        listenable: store,
       builder: (context, _) {
         final methods = store.paymentMethods;
         final selectedMethod = _resolveSelectedMethod(methods);
@@ -1129,6 +1139,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
           ),
         );
       },
+      ),
     );
   }
 
