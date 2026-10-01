@@ -127,20 +127,21 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUISpendingTrendsCard` + `OneUILineChart` | `one_ui_spending_chart.dart` | Spending trajectory: 6M · 1Y · 2Y of past months (solid) and forecast (dashed, from `ChargeSchedule`), budget guide, scrubbing with a tooltip, and the charges behind the highlighted month |
 | `OneUIAmbientGlow` | `one_ui_ambient_glow.dart` | The radial glow behind glass hero cards (first child of the card's `Stack`); cross-fades when its `color` changes |
 | `OneUISliverScrollAnchor` + `OneUISliverScrollAnchorSpacer` | `one_ui_sliver_scroll_anchor.dart` | Keeps a tapped card still while content above it resizes (e.g. a filter). Put the anchor right before that card's sliver, the spacer at the end instead of the 140 px `SizedBox`, and call `controller.hold()` before the change |
-| `OneUIInsightCard` + `InsightCards` | `one_ui_insight_card.dart`, `domain/services/insight_cards.dart` | Digital Wellbeing style tip: tone-coloured centred headline, message, light grey pill action, glow in the tone colour. One at a time; swipe or ✕ to dismiss (with Undo). Dismissed keys persist in `SubscriptionController.dismissedInsights` |
+| `OneUIInsightCard` + `InsightCards` | `one_ui_insight_card.dart`, `domain/services/insight_cards.dart` | Digital Wellbeing style tip: tone-coloured centred headline, message, light grey pill action, glow in the tone colour. One at a time; swipe or ✕ to dismiss; the ⋮ menu's "Show dismissed tips" brings them back. Dismissed keys persist in `SubscriptionController.dismissedInsights` |
 | `OneUICategoryBreakdownCard` | `one_ui_category_breakdown_card.dart` | "Screen time" style card: big total beside a donut, legend of colour bar · icon · name · amount; tapping a row selects that category |
 | `OneUICategoryRing` | `one_ui_category_ring.dart` | Donut split with a centre label; `highlightedIndex` dims the other segments. Colours come from `SubscriptionCategory.color` |
 | `OneUISelectionCountPill`, `OneUISelectionCancelPill` | `one_ui_selection_header_pills.dart` | Selection-mode header capsules (select-all + count, Cancel). Pass them as `selectionLeading` / `selectionTrailing` |
 | `OneUISegmentedPills` | `one_ui_segmented_pills.dart` | A few mutually exclusive ranges/modes in one capsule with a sliding thumb (e.g. Upcoming's 7 days · 30 days · 3 months · 12 months). Pass `dense: true` for a compact 34dp version inside a card |
 | `OneUIMonthCalendar` + `CalendarDayMarker` | `one_ui_month_calendar.dart` | Samsung Calendar style swipeable month grid: today ring, filled selected day, up to 3 colour dots + "+N", and a heat tint per day |
 | `OneUIFloatingModal` | `one_ui_floating_modal.dart` | Floating bottom sheets: `show`, `showTextInputDialog`, `showConfirmationDialog` (destructive confirms) |
-| `OneUIToast` | `one_ui_toast.dart` | Brief feedback ("Netflix added"). Replaces snackbars. Pass `actionLabel: 'Undo', onAction: …` for reversible actions; it then stays up for 4 s |
+| `OneUIToast` | `one_ui_toast.dart` | Brief, text-only feedback ("Netflix added"). Replaces snackbars. Never put actions (Undo) in a toast: offer them inline (§5.3) |
+| `OneUIMorphSwitcher` | `one_ui_morph_switcher.dart` | Swaps content inside a morphing pill/bar with a fade-through (old content clears in ~110 ms, the shape resizes over 340 ms on an emphasized curve, new content settles in). Sized by the incoming child only; safe to toggle mid-morph. Use it for every in-place mode change |
 | `OneUIGlassSurface` | `one_ui_glass_surface.dart` | The only way to draw floating chrome (see §2.1): flat vs 3D glass, rim light, shadow per elevation |
 | `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) with a sliding active capsule |
 | `OneUIFloatingSearchPill` | `one_ui_floating_search_pill.dart` | In-screen search |
 | `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open |
 | `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge), `OneUISoonChip` and `OneUIProChip` (amber, for future Pro features) |
-| `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar |
+| `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar. Pass `docked: true` to get just the action row for the nav bar to host (§5.3) |
 | `OneUISortBottomSheet`, `OneUIFilterBottomSheet`, `OneUIFloatingMenu` | respective files | Sort / filter sheets and overflow menus |
 | `OneUIScrollToTopButton` | `one_ui_scroll_to_top_button.dart` | Long lists |
 | `OneUIBrandIcon`, `OneUIPaymentBrandIcon` | respective files | Service logos and card-network logos |
@@ -176,17 +177,21 @@ Settings follows Samsung Settings: the **main page is titles only**. Each row is
 
 ### 5.3 Quick actions, confirmation, and long-press
 - **Money-moving actions** (mark paid, skip a cycle) use a **confirmation**: `OneUIFloatingModal.showConfirmationDialog`. The title is a question ("Mark Netflix as paid?"), the message says what will happen ("Logs a $15.49 payment and moves the next renewal to Nov 5"), and `confirmTextColor` uses the action's accent. Follow it with a plain `OneUIToast`.
-- **Undo** (`OneUIToast.show(…, actionLabel: 'Undo', onAction: …)`) suits cheap, non-financial changes, where a snapshot restores the previous state. Dismissing a tip card is one of these: toast "Tip dismissed" with Undo, and offer a "Show dismissed tips" menu item to bring them all back.
+- **Undo is inline, never in a toast** (toasts are text-only system toasts). Morph the control that did the action into Undo for a few seconds, or show a small inline pill where the change happened:
+  - **Renew** on the detail screen: the Renew button turns into a blue **Undo** for 8 s (`SubscriptionController.undoRenew` restores only the renewal date and payment history).
+  - Where a menu already restores things (Analytics' "Show dismissed tips"), no inline Undo is needed.
+- **Morph, don't swap.** When chrome changes mode, the same surface reshapes: the header's actions pill becomes the Cancel pill, inside the tab shell the nav bar becomes the selection action bar, and a subpage's Cancel | Save pill becomes its selection actions. Put the changing content in a `OneUIMorphSwitcher` inside one `OneUIGlassSurface` (pass `docked: true` to the action bars / Cancel | Save pill to get just their content). Animations are zero when the system's "Remove animations" is on.
+- **Selection mode never moves the page.** Content that doesn't take part in selection (tips, "Other options", per-row edit buttons) stays in the layout, faded and untappable, rather than being removed.
 - **Long-press always enters selection mode**, never a sheet or menu. The recipe (see `upcoming_screen.dart` and `subscriptions_screen.dart`):
   1. Track `_isSelectionMode` and `_selectedIds`. Tapping toggles selection, and rows show a selection circle instead of their actions.
-  2. Pass `isSelectionMode`, `selectionLeading: OneUISelectionCountPill(…)` and `selectionTrailing: OneUISelectionCancelPill(…)` to the header.
-  3. Slide the tab bar away via the tab's `HomeChrome` flag, and slide in a `OneUIFloatingActionBar` with the batch actions.
-  4. Wrap the scaffold in `PopScope(canPop: !_isSelectionMode)`, so system back exits selection first.
+  2. Pass `isSelectionMode`, `selectionLeading: OneUISelectionCountPill(…)` and `onSelectionCancel: _exitSelectionMode` to the header (the actions pill morphs into Cancel).
+  3. Inside the tab shell (`HomeShellScope.isHosted(context)`), dock the batch actions into the nav bar with `HomeChrome.dockBottomBar(tab, OneUIFloatingActionBar(docked: true, …), width: …)` from `build` (null to withdraw, and in `dispose`). Outside the shell, show your own `OneUIFloatingActionBar`.
+  4. Wrap the scaffold in `PopScope(canPop: !_isSelectionMode)`, so system back exits selection first. Inside the tab shell that `PopScope` never sees back presses: also register a `HomeChrome.backHandlers[tab]` callback and keep the tab's `HomeChrome` selection flag in sync.
 
 ### 5.4 Confirm a destructive action
 Use `OneUIFloatingModal.showConfirmationDialog(title, message, confirmLabel: 'Delete', …)`, then `OneUIToast.show(context, '… deleted')`.
 
-**Bulk data changes are always undoable.** Anything that replaces or wipes the user's data (restoring a backup with "Replace everything", "Clear all subscriptions") goes through `BackupService`, which saves a restore point first. Follow it with a toast offering **Undo** (`BackupService.undoLast`). There is exactly one backup mechanism: the in-app backup file (Android Auto Backup is disabled in the manifest).
+**Bulk data changes are always undoable.** Anything that replaces or wipes the user's data (restoring a backup with "Replace everything", "Clear all subscriptions") goes through `BackupService`, which saves a restore point first. Its `undoableAction` then drives an inline **Undo** row at the top of Backup & data (`BackupService.undoLast`) until the user leaves the screen. There is exactly one backup mechanism: the in-app backup file (Android Auto Backup is disabled in the manifest).
 
 ---
 

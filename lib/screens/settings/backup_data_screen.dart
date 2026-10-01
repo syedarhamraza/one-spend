@@ -31,15 +31,23 @@ import 'restore_preview_screen.dart';
 ///
 /// One backup file, used both ways: "Save backup to device" writes it and "Restore from
 /// backup" reads it. Replacing data or clearing it always saves a restore point first,
-/// so the toast can offer Undo.
+/// and an inline Undo row appears at the top until you leave the screen.
 class BackupDataScreen extends StatelessWidget {
   const BackupDataScreen({super.key});
 
   static final DateFormat _savedFormat = DateFormat('MMM d, y');
 
-  static Future<void> open(BuildContext context) {
+  static Future<void> open(BuildContext context) async {
     HapticFeedback.lightImpact();
-    return context.push(AppRoutes.settingsData);
+    await context.push(AppRoutes.settingsData);
+    // The Undo row only makes sense right after the change; later edits would be lost.
+    if (sl.isRegistered<BackupService>()) sl<BackupService>().undoableAction.value = null;
+  }
+
+  Future<void> _undoLast(BuildContext context) async {
+    HapticFeedback.mediumImpact();
+    final undone = await sl<BackupService>().undoLast();
+    if (context.mounted) OneUIToast.show(context, undone ? 'Change undone' : 'Nothing to undo');
   }
 
   Future<void> _saveBackup(BuildContext context) async {
@@ -79,7 +87,7 @@ class BackupDataScreen extends StatelessWidget {
     final outcome = await RestorePreviewScreen.open(context, backup);
     if (outcome == null || !context.mounted) return;
     if (outcome.mode == RestoreMode.replace) {
-      OneUIToast.show(context, 'Backup restored', actionLabel: 'Undo', onAction: () => sl<BackupService>().undoLast());
+      OneUIToast.show(context, 'Backup restored');
     } else {
       final added = outcome.addedSubscriptions + outcome.addedPaymentMethods;
       OneUIToast.show(context, added == 0 ? 'Nothing new to add' : 'Added $added item${added == 1 ? '' : 's'}');
@@ -126,12 +134,7 @@ class BackupDataScreen extends StatelessWidget {
         HapticFeedback.mediumImpact();
         await sl<BackupService>().clearAll();
         if (!context.mounted) return;
-        OneUIToast.show(
-          context,
-          'All subscriptions cleared',
-          actionLabel: 'Undo',
-          onAction: () => sl<BackupService>().undoLast(),
-        );
+        OneUIToast.show(context, 'All subscriptions cleared');
       },
     );
   }
@@ -141,10 +144,27 @@ class BackupDataScreen extends StatelessWidget {
     final store = SubscriptionStore.instance;
     return OneUISubpage(
       title: 'Backup & data',
-      listenable: store,
+      listenable: Listenable.merge([store, sl<BackupService>().undoableAction]),
       builder: (context) {
         final lastSaved = store.lastBackupAt;
+        final undoable = sl<BackupService>().undoableAction.value;
         return [
+          if (undoable != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: OneUIGroupCard(
+                margin: EdgeInsets.zero,
+                items: [
+                  OneUIGroupItem(
+                    title: 'Undo ${undoable.toLowerCase()}',
+                    subtitle: 'Put back your data from before',
+                    subtitleColor: OneUITheme.textSecondary,
+                    trailing: const Icon(Icons.undo_rounded, color: OneUITheme.accentBlue, size: 22),
+                    onTap: () => _undoLast(context),
+                  ),
+                ],
+              ),
+            ),
           OneUISection(
             title: 'Backup',
             child: OneUIGroupCard(

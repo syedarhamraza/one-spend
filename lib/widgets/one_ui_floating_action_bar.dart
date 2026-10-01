@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_glass_surface.dart';
+import 'one_ui_morph_switcher.dart';
 
 class OneUIFloatingActionBarItem {
   final IconData icon;
@@ -22,9 +23,15 @@ class OneUIFloatingActionBarItem {
 class OneUIFloatingActionBar extends StatelessWidget {
   final List<OneUIFloatingActionBarItem> items;
 
+  /// Render only the action row, for hosting inside the tab shell's nav bar so the
+  /// bar morphs into these actions instead of being replaced (see HomeShellScope).
+  final bool docked;
+
+
   const OneUIFloatingActionBar({
     super.key,
     required this.items,
+    this.docked = false,
   });
 
   @override
@@ -32,6 +39,13 @@ class OneUIFloatingActionBar extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
+
+        if (docked) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: _buildRow(),
+          );
+        }
 
         return SafeArea(
           child: Padding(
@@ -42,56 +56,7 @@ class OneUIFloatingActionBar extends StatelessWidget {
                 elevation: OneUIGlassElevation.navbar,
                 height: 60,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                child: Material(
-                      color: Colors.transparent,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: items.map((item) {
-                          final itemColor = item.isEnabled
-                              ? (item.color ?? OneUITheme.textPrimary)
-                              : OneUITheme.textSecondary.withValues(alpha: 0.35);
-
-                          return InkWell(
-                            onTap: item.isEnabled
-                                ? () {
-                                    HapticFeedback.lightImpact();
-                                    item.onTap();
-                                  }
-                                : null,
-                            borderRadius: BorderRadius.circular(26),
-                            splashColor: item.isEnabled ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
-                            highlightColor: item.isEnabled ? Colors.white.withValues(alpha: 0.04) : Colors.transparent,
-                            child: SizedBox(
-                              width: 68,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    item.icon,
-                                    size: 21,
-                                    color: itemColor,
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    item.label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: -0.2,
-                                      color: itemColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
+                child: _buildRow(),
               ),
             ),
           ),
@@ -99,4 +64,63 @@ class OneUIFloatingActionBar extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildRow() {
+    return Material(
+      color: Colors.transparent,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: items.map((item) {
+          final itemColor = item.isEnabled
+              ? (item.color ?? OneUITheme.textPrimary)
+              : OneUITheme.textSecondary.withValues(alpha: 0.35);
+
+          return InkWell(
+            onTap: item.isEnabled
+                ? () {
+                    HapticFeedback.lightImpact();
+                    item.onTap();
+                  }
+                : null,
+            borderRadius: BorderRadius.circular(26),
+            splashColor: item.isEnabled ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
+            highlightColor: item.isEnabled ? Colors.white.withValues(alpha: 0.04) : Colors.transparent,
+            child: SizedBox(
+              width: 68,
+              // Cross-fades when an action changes in place (e.g. Renew → Undo).
+              child: OneUIMorphSwitcher(
+                animateSize: false,
+                child: Column(
+                  key: ValueKey(item.label),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      item.icon,
+                      size: 21,
+                      color: itemColor,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                        color: itemColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
 }

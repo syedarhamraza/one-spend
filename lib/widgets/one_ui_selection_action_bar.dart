@@ -16,6 +16,11 @@ class OneUISelectionActionBar extends StatelessWidget {
   final VoidCallback onMore;
   final GlobalKey? moreButtonKey;
 
+  /// Render only the action row, for hosting inside the tab shell's nav bar so the
+  /// bar morphs into these actions instead of being replaced (see HomeShellScope).
+  final bool docked;
+
+
   const OneUISelectionActionBar({
     super.key,
     required this.selectedCount,
@@ -25,6 +30,7 @@ class OneUISelectionActionBar extends StatelessWidget {
     required this.onDelete,
     required this.onMore,
     this.moreButtonKey,
+    this.docked = false,
   });
 
   @override
@@ -32,7 +38,12 @@ class OneUISelectionActionBar extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
-        final hasSelection = selectedCount > 0;
+        if (docked) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: _buildRow(),
+          );
+        }
 
         return SafeArea(
           child: Padding(
@@ -44,40 +55,7 @@ class OneUISelectionActionBar extends StatelessWidget {
                 elevation: OneUIGlassElevation.navbar,
                 height: 60,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                child: Material(
-                        color: Colors.transparent,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // 1. Share
-                            _buildActionItem(
-                              icon: Icons.share_outlined,
-                              label: 'Share',
-                              isEnabled: hasSelection,
-                              onTap: onShare,
-                            ),
-
-                            // 2. Delete
-                            _buildActionItem(
-                              icon: Icons.delete_outline_rounded,
-                              label: 'Delete',
-                              isEnabled: hasSelection,
-                              color: hasSelection ? OneUITheme.accentRed : null,
-                              onTap: onDelete,
-                            ),
-
-                            // 3. More (...)
-                            _buildActionItem(
-                              key: moreButtonKey,
-                              icon: Icons.more_vert_rounded,
-                              label: 'More',
-                              isEnabled: hasSelection,
-                              onTap: onMore,
-                            ),
-                          ],
-                        ),
-                      ),
+                child: _buildRow(),
               ),
             ),
           ),
@@ -85,6 +63,45 @@ class OneUISelectionActionBar extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildRow() {
+    final hasSelection = selectedCount > 0;
+    return Material(
+      color: Colors.transparent,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // 1. Share
+          _buildActionItem(
+            icon: Icons.share_outlined,
+            label: 'Share',
+            isEnabled: hasSelection,
+            onTap: onShare,
+          ),
+
+          // 2. Delete
+          _buildActionItem(
+            icon: Icons.delete_outline_rounded,
+            label: 'Delete',
+            isEnabled: hasSelection,
+            color: hasSelection ? OneUITheme.accentRed : null,
+            onTap: onDelete,
+          ),
+
+          // 3. More (...)
+          _buildActionItem(
+            key: moreButtonKey,
+            icon: Icons.more_vert_rounded,
+            label: 'More',
+            isEnabled: hasSelection,
+            onTap: onMore,
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildActionItem({
     Key? key,

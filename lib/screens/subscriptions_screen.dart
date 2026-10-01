@@ -59,6 +59,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
   late final VoidCallback _shellBackHandler = _handleShellBack;
 
+  /// Whether this screen sits in the tab shell, whose nav bar hosts the selection
+  /// actions (see [HomeShellScope]).
+  bool _dockInShell = false;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +72,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   @override
   void dispose() {
     if (HomeChrome.backHandlers[0] == _shellBackHandler) HomeChrome.backHandlers.remove(0);
+    if (_dockInShell) HomeChrome.dockBottomBar(0, null);
     _searchController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
@@ -85,6 +90,19 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         _searchFocusNode.requestFocus();
       }
     });
+  }
+
+  Widget _buildSelectionActionBar({bool docked = false}) {
+    return OneUISelectionActionBar(
+      docked: docked,
+      selectedCount: _selectedIds.length,
+      moreButtonKey: _selectionMoreButtonKey,
+      onMove: _handleMoveSelected,
+      onToggleLock: _handleLockSelected,
+      onShare: _handleShareSelected,
+      onDelete: _handleDeleteSelected,
+      onMore: _handleMoreSelected,
+    );
   }
 
   /// System back inside the tab shell (see [HomeChrome.backHandlers]).
@@ -513,34 +531,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     );
   }
 
-  Widget _buildSelectionCancelPill({
-    required VoidCallback onCancel,
-  }) {
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onCancel();
-      },
-      behavior: HitTestBehavior.opaque,
-      child: OneUIGlassSurface(
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-        height: 42,
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        alignment: Alignment.center,
-        child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: OneUITheme.textPrimary,
-                  letterSpacing: -0.2,
-                ),
-              ),
-      ),
-    );
-  }
-
   Widget _buildFloatingSearchPill() {
     return OneUIFloatingSearchField(
       controller: _searchController,
@@ -642,6 +632,15 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         final bottomPadding = MediaQuery.paddingOf(context).bottom;
         final searchPillBottom = math.max(bottomPadding + 16, bottomInset + 14);
 
+        // Inside the tab shell, the nav bar morphs into the selection actions.
+        _dockInShell = HomeShellScope.isHosted(context);
+        if (_dockInShell) {
+          HomeChrome.dockBottomBar(
+            0,
+            (_isSelectionMode && !_showSearch) ? _buildSelectionActionBar(docked: true) : null,
+          );
+        }
+
         return PopScope(
           canPop: !_isSelectionMode && !_showSearch,
           onPopInvokedWithResult: (didPop, result) {
@@ -701,11 +700,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                 onToggleSelectAll: () => _toggleSelectAll(filteredSubs),
                               )
                             : null,
-                        selectionTrailing: (_isSelectionMode && !_showSearch)
-                            ? _buildSelectionCancelPill(
-                                onCancel: _exitSelectionMode,
-                              )
-                            : null,
+                        onSelectionCancel: (_isSelectionMode && !_showSearch) ? _exitSelectionMode : null,
                         actions: (_isSelectionMode || _showSearch || isTrueEmpty)
                             ? null
                             : [
@@ -1286,20 +1281,13 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   ),
 
                 // Bottom Floating Multi-Selection Action Bar (Replaces main nav bar in-place!)
-                if (_isSelectionMode && !_showSearch)
+                // (Inside the tab shell the nav bar morphs into these actions instead.)
+                if (_isSelectionMode && !_showSearch && !_dockInShell)
                   Positioned(
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    child: OneUISelectionActionBar(
-                      selectedCount: _selectedIds.length,
-                      moreButtonKey: _selectionMoreButtonKey,
-                      onMove: _handleMoveSelected,
-                      onToggleLock: _handleLockSelected,
-                      onShare: _handleShareSelected,
-                      onDelete: _handleDeleteSelected,
-                      onMore: _handleMoreSelected,
-                    ),
+                    child: _buildSelectionActionBar(),
                   ),
 
                 // Floating Search Pill above keyboard (matching One UI reference screenshot)

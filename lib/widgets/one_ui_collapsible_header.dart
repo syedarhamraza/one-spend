@@ -1,6 +1,9 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_glass_surface.dart';
+import 'one_ui_morph_switcher.dart';
 import 'one_ui_floating_menu.dart';
 import 'one_ui_status_bar_scrim.dart';
 
@@ -74,6 +77,11 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
   final Widget? selectionLeading;
   final Widget? selectionTrailing;
 
+  /// Selection-mode Cancel. When set, the right-hand actions pill and the Cancel
+  /// pill are one glass capsule that morphs between the two (instead of
+  /// [selectionTrailing] replacing the actions outright).
+  final VoidCallback? onSelectionCancel;
+
   const OneUICollapsibleHeaderDelegate({
     required this.title,
     this.subtitle,
@@ -87,6 +95,7 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
     this.isSelectionMode = false,
     this.selectionLeading,
     this.selectionTrailing,
+    this.onSelectionCancel,
   });
 
   @override
@@ -114,6 +123,7 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
       isSelectionMode: isSelectionMode,
       selectionLeading: selectionLeading,
       selectionTrailing: selectionTrailing,
+      onSelectionCancel: onSelectionCancel,
     );
   }
 
@@ -129,7 +139,8 @@ class OneUICollapsibleHeaderDelegate extends SliverPersistentHeaderDelegate {
         oldDelegate.actionsPillKey != actionsPillKey ||
         oldDelegate.isSelectionMode != isSelectionMode ||
         oldDelegate.selectionLeading != selectionLeading ||
-        oldDelegate.selectionTrailing != selectionTrailing;
+        oldDelegate.selectionTrailing != selectionTrailing ||
+        oldDelegate.onSelectionCancel != onSelectionCancel;
   }
 }
 
@@ -148,6 +159,7 @@ class _OneUIHeaderContent extends StatefulWidget {
   final bool isSelectionMode;
   final Widget? selectionLeading;
   final Widget? selectionTrailing;
+  final VoidCallback? onSelectionCancel;
 
   const _OneUIHeaderContent({
     required this.title,
@@ -164,6 +176,7 @@ class _OneUIHeaderContent extends StatefulWidget {
     this.isSelectionMode = false,
     this.selectionLeading,
     this.selectionTrailing,
+    this.onSelectionCancel,
   });
 
   @override
@@ -239,32 +252,78 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     );
   }
 
-  /// Right-hand action buttons, sharing one glass capsule that grows in as the
-  /// header collapses.
-  Widget _buildActionPill(BuildContext context, double pillProgress) {
-    if (widget.actions == null || widget.actions!.isEmpty) {
-      return const SizedBox.shrink();
+  /// Right-hand capsule. Outside selection mode it holds the action buttons (its
+  /// glass grows in as the header collapses); in selection mode the same capsule
+  /// reshapes into "Cancel", so the pill morphs rather than swapping.
+  Widget? _buildRightPill(BuildContext context, double pillProgress, double selectionT) {
+    final inSelection = widget.isSelectionMode;
+    final hasActions = widget.actions != null && widget.actions!.isNotEmpty;
+    final morphCancel = widget.onSelectionCancel != null;
+
+    // Legacy path: a caller-supplied trailing widget simply replaces the actions.
+    if (inSelection && !morphCancel) return widget.selectionTrailing;
+
+    final Widget content;
+    if (inSelection) {
+      content = Semantics(
+        key: const ValueKey('cancel'),
+        button: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onSelectionCancel!();
+          },
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 18),
+            child: Center(
+              widthFactor: 1,
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: OneUITheme.textPrimary,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    } else if (hasActions) {
+      final isSingleAction = widget.actions!.length == 1;
+      content = isSingleAction
+          ? SizedBox(key: const ValueKey('actions'), width: 44, child: Center(child: widget.actions!.first))
+          : Padding(
+              key: const ValueKey('actions'),
+              padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  for (int i = 0; i < widget.actions!.length; i++) ...[
+                    widget.actions![i],
+                    if (i < widget.actions!.length - 1) const SizedBox(width: 4.0),
+                  ],
+                ],
+              ),
+            );
+    } else if (selectionT > 0) {
+      // Leaving selection into a state with no actions: let Cancel morph away.
+      content = const SizedBox(key: ValueKey('empty'), height: 44);
+    } else {
+      return null;
     }
 
-    final isSingleAction = widget.actions!.length == 1;
     final pill = OneUIGlassSurface(
       key: widget.actionsPillKey,
       height: 44,
-      width: isSingleAction ? 44 : null,
-      alignment: isSingleAction ? Alignment.center : null,
-      padding: isSingleAction ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
       borderRadius: const BorderRadius.all(Radius.circular(24)),
-      progress: pillProgress,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          for (int i = 0; i < widget.actions!.length; i++) ...[
-            widget.actions![i],
-            if (i < widget.actions!.length - 1) const SizedBox(width: 4.0),
-          ],
-        ],
-      ),
+      progress: math.max(pillProgress, selectionT),
+      // The capsule stretches leftwards from its right edge while its content
+      // fades through (see OneUIMorphSwitcher).
+      child: OneUIMorphSwitcher(alignment: Alignment.centerRight, child: content),
     );
 
     return RepaintBoundary(
@@ -282,6 +341,8 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
       ),
     );
   }
+
+  static Duration _morphDuration(BuildContext context) => OneUIMorphSwitcher.durationOf(context);
 
   /// Small Title in top bar
   Widget _buildSmallTitle(double smallTitleOpacity) {
@@ -437,38 +498,49 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
             left: 20.0,
             right: 20.0,
             height: 44.0,
-            child: widget.isSelectionMode
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      if (widget.selectionLeading != null) widget.selectionLeading!,
-                      const Spacer(),
-                      if (widget.selectionTrailing != null) widget.selectionTrailing!,
-                    ],
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Left: Back button (if enabled)
-                      if (widget.showBackButton) ...[
-                        _buildBackButton(context, pillProgress),
-                        const SizedBox(width: 10.0),
-                      ],
-
-                      // Center / Left: Small Title
-                      // If no back button, starts directly at left: 20 on screen!
-                      // If back button, starts beside the back button!
-                      Expanded(
-                        child: _buildSmallTitle(smallTitleOpacity),
+            // Selection mode eases in/out so the right capsule's glass can morph too.
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: widget.isSelectionMode ? 1.0 : 0.0),
+              duration: _morphDuration(context),
+              curve: Curves.easeOutCubic,
+              builder: (context, selectionT, _) {
+                final rightPill = _buildRightPill(context, pillProgress, selectionT);
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: OneUIMorphSwitcher(
+                        alignment: Alignment.centerLeft,
+                        animateSize: false,
+                        child: widget.isSelectionMode
+                            // A Row lets the leading pill keep its natural width
+                            // instead of stretching across the header.
+                            ? Row(
+                                key: const ValueKey('selection'),
+                                children: [widget.selectionLeading ?? const SizedBox.shrink()],
+                              )
+                            : Row(
+                                key: const ValueKey('normal'),
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  if (widget.showBackButton) ...[
+                                    _buildBackButton(context, pillProgress),
+                                    const SizedBox(width: 10.0),
+                                  ],
+                                  // Starts at the screen edge, or beside the back button.
+                                  Expanded(child: _buildSmallTitle(smallTitleOpacity)),
+                                ],
+                              ),
                       ),
-
-                      // Right: Action Buttons Pill (if actions present)
-                      if (widget.actions != null && widget.actions!.isNotEmpty) ...[
-                        const SizedBox(width: 8.0),
-                        _buildActionPill(context, pillProgress),
-                      ],
+                    ),
+                    if (rightPill != null) ...[
+                      const SizedBox(width: 8.0),
+                      rightPill,
                     ],
-                  ),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       );

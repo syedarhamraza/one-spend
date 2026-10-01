@@ -85,6 +85,10 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
 
   late final VoidCallback _shellBackHandler = _exitSelectionMode;
 
+  /// Whether this screen sits in the tab shell, whose nav bar hosts the selection
+  /// actions (see [HomeShellScope]).
+  bool _dockInShell = false;
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +98,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   @override
   void dispose() {
     if (HomeChrome.backHandlers[1] == _shellBackHandler) HomeChrome.backHandlers.remove(1);
+    if (_dockInShell) HomeChrome.dockBottomBar(1, null);
     HomeChrome.upcomingSelectionActive.value = false;
     super.dispose();
   }
@@ -375,6 +380,16 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
             c.subscription.id,
         };
 
+        // Inside the tab shell, the nav bar morphs into the selection actions.
+        _dockInShell = HomeShellScope.isHosted(context);
+        if (_dockInShell) {
+          final actions = _selectionActions(store);
+          HomeChrome.dockBottomBar(
+            1,
+            _isSelectionMode ? OneUIFloatingActionBar(docked: true, items: actions) : null,
+          );
+        }
+
         return PopScope(
           // System back leaves selection mode before leaving the tab.
           canPop: !_isSelectionMode,
@@ -408,7 +423,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                               onToggleSelectAll: () => _toggleSelectAll(visibleIds),
                             )
                           : null,
-                      selectionTrailing: _isSelectionMode ? OneUISelectionCancelPill(onCancel: _exitSelectionMode) : null,
+                      onSelectionCancel: _isSelectionMode ? _exitSelectionMode : null,
                       actions: _isSelectionMode ? null : [
                         OneUIHeaderAction(
                           icon: isCalendar ? Icons.view_agenda_outlined : Icons.calendar_month_outlined,
@@ -438,7 +453,9 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
               ),
               const Positioned(left: 0, right: 0, bottom: 0, child: OneUIBottomVignette()),
 
-              // Floating selection action bar (replaces the tab bar while selecting)
+              // Floating selection action bar (inside the tab shell the nav bar morphs
+              // into these actions instead).
+              if (!_dockInShell)
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOutCubic,
@@ -453,34 +470,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                     opacity: _isSelectionMode ? 1.0 : 0.0,
                     child: Center(
                       child: OneUIFloatingActionBar(
-                        items: [
-                          OneUIFloatingActionBarItem(
-                            label: 'Mark paid',
-                            icon: Icons.check_circle_outline_rounded,
-                            color: OneUITheme.accentGreen,
-                            isEnabled: _selectedIds.isNotEmpty,
-                            onTap: () => _markSelectedPaid(store),
-                          ),
-                          OneUIFloatingActionBarItem(
-                            label: 'Skip',
-                            icon: Icons.redo_rounded,
-                            isEnabled: _selectedIds.isNotEmpty,
-                            onTap: () => _skipSelected(store),
-                          ),
-                          OneUIFloatingActionBarItem(
-                            label: 'Pause',
-                            icon: Icons.pause_circle_outline_rounded,
-                            isEnabled: _selectedIds.isNotEmpty,
-                            onTap: () => _pauseSelected(store),
-                          ),
-                          OneUIFloatingActionBarItem(
-                            label: 'Delete',
-                            icon: Icons.delete_outline_rounded,
-                            color: OneUITheme.accentRed,
-                            isEnabled: _selectedIds.isNotEmpty,
-                            onTap: () => _deleteSelected(store),
-                          ),
-                        ],
+                        items: _selectionActions(store),
                       ),
                     ),
                   ),
@@ -493,6 +483,35 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       },
     );
   }
+
+  List<OneUIFloatingActionBarItem> _selectionActions(SubscriptionStore store) => [
+    OneUIFloatingActionBarItem(
+      label: 'Mark paid',
+      icon: Icons.check_circle_outline_rounded,
+      color: OneUITheme.accentGreen,
+      isEnabled: _selectedIds.isNotEmpty,
+      onTap: () => _markSelectedPaid(store),
+    ),
+    OneUIFloatingActionBarItem(
+      label: 'Skip',
+      icon: Icons.redo_rounded,
+      isEnabled: _selectedIds.isNotEmpty,
+      onTap: () => _skipSelected(store),
+    ),
+    OneUIFloatingActionBarItem(
+      label: 'Pause',
+      icon: Icons.pause_circle_outline_rounded,
+      isEnabled: _selectedIds.isNotEmpty,
+      onTap: () => _pauseSelected(store),
+    ),
+    OneUIFloatingActionBarItem(
+      label: 'Delete',
+      icon: Icons.delete_outline_rounded,
+      color: OneUITheme.accentRed,
+      isEnabled: _selectedIds.isNotEmpty,
+      onTap: () => _deleteSelected(store),
+    ),
+  ];
 
   // --- Timeline --------------------------------------------------------------
 

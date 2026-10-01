@@ -34,12 +34,43 @@ class HomeChrome {
         _ => false,
       };
 
+  /// A tab's bottom actions, hosted by the shell's nav bar so the bar morphs into
+  /// them (see [HomeShellScope]). Only shown while [tab] is the current branch.
+  static final ValueNotifier<({int tab, Widget content})?> dockedBar = ValueNotifier(null);
+
+  /// Publishes (or, with null, withdraws) branch [tab]'s docked bottom actions.
+  /// Safe to call from `build`: the update lands after the frame, and it only
+  /// rebuilds the nav bar, not the tab content.
+  static void dockBottomBar(int tab, Widget? content) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final current = dockedBar.value;
+      if (content != null) {
+        dockedBar.value = (tab: tab, content: content);
+      } else if (current != null && current.tab == tab) {
+        dockedBar.value = null;
+      }
+    });
+  }
+
   static void reset() {
+    dockedBar.value = null;
     selectionActive.value = false;
     searchActive.value = false;
     upcomingSelectionActive.value = false;
     settingsSearchActive.value = false;
   }
+}
+
+/// Marks content hosted inside the tab shell. Tabs in it dock their bottom actions
+/// into the shell's nav bar via [HomeChrome.dockBottomBar] (so the bar morphs);
+/// outside it (e.g. a pushed, card-filtered list) they draw their own bar.
+class HomeShellScope extends InheritedWidget {
+  const HomeShellScope({super.key, required super.child});
+
+  static bool isHosted(BuildContext context) => context.getInheritedWidgetOfExactType<HomeShellScope>() != null;
+
+  @override
+  bool updateShouldNotify(HomeShellScope oldWidget) => false;
 }
 
 /// Tab shell hosting the four bottom-navigation branches and the floating nav bar.
@@ -62,9 +93,9 @@ class HomeScreen extends StatelessWidget {
       builder: (context, _) {
         final currentIndex = navigationShell.currentIndex;
         final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+        // Selection modes don't hide the bar: it morphs into the tab's docked actions.
         final isNavHidden =
-            (currentIndex == 0 && (HomeChrome.selectionActive.value || HomeChrome.searchActive.value)) ||
-            (currentIndex == 1 && HomeChrome.upcomingSelectionActive.value) ||
+            (currentIndex == 0 && HomeChrome.searchActive.value) ||
             (currentIndex == 3 && HomeChrome.settingsSearchActive.value) ||
             isKeyboardOpen ||
             OneUIFloatingModal.isModalOpen.value;
@@ -89,13 +120,13 @@ class HomeScreen extends StatelessWidget {
             body: Stack(
               children: [
                 // Current tab (each branch keeps its own state via the indexed stack shell)
-                navigationShell,
+                HomeShellScope(child: navigationShell),
 
                 // Edge-to-Edge Progressive Status Bar Scrim (Strictly 80% of status bar)
                 const Positioned(top: 0, left: 0, right: 0, child: OneUIStatusBarScrim()),
 
-                // Floating Bottom Navigation Pill (1:1 with Screenshot 1 & 4)
-                // Smoothly slides down and hides during multi-selection mode or keyboard input
+                // Floating bottom navigation pill. Morphs into a tab's docked actions
+                // (selection mode); slides away for search, the keyboard and modals.
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOutCubic,
@@ -107,30 +138,34 @@ class HomeScreen extends StatelessWidget {
                     child: AnimatedOpacity(
                       duration: const Duration(milliseconds: 200),
                       opacity: isNavHidden ? 0.0 : 1.0,
-                      child: OneUIFloatingNavBar(
-                        currentIndex: currentIndex,
-                        onTap: (index) {
-                          HapticFeedback.lightImpact();
-                          navigationShell.goBranch(index);
-                        },
-                        items: const [
-                          OneUINavItem(
-                            activeIcon: Icons.account_balance_wallet_rounded,
-                            inactiveIcon: Icons.account_balance_wallet_outlined,
-                            label: 'Spend',
-                          ),
-                          OneUINavItem(
-                            activeIcon: Icons.calendar_today_rounded,
-                            inactiveIcon: Icons.calendar_today_outlined,
-                            label: 'Upcoming',
-                          ),
-                          OneUINavItem(
-                            activeIcon: Icons.pie_chart_rounded,
-                            inactiveIcon: Icons.pie_chart_outline_rounded,
-                            label: 'Analytics',
-                          ),
-                          OneUINavItem(activeIcon: Icons.menu_rounded, inactiveIcon: Icons.menu_rounded, label: 'Menu'),
-                        ],
+                      child: ValueListenableBuilder(
+                        valueListenable: HomeChrome.dockedBar,
+                        builder: (context, docked, _) => OneUIFloatingNavBar(
+                          currentIndex: currentIndex,
+                          dockedContent: docked != null && docked.tab == currentIndex ? docked.content : null,
+                          onTap: (index) {
+                            HapticFeedback.lightImpact();
+                            navigationShell.goBranch(index);
+                          },
+                          items: const [
+                            OneUINavItem(
+                              activeIcon: Icons.account_balance_wallet_rounded,
+                              inactiveIcon: Icons.account_balance_wallet_outlined,
+                              label: 'Spend',
+                            ),
+                            OneUINavItem(
+                              activeIcon: Icons.calendar_today_rounded,
+                              inactiveIcon: Icons.calendar_today_outlined,
+                              label: 'Upcoming',
+                            ),
+                            OneUINavItem(
+                              activeIcon: Icons.pie_chart_rounded,
+                              inactiveIcon: Icons.pie_chart_outline_rounded,
+                              label: 'Analytics',
+                            ),
+                            OneUINavItem(activeIcon: Icons.menu_rounded, inactiveIcon: Icons.menu_rounded, label: 'Menu'),
+                          ],
+                        ),
                       ),
                     ),
                   ),

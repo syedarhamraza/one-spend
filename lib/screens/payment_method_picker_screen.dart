@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_glass_surface.dart';
+import '../widgets/one_ui_morph_switcher.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -520,31 +521,6 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
     );
   }
 
-  Widget _buildSelectionCancelPill({required VoidCallback onCancel}) {
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onCancel();
-      },
-      behavior: HitTestBehavior.opaque,
-      child: OneUIGlassSurface(
-        borderRadius: const BorderRadius.all(Radius.circular(24)),
-        height: 42,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        alignment: Alignment.center,
-        child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
-                  color: OneUITheme.textPrimary,
-                ),
-              ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final store = SubscriptionStore.instance;
@@ -603,14 +579,12 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                         totalCount: methods.length,
                         onToggleSelectAll: () => _toggleSelectAll(methods),
                       ),
-                      selectionTrailing: _buildSelectionCancelPill(
-                        onCancel: () {
+                      onSelectionCancel: () {
                           setState(() {
                             _isSelectionMode = false;
                             _selectedIds.clear();
                           });
                         },
-                      ),
                       actions: [
                         OneUIHeaderAction(
                           icon: Icons.add,
@@ -785,13 +759,17 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                                 child: Row(
                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                   children: [
-                                                    Text(
-                                                      'View all subscriptions',
-                                                      style: TextStyle(
-                                                        fontSize: 13.5,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: OneUITheme.accentBlue.withValues(alpha: 0.95),
-                                                        letterSpacing: -0.1,
+                                                    Flexible(
+                                                      child: Text(
+                                                        'View all subscriptions',
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                        style: TextStyle(
+                                                          fontSize: 13.5,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: OneUITheme.accentBlue.withValues(alpha: 0.95),
+                                                          letterSpacing: -0.1,
+                                                        ),
                                                       ),
                                                     ),
                                                     Icon(
@@ -901,8 +879,9 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                               ),
                             ),
 
-                          // Other options (Only shown when not in selection mode and not manage-only)
-                          if (!_isSelectionMode && !widget.isManageOnly) ...[
+                          // Other options (picker mode). Stays in place but dims during
+                          // selection, so entering selection never shifts the list.
+                          if (!widget.isManageOnly) ...[
                             const SizedBox(height: 24),
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 4),
@@ -917,7 +896,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            OneUIGroupCard(
+                            _dimWhileSelecting(OneUIGroupCard(
                               margin: EdgeInsets.zero,
                               items: [
                                 OneUIGroupItem(
@@ -952,14 +931,13 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                   },
                                 ),
                               ],
-                            ),
+                            )),
                           ],
 
                           const SizedBox(height: 18),
 
-                          // Education Tip
-                          if (!_isSelectionMode)
-                            const Center(
+                          // Education Tip (dimmed, not removed, during selection)
+                          _dimWhileSelecting(const Center(
                               child: Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 16),
                                 child: Text(
@@ -972,7 +950,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                   ),
                                 ),
                               ),
-                            ),
+                            )),
                         ],
                       ),
                     ),
@@ -990,31 +968,36 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                 ),
               ),
 
-              // Bottom Floating Controls: Seamless transition between Normal Mode (Save Pill) and Selection Mode (Action Bar)
+              // Picker mode: one glass bar that morphs between Cancel | Save and the
+              // selection actions. (Manage mode has no bar until you select.)
               if (!widget.isManageOnly)
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOutCubic,
+                Positioned(
                   left: 0,
                   right: 0,
-                  bottom: _isSelectionMode ? -120 : 0,
-                  child: IgnorePointer(
-                    ignoring: _isSelectionMode,
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOutCubic,
-                      opacity: _isSelectionMode ? 0.0 : 1.0,
-                      child: SafeArea(
-                        top: false,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Center(
-                            child: OneUIFloatingCancelSavePill(
-                              cancelLabel: 'Cancel',
-                              saveLabel: 'Save',
-                              onCancel: () => Navigator.pop(context),
-                              onSave: () => _save(methods),
-                            ),
+                  bottom: 0,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Center(
+                        child: OneUIGlassSurface(
+                          elevation: OneUIGlassElevation.navbar,
+                          height: _isSelectionMode ? 60 : 52,
+                          child: OneUIMorphSwitcher(
+                            child: _isSelectionMode
+                                ? OneUIFloatingActionBar(
+                                    key: const ValueKey('actions'),
+                                    docked: true,
+                                    items: _selectionActions(methods),
+                                  )
+                                : OneUIFloatingCancelSavePill(
+                                    key: const ValueKey('save'),
+                                    docked: true,
+                                    cancelLabel: 'Cancel',
+                                    saveLabel: 'Save',
+                                    onCancel: () => Navigator.pop(context),
+                                    onSave: () => _save(methods),
+                                  ),
                           ),
                         ),
                       ),
@@ -1022,6 +1005,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                   ),
                 ),
 
+              if (widget.isManageOnly)
               AnimatedPositioned(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeInOutCubic,
@@ -1036,33 +1020,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                     opacity: _isSelectionMode ? 1.0 : 0.0,
                     child: Center(
                       child: OneUIFloatingActionBar(
-                        items: [
-                          OneUIFloatingActionBarItem(
-                            label: 'Edit',
-                            icon: Icons.edit_rounded,
-                            isEnabled: _selectedIds.length == 1,
-                            onTap: () {
-                              if (_selectedIds.length != 1) return;
-                              final m = methods.firstWhere((item) => item.id == _selectedIds.first);
-                              _openEditCard(m);
-                            },
-                          ),
-                          OneUIFloatingActionBarItem(
-                            label: 'Move subs',
-                            icon: Icons.swap_horiz_rounded,
-                            isEnabled: _selectedIds.isNotEmpty,
-                            onTap: () => _showBatchReassignModal(
-                              methods.where((m) => _selectedIds.contains(m.id)).toList(),
-                            ),
-                          ),
-                          OneUIFloatingActionBarItem(
-                            label: 'Delete',
-                            icon: Icons.delete_outline_rounded,
-                            color: OneUITheme.accentRed,
-                            isEnabled: _selectedIds.isNotEmpty,
-                            onTap: () => _deleteSelectedCards(methods),
-                          ),
-                        ],
+                        items: _selectionActions(methods),
                       ),
                     ),
                   ),
@@ -1075,6 +1033,47 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
       ),
     );
   }
+
+  /// Content that doesn't take part in selection: kept in the layout (so nothing
+  /// jumps) but faded and untappable while selecting.
+  Widget _dimWhileSelecting(Widget child) {
+    return IgnorePointer(
+      ignoring: _isSelectionMode,
+      child: AnimatedOpacity(
+        opacity: _isSelectionMode ? 0.3 : 1,
+        duration: const Duration(milliseconds: 200),
+        child: child,
+      ),
+    );
+  }
+
+  List<OneUIFloatingActionBarItem> _selectionActions(List<PaymentMethod> methods) => [
+    OneUIFloatingActionBarItem(
+      label: 'Edit',
+      icon: Icons.edit_rounded,
+      isEnabled: _selectedIds.length == 1,
+      onTap: () {
+        if (_selectedIds.length != 1) return;
+        final m = methods.firstWhere((item) => item.id == _selectedIds.first);
+        _openEditCard(m);
+      },
+    ),
+    OneUIFloatingActionBarItem(
+      label: 'Move subs',
+      icon: Icons.swap_horiz_rounded,
+      isEnabled: _selectedIds.isNotEmpty,
+      onTap: () => _showBatchReassignModal(
+        methods.where((m) => _selectedIds.contains(m.id)).toList(),
+      ),
+    ),
+    OneUIFloatingActionBarItem(
+      label: 'Delete',
+      icon: Icons.delete_outline_rounded,
+      color: OneUITheme.accentRed,
+      isEnabled: _selectedIds.isNotEmpty,
+      onTap: () => _deleteSelectedCards(methods),
+    ),
+  ];
 
   OneUIGroupItem _buildMethodItem(
     PaymentMethod m, {
@@ -1185,9 +1184,14 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
           ],
         ],
       ),
-      trailing: _isSelectionMode
-          ? const SizedBox.shrink()
-          : IconButton(
+      // Hidden but kept during selection so rows don't change height.
+      trailing: ExcludeSemantics(
+        excluding: _isSelectionMode,
+        child: _dimWhileSelecting(
+          AnimatedOpacity(
+            opacity: _isSelectionMode ? 0 : 1,
+            duration: const Duration(milliseconds: 200),
+            child: IconButton(
               icon: const Icon(
                 Icons.edit_rounded,
                 size: 19,
@@ -1196,6 +1200,9 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
               tooltip: 'Edit card details',
               onPressed: () => _openEditCard(m),
             ),
+          ),
+        ),
+      ),
       onTap: () {
         if (_isSelectionMode) {
           HapticFeedback.selectionClick();
