@@ -12,7 +12,7 @@ class LocalNotificationService implements NotificationService {
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   final StreamController<String> _taps = StreamController<String>.broadcast();
 
-  static const _icon = 'ic_stat_onespend';
+  static const _icon = 'ic_stat_name';
 
   /// One Android channel per kind so users can mute categories in system settings.
   static const Map<NotificationKind, AndroidNotificationChannel> _channels = {

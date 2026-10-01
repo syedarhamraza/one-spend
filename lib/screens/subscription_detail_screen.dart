@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../utils/external_links.dart';
 import '../models/subscription.dart';
 import 'settings/currency_picker_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -62,20 +62,13 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
 
   Future<void> _openUrl(String rawUrl) async {
     HapticFeedback.lightImpact();
-    try {
-      String target = rawUrl.trim();
-      if (!target.startsWith('http://') && !target.startsWith('https://')) {
-        target = 'https://$target';
-      }
-      final uri = Uri.parse(target);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) OneUIToast.show(context, 'Could not open website');
-      }
-    } catch (_) {
-      if (mounted) OneUIToast.show(context, 'Invalid website URL');
+    var target = rawUrl.trim();
+    if (!RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*://').hasMatch(target)) {
+      target = 'https://$target';
     }
+    // No canLaunchUrl() pre-check: on Android 11+ it returns false unless the
+    // scheme is declared in <queries>, which silently blocked every link.
+    await openExternalLink(context, target);
   }
 
   Future<void> _pickBrandIcon() async {

@@ -21,6 +21,19 @@ class HomeChrome {
   /// Floating search open on the Settings tab.
   static final ValueNotifier<bool> settingsSearchActive = ValueNotifier<bool>(false);
 
+  /// Per-tab handlers that close the tab's transient mode (selection or search) on
+  /// system back. Branch-level `PopScope`s never see back presses inside the
+  /// go_router shell, so the shell consults these instead. Keyed by branch index.
+  static final Map<int, VoidCallback> backHandlers = {};
+
+  /// Whether branch [index] is in a mode that system back should close first.
+  static bool consumesBack(int index) => switch (index) {
+        0 => selectionActive.value || searchActive.value,
+        1 => upcomingSelectionActive.value,
+        3 => settingsSearchActive.value,
+        _ => false,
+      };
+
   static void reset() {
     selectionActive.value = false;
     searchActive.value = false;
@@ -56,11 +69,19 @@ class HomeScreen extends StatelessWidget {
             isKeyboardOpen ||
             OneUIFloatingModal.isModalOpen.value;
 
-        // System back on a secondary tab returns to the first tab before exiting the app.
+        // System back first closes the tab's selection/search mode, then returns
+        // to the first tab, then exits the app.
+        final tabConsumesBack = HomeChrome.consumesBack(currentIndex);
         return PopScope(
-          canPop: currentIndex == 0,
+          canPop: currentIndex == 0 && !tabConsumesBack,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) navigationShell.goBranch(0);
+            if (didPop) return;
+            final handler = HomeChrome.backHandlers[currentIndex];
+            if (tabConsumesBack && handler != null) {
+              handler();
+            } else if (currentIndex != 0) {
+              navigationShell.goBranch(0);
+            }
           },
           child: Scaffold(
             backgroundColor: OneUITheme.surfacePitch,
