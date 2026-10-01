@@ -14,7 +14,10 @@ import 'package:onespend/screens/subscriptions_screen.dart';
 import 'package:onespend/screens/upcoming_screen.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
+import 'package:onespend/widgets/one_ui_floating_nav_bar.dart';
 import 'package:onespend/widgets/one_ui_group_card.dart';
+import 'package:onespend/widgets/one_ui_selection_action_bar.dart';
+import 'package:onespend/widgets/one_ui_selection_header_pills.dart';
 import 'package:onespend/widgets/one_ui_toast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -157,10 +160,72 @@ void main() {
     await tester.longPress(upcomingRow);
     await tester.pumpAndSettle();
     expect(HomeChrome.upcomingSelectionActive.value, isTrue);
+    // The count pill keeps its natural width (it used to stretch across the header).
+    expect(tester.getSize(find.byType(OneUISelectionCountPill)).width, lessThan(160));
 
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(HomeChrome.upcomingSelectionActive.value, isFalse);
     expect(find.byType(UpcomingScreen).hitTestable(), findsOneWidget);
+  });
+
+  group('selection mode morphs the chrome', () {
+    Finder inNavBar(Finder f) => find.descendant(of: find.byType(OneUIFloatingNavBar), matching: f);
+
+    testWidgets('nav bar reshapes into the selection actions and back', (tester) async {
+      useTallSurface(tester);
+      await tester.pumpWidget(const OneSpendApp());
+      await tester.pumpAndSettle();
+      final tabsWidth = tester.getSize(find.byType(OneUIFloatingNavBar).first).width;
+
+      await tester.longPress(find.text('Netflix').first);
+      await tester.pumpAndSettle();
+
+      // One bar: the actions live inside the nav bar, not in a second bar.
+      expect(find.byType(OneUISelectionActionBar), findsOneWidget);
+      expect(inNavBar(find.byType(OneUISelectionActionBar)), findsOneWidget);
+      expect(inNavBar(find.text('Share').hitTestable()), findsOneWidget);
+      expect(inNavBar(find.text('Upcoming').hitTestable()), findsNothing);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.byType(OneUISelectionActionBar), findsNothing);
+      expect(inNavBar(find.text('Upcoming').hitTestable()), findsOneWidget);
+      expect(tester.getSize(find.byType(OneUIFloatingNavBar).first).width, tabsWidth);
+    });
+
+    testWidgets('toggling selection mid-morph does not mount the actions twice', (tester) async {
+      useTallSurface(tester);
+      await tester.pumpWidget(const OneSpendApp());
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.text('Netflix').first);
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pump(const Duration(milliseconds: 80)); // actions still fading out
+      await tester.longPress(find.text('Spotify').first);
+      await tester.pump(const Duration(milliseconds: 80));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(OneUISelectionActionBar), findsOneWidget);
+    });
+
+    testWidgets('header actions pill morphs into Cancel, which exits selection', (tester) async {
+      useTallSurface(tester);
+      await tester.pumpWidget(const OneSpendApp());
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.add).hitTestable(), findsOneWidget);
+
+      await tester.longPress(find.text('Netflix').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Cancel').hitTestable(), findsOneWidget);
+      expect(find.byIcon(Icons.add).hitTestable(), findsNothing);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(HomeChrome.selectionActive.value, isFalse);
+      expect(find.byIcon(Icons.add).hitTestable(), findsOneWidget);
+    });
   });
 }

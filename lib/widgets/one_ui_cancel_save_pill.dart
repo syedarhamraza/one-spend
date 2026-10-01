@@ -13,6 +13,10 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
   final String cancelLabel;
   final String saveLabel;
 
+  /// Render only the Cancel | Save row, for hosting inside a bar that morphs
+  /// between it and other content (see OneUIMorphSwitcher).
+  final bool docked;
+
   const OneUIFloatingCancelSavePill({
     super.key,
     required this.onCancel,
@@ -20,6 +24,7 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
     this.canSave = true,
     this.cancelLabel = 'Cancel',
     this.saveLabel = 'Save',
+    this.docked = false,
   });
 
   @override
@@ -27,81 +32,87 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
     return AnimatedBuilder(
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
+        if (docked) return _buildRow();
 
         return Center(
           child: OneUIGlassSurface(
             borderRadius: const BorderRadius.all(Radius.circular(30)),
             elevation: OneUIGlassElevation.navbar,
             height: 52,
-            child: Material(
-                  color: Colors.transparent,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Cancel Button
-                      InkWell(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          onCancel();
-                        },
-                        borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
-                        splashColor: Colors.white.withValues(alpha: 0.08),
-                        highlightColor: Colors.white.withValues(alpha: 0.04),
-                        child: Container(
-                          height: 52,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 28),
-                          child: Text(
-                            cancelLabel,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.2,
-                              color: OneUITheme.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // 1px Subtle Vertical Divider
-                      Container(
-                        width: 1,
-                        height: 20,
-                        color: Colors.white.withValues(alpha: 0.12),
-                      ),
-
-                      // Save Button
-                      InkWell(
-                        onTap: canSave
-                            ? () {
-                                HapticFeedback.mediumImpact();
-                                onSave?.call();
-                              }
-                            : null,
-                        borderRadius: const BorderRadius.horizontal(right: Radius.circular(30)),
-                        splashColor: Colors.white.withValues(alpha: 0.08),
-                        highlightColor: Colors.white.withValues(alpha: 0.04),
-                        child: Container(
-                          height: 52,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 28),
-                          child: Text(
-                            saveLabel,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.2,
-                              color: canSave ? OneUITheme.textPrimary : const Color(0xFF8E8E93),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            child: _buildRow(),
           ),
         );
       },
     );
   }
+
+  Widget _buildRow() {
+    return Material(
+      color: Colors.transparent,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Cancel Button
+          InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onCancel();
+            },
+            borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
+            splashColor: Colors.white.withValues(alpha: 0.08),
+            highlightColor: Colors.white.withValues(alpha: 0.04),
+            child: Container(
+              height: 52,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Text(
+                cancelLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: OneUITheme.textPrimary,
+                ),
+              ),
+            ),
+          ),
+
+          // 1px Subtle Vertical Divider
+          Container(
+            width: 1,
+            height: 20,
+            color: Colors.white.withValues(alpha: 0.12),
+          ),
+
+          // Save Button
+          InkWell(
+            onTap: canSave
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    onSave?.call();
+                  }
+                : null,
+            borderRadius: const BorderRadius.horizontal(right: Radius.circular(30)),
+            splashColor: Colors.white.withValues(alpha: 0.08),
+            highlightColor: Colors.white.withValues(alpha: 0.04),
+            child: Container(
+              height: 52,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Text(
+                saveLabel,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: canSave ? OneUITheme.textPrimary : const Color(0xFF8E8E93),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }

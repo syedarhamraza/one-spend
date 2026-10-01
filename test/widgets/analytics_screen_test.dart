@@ -120,7 +120,7 @@ void main() {
     );
   }
 
-  testWidgets('insight card shows the top tip; dismiss moves on and Undo brings it back', (tester) async {
+  testWidgets('insight card shows the top tip; dismiss moves on to the next', (tester) async {
     final cards = expectedCards();
     expect(cards.length, greaterThan(1));
     await pumpScreen(tester);
@@ -134,12 +134,8 @@ void main() {
     expect(find.text(cards[0].title), findsNothing);
     expect(find.text(cards[1].title), findsOneWidget);
     expect(SubscriptionStore.instance.dismissedInsights, contains(cards[0].key));
-
-    expect(find.text('Tip dismissed'), findsOneWidget);
-    await tester.tap(find.text('Undo'));
-    await tester.pumpAndSettle();
-    expect(find.text(cards[0].title), findsOneWidget);
-    expect(SubscriptionStore.instance.dismissedInsights, isEmpty);
+    // No inline Undo: the ⋮ menu's "Show dismissed tips" brings tips back.
+    expect(find.text('Undo'), findsNothing);
   });
 
   testWidgets('swiping the insight card dismisses it', (tester) async {

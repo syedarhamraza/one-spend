@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -22,6 +24,10 @@ class BackupService {
   /// Where restore points live; defaults to the app documents directory.
   final Future<Directory> Function() _baseDirectory;
   final Future<String> Function() _appVersion;
+
+  /// The last action this session that [undoLast] can revert ("Restore" or
+  /// "Clear all"), or null. Screens offer an inline Undo while it is set.
+  final ValueNotifier<String?> undoableAction = ValueNotifier(null);
 
   static const int maxRestorePoints = 3;
 
@@ -85,6 +91,7 @@ class BackupService {
       case RestoreMode.replace:
         await saveRestorePoint();
         await _apply(backup);
+        undoableAction.value = 'Restore';
     }
     await controller.pendingWrites;
   }
@@ -94,6 +101,7 @@ class BackupService {
     await saveRestorePoint();
     controller.clearAllData();
     await controller.pendingWrites;
+    undoableAction.value = 'Clear all';
   }
 
   Future<void> _apply(BackupSnapshot backup) async {
@@ -140,6 +148,7 @@ class BackupService {
 
   /// Puts back the newest restore point (and removes it). Returns false if there is none.
   Future<bool> undoLast() async {
+    undoableAction.value = null;
     final points = await restorePoints();
     if (points.isEmpty) return false;
     final latest = points.first;

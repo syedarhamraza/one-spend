@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -44,10 +45,23 @@ class SubscriptionDetailScreen extends StatefulWidget {
 class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   late Subscription _sub;
 
+  /// How long the Renew button stays as "Undo" after renewing.
+  static const _undoWindow = Duration(seconds: 8);
+
+  /// Running while the Renew button offers "Undo".
+  Timer? _undoRenewTimer;
+
   @override
   void initState() {
     super.initState();
     _sub = widget.subscription;
+  }
+
+  @override
+  void dispose() {
+    _undoRenewTimer?.cancel();
+    SubscriptionStore.instance.discardRenewUndo(_sub.id);
+    super.dispose();
   }
 
   void _syncFromStore() {
@@ -166,6 +180,24 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     SubscriptionStore.instance.renewSubscription(_sub.id);
     _syncFromStore();
     OneUIToast.show(context, 'Renewed ${_sub.name}! Next: ${OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate)}');
+    // The Renew button turns into "Undo" for a few seconds in case it was a mis-tap.
+    _undoRenewTimer?.cancel();
+    _undoRenewTimer = Timer(_undoWindow, () {
+      SubscriptionStore.instance.discardRenewUndo(_sub.id);
+      if (mounted) setState(() => _undoRenewTimer = null);
+    });
+  }
+
+  void _undoRenew() {
+    HapticFeedback.mediumImpact();
+    _undoRenewTimer?.cancel();
+    _undoRenewTimer = null;
+    if (SubscriptionStore.instance.undoRenew(_sub.id)) {
+      _syncFromStore();
+      OneUIToast.show(context, 'Renewal undone. Next: ${OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate)}');
+    } else {
+      setState(() {});
+    }
   }
 
   void _togglePause() {
@@ -1156,11 +1188,18 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                   alignment: Alignment.bottomCenter,
                   child: OneUIFloatingActionBar(
                     items: [
-                      OneUIFloatingActionBarItem(
-                        icon: Icons.refresh_rounded,
-                        label: 'Renew',
-                        onTap: _markRenewed,
-                      ),
+                      _undoRenewTimer != null
+                          ? OneUIFloatingActionBarItem(
+                              icon: Icons.undo_rounded,
+                              label: 'Undo',
+                              color: OneUITheme.accentBlue,
+                              onTap: _undoRenew,
+                            )
+                          : OneUIFloatingActionBarItem(
+                              icon: Icons.refresh_rounded,
+                              label: 'Renew',
+                              onTap: _markRenewed,
+                            ),
                       OneUIFloatingActionBarItem(
                         icon: isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
                         label: isPaused ? 'Resume' : 'Pause',

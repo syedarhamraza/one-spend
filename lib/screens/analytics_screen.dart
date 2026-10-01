@@ -351,15 +351,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   // --- Insight card ---------------------------------------------------------
 
+  /// Dismissed tips come back via the ⋮ menu's "Show dismissed tips".
   void _dismissInsight(SubscriptionStore store, InsightCardData card) {
     HapticFeedback.selectionClick();
     store.dismissInsight(card.key);
-    OneUIToast.show(
-      context,
-      'Tip dismissed',
-      actionLabel: 'Undo',
-      onAction: () => store.undismissInsight(card.key),
-    );
   }
 
   void _runInsightAction(SubscriptionStore store, InsightCardData card) {

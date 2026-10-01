@@ -439,9 +439,35 @@ class SubscriptionController extends ChangeNotifier {
     _updateSubscriptionsWhere((s) => s.id == updated.id, (_) => updated);
   }
 
+  /// What [renewSubscription] changed, per subscription id, so it can be undone.
+  final Map<String, ({DateTime nextBillingDate, List<DateTime> paymentHistory})> _renewUndo = {};
+
+  /// Marks [id] paid and advances it one cycle, remembering the previous renewal
+  /// date and history so an accidental Renew can be reverted with [undoRenew].
   void renewSubscription(String id) {
+    final before = getSubscription(id);
+    if (before == null) return;
+    _renewUndo[id] = (nextBillingDate: before.nextBillingDate, paymentHistory: before.paymentHistory);
     markSubscriptionPaid(id);
   }
+
+  bool canUndoRenew(String id) => _renewUndo.containsKey(id);
+
+  /// Reverts the last [renewSubscription] of [id]: restores its renewal date and
+  /// payment history only, so other edits made since are kept.
+  bool undoRenew(String id) {
+    final snapshot = _renewUndo.remove(id);
+    final sub = getSubscription(id);
+    if (snapshot == null || sub == null) return false;
+    updateSubscription(sub.copyWith(
+      nextBillingDate: snapshot.nextBillingDate,
+      paymentHistory: snapshot.paymentHistory,
+    ));
+    return true;
+  }
+
+  /// Forgets the undo for [id] (e.g. once the Undo affordance has expired).
+  void discardRenewUndo(String id) => _renewUndo.remove(id);
 
   void markSubscriptionPaid(String id, [DateTime? paymentDate]) {
     _updateSubscriptionsWhere((s) => s.id == id, (s) => BillingSchedule.markPaid(s, paymentDate: paymentDate));

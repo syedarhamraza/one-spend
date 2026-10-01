@@ -138,10 +138,13 @@ void main() {
   });
 
   test('clear all can be undone', () async {
+    expect(service.undoableAction.value, isNull);
     await service.clearAll();
     expect(controller.subscriptions, isEmpty);
+    expect(service.undoableAction.value, 'Clear all');
     expect(await service.undoLast(), isTrue);
     expect(controller.subscriptions.map((s) => s.id), ['mine1', 'mine2']);
+    expect(service.undoableAction.value, isNull);
   });
 
   test('only the newest restore points are kept', () async {
