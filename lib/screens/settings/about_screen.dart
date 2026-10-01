@@ -1,19 +1,21 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/config/app_info.dart';
+import '../../core/config/changelog.dart';
 import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
-import '../../utils/external_links.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import 'coming_soon_screen.dart';
 import 'planned_feature.dart';
+import 'whats_new_screen.dart';
 
-/// Settings › About OneSpend, in the style of One UI's "About" pages: large app icon,
+/// Settings › About, in the style of One UI's "About" pages: large app icon,
 /// name and version, then links.
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -34,7 +36,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return OneUISubpage(
-      title: 'About ${AppInfo.name}',
+      title: 'About',
       builder: (context) => [
         const SizedBox(height: 18),
         Center(
@@ -65,6 +67,14 @@ class AboutScreen extends StatelessWidget {
                   );
                 },
               ),
+              // Debug builds made with tool/build.ps1 also show the commit.
+              if (kDebugMode && BuildInfo.commit.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                const Text(
+                  'Build ${BuildInfo.commit}',
+                  style: TextStyle(fontSize: 12.5, color: OneUITheme.textTertiary),
+                ),
+              ],
               const SizedBox(height: 14),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
@@ -82,6 +92,12 @@ class AboutScreen extends StatelessWidget {
           margin: EdgeInsets.zero,
           items: [
             OneUIGroupItem(
+              title: "What's new",
+              subtitle: 'Version ${Changelog.entries.first.version}',
+              subtitleColor: OneUITheme.textSecondary,
+              onTap: () => WhatsNewScreen.open(context),
+            ),
+            OneUIGroupItem(
               title: 'Developer',
               subtitle: AuthorInfo.name,
               subtitleColor: OneUITheme.textSecondary,
@@ -96,13 +112,6 @@ class AboutScreen extends StatelessWidget {
                 HapticFeedback.lightImpact();
                 context.push(AppRoutes.settingsLicenses);
               },
-            ),
-            OneUIGroupItem(
-              title: 'Source code',
-              subtitle: 'GitHub',
-              subtitleColor: OneUITheme.textSecondary,
-              trailing: const Icon(Icons.open_in_new_rounded, size: 18, color: OneUITheme.textSecondary),
-              onTap: () => openExternalLink(context, AppInfo.repositoryUrl),
             ),
             if (FeatureFlags.showPlannedFeatures)
               OneUIGroupItem(

@@ -299,13 +299,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
   void _handleLockSelected() {
     if (_selectedIds.isEmpty) return;
-    final count = _selectedIds.length;
-    final selectedSubs = SubscriptionStore.instance.subscriptions
-        .where((s) => _selectedIds.contains(s.id));
-    final anyActive = selectedSubs.any((s) => s.status != SubscriptionStatus.paused);
     SubscriptionStore.instance.batchTogglePause(_selectedIds);
     _exitSelectionMode();
-    OneUIToast.show(context, '${anyActive ? "Paused" : "Resumed"} $count subscription${count > 1 ? "s" : ""}');
   }
 
   Future<void> _handleShareSelected() async {
@@ -328,7 +323,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     } catch (_) {
       Clipboard.setData(ClipboardData(text: buffer.toString().trim()));
       if (mounted) {
-        OneUIToast.show(context, '${_selectedIds.length} subscriptions copied to clipboard');
+        OneUIToast.copied(context, '${_selectedIds.length} subscriptions copied to clipboard');
       }
     }
   }
@@ -382,7 +377,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     }
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     _exitSelectionMode();
-    OneUIToast.show(context, 'Selected subscriptions CSV copied');
+    OneUIToast.copied(context, 'Selected subscriptions CSV copied');
   }
 
   void _handleMoreSelected() {
@@ -467,7 +462,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       confirmLabel: 'Copy CSV',
       onConfirm: () {
         Clipboard.setData(ClipboardData(text: csv));
-        OneUIToast.show(context, 'CSV copied to clipboard');
+        OneUIToast.copied(context, 'CSV copied to clipboard');
       },
     );
   }
@@ -533,6 +528,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
   Widget _buildFloatingSearchPill() {
     return OneUIFloatingSearchField(
+      // Say what is being searched: this card's subscriptions, or all of them.
+      hintText: widget.filterPaymentMethodId != null ? "Search this card's subscriptions" : 'Search subscriptions',
       controller: _searchController,
       focusNode: _searchFocusNode,
       onSubmitted: (val) {

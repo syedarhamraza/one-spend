@@ -162,6 +162,12 @@ class OneUIBrandIcon extends StatelessWidget {
 
     final effectiveRadius = borderRadius ?? (size * 0.32);
 
+    // Keep glyphs legible on any background, including white: the preset's own
+    // text colour on its own colour, otherwise dark-on-light / white-on-dark.
+    final foreground = (preset != null && effectiveColor.toARGB32() == preset.color.toARGB32())
+        ? preset.textColor
+        : OneUIBrandCatalog.foregroundOn(effectiveColor);
+
     return Container(
       width: size,
       height: size,
@@ -175,7 +181,7 @@ class OneUIBrandIcon extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: _buildInnerContent(context, subName, preset, effectiveLogoUrl, effectivePresetId, explicitIcon),
+      child: _buildInnerContent(context, subName, preset, effectiveLogoUrl, effectivePresetId, explicitIcon, foreground),
     );
   }
 
@@ -186,6 +192,7 @@ class OneUIBrandIcon extends StatelessWidget {
     String? effectiveLogoUrl,
     String? effectivePresetId,
     IconData? explicitIcon,
+    Color foreground,
   ) {
     // 1. Network image logo if provided (takes absolute precedence when custom URL is specified)
     if (effectiveLogoUrl != null && effectiveLogoUrl.isNotEmpty) {
@@ -198,10 +205,10 @@ class OneUIBrandIcon extends StatelessWidget {
           fit: BoxFit.contain,
           cacheWidth: cacheDim,
           cacheHeight: cacheDim,
-          errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset, explicitIcon),
+          errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset, explicitIcon, foreground),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
-            return _buildFallback(subName, preset, explicitIcon);
+            return _buildFallback(subName, preset, explicitIcon, foreground);
           },
         ),
       );
@@ -210,7 +217,7 @@ class OneUIBrandIcon extends StatelessWidget {
     // 2. If explicitly opted out of brand preset (effectivePresetId == '__none__'),
     // render explicit icon or dynamic monogram without SVG brand matching
     if (effectivePresetId == '__none__') {
-      return _buildFallback(subName, null, explicitIcon);
+      return _buildFallback(subName, null, explicitIcon, foreground);
     }
 
     // 3. Check for bundled vector SVG asset (preset or auto-matched by subName)
@@ -226,25 +233,25 @@ class OneUIBrandIcon extends StatelessWidget {
           colorFilter: isMultiColor
               ? null
               : ColorFilter.mode(
-                  preset?.textColor ?? Colors.white,
+                  foreground,
                   BlendMode.srcIn,
                 ),
-          placeholderBuilder: (context) => _buildFallback(subName, preset, explicitIcon),
+          placeholderBuilder: (context) => _buildFallback(subName, preset, explicitIcon, foreground),
         ),
       );
     }
 
-    return _buildFallback(subName, preset, explicitIcon);
+    return _buildFallback(subName, preset, explicitIcon, foreground);
   }
 
-  Widget _buildFallback(String subName, BrandPreset? preset, IconData? explicitIcon) {
+  Widget _buildFallback(String subName, BrandPreset? preset, IconData? explicitIcon, Color foreground) {
     // 1. Curated brand preset monogram or icon
     if (preset != null && preset.monogram.isNotEmpty && preset.monogram != '') {
       return Center(
         child: Text(
           preset.monogram,
           style: TextStyle(
-            color: preset.textColor,
+            color: foreground,
             fontSize: size * 0.40,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
@@ -258,7 +265,7 @@ class OneUIBrandIcon extends StatelessWidget {
     if (effectiveIcon != null && effectiveIcon != Icons.subscriptions_rounded) {
       return Icon(
         effectiveIcon,
-        color: Colors.white,
+        color: foreground,
         size: size * 0.52,
       );
     }
@@ -269,7 +276,7 @@ class OneUIBrandIcon extends StatelessWidget {
       child: Text(
         monogram,
         style: TextStyle(
-          color: Colors.white,
+          color: foreground,
           fontSize: size * 0.40,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.5,

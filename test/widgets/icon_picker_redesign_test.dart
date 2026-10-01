@@ -132,7 +132,7 @@ void main() {
       // Tap header search button to reveal floating search bar
       await tester.tap(find.byIcon(Icons.search_rounded));
       await tester.pumpAndSettle();
-      expect(find.text('Search 40+ brand logos...'), findsOneWidget);
+      expect(find.text('Search brand logos'), findsOneWidget);
 
       // Search for Nintendo
       await tester.enterText(find.byType(TextField), 'Nintendo');

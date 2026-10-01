@@ -296,10 +296,10 @@ class _OneUIFloatingTextInputModalState extends State<_OneUIFloatingTextInputMod
           ],
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 4),
             decoration: BoxDecoration(
               color: OneUITheme.surfacePill,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: OneUITheme.fieldBorderRadius,
             ),
             child: TextField(
               controller: _controller,

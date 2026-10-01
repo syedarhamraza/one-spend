@@ -180,6 +180,44 @@ void main() {
     await settleToasts(tester);
   });
 
+  testWidgets('a paid charge cannot be selected, so it can never be paid twice', (tester) async {
+    await pumpUpcoming(tester);
+    final store = SubscriptionStore.instance;
+    await tester.tap(find.bySemanticsLabel('Mark Music Plus as paid'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark paid').last);
+    await tester.pumpAndSettle();
+    await settleToasts(tester);
+    final paid = store.getSubscription('music')!;
+    expect(paid.paymentHistory, hasLength(1));
+
+    // The paid row (today) doesn't start selection mode.
+    final paidRow = row('Music Plus').first;
+    await tester.longPress(paidRow);
+    await tester.pumpAndSettle();
+    expect(HomeChrome.upcomingSelectionActive.value, isFalse);
+    expect(find.text('Lifetime spend'), findsNothing); // didn't open the detail page either
+
+    // In selection mode, tapping it doesn't select it, and "select all" skips it.
+    await tester.longPress(row('Weekly Gym').first);
+    await tester.pumpAndSettle();
+    await tester.tap(paidRow);
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Music Plus selected'), findsNothing);
+
+    await tester.tap(find.byType(OneUISelectionCountPill));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark paid'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark paid').last);
+    await tester.pumpAndSettle();
+    await settleToasts(tester);
+
+    final after = store.getSubscription('music')!;
+    expect(after.paymentHistory, hasLength(1));
+    expect(after.nextBillingDate, paid.nextBillingDate);
+  });
+
   testWidgets('long-press enters selection mode with the floating action bar', (tester) async {
     await pumpUpcoming(tester);
 

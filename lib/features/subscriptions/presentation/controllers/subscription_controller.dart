@@ -444,11 +444,12 @@ class SubscriptionController extends ChangeNotifier {
 
   /// Marks [id] paid and advances it one cycle, remembering the previous renewal
   /// date and history so an accidental Renew can be reverted with [undoRenew].
-  void renewSubscription(String id) {
+  /// Returns false (and changes nothing) if it was already paid that day.
+  bool renewSubscription(String id) {
     final before = getSubscription(id);
-    if (before == null) return;
+    if (before == null || !markSubscriptionPaid(id)) return false;
     _renewUndo[id] = (nextBillingDate: before.nextBillingDate, paymentHistory: before.paymentHistory);
-    markSubscriptionPaid(id);
+    return true;
   }
 
   bool canUndoRenew(String id) => _renewUndo.containsKey(id);
@@ -469,8 +470,15 @@ class SubscriptionController extends ChangeNotifier {
   /// Forgets the undo for [id] (e.g. once the Undo affordance has expired).
   void discardRenewUndo(String id) => _renewUndo.remove(id);
 
-  void markSubscriptionPaid(String id, [DateTime? paymentDate]) {
+  /// Logs a payment for [id] and advances it one cycle.
+  ///
+  /// Refuses (returns false, changes nothing) when a payment is already logged on
+  /// that day, so repeated taps can't record the same payment twice.
+  bool markSubscriptionPaid(String id, [DateTime? paymentDate]) {
+    final sub = getSubscription(id);
+    if (sub == null || BillingSchedule.isAlreadyPaid(sub, paymentDate: paymentDate)) return false;
     _updateSubscriptionsWhere((s) => s.id == id, (s) => BillingSchedule.markPaid(s, paymentDate: paymentDate));
+    return true;
   }
 
   void skipSubscriptionCycle(String id) {

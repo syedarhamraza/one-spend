@@ -237,11 +237,11 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
         return Container(
           decoration: BoxDecoration(
             color: OneUITheme.cardColor,
-            borderRadius: OneUITheme.cardBorderRadius,
+            borderRadius: OneUITheme.fieldBorderRadius,
             border: OneUITheme.cardBorder,
             boxShadow: OneUITheme.cardShadow,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 6),
           child: TextField(
             controller: _textController,
             autofocus: true,
@@ -264,11 +264,11 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
         return Container(
           decoration: BoxDecoration(
             color: OneUITheme.cardColor,
-            borderRadius: OneUITheme.cardBorderRadius,
+            borderRadius: OneUITheme.fieldBorderRadius,
             border: OneUITheme.cardBorder,
             boxShadow: OneUITheme.cardShadow,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 6),
           child: Row(
             children: [
               Text(

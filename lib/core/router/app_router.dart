@@ -29,6 +29,7 @@ import '../../screens/settings/exchange_rates_screen.dart';
 import '../../screens/settings/developer_options_screen.dart';
 import '../../screens/settings/help_feedback_screen.dart';
 import '../../screens/settings/licenses_screen.dart';
+import '../../screens/settings/whats_new_screen.dart';
 import '../../screens/settings/notification_settings_screen.dart';
 import '../../screens/settings/planned_feature.dart';
 import '../../screens/settings/restore_preview_screen.dart';
@@ -86,6 +87,7 @@ class AppRoutes {
   static const settingsAbout = '/settings/about';
   static const settingsAuthor = '/settings/about/developer';
   static const settingsLicenses = '/settings/about/licenses';
+  static const settingsWhatsNew = '/settings/about/whats-new';
   static const settingsLicenseDetail = '/settings/about/licenses/detail';
   static const settingsDeveloperOptions = '/settings/developer-options';
   static const comingSoon = '/settings/coming-soon';
@@ -259,6 +261,7 @@ List<RouteBase> buildPageRoutes() {
     GoRoute(path: AppRoutes.settingsAbout, builder: (context, state) => const AboutScreen()),
     GoRoute(path: AppRoutes.settingsAuthor, builder: (context, state) => const AuthorScreen()),
     GoRoute(path: AppRoutes.settingsLicenses, builder: (context, state) => const LicensesScreen()),
+    GoRoute(path: AppRoutes.settingsWhatsNew, builder: (context, state) => const WhatsNewScreen()),
     GoRoute(
       path: AppRoutes.settingsLicenseDetail,
       builder: (context, state) => LicenseDetailScreen(packageName: state.extra as String? ?? ''),

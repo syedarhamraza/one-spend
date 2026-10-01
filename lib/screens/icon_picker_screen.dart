@@ -85,6 +85,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
     Color(0xFF2C3440), // Dark Slate
     Color(0xFF5856D6), // Indigo
     Color(0xFF555555), // Charcoal
+    Color(0xFFFFFFFF), // White
   ];
 
   static String getColorHex(Color color) {
@@ -104,6 +105,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
     const Color(0xFF2C3440).toARGB32(): 'Dark Slate',
     const Color(0xFF5856D6).toARGB32(): 'Deep Indigo',
     const Color(0xFF555555).toARGB32(): 'Charcoal Grey',
+    const Color(0xFFFFFFFF).toARGB32(): 'White',
   };
 
   static String getSwatchName(Color color) {
@@ -686,7 +688,7 @@ class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
                       fontWeight: FontWeight.w500,
                     ),
                     decoration: const InputDecoration(
-                      hintText: 'Search 40+ brand logos...',
+                      hintText: 'Search brand logos',
                       hintStyle: TextStyle(
                         color: Color(0xFF8E95B8),
                         fontSize: 14.5,
@@ -1101,14 +1103,14 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                                 Container(
                                   decoration: BoxDecoration(
                                     color: OneUIEffectsController.instance.resolveCardBackground(),
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius: OneUITheme.fieldBorderRadius,
                                     border: !isValidUrl
                                         ? Border.all(color: OneUITheme.accentRed, width: 1.5)
                                         : (rawText.isNotEmpty
                                             ? Border.all(color: OneUITheme.accentBlue.withValues(alpha: 0.6), width: 1.5)
                                             : OneUITheme.cardBorder),
                                   ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                                   child: Row(
                                     children: [
                                       Icon(

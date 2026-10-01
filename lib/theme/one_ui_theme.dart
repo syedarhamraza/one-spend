@@ -60,6 +60,9 @@ class OneUITheme {
   static BorderRadius get cardBorderRadius => BorderRadius.circular(radiusCard);
   static BorderRadius get innerBorderRadius => BorderRadius.circular(radiusInner);
 
+  /// Single-line text fields are pills; multi-line ones (notes) keep [cardBorderRadius].
+  static BorderRadius get fieldBorderRadius => pillBorderRadius;
+
   // --- Dynamic Card & Floating Properties ---
   static Color get cardColor => OneUIEffectsController.instance.cardColor;
   static Border? get cardBorder => OneUIEffectsController.instance.cardBorder;

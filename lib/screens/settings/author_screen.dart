@@ -70,13 +70,6 @@ class AuthorScreen extends StatelessWidget {
           '@${AuthorInfo.githubUsername}',
           AuthorInfo.githubUrl,
         ),
-      link(
-        Icons.folder_open_rounded,
-        OneUITheme.accentGreen,
-        'OneSpend source code',
-        _shortUrl(AppInfo.repositoryUrl),
-        AppInfo.repositoryUrl,
-      ),
     ];
 
     return OneUISubpage(

@@ -28,6 +28,11 @@ class BrandPreset {
 }
 
 class OneUIBrandCatalog {
+  /// Glyph colour (monogram, icon, single-colour logo) that stays legible on
+  /// [background]: near-black on light colours such as white, white otherwise.
+  static Color foregroundOn(Color background) =>
+      background.computeLuminance() > 0.6 ? const Color(0xFF1C1C1E) : Colors.white;
+
   static const List<BrandPreset> presets = [
     BrandPreset(
       id: 'netflix',
@@ -196,11 +201,14 @@ class OneUIBrandCatalog {
       monogram: 'DB',
       defaultUrl: 'https://www.dropbox.com/account/plan',
     ),
+    // Google's multicolour logos sit on white, like Google's own app icons.
     BrandPreset(
       id: 'google_one',
       name: 'Google One',
       category: SubscriptionCategory.cloud,
-      color: Color(0xFF4285F4),
+      color: Color(0xFFFFFFFF),
+      textColor: Color(0xFF1C1C1E),
+      glowColor: Color(0xFF4285F4),
       icon: Icons.cloud_rounded,
       monogram: 'G1',
       defaultUrl: 'https://one.google.com/settings',
@@ -209,7 +217,9 @@ class OneUIBrandCatalog {
       id: 'google_workspace',
       name: 'Google Workspace',
       category: SubscriptionCategory.productivity,
-      color: Color(0xFF34A853),
+      color: Color(0xFFFFFFFF),
+      textColor: Color(0xFF1C1C1E),
+      glowColor: Color(0xFF34A853),
       icon: Icons.business_center_rounded,
       monogram: 'GW',
       defaultUrl: 'https://admin.google.com/AdminHome',

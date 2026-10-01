@@ -7,9 +7,6 @@ class AppInfo {
   static const String name = 'OneSpend';
   static const String tagline = 'Track every subscription, in the style of One UI.';
   static const String logoAsset = 'assets/logos/app_logo.png';
-
-  static const String repositoryUrl = 'https://github.com/syedarhamraza/one-spend';
-  static const String issuesUrl = '$repositoryUrl/issues';
 }
 
 class AuthorInfo {

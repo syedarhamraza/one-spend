@@ -592,10 +592,10 @@ class _CardNicknameEditorSubpageState extends State<_CardNicknameEditorSubpage> 
                       OneUISection(
                         title: 'Nickname / Alias',
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                           decoration: BoxDecoration(
                             color: OneUITheme.cardColor,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: OneUITheme.fieldBorderRadius,
                             border: OneUITheme.cardBorder,
                           ),
                           child: TextField(
@@ -773,10 +773,10 @@ class _CardLast4EditorSubpageState extends State<_CardLast4EditorSubpage> {
                       OneUISection(
                         title: 'Card digits (optional)',
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                           decoration: BoxDecoration(
                             color: OneUITheme.cardColor,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: OneUITheme.fieldBorderRadius,
                             border: OneUITheme.cardBorder,
                           ),
                           child: TextField(
@@ -945,10 +945,10 @@ class _CardExpiryEditorSubpageState extends State<_CardExpiryEditorSubpage> {
                       OneUISection(
                         title: 'Expiration date (MM/YY)',
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                           decoration: BoxDecoration(
                             color: OneUITheme.cardColor,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: OneUITheme.fieldBorderRadius,
                             border: OneUITheme.cardBorder,
                           ),
                           child: TextField(
@@ -1252,10 +1252,10 @@ class _CardStatementDayPickerSubpageState extends State<_CardStatementDayPickerS
                       OneUISection(
                         title: 'Closing day of month (1–31)',
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                           decoration: BoxDecoration(
                             color: OneUITheme.cardColor,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: OneUITheme.fieldBorderRadius,
                             border: OneUITheme.cardBorder,
                           ),
                           child: TextField(

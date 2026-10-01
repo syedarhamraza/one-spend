@@ -170,8 +170,8 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       confirmTextColor: OneUITheme.accentGreen,
       onConfirm: () {
         HapticFeedback.mediumImpact();
-        store.markSubscriptionPaid(sub.id);
-        OneUIToast.show(context, '${sub.name} marked as paid');
+        final paid = store.markSubscriptionPaid(sub.id);
+        OneUIToast.show(context, paid ? '${sub.name} marked as paid' : '${sub.name} was already marked paid today');
       },
     );
   }
@@ -238,11 +238,19 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       confirmTextColor: OneUITheme.accentGreen,
       onConfirm: () {
         HapticFeedback.mediumImpact();
+        // Subscriptions already paid today are skipped rather than paid twice.
+        var paid = 0;
         for (final sub in subs) {
-          store.markSubscriptionPaid(sub.id);
+          if (store.markSubscriptionPaid(sub.id)) paid++;
         }
+        final skipped = subs.length - paid;
         _exitSelectionMode();
-        OneUIToast.show(context, '${_plural(subs.length, 'subscription')} marked as paid');
+        OneUIToast.show(
+          context,
+          paid == 0
+              ? 'Already marked paid today'
+              : '${_plural(paid, 'subscription')} marked as paid${skipped > 0 ? ' · $skipped already paid today' : ''}',
+        );
       },
     );
   }
@@ -274,7 +282,6 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
     HapticFeedback.mediumImpact();
     store.batchTogglePause(Set.of(_selectedIds));
     _exitSelectionMode();
-    OneUIToast.show(context, 'Paused ${_plural(count, 'subscription')}');
   }
 
   void _deleteSelected(SubscriptionStore store) {
@@ -377,7 +384,8 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
               ? ChargeSchedule.between(store.subscriptions, from: selectedDay, to: selectedDay, now: now)
                   .where(_matchesCard)
               : [...overdue, ...window])
-            c.subscription.id,
+            // Paid charges are settled history: "select all" never picks them.
+            if (!c.isPaid) c.subscription.id,
         };
 
         // Inside the tab shell, the nav bar morphs into the selection actions.
@@ -868,12 +876,14 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
               decorationColor: OneUITheme.textSecondary,
             ),
           ),
-          if (_isSelectionMode) ...[
+          // Paid charges can't be selected (selecting one would pay the
+          // subscription's *next* renewal again), so they keep their check.
+          if (_isSelectionMode && !charge.isPaid) ...[
             const SizedBox(width: 10),
             _selectionCircle(isSelected: _selectedIds.contains(sub.id), name: sub.name),
           ] else if (charge.isPaid || isNextCharge)
             const SizedBox(width: 8),
-          if (_isSelectionMode)
+          if (_isSelectionMode && !charge.isPaid)
             const SizedBox.shrink()
           else if (charge.isPaid)
             const Icon(Icons.check_circle_rounded, color: OneUITheme.accentGreen, size: 22)
@@ -901,13 +911,16 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       ),
       onTap: () {
         if (_isSelectionMode) {
-          _toggleSelected(sub.id);
+          if (!charge.isPaid) _toggleSelected(sub.id);
           return;
         }
         HapticFeedback.lightImpact();
         context.push(AppRoutes.subscriptionDetail(sub.id));
       },
-      onLongPress: () => _isSelectionMode ? _toggleSelected(sub.id) : _enterSelectionMode(sub.id),
+      // Paid charges ignore long-press (no selection, and no accidental tap-through).
+      onLongPress: charge.isPaid
+          ? () {}
+          : () => _isSelectionMode ? _toggleSelected(sub.id) : _enterSelectionMode(sub.id),
     );
   }
 

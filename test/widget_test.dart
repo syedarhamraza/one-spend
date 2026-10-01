@@ -589,7 +589,8 @@ void main() {
     // Tap Pause to pause Spotify
     await tester.tap(find.text('Pause'));
     await tester.pumpAndSettle();
-    expect(find.text('Paused 1 subscription'), findsOneWidget);
+    // No toast: the paused state shows on the card itself.
+    expect(SubscriptionStore.instance.subscriptions.firstWhere((s) => s.name == 'Spotify').status, SubscriptionStatus.paused);
 
     // Clear SnackBar so it does not block the floating bottom bar
     ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first)).clearSnackBars();
@@ -607,7 +608,7 @@ void main() {
     // Tap Resume to unpause Spotify
     await tester.tap(find.text('Resume'));
     await tester.pumpAndSettle();
-    expect(find.text('Resumed 1 subscription'), findsOneWidget);
+    expect(SubscriptionStore.instance.subscriptions.firstWhere((s) => s.name == 'Spotify').status, isNot(SubscriptionStatus.paused));
     expect(find.byType(OneUISelectionActionBar), findsNothing);
     expect(find.text('Subscriptions'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
@@ -1074,7 +1075,7 @@ void main() {
     expect(find.byIcon(Icons.mic_rounded), findsNothing);
 
     // Verify search pill sits at bottom before keyboard
-    final initialPillY = tester.getTopLeft(find.text('What are you looking for?')).dy;
+    final initialPillY = tester.getTopLeft(find.text('Search subscriptions')).dy;
     expect(initialPillY, greaterThan(1000.0)); // Near bottom of 1200dp logical height
 
     // Simulate keyboard opening (600 physical px = 300 logical px)
@@ -1082,7 +1083,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify search pill moves cleanly above the keyboard (not to the top of screen!)
-    final keyboardPillY = tester.getTopLeft(find.text('What are you looking for?')).dy;
+    final keyboardPillY = tester.getTopLeft(find.text('Search subscriptions')).dy;
     // Logical height is 1200, keyboard is 300, pill bottom is 314, pill top is around 830
     expect(keyboardPillY, lessThan(initialPillY));
     expect(keyboardPillY, greaterThan(800.0)); // Stays in bottom region above keyboard, not near top!
@@ -1155,10 +1156,11 @@ void main() {
 
     // Verify Non-Forceful deletion dialog opens with options
     expect(find.text('Card In Use'), findsOneWidget);
-    expect(find.text('Delete anyway'), findsOneWidget);
+    expect(find.text('Move & delete'), findsOneWidget);
+    expect(find.text('Delete without moving'), findsOneWidget);
 
-    // Tap "Delete anyway" (non-forceful deletion)
-    await tester.tap(find.text('Delete anyway'));
+    // Delete without moving the subscriptions (non-forceful deletion)
+    await tester.tap(find.text('Delete without moving'));
     await tester.pumpAndSettle();
 
     // Verify card is removed

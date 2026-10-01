@@ -224,6 +224,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(AppInfo.name), findsOneWidget);
     expect(find.text(AppInfo.tagline), findsOneWidget);
+    expect(find.text('About'), findsWidgets); // page title (not "About OneSpend")
+    expect(find.text('Source code'), findsNothing);
 
     await tester.tap(find.text('Open source licences'));
     await tester.pumpAndSettle();
@@ -250,6 +252,6 @@ void main() {
     expect(find.text('Email'), AuthorInfo.email.isEmpty ? findsNothing : findsOneWidget);
     expect(find.text('LinkedIn'), AuthorInfo.linkedInUrl.isEmpty ? findsNothing : findsOneWidget);
     expect(find.text('Website'), AuthorInfo.websiteUrl.isEmpty ? findsNothing : findsOneWidget);
-    expect(find.text('OneSpend source code'), findsOneWidget);
+    expect(find.text('OneSpend source code'), findsNothing); // closed source
   });
 }
