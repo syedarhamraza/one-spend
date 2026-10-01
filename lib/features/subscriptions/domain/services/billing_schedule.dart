@@ -17,10 +17,24 @@ class BillingSchedule {
     return next;
   }
 
+  /// The date [markPaid] logs: [paymentDate], else the due date if it has
+  /// passed, else today.
+  static DateTime paymentDateFor(Subscription sub, {DateTime? paymentDate, DateTime? now}) {
+    final current = now ?? DateTime.now();
+    return paymentDate ?? (sub.nextBillingDate.isBefore(current) ? sub.nextBillingDate : current);
+  }
+
+  /// Whether [sub] already has a payment on the day [markPaid] would log one,
+  /// i.e. marking it paid again would record a duplicate.
+  static bool isAlreadyPaid(Subscription sub, {DateTime? paymentDate, DateTime? now}) {
+    final day = _dateOnly(paymentDateFor(sub, paymentDate: paymentDate, now: now));
+    return sub.paymentHistory.any((d) => _dateOnly(d) == day);
+  }
+
   /// Marks the current cycle as paid: logs one payment and advances to the next due date.
   static Subscription markPaid(Subscription sub, {DateTime? paymentDate, DateTime? now}) {
     final current = now ?? DateTime.now();
-    final dateToLog = paymentDate ?? (sub.nextBillingDate.isBefore(current) ? sub.nextBillingDate : current);
+    final dateToLog = paymentDateFor(sub, paymentDate: paymentDate, now: current);
     final history = List<DateTime>.from(sub.paymentHistory)
       ..add(dateToLog)
       ..sort((a, b) => b.compareTo(a));

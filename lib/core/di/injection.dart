@@ -24,6 +24,7 @@ import '../../features/subscriptions/domain/repositories/subscription_repository
 import '../../features/backup/data/backup_service.dart';
 import '../../features/subscriptions/presentation/controllers/subscription_controller.dart';
 import '../../theme/one_ui_theme.dart';
+import '../../widgets/one_ui_toast.dart';
 
 final sl = GetIt.instance;
 
@@ -165,6 +166,9 @@ Future<void> configureDependencies({AppDatabase? database}) async {
       debugPrint('OneSpend: Notifications unavailable: $e');
     }
   }
+
+  // Lets OneUIToast skip "Copied" toasts on Android 13+ (the system shows its own).
+  unawaited(OneUIToast.init());
 
   // 5. Wire dependencies
   if (!sl.isRegistered<RatesRemoteDataSource>()) {

@@ -182,9 +182,9 @@ class SettingsCatalog {
         open: AboutScreen.open,
         keywords: ['version'],
         options: [
+          (title: "What's new", keywords: ['changelog', 'release notes', 'updates'], placeholder: false),
           (title: 'Developer', keywords: ['author', 'made by'], placeholder: false),
           (title: 'Open source licences', keywords: ['licenses', 'legal'], placeholder: false),
-          (title: 'Source code', keywords: ['github', 'repository'], placeholder: false),
         ],
       ),
     ],

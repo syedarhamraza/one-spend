@@ -152,7 +152,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   void _copyReport(SubscriptionStore store) {
     Clipboard.setData(ClipboardData(text: AnalyticsScreen.buildReport(store, category: _category)));
-    OneUIToast.show(context, 'Report copied to clipboard');
+    OneUIToast.copied(context, 'Report copied to clipboard');
   }
 
   void _showMoreMenu(SubscriptionStore store) {

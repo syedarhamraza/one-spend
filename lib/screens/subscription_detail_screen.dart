@@ -106,7 +106,6 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
       );
     });
     SubscriptionStore.instance.updateSubscription(_sub);
-    OneUIToast.show(context, 'Updated brand icon');
   }
 
   Future<void> _pickPaymentMethod() async {
@@ -123,7 +122,6 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
       }
     });
     SubscriptionStore.instance.updateSubscription(_sub);
-    OneUIToast.show(context, 'Payment method updated');
   }
 
   Future<void> _pickReminderDays() async {
@@ -143,7 +141,6 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
         );
       });
       SubscriptionStore.instance.updateSubscription(_sub);
-      OneUIToast.show(context, 'Reminder alert updated');
     }
   }
 
@@ -171,13 +168,15 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
       onApply(result);
       SubscriptionStore.instance.updateSubscription(_sub);
       _syncFromStore();
-      OneUIToast.show(context, '$title updated');
     }
   }
 
   void _markRenewed() {
     HapticFeedback.mediumImpact();
-    SubscriptionStore.instance.renewSubscription(_sub.id);
+    if (!SubscriptionStore.instance.renewSubscription(_sub.id)) {
+      OneUIToast.show(context, 'Already marked paid today');
+      return;
+    }
     _syncFromStore();
     OneUIToast.show(context, 'Renewed ${_sub.name}! Next: ${OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate)}');
     // The Renew button turns into "Undo" for a few seconds in case it was a mis-tap.
@@ -204,8 +203,6 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     HapticFeedback.selectionClick();
     SubscriptionStore.instance.togglePauseSubscription(_sub.id);
     _syncFromStore();
-    final isPaused = _sub.status == SubscriptionStatus.paused;
-    OneUIToast.show(context, isPaused ? '${_sub.name} paused' : '${_sub.name} active');
   }
 
 
@@ -236,7 +233,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
       // Fallback for environments where share sheet is unsupported
       await Clipboard.setData(ClipboardData(text: summaryText));
       if (mounted) {
-        OneUIToast.show(context, 'Details copied to clipboard');
+        OneUIToast.copied(context, 'Details copied to clipboard');
       }
     }
   }
@@ -713,7 +710,10 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                         child: ElevatedButton(
                                           onPressed: () {
                                             HapticFeedback.mediumImpact();
-                                            SubscriptionStore.instance.markSubscriptionPaid(_sub.id);
+                                            if (!SubscriptionStore.instance.markSubscriptionPaid(_sub.id)) {
+                                              OneUIToast.show(context, 'Already marked paid today');
+                                              return;
+                                            }
                                             _syncFromStore();
                                             OneUIToast.show(context, 'Payment recorded & cycle advanced');
                                           },
@@ -789,7 +789,6 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                     if (picked == null || picked == _sub.currency || !mounted) return;
                                     setState(() => _sub = _sub.copyWith(currency: picked));
                                     SubscriptionStore.instance.updateSubscription(_sub);
-                                    if (context.mounted) OneUIToast.show(context, 'Currency updated');
                                   },
                                 ),
                                 OneUIGroupItem(
@@ -809,9 +808,6 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       _sub = _sub.copyWith(billingCycle: newCycle);
                                     });
                                     SubscriptionStore.instance.updateSubscription(_sub);
-                                    if (context.mounted) {
-                                      OneUIToast.show(context, 'Billing cycle updated');
-                                    }
                                   },
                                 ),
                                 OneUIGroupItem(
@@ -876,9 +872,6 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       _sub = _sub.copyWith(category: newCat);
                                     });
                                     SubscriptionStore.instance.updateSubscription(_sub);
-                                    if (context.mounted) {
-                                      OneUIToast.show(context, 'Category updated to ${newCat.label}');
-                                    }
                                   },
                                 ),
                                 OneUIGroupItem(

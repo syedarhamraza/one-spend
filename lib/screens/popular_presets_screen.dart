@@ -85,7 +85,7 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                     decoration: const InputDecoration(
-                      hintText: 'Search presets (e.g. Netflix, Spotify)...',
+                      hintText: 'Search services, e.g. Netflix',
                       hintStyle: TextStyle(
                         color: Color(0xFF8E95B8),
                         fontSize: 15,

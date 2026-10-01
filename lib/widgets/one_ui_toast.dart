@@ -1,32 +1,61 @@
 import 'dart:async';
-import 'dart:ui';
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../theme/one_ui_theme.dart';
 
-/// Samsung One UI Compact Toast matching reference screenshot 1:1.
-/// Features a centered, compact stadium capsule with frosted glass background,
-/// gentle scale and fade transition, and automatic cleanup.
+/// Brief, text-only feedback, drawn in-app in the style of the One UI toast.
+///
+/// (Android's own toast is not used: since Android 12 it always shows the app's
+/// icon beside the message.)
+///
+/// Toasts never carry actions: offer Undo inline instead (see the design doc).
+/// Only toast what the screen doesn't already show: errors, and results you
+/// can't see (e.g. "Backup saved").
 class OneUIToast {
+  static const MethodChannel _device = MethodChannel('onespend/device');
+
   static OverlayEntry? _currentEntry;
 
-  /// Shows a clean One UI floating capsule toast.
-  ///
-  /// With [actionLabel] and [onAction] (e.g. "Undo"), a blue text button is shown inside
-  /// the capsule and the toast stays up longer (4 s by default) so it can be tapped.
-  static void show(
-    BuildContext context,
-    String message, {
-    Duration? duration,
-    double bottom = 120.0,
-    String? actionLabel,
-    VoidCallback? onAction,
-  }) {
-    final hasAction = actionLabel != null && onAction != null;
-    final effectiveDuration =
-        duration ?? (hasAction ? const Duration(seconds: 4) : const Duration(milliseconds: 1800));
-    // Dismiss existing toast immediately
-    _currentEntry?.remove();
-    _currentEntry = null;
+  /// Android API level, fetched once (null off Android or before it arrives).
+  static int? _sdkInt;
+  static bool _sdkRequested = false;
+
+  /// Overrides the Android version check in tests (e.g. 33 to mimic Android 13).
+  @visibleForTesting
+  static int? debugSdkInt;
+
+  static int? get _androidSdk => debugSdkInt ?? _sdkInt;
+
+  /// Call once at startup so [copied] knows the Android version in time.
+  static Future<void> init() async {
+    if (_sdkRequested || kIsWeb || !Platform.isAndroid) return;
+    _sdkRequested = true;
+    try {
+      _sdkInt = await _device.invokeMethod<int>('sdkInt');
+    } catch (_) {
+      _sdkInt = null;
+    }
+  }
+
+  /// Shows [message]. [long] keeps it up longer.
+  static void show(BuildContext context, String message, {bool long = false}) {
+    _show(context, message, long ? const Duration(milliseconds: 3500) : const Duration(milliseconds: 2000));
+  }
+
+  /// Confirms a copy to the clipboard. Android 13+ already shows its own
+  /// clipboard confirmation, so ours is skipped there to avoid a double message.
+  static void copied(BuildContext context, String message) {
+    final sdk = _androidSdk;
+    if (sdk != null && sdk >= 33) return;
+    show(context, message);
+  }
+
+  static void _show(BuildContext context, String message, Duration duration) {
+    dismiss();
 
     final overlayState = Overlay.maybeOf(context, rootOverlay: true);
     if (overlayState == null) return;
@@ -35,15 +64,7 @@ class OneUIToast {
     entry = OverlayEntry(
       builder: (ctx) => _OneUIToastWidget(
         message: message,
-        bottom: bottom,
-        duration: effectiveDuration,
-        actionLabel: hasAction ? actionLabel : null,
-        onAction: hasAction
-            ? () {
-                dismiss();
-                onAction();
-              }
-            : null,
+        duration: duration,
         onDismiss: () {
           if (_currentEntry == entry) {
             _currentEntry?.remove();
@@ -57,75 +78,57 @@ class OneUIToast {
     overlayState.insert(entry);
   }
 
-  /// Dismiss any currently showing toast immediately.
+  /// Dismisses the toast on screen immediately.
   static void dismiss() {
     _currentEntry?.remove();
     _currentEntry = null;
   }
 }
 
+/// The One UI toast: a solid dark-grey capsule with plain white text, centred
+/// just above the nav bar, that fades in with a slight rise.
 class _OneUIToastWidget extends StatefulWidget {
   final String message;
-  final double bottom;
   final Duration duration;
-  final String? actionLabel;
-  final VoidCallback? onAction;
   final VoidCallback onDismiss;
 
   const _OneUIToastWidget({
     required this.message,
-    required this.bottom,
     required this.duration,
     required this.onDismiss,
-    this.actionLabel,
-    this.onAction,
   });
 
   @override
   State<_OneUIToastWidget> createState() => _OneUIToastWidgetState();
 }
 
-class _OneUIToastWidgetState extends State<_OneUIToastWidget>
-    with SingleTickerProviderStateMixin {
+class _OneUIToastWidgetState extends State<_OneUIToastWidget> with SingleTickerProviderStateMixin {
+  /// Above the floating nav bar (8 inset + 60 bar) with a 12px gap.
+  static const double _bottom = 80.0;
+
+  static const Color _background = Color(0xFF333336);
+
   Timer? _dismissTimer;
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 180),
+    reverseDuration: const Duration(milliseconds: 160),
+  );
+  late final Animation<double> _fade = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 160),
-      reverseDuration: const Duration(milliseconds: 180),
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.88, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-        reverseCurve: Curves.easeInCubic,
-      ),
-    );
-
     _controller.forward();
-
-    // Auto dismiss after duration
     _dismissTimer = Timer(widget.duration, () {
-      if (mounted) {
-        _controller.reverse().then((_) {
-          if (mounted) {
-            widget.onDismiss();
-          }
-        });
-      }
+      if (!mounted) return;
+      _controller.reverse().then((_) {
+        if (mounted) widget.onDismiss();
+      });
     });
   }
 
@@ -139,89 +142,44 @@ class _OneUIToastWidgetState extends State<_OneUIToastWidget>
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final bottomPadding = mediaQuery.viewInsets.bottom > 0
-        ? (mediaQuery.viewInsets.bottom + 24.0)
-        : (mediaQuery.padding.bottom + widget.bottom);
+    final bottom = mediaQuery.viewInsets.bottom > 0
+        ? mediaQuery.viewInsets.bottom + 24.0
+        : mediaQuery.padding.bottom + _bottom;
 
     return Positioned(
-      left: 24,
-      right: 24,
-      bottom: bottomPadding,
-      child: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: child,
-              ),
-            );
-          },
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+      left: 32,
+      right: 32,
+      bottom: bottom,
+      child: IgnorePointer(
+        child: Center(
+          child: FadeTransition(
+            opacity: _fade,
+            child: SlideTransition(
+              position: Tween(begin: const Offset(0, 0.25), end: Offset.zero).animate(_fade),
+              child: Semantics(
+                liveRegion: true,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                  constraints: const BoxConstraints(maxWidth: 340),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
                   decoration: BoxDecoration(
-                    color: const Color(0xF025252B),
+                    color: _background,
                     borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.14),
-                      width: 0.85,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          widget.message,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w500,
-                            color: OneUITheme.textPrimary,
-                            letterSpacing: -0.2,
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
-                      if (widget.actionLabel != null) ...[
-                        const SizedBox(width: 14),
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: widget.onAction,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
-                              widget.actionLabel!,
-                              style: const TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w700,
-                                color: OneUITheme.accentBlue,
-                                decoration: TextDecoration.none,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 3)),
                     ],
+                  ),
+                  child: Text(
+                    widget.message,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 1.3,
+                      color: OneUITheme.textPrimary,
+                      decoration: TextDecoration.none,
+                    ),
                   ),
                 ),
               ),

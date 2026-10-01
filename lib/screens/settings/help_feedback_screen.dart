@@ -40,7 +40,7 @@ class HelpFeedbackScreen extends StatelessWidget {
               leading: const OneUIIconBadge(Icons.bug_report_rounded, OneUITheme.accentRed),
               title: 'Report a problem',
               trailing: openIcon,
-              onTap: () => openExternalLink(context, AppInfo.issuesUrl),
+              onTap: () => openExternalLink(context, mailtoUrl(AuthorInfo.email, subject: 'OneSpend problem report')),
             ),
             if (FeatureFlags.showPlannedFeatures)
               OneUIGroupItem(

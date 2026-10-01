@@ -68,4 +68,32 @@ void main() {
     expect(find.text('Save'), findsOneWidget);
     expect(find.text('Move subs'), findsNothing);
   });
+
+  testWidgets('deleting a linked card offers to move its subscriptions to another card', (tester) async {
+    final store = SubscriptionStore.instance;
+    final linked = store.paymentMethods.firstWhere((m) => store.getSubscriptionsForMethod(m.id).isNotEmpty);
+    final linkedSubIds = store.getSubscriptionsForMethod(linked.id).map((s) => s.id).toList();
+    final target = store.paymentMethods.lastWhere((m) => m.id != linked.id);
+
+    await pumpPicker(tester, manage: true);
+    final row = find.text(linked.nickname).last; // rows show the nickname
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.longPress(row);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('MOVE SUBSCRIPTIONS TO'), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+    await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text(target.displayName)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move & delete'));
+    await tester.pumpAndSettle();
+
+    expect(store.paymentMethods.any((m) => m.id == linked.id), isFalse);
+    for (final id in linkedSubIds) {
+      expect(store.getSubscription(id)!.paymentMethodId, target.id);
+    }
+  });
 }

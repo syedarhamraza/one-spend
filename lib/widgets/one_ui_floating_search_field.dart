@@ -19,7 +19,7 @@ class OneUIFloatingSearchField extends StatelessWidget {
     super.key,
     required this.controller,
     this.focusNode,
-    this.hintText = 'What are you looking for?',
+    required this.hintText,
     this.onChanged,
     this.onSubmitted,
     this.onCleared,

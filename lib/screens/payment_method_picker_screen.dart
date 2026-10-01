@@ -7,6 +7,7 @@ import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_glass_surface.dart';
 import '../widgets/one_ui_morph_switcher.dart';
+import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -130,6 +131,22 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
       final otherMethods = store.paymentMethods.where((m) => m.id != card.id).toList();
       String? selectedReplacementId = otherMethods.isNotEmpty ? otherMethods.first.id : null;
 
+      // Deletes [card], first moving its subscriptions to the chosen card when [move].
+      void finishDelete(BuildContext modalCtx, {required bool move}) {
+        final replacementId = move ? selectedReplacementId : null;
+        if (replacementId != null) {
+          store.reassignSubscriptions(fromMethodId: card.id, toMethodId: replacementId);
+        }
+        store.deletePaymentMethod(card.id);
+        Navigator.pop(modalCtx);
+        setState(() {
+          if (_selectedMethodId == card.id) _selectedMethodId = replacementId;
+          _isSelectionMode = false;
+          _selectedIds.clear();
+        });
+        OneUIToast.show(context, replacementId != null ? 'Subscriptions moved & card removed' : 'Removed ${card.nickname}');
+      }
+
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
@@ -198,100 +215,102 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                     ),
                     if (otherMethods.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedReplacementId,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.06),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4, bottom: 6),
+                        child: Text(
+                          'MOVE SUBSCRIPTIONS TO',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: OneUITheme.textSecondary,
+                            letterSpacing: 0.6,
                           ),
-                          labelText: 'Move subscriptions to',
-                          labelStyle: const TextStyle(color: OneUITheme.textSecondary),
                         ),
-                        dropdownColor: OneUITheme.cardColor,
-                        items: otherMethods.map((m) {
-                          return DropdownMenuItem(
-                            value: m.id,
-                            child: Text(
-                              m.displayName,
-                              style: const TextStyle(color: OneUITheme.textPrimary),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setModalState(() => selectedReplacementId = val);
-                          }
-                        },
                       ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          final replacementId = selectedReplacementId;
-                          if (replacementId != null) {
-                            store.reassignSubscriptions(fromMethodId: card.id, toMethodId: replacementId);
-                          }
-                          store.deletePaymentMethod(card.id);
-                          Navigator.pop(modalCtx);
-                          setState(() {
-                            if (_selectedMethodId == card.id) {
-                              _selectedMethodId = selectedReplacementId;
-                            }
-                            _isSelectionMode = false;
-                            _selectedIds.clear();
-                          });
-                          OneUIToast.show(context, 'Subscriptions moved & card removed');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: OneUITheme.accentBlue,
-                          minimumSize: const Size(double.infinity, 48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      // Inline radio list instead of a Material dropdown.
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        child: const Text('Move subscriptions & Delete', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+                        child: Column(
+                          children: [
+                            for (final m in otherMethods)
+                              InkWell(
+                                borderRadius: BorderRadius.circular(18),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setModalState(() => selectedReplacementId = m.id);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          m.displayName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 15, color: OneUITheme.textPrimary),
+                                        ),
+                                      ),
+                                      OneUIRadio(isSelected: selectedReplacementId == m.id),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
+                    // Footer: Cancel | primary (like OneUIFloatingModal's confirmation).
                     Row(
                       children: [
                         Expanded(
                           child: TextButton(
                             onPressed: () => Navigator.pop(modalCtx),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
-                            child: const Text('Cancel', style: TextStyle(color: OneUITheme.textSecondary)),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: -0.2),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        Container(width: 1, height: 18, color: Colors.white.withValues(alpha: 0.10)),
                         Expanded(
                           child: TextButton(
-                            onPressed: () {
-                              store.deletePaymentMethod(card.id);
-                              Navigator.pop(modalCtx);
-                              setState(() {
-                                if (_selectedMethodId == card.id) {
-                                  _selectedMethodId = null;
-                                }
-                                _isSelectionMode = false;
-                                _selectedIds.clear();
-                              });
-                              OneUIToast.show(context, 'Removed ${card.nickname}');
-                            },
+                            onPressed: () => finishDelete(modalCtx, move: otherMethods.isNotEmpty),
                             style: TextButton.styleFrom(
-                              foregroundColor: OneUITheme.accentRed,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
-                            child: const Text('Delete anyway', style: TextStyle(fontWeight: FontWeight.w700)),
+                            child: Text(
+                              otherMethods.isNotEmpty ? 'Move & delete' : 'Delete anyway',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: otherMethods.isNotEmpty ? OneUITheme.accentBlue : OneUITheme.accentRed,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
+                    if (otherMethods.isNotEmpty)
+                      Center(
+                        child: TextButton(
+                          onPressed: () => finishDelete(modalCtx, move: false),
+                          child: const Text(
+                            'Delete without moving',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: OneUITheme.accentRed),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

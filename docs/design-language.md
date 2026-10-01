@@ -69,6 +69,7 @@ Need a new colour? Add a token to `OneUITheme` first. Don't inline `Color(0x…)
 | Token | Value | Use |
 |---|---|---|
 | `radiusPill` / `pillBorderRadius` | 34 | Floating pills, nav bar, search pill |
+| `fieldBorderRadius` | pill | Every single-line text field box (name, amount, URL, card fields). Multi-line fields (notes) keep `cardBorderRadius` |
 | `radiusCard` / `cardBorderRadius` | 26 | Cards and group cards |
 | `radiusInner` / `innerBorderRadius` | 20 | Cards nested inside cards (e.g. the budget card's inner panel) |
 | `radiusBadge` | 16 | Badges, chips |
@@ -134,17 +135,17 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUISegmentedPills` | `one_ui_segmented_pills.dart` | A few mutually exclusive ranges/modes in one capsule with a sliding thumb (e.g. Upcoming's 7 days · 30 days · 3 months · 12 months). Pass `dense: true` for a compact 34dp version inside a card |
 | `OneUIMonthCalendar` + `CalendarDayMarker` | `one_ui_month_calendar.dart` | Samsung Calendar style swipeable month grid: today ring, filled selected day, up to 3 colour dots + "+N", and a heat tint per day |
 | `OneUIFloatingModal` | `one_ui_floating_modal.dart` | Floating bottom sheets: `show`, `showTextInputDialog`, `showConfirmationDialog` (destructive confirms) |
-| `OneUIToast` | `one_ui_toast.dart` | Brief, text-only feedback ("Netflix added"). Replaces snackbars. Never put actions (Undo) in a toast: offer them inline (§5.3) |
+| `OneUIToast` | `one_ui_toast.dart` | Brief, text-only feedback ("Netflix added"). On Android it's the real system toast (the One UI toast on Samsung); an in-app capsule elsewhere and in tests. After copying to the clipboard use `OneUIToast.copied`, which Android 13+ skips because the system confirms copies itself. Replaces snackbars. Never put actions (Undo) in a toast: offer them inline (§5.3) |
 | `OneUIMorphSwitcher` | `one_ui_morph_switcher.dart` | Swaps content inside a morphing pill/bar with a fade-through (old content clears in ~110 ms, the shape resizes over 340 ms on an emphasized curve, new content settles in). Sized by the incoming child only; safe to toggle mid-morph. Use it for every in-place mode change |
 | `OneUIGlassSurface` | `one_ui_glass_surface.dart` | The only way to draw floating chrome (see §2.1): flat vs 3D glass, rim light, shadow per elevation |
 | `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) with a sliding active capsule |
 | `OneUIFloatingSearchPill` | `one_ui_floating_search_pill.dart` | In-screen search |
-| `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open |
+| `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open. `hintText` is required and says what is searched ("Search subscriptions", "Search currencies"), never a generic prompt |
 | `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge), `OneUISoonChip` and `OneUIProChip` (amber, for future Pro features) |
 | `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar. Pass `docked: true` to get just the action row for the nav bar to host (§5.3) |
 | `OneUISortBottomSheet`, `OneUIFilterBottomSheet`, `OneUIFloatingMenu` | respective files | Sort / filter sheets and overflow menus |
 | `OneUIScrollToTopButton` | `one_ui_scroll_to_top_button.dart` | Long lists |
-| `OneUIBrandIcon`, `OneUIPaymentBrandIcon` | respective files | Service logos and card-network logos |
+| `OneUIBrandIcon`, `OneUIPaymentBrandIcon` | respective files | Service logos and card-network logos. Glyphs use `OneUIBrandCatalog.foregroundOn(background)` so they stay legible on light colours such as white |
 
 ### Leading icon badges
 - **In list rows:** a 36 px **solid circle** in an accent colour, with a white 20 px icon (see `_buildIconBadge` in `settings_screen.dart`).

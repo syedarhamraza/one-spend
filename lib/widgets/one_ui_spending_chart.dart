@@ -259,15 +259,20 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
                   ),
                   if (chip != null) ...[
                     const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: chipColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        chip,
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: chipColor),
+                    // Shrinks with the label on narrow screens / large fonts.
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: chipColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          chip,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: chipColor),
+                        ),
                       ),
                     ),
                   ],

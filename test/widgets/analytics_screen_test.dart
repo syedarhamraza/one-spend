@@ -18,6 +18,7 @@ import 'package:onespend/widgets/one_ui_floating_modal.dart';
 import 'package:onespend/widgets/one_ui_insight_card.dart';
 import 'package:onespend/widgets/one_ui_spending_chart.dart';
 import 'package:onespend/widgets/one_ui_toast.dart';
+import 'package:onespend/widgets/one_ui_group_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_app.dart';
@@ -201,11 +202,13 @@ void main() {
 
   testWidgets('tapping a top subscription opens its detail', (tester) async {
     await pumpScreen(tester);
+    // "Drive Yearly" also appears in the spending trends card; tap the Top subscriptions row.
+    final topRow = find.descendant(of: find.byType(OneUIGroupItemTile), matching: find.text('Drive Yearly'));
     await tester.scrollUntilVisible(find.text('Top subscriptions'), 300);
-    await tester.scrollUntilVisible(find.text('Drive Yearly'), 200);
-    await tester.ensureVisible(find.text('Drive Yearly'));
+    await tester.scrollUntilVisible(topRow, 200);
+    await tester.ensureVisible(topRow);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Drive Yearly'));
+    await tester.tap(topRow);
     await tester.pumpAndSettle();
     expect(find.byType(SubscriptionDetailScreen), findsOneWidget);
   });
