@@ -118,6 +118,7 @@ void main() {
       now: DateTime.now(),
       currency: store.currency,
       monthlyBudget: store.monthlyBudget,
+      trackingSince: store.trackingSince,
     );
   }
 

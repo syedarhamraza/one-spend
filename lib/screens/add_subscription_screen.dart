@@ -26,10 +26,14 @@ class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
   final String? initialPaymentMethodId;
 
+  /// Brand preset to start a new subscription from (name, logo, category, price).
+  final String? initialPresetId;
+
   const AddSubscriptionScreen({
     super.key,
     this.subscriptionToEdit,
     this.initialPaymentMethodId,
+    this.initialPresetId,
   });
 
   @override
@@ -101,37 +105,42 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _accountUrl = '';
       _logoUrl = null;
       _brandPresetId = null;
+      final preset = widget.initialPresetId == null ? null : OneUIBrandCatalog.findById(widget.initialPresetId!);
+      if (preset != null) _applyPresetFields(preset);
     }
   }
 
   void _applyPreset(BrandPreset preset) {
     HapticFeedback.selectionClick();
-    setState(() {
-      _name = preset.name;
-      _category = preset.category;
-      _brandColor = preset.color;
-      _iconData = preset.icon;
-      _brandPresetId = preset.id;
-      _logoUrl = preset.logoUrl;
-      if (_accountUrl.isEmpty) {
-        _accountUrl = preset.defaultUrl;
-      }
-      final catalogMatch = popularCatalog.where((s) => s.name.toLowerCase() == preset.name.toLowerCase()).firstOrNull;
-      if (catalogMatch != null) {
-        if (_price <= 0) {
-          _price = catalogMatch.price;
-          _billingCycle = catalogMatch.billingCycle;
-        }
-        if (_paymentMethodId == null && catalogMatch.paymentMethodId != null) {
-          final method = SubscriptionStore.instance.getPaymentMethod(catalogMatch.paymentMethodId);
-          if (method != null) {
-            _paymentMethodId = method.id;
-            _paymentMethod = method.displayName;
-          }
-        }
-      }
-    });
+    setState(() => _applyPresetFields(preset));
     OneUIToast.show(context, 'Applied ${preset.name} preset');
+  }
+
+  /// Fills name, look, category and (when known) a typical price from [preset].
+  void _applyPresetFields(BrandPreset preset) {
+    _name = preset.name;
+    _category = preset.category;
+    _brandColor = preset.color;
+    _iconData = preset.icon;
+    _brandPresetId = preset.id;
+    _logoUrl = preset.logoUrl;
+    if (_accountUrl.isEmpty) {
+      _accountUrl = preset.defaultUrl;
+    }
+    final catalogMatch = popularCatalog.where((s) => s.name.toLowerCase() == preset.name.toLowerCase()).firstOrNull;
+    if (catalogMatch != null) {
+      if (_price <= 0) {
+        _price = catalogMatch.price;
+        _billingCycle = catalogMatch.billingCycle;
+      }
+      if (_paymentMethodId == null && catalogMatch.paymentMethodId != null) {
+        final method = SubscriptionStore.instance.getPaymentMethod(catalogMatch.paymentMethodId);
+        if (method != null) {
+          _paymentMethodId = method.id;
+          _paymentMethod = method.displayName;
+        }
+      }
+    }
   }
 
   Future<void> _pickBrandIcon() async {

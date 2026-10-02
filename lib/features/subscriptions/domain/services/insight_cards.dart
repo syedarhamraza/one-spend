@@ -68,6 +68,7 @@ class InsightCards {
     bool includeBudget = true,
     String? categoryLabel,
     ToMainCurrency toMain = sameCurrency,
+    DateTime? trackingSince,
   }) {
     final subs = subscriptions.toList();
     String money(double v) => formatMoney(v, currency, style: MoneyStyle.summary);
@@ -108,6 +109,7 @@ class InsightCards {
       horizon: SpendingTrendHorizon.sixMonths,
       referenceDate: now,
       toMain: toMain,
+      trackingSince: trackingSince,
     );
     final currentIndex = points.indexWhere((p) => p.isCurrent);
     if (currentIndex > 0) {

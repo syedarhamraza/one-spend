@@ -78,6 +78,7 @@ class SubscriptionController extends ChangeNotifier {
   SubscriptionSortOption _sortOption = SubscriptionSortOption.renewalAsc;
   bool _groupByDate = false;
   DateTime? _lastBackupAt;
+  DateTime? _trackingSince;
   bool _isLoaded = false;
   final Map<String, SubscriptionStatus> _prePauseStatus = {};
 
@@ -130,6 +131,7 @@ class SubscriptionController extends ChangeNotifier {
     _recentSearches.clear();
     _dismissedInsights.clear();
     _lastBackupAt = null;
+    _trackingSince = null;
     _prePauseStatus.clear();
     _isLoaded = true;
     notifyListeners();
@@ -162,6 +164,20 @@ class SubscriptionController extends ChangeNotifier {
 
   /// When a backup was last saved to the device, if ever.
   DateTime? get lastBackupAt => _lastBackupAt;
+
+  /// When the user started tracking: the first subscription was added (or, for data
+  /// from before this was recorded, the oldest logged payment). The spending
+  /// trajectory doesn't invent history before it. Null in fresh test fixtures.
+  DateTime? get trackingSince => _trackingSince;
+
+  /// Records today as the start of tracking the first time anything is added.
+  void _markTrackingStarted() {
+    if (_trackingSince != null) return;
+    final now = DateTime.now();
+    final day = DateTime(now.year, now.month, now.day);
+    _trackingSince = day;
+    _persist(() => settingsRepository.setTrackingSince(day));
+  }
   bool get isLoaded => _isLoaded;
 
   // --- Currency ---
@@ -234,6 +250,7 @@ class SubscriptionController extends ChangeNotifier {
       horizon: horizon,
       referenceDate: referenceDate,
       toMain: toMain,
+      trackingSince: _trackingSince,
     );
     if (referenceDate == null) {
       _cachedTrends[horizon] = trends;
@@ -278,6 +295,17 @@ class SubscriptionController extends ChangeNotifier {
         ..clear()
         ..addAll(await settingsRepository.getDismissedInsights());
       _lastBackupAt = await settingsRepository.getLastBackupAt();
+      _trackingSince = await settingsRepository.getTrackingSince();
+      if (_trackingSince == null && _subscriptions.isNotEmpty) {
+        // Data from before this was recorded: start at the oldest logged payment
+        // (or today), rather than estimating months that were never tracked.
+        final payments = [for (final s in _subscriptions) ...s.paymentHistory];
+        final now = DateTime.now();
+        final oldest = payments.isEmpty ? now : payments.reduce((a, b) => a.isBefore(b) ? a : b);
+        final day = DateTime(oldest.year, oldest.month, oldest.day);
+        _trackingSince = day;
+        _persist(() => settingsRepository.setTrackingSince(day));
+      }
     } catch (e) {
       debugPrint('OneSpend: Failed to load data from repository: $e');
     }
@@ -421,12 +449,14 @@ class SubscriptionController extends ChangeNotifier {
 
   // --- Subscriptions Actions ---
   void addSubscription(Subscription subscription) {
+    _markTrackingStarted();
     _subscriptions.add(subscription);
     notifyListeners();
     _persistSubscriptions([subscription]);
   }
 
   void batchAdd(Iterable<Subscription> newSubscriptions) {
+    _markTrackingStarted();
     final added = newSubscriptions.toList();
     _subscriptions.addAll(added);
     notifyListeners();
@@ -701,6 +731,7 @@ class SubscriptionController extends ChangeNotifier {
 
   /// Appends subscriptions and cards (restoring a backup with "Add missing items").
   void addItems({required List<Subscription> subscriptions, required List<PaymentMethod> paymentMethods}) {
+    _markTrackingStarted();
     if (subscriptions.isEmpty && paymentMethods.isEmpty) return;
     _subscriptions.addAll(subscriptions);
     _paymentMethods.addAll(paymentMethods);
@@ -740,6 +771,7 @@ class SubscriptionController extends ChangeNotifier {
   }
 
   void restoreDefaultCatalog() {
+    _markTrackingStarted();
     _subscriptions
       ..clear()
       ..addAll(popularCatalog);

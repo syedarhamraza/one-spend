@@ -25,6 +25,8 @@ import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_upcoming_carousel.dart';
 import 'one_ui_field_editor_screen.dart';
 import 'home_screen.dart';
+import '../features/subscriptions/presentation/widgets/first_run_empty_state.dart';
+import 'settings/backup_data_screen.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -676,7 +678,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                     : 'Tap (O) to select all')
                                 : (isCardFilter
                                     ? '${filteredSubs.length} linked • ${formatMoney(filteredSubs.fold<double>(0.0, (sum, s) => sum + store.monthlyCostInMain(s)), store.currency, style: MoneyStyle.summary)} / month'
-                                    : '${store.totalActiveCount} active • ${formatMoney(store.totalMonthlySpend, store.currency, style: MoneyStyle.summary)} / month')),
+                                    : (isTrueEmpty
+                                        ? null
+                                        : '${store.totalActiveCount} active • ${formatMoney(store.totalMonthlySpend, store.currency, style: MoneyStyle.summary)} / month'))),
                         hasBigHeader: !_showSearch && !isCardFilter,
                         showBackButton: _showSearch || isCardFilter,
                         onBack: () {
@@ -914,80 +918,17 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                           ),
                         ),
                     ] else if (isTrueEmpty) ...[
-                      // True Empty State (Database has no subscriptions)
+                      // First run: nothing added yet. This is the first screen a new user sees.
                       SliverFillRemaining(
                         hasScrollBody: false,
                         child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 72,
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  color: OneUITheme.accentBlue.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.subscriptions_outlined,
-                                  size: 36,
-                                  color: OneUITheme.accentBlue,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              const Text(
-                                'No subscriptions yet',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: OneUITheme.textPrimary,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Track your recurring expenses in one place',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: OneUITheme.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    context.push(AppRoutes.addSubscription);
-                                  },
-                                  borderRadius: BorderRadius.circular(100),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
-                                    decoration: BoxDecoration(
-                                      color: OneUITheme.accentBlue.withValues(alpha: 0.16),
-                                      borderRadius: BorderRadius.circular(100),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.add_rounded, size: 19, color: OneUITheme.accentBlue),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          'Add a subscription',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: OneUITheme.accentBlue,
-                                            letterSpacing: -0.1,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: FirstRunEmptyState(
+                            onAdd: () => context.push(AppRoutes.addSubscription),
+                            onQuickAdd: (presetId) => context.push(
+                              AppRoutes.addSubscription,
+                              extra: (paymentMethodId: null, presetId: presetId),
+                            ),
+                            onRestore: () => BackupDataScreen.open(context),
                           ),
                         ),
                       ),
@@ -1263,8 +1204,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                   ),
                 ),
 
-                // Floating Scroll-To-Top circular button (only when not searching)
-                if (!_showSearch)
+                // Floating scroll-to-top button (not while searching or on the first-run screen)
+                if (!_showSearch && !isTrueEmpty)
                   Positioned(
                     left: 0,
                     right: 0,

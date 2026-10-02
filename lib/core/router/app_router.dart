@@ -96,6 +96,10 @@ class AppRoutes {
 /// Arguments for [AppRoutes.paymentMethods].
 typedef PaymentMethodPickerArgs = ({String? currentMethodId, bool isManageOnly});
 
+/// `extra` for [AppRoutes.addSubscription]: start the new subscription from a
+/// brand preset (e.g. a quick-add chip) and/or with a card pre-selected.
+typedef AddSubscriptionArgs = ({String? paymentMethodId, String? presetId});
+
 /// Arguments for [AppRoutes.settingsCurrency].
 typedef CurrencyPickerArgs = ({String initialCode, String title, String? footnote});
 
@@ -134,8 +138,17 @@ List<RouteBase> buildPageRoutes() {
   return [
     GoRoute(
       path: AppRoutes.addSubscription,
-      // Optional `extra`: a payment method id to pre-select on the new subscription.
-      builder: (context, state) => AddSubscriptionScreen(initialPaymentMethodId: state.extra as String?),
+      // Optional `extra`: a payment method id (String) to pre-select, or
+      // [AddSubscriptionArgs] to also start from a brand preset.
+      builder: (context, state) {
+        final extra = state.extra;
+        return switch (extra) {
+          AddSubscriptionArgs(:final paymentMethodId, :final presetId) =>
+            AddSubscriptionScreen(initialPaymentMethodId: paymentMethodId, initialPresetId: presetId),
+          String id => AddSubscriptionScreen(initialPaymentMethodId: id),
+          _ => const AddSubscriptionScreen(),
+        };
+      },
     ),
     GoRoute(
       path: '/subscriptions/:id',

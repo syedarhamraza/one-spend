@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
@@ -117,6 +118,7 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
           horizon: _currentHorizon,
           referenceDate: widget.referenceDate,
           toMain: store.toMain,
+          trackingSince: store.trackingSince,
         );
         final summary = SpendingTrendsEngine.calculateSummary(points, monthlyBudget: budget);
 
@@ -185,6 +187,15 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
                   ),
                 ],
               ),
+              // New users: no past months yet, so say why the chart starts now.
+              if (points.first.isCurrent) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Your history starts in ${DateFormat('MMMM').format(points.first.month)}. '
+                  'Past months appear here as you track.',
+                  style: const TextStyle(fontSize: 12.5, height: 1.35, color: OneUITheme.textTertiary),
+                ),
+              ],
               const SizedBox(height: 14),
               _headline(activePoint, currency),
               const SizedBox(height: 16),
