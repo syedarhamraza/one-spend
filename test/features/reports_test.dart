@@ -79,6 +79,14 @@ void main() {
       expect(d.paymentsTotal, 20);
     });
 
+    test('a selection report covers only the selected subscriptions', () {
+      final d = SpendingReportData.fromStore(store, onlyIds: {'Stream', 'Drive'}, now: now);
+      expect(d.selectionCount, 2);
+      expect(d.subscriptions.map((s) => s.name), unorderedEquals(['Stream', 'Drive']));
+      expect(d.monthly, closeTo(30, 0.001));
+      expect(d.monthlyBudget, 0);
+    });
+
     test('a category report covers only that category', () {
       final d = SpendingReportData.fromStore(store, category: SubscriptionCategory.music, now: now);
       expect(d.categoryLabel, SubscriptionCategory.music.label);

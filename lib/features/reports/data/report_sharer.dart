@@ -108,6 +108,19 @@ class ReportSharer {
     }
   }
 
+  /// Shares the subscriptions in [ids] (a selection) as a PDF report.
+  static Future<void> shareSelectionPdf(SubscriptionController store, Set<String> ids, {DateTime? now}) async {
+    final at = now ?? DateTime.now();
+    final bytes = await PdfReportBuilder.spendingReport(
+      SpendingReportData.fromStore(store, onlyIds: ids, now: at),
+      await loadFonts(),
+    );
+    await _shareFiles(
+      [await _file('OneSpend-${ids.length}-subscriptions-${_day(at)}.pdf', bytes, 'application/pdf')],
+      'OneSpend subscriptions (${ids.length})',
+    );
+  }
+
   /// Shares one subscription as a one-page PDF.
   static Future<void> shareSubscriptionPdf(SubscriptionController store, Subscription sub, {DateTime? now}) async {
     final at = now ?? DateTime.now();

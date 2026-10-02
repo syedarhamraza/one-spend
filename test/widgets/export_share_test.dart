@@ -7,7 +7,9 @@ import 'package:onespend/core/di/injection.dart';
 import 'package:onespend/features/reports/presentation/export_share_screen.dart';
 import 'package:onespend/models/subscription.dart';
 import 'package:onespend/screens/subscription_detail_screen.dart';
+import 'package:onespend/screens/subscriptions_screen.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
+import 'package:onespend/widgets/one_ui_floating_menu.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
 import 'package:onespend/widgets/one_ui_toast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,13 +60,26 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('Share on a subscription offers PDF or text', (tester) async {
+  testWidgets('Share on a subscription opens the More-style menu: PDF or text', (tester) async {
     final sub = SubscriptionStore.instance.subscriptions.first;
     await pump(tester, SubscriptionDetailScreen(subscription: sub));
     await tester.tap(find.text('Share'));
     await tester.pumpAndSettle();
-    expect(find.text('Share ${sub.name}'), findsOneWidget);
-    expect(find.text('As PDF'), findsOneWidget);
-    expect(find.text('As text'), findsOneWidget);
+    expect(OneUIFloatingMenu.isOpen.value, isTrue);
+    expect(find.text('Share as PDF'), findsOneWidget);
+    expect(find.text('Share as text'), findsOneWidget);
+    // Anchored above the Share button, like the More menu.
+    expect(tester.getBottomLeft(find.text('Share as text')).dy, lessThan(tester.getTopLeft(find.text('Share')).dy));
+  });
+
+  testWidgets('Share in selection mode opens the same menu', (tester) async {
+    await pump(tester, const SubscriptionsScreen());
+    await tester.longPress(find.text('Netflix').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Share'));
+    await tester.pumpAndSettle();
+    expect(OneUIFloatingMenu.isOpen.value, isTrue);
+    expect(find.text('Share as PDF'), findsOneWidget);
+    expect(find.text('Share as text'), findsOneWidget);
   });
 }

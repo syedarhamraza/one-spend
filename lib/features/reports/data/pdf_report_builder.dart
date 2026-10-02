@@ -62,6 +62,7 @@ class PdfReportBuilder {
             'Generated ${_date.format(d.generatedAt)}',
             'Amounts in $cur',
             if (d.categoryLabel != null) 'Category: ${d.categoryLabel}',
+            if (d.selectionCount != null) '${d.selectionCount} selected subscription${d.selectionCount == 1 ? '' : 's'}',
           ].join('  ·  '),
         ),
         pw.SizedBox(height: 16),

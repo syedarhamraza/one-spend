@@ -28,6 +28,9 @@ class SpendingReportData {
 
   /// Set when the report covers one category only.
   final String? categoryLabel;
+
+  /// Set when the report covers a hand-picked selection of subscriptions.
+  final int? selectionCount;
   final double monthly;
   final double yearly;
   final int activeCount;
@@ -46,6 +49,7 @@ class SpendingReportData {
     required this.generatedAt,
     required this.currency,
     this.categoryLabel,
+    this.selectionCount,
     required this.monthly,
     required this.yearly,
     required this.activeCount,
@@ -69,10 +73,12 @@ class SpendingReportData {
 
   String money(double amount, [String? code]) => formatMoney(amount, code ?? currency, style: MoneyStyle.exact);
 
-  /// Collects the report for every subscription, or just [category].
+  /// Collects the report for every subscription, just [category], or just the
+  /// subscriptions in [onlyIds] (a selection).
   factory SpendingReportData.fromStore(
     SubscriptionController store, {
     SubscriptionCategory? category,
+    Set<String>? onlyIds,
     DateTime? now,
   }) {
     final at = now ?? DateTime.now();
@@ -80,7 +86,7 @@ class SpendingReportData {
     final toMain = store.toMain;
     final subs = [
       for (final s in store.subscriptions)
-        if (category == null || s.category == category) s,
+        if ((category == null || s.category == category) && (onlyIds == null || onlyIds.contains(s.id))) s,
     ];
     final monthly = SubscriptionStats.totalMonthlySpend(subs, toMain);
 
@@ -112,11 +118,13 @@ class SpendingReportData {
       generatedAt: at,
       currency: store.currency,
       categoryLabel: category?.label,
+      selectionCount: onlyIds == null ? null : subs.length,
       monthly: monthly,
       yearly: monthly * 12,
       activeCount: SubscriptionStats.billable(subs).length,
       pausedCount: SubscriptionStats.pausedCount(subs),
-      monthlyBudget: category == null ? store.monthlyBudget : 0,
+      // Budget share only makes sense for the whole list.
+      monthlyBudget: category == null && onlyIds == null ? store.monthlyBudget : 0,
       categories: [
         for (final c in SpendingInsights.byCategory(subs, toMain))
           (label: c.category.label, colorValue: c.category.color.toARGB32(), monthly: c.monthly, share: c.share, count: c.count),

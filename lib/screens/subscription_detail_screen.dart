@@ -30,7 +30,7 @@ import 'payment_methods_screen.dart';
 import 'reminder_picker_screen.dart';
 import '../utils/reminder_format.dart';
 import '../features/reports/data/report_sharer.dart';
-import '../widgets/one_ui_subpage.dart';
+import '../widgets/one_ui_floating_menu.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -46,6 +46,9 @@ class SubscriptionDetailScreen extends StatefulWidget {
 
 class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   late Subscription _sub;
+
+  /// Anchors the Share menu above the bottom action bar.
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   /// How long the Renew button stays as "Undo" after renewing.
   static const _undoWindow = Duration(seconds: 8);
@@ -212,51 +215,26 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
 
 
 
-  /// Share → choose a one-page PDF or a text summary.
-  Future<void> _shareSubscription() async {
+  /// Share → the same floating menu as More: Share as PDF / Share as text.
+  void _shareSubscription() {
     HapticFeedback.lightImpact();
-    final choice = await OneUIFloatingModal.show<String>(
+    OneUIFloatingMenu.show(
       context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Share ${_sub.name}',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
-          ),
-          const SizedBox(height: 16),
-          OneUIGroupCard(
-            margin: EdgeInsets.zero,
-            items: [
-              OneUIGroupItem(
-                leading: const OneUIIconBadge(Icons.picture_as_pdf_rounded, OneUITheme.accentRed),
-                title: 'As PDF',
-                subtitle: 'One page with details and payment history',
-                subtitleColor: OneUITheme.textSecondary,
-                onTap: () => Navigator.pop(ctx, 'pdf'),
-              ),
-              OneUIGroupItem(
-                leading: const OneUIIconBadge(Icons.notes_rounded, OneUITheme.accentBlue),
-                title: 'As text',
-                subtitle: 'A short summary to paste into a message',
-                subtitleColor: OneUITheme.textSecondary,
-                onTap: () => Navigator.pop(ctx, 'text'),
-              ),
-            ],
-          ),
-        ],
-      ),
+      anchorKey: _shareButtonKey,
+      fallbackBottom: 84.0,
+      fallbackRight: 20.0,
+      items: [
+        OneUIFloatingMenuItem(label: 'Share as PDF', onTap: _shareSubscriptionPdf),
+        OneUIFloatingMenuItem(label: 'Share as text', onTap: _shareSubscriptionText),
+      ],
     );
-    if (!mounted) return;
-    if (choice == 'pdf') {
-      try {
-        await ReportSharer.shareSubscriptionPdf(SubscriptionStore.instance, _sub);
-      } catch (_) {
-        if (mounted) OneUIToast.show(context, 'Couldn\'t prepare the PDF');
-      }
-    } else if (choice == 'text') {
-      await _shareSubscriptionText();
+  }
+
+  Future<void> _shareSubscriptionPdf() async {
+    try {
+      await ReportSharer.shareSubscriptionPdf(SubscriptionStore.instance, _sub);
+    } catch (_) {
+      if (mounted) OneUIToast.show(context, 'Couldn\'t prepare the PDF');
     }
   }
 
@@ -1251,6 +1229,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                         onTap: _togglePause,
                       ),
                       OneUIFloatingActionBarItem(
+                        key: _shareButtonKey,
                         icon: Icons.share_outlined,
                         label: 'Share',
                         onTap: _shareSubscription,

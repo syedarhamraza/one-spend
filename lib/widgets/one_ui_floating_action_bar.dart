@@ -11,12 +11,16 @@ class OneUIFloatingActionBarItem {
   final Color? color;
   final bool isEnabled;
 
+  /// Anchors a menu opened from this action (see OneUIFloatingMenu.show).
+  final GlobalKey? key;
+
   const OneUIFloatingActionBarItem({
     required this.icon,
     required this.label,
     required this.onTap,
     this.color,
     this.isEnabled = true,
+    this.key,
   });
 }
 
@@ -77,6 +81,7 @@ class OneUIFloatingActionBar extends StatelessWidget {
               : OneUITheme.textSecondary.withValues(alpha: 0.35);
 
           return InkWell(
+            key: item.key,
             onTap: item.isEnabled
                 ? () {
                     HapticFeedback.lightImpact();
