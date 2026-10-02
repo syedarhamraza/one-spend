@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'features/notifications/data/notification_service.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 import 'theme/one_ui_theme.dart';
 
@@ -14,6 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await configureDependencies();
   final launchRoute = await sl<NotificationService>().launchRoute();
+  final showOnboarding = launchRoute == null && await needsOnboarding();
 
   // Set system UI to immersive One UI pitch-black dark mode
   SystemChrome.setSystemUIOverlayStyle(
@@ -26,14 +28,17 @@ Future<void> main() async {
     ),
   );
 
-  runApp(OneSpendApp(launchRoute: launchRoute));
+  runApp(OneSpendApp(launchRoute: launchRoute, showOnboarding: showOnboarding));
 }
 
 class OneSpendApp extends StatefulWidget {
   /// Route of the notification that cold-started the app, opened after the first frame.
   final String? launchRoute;
 
-  const OneSpendApp({super.key, this.launchRoute});
+  /// Open the first-run welcome instead of the tabs.
+  final bool showOnboarding;
+
+  const OneSpendApp({super.key, this.launchRoute, this.showOnboarding = false});
 
   @override
   State<OneSpendApp> createState() => _OneSpendAppState();
@@ -41,7 +46,8 @@ class OneSpendApp extends StatefulWidget {
 
 class _OneSpendAppState extends State<OneSpendApp> {
   // Owned per app instance so navigation state never leaks between app (or test) instances.
-  late final GoRouter _router = createAppRouter();
+  late final GoRouter _router =
+      createAppRouter(initialLocation: widget.showOnboarding ? AppRoutes.welcome : AppRoutes.subscriptions);
   StreamSubscription<String>? _notificationTaps;
 
   static const _tabRoutes = {AppRoutes.subscriptions, AppRoutes.upcoming, AppRoutes.analytics, AppRoutes.settings};

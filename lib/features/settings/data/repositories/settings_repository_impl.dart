@@ -85,6 +85,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> setTrackingSince(DateTime value) => _dataSource.setTrackingSince(value);
 
   @override
+  Future<bool> getOnboardingDone() => _dataSource.getOnboardingDone();
+
+  @override
+  Future<void> setOnboardingDone(bool value) => _dataSource.setOnboardingDone(value);
+
+  @override
   Future<Map<String, String>> getAppearanceSettings() => _dataSource.getAppearanceSettings();
 
   @override

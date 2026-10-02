@@ -43,6 +43,10 @@ abstract class SettingsRepository {
   Future<DateTime?> getTrackingSince();
   Future<void> setTrackingSince(DateTime value);
 
+  /// Whether the first-run welcome (onboarding) has been completed or skipped.
+  Future<bool> getOnboardingDone();
+  Future<void> setOnboardingDone(bool value);
+
   /// Raw appearance (card studio / effects) values, keyed by setting name.
   Future<Map<String, String>> getAppearanceSettings();
   Future<void> setAppearanceSettings(Map<String, String> values);

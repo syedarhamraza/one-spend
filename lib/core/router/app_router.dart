@@ -7,6 +7,7 @@ import '../../features/payment_methods/domain/entities/payment_method.dart';
 import '../../features/subscriptions/domain/entities/subscription_enums.dart';
 import '../../features/subscriptions/presentation/controllers/subscription_controller.dart';
 import '../../screens/add_subscription_screen.dart';
+import '../../screens/onboarding_screen.dart';
 import '../../screens/analytics_screen.dart';
 import '../../screens/billing_cycle_picker_screen.dart';
 import '../../screens/category_picker_screen.dart';
@@ -51,6 +52,9 @@ class AppRoutes {
 
   // Bottom navigation tabs
   static const subscriptions = '/subscriptions';
+
+  /// First-run welcome (onboarding), shown instead of the tabs on a fresh install.
+  static const welcome = '/welcome';
   static const upcoming = '/upcoming';
   static const analytics = '/analytics';
   static const settings = '/settings';
@@ -136,6 +140,7 @@ Widget _withSubscription(GoRouterState state, Widget Function(String id) builder
 /// Every full-screen page route. Shared by the app router and widget tests.
 List<RouteBase> buildPageRoutes() {
   return [
+    GoRoute(path: AppRoutes.welcome, builder: (context, state) => const OnboardingScreen()),
     GoRoute(
       path: AppRoutes.addSubscription,
       // Optional `extra`: a payment method id (String) to pre-select, or
