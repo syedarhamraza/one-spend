@@ -38,6 +38,15 @@ abstract class SettingsRepository {
   Future<DateTime?> getLastBackupAt();
   Future<void> setLastBackupAt(DateTime value);
 
+  /// When the user started tracking (their first subscription was added), if known.
+  /// Spending history before this is not estimated.
+  Future<DateTime?> getTrackingSince();
+  Future<void> setTrackingSince(DateTime value);
+
+  /// Whether the first-run welcome (onboarding) has been completed or skipped.
+  Future<bool> getOnboardingDone();
+  Future<void> setOnboardingDone(bool value);
+
   /// Raw appearance (card studio / effects) values, keyed by setting name.
   Future<Map<String, String>> getAppearanceSettings();
   Future<void> setAppearanceSettings(Map<String, String> values);

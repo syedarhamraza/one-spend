@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/subscription.dart';
+import '../utils/logo_image_cache.dart';
 import '../utils/one_ui_brand_catalog.dart';
 
 /// Samsung One UI Squircle Brand & Service Icon
@@ -19,6 +20,9 @@ class OneUIBrandIcon extends StatelessWidget {
   final double size;
   final double? borderRadius;
 
+  /// Framing for a custom [logoUrl] image; defaults to the subscription's.
+  final LogoTransform? logoTransform;
+
   const OneUIBrandIcon({
     super.key,
     this.subscription,
@@ -29,6 +33,7 @@ class OneUIBrandIcon extends StatelessWidget {
     this.brandPresetId,
     this.size = 44,
     this.borderRadius,
+    this.logoTransform,
   });
 
   static const Map<String, String> _brandSvgMap = {
@@ -196,21 +201,27 @@ class OneUIBrandIcon extends StatelessWidget {
   ) {
     // 1. Network image logo if provided (takes absolute precedence when custom URL is specified)
     if (effectiveLogoUrl != null && effectiveLogoUrl.isNotEmpty) {
-      final pixelRatio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
-      final cacheDim = (size * pixelRatio).round();
+      final framing = logoTransform ?? subscription?.logoTransform;
+      // One shared, disk-cached decode per URL (see LogoImageCache): resizing,
+      // zooming or another screen showing the same logo never refetches it.
+      final image = Image(
+        image: LogoImageCache.provider(effectiveLogoUrl),
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset, explicitIcon, foreground),
+        // The fallback shows only until the very first download arrives.
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+            frame == null && !wasSynchronouslyLoaded ? _buildFallback(subName, preset, explicitIcon, foreground) : child,
+      );
+      // The editor's zoom and offset, applied inside the icon's clipped square.
       return Padding(
         padding: EdgeInsets.all(size * 0.16),
-        child: Image.network(
-          effectiveLogoUrl,
-          fit: BoxFit.contain,
-          cacheWidth: cacheDim,
-          cacheHeight: cacheDim,
-          errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset, explicitIcon, foreground),
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return _buildFallback(subName, preset, explicitIcon, foreground);
-          },
-        ),
+        child: framing == null || framing.isIdentity
+            ? image
+            : Transform.translate(
+                offset: Offset(framing.dx * size, framing.dy * size),
+                child: Transform.scale(scale: framing.scale, child: image),
+              ),
       );
     }
 

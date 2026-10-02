@@ -130,16 +130,24 @@ class SpendingTrendsEngine {
   ///
   /// Paused, free-trial and free subscriptions are excluded. Amounts are converted to the
   /// main currency with [toMain].
+  ///
+  /// With [trackingSince], past months before tracking started (or before the oldest
+  /// logged payment, if earlier) are left out, so a new user doesn't see months of
+  /// invented history. The current month and the forecast are always included.
   static List<MonthlySpendPoint> calculateTrends({
     required List<Subscription> subscriptions,
     required SpendingTrendHorizon horizon,
     DateTime? referenceDate,
     ToMainCurrency toMain = sameCurrency,
+    DateTime? trackingSince,
   }) {
     final now = referenceDate ?? DateTime.now();
     final currentMonthStart = DateTime(now.year, now.month, 1);
+    final firstMonth = firstTrackedMonth(subscriptions, trackingSince);
     final months = [
-      for (var i = -horizon.pastMonths; i <= horizon.futureMonths; i++) DateTime(now.year, now.month + i, 1),
+      for (var i = -horizon.pastMonths; i <= horizon.futureMonths; i++)
+        if (firstMonth == null || !DateTime(now.year, now.month + i, 1).isBefore(firstMonth) || i >= 0)
+          DateTime(now.year, now.month + i, 1),
     ];
 
     final activeSubs = subscriptions
@@ -239,6 +247,19 @@ class SpendingTrendsEngine {
     }
 
     return points;
+  }
+
+  /// First month with real data: the month of [trackingSince] or of the oldest logged
+  /// payment, whichever is earlier. Null when tracking start is unknown (no clamping).
+  static DateTime? firstTrackedMonth(List<Subscription> subscriptions, DateTime? trackingSince) {
+    if (trackingSince == null) return null;
+    var start = trackingSince;
+    for (final s in subscriptions) {
+      for (final d in s.paymentHistory) {
+        if (d.isBefore(start)) start = d;
+      }
+    }
+    return DateTime(start.year, start.month, 1);
   }
 
   /// Number of billing dates of [sub] in `[from, until)`, stepping back from its next due date.

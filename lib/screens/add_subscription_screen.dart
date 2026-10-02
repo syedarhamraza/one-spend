@@ -26,10 +26,14 @@ class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
   final String? initialPaymentMethodId;
 
+  /// Brand preset to start a new subscription from (name, logo, category, price).
+  final String? initialPresetId;
+
   const AddSubscriptionScreen({
     super.key,
     this.subscriptionToEdit,
     this.initialPaymentMethodId,
+    this.initialPresetId,
   });
 
   @override
@@ -53,6 +57,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   late String _notes;
   late String _accountUrl;
   String? _logoUrl;
+  LogoTransform? _logoTransform;
   String? _brandPresetId;
 
   bool get isEditing => widget.subscriptionToEdit != null;
@@ -78,6 +83,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _notes = editSub.notes;
       _accountUrl = editSub.accountUrl;
       _logoUrl = editSub.logoUrl;
+      _logoTransform = editSub.logoTransform;
       _brandPresetId = editSub.brandPresetId;
     } else {
       _name = '';
@@ -101,37 +107,43 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _accountUrl = '';
       _logoUrl = null;
       _brandPresetId = null;
+      final preset = widget.initialPresetId == null ? null : OneUIBrandCatalog.findById(widget.initialPresetId!);
+      if (preset != null) _applyPresetFields(preset);
     }
   }
 
   void _applyPreset(BrandPreset preset) {
     HapticFeedback.selectionClick();
-    setState(() {
-      _name = preset.name;
-      _category = preset.category;
-      _brandColor = preset.color;
-      _iconData = preset.icon;
-      _brandPresetId = preset.id;
-      _logoUrl = preset.logoUrl;
-      if (_accountUrl.isEmpty) {
-        _accountUrl = preset.defaultUrl;
-      }
-      final catalogMatch = popularCatalog.where((s) => s.name.toLowerCase() == preset.name.toLowerCase()).firstOrNull;
-      if (catalogMatch != null) {
-        if (_price <= 0) {
-          _price = catalogMatch.price;
-          _billingCycle = catalogMatch.billingCycle;
-        }
-        if (_paymentMethodId == null && catalogMatch.paymentMethodId != null) {
-          final method = SubscriptionStore.instance.getPaymentMethod(catalogMatch.paymentMethodId);
-          if (method != null) {
-            _paymentMethodId = method.id;
-            _paymentMethod = method.displayName;
-          }
-        }
-      }
-    });
+    setState(() => _applyPresetFields(preset));
     OneUIToast.show(context, 'Applied ${preset.name} preset');
+  }
+
+  /// Fills name, look, category and (when known) a typical price from [preset].
+  void _applyPresetFields(BrandPreset preset) {
+    _name = preset.name;
+    _category = preset.category;
+    _brandColor = preset.color;
+    _iconData = preset.icon;
+    _brandPresetId = preset.id;
+    _logoUrl = preset.logoUrl;
+    _logoTransform = null;
+    if (_accountUrl.isEmpty) {
+      _accountUrl = preset.defaultUrl;
+    }
+    final catalogMatch = popularCatalog.where((s) => s.name.toLowerCase() == preset.name.toLowerCase()).firstOrNull;
+    if (catalogMatch != null) {
+      if (_price <= 0) {
+        _price = catalogMatch.price;
+        _billingCycle = catalogMatch.billingCycle;
+      }
+      if (_paymentMethodId == null && catalogMatch.paymentMethodId != null) {
+        final method = SubscriptionStore.instance.getPaymentMethod(catalogMatch.paymentMethodId);
+        if (method != null) {
+          _paymentMethodId = method.id;
+          _paymentMethod = method.displayName;
+        }
+      }
+    }
   }
 
   Future<void> _pickBrandIcon() async {
@@ -142,12 +154,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       currentLogoUrl: _logoUrl,
       currentPresetId: _brandPresetId,
       subscriptionName: _name,
+      currentLogoTransform: _logoTransform,
     );
     if (!mounted || result == null) return;
     setState(() {
       _brandColor = result.brandColor;
       _iconData = result.iconData;
       _logoUrl = result.logoUrl;
+      _logoTransform = result.logoTransform;
       _brandPresetId = result.brandPresetId;
     });
   }
@@ -239,6 +253,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       paymentHistory: widget.subscriptionToEdit?.paymentHistory ?? [],
       accountUrl: _accountUrl.trim(),
       logoUrl: _logoUrl,
+      logoTransform: _logoUrl == null ? null : _logoTransform,
       brandPresetId: _brandPresetId,
       anchorDay: widget.subscriptionToEdit?.anchorDay ?? _nextBillingDate.day,
     );
@@ -323,6 +338,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                                     brandColor: _brandColor,
                                     iconData: _iconData,
                                     logoUrl: _logoUrl,
+                                    logoTransform: _logoTransform,
                                     brandPresetId: _brandPresetId,
                                     size: 58,
                                     borderRadius: 18,

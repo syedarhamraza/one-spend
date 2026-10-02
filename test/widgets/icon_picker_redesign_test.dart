@@ -5,6 +5,7 @@ import 'package:onespend/screens/icon_picker_screen.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
 import 'package:onespend/widgets/one_ui_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_icon_picker_modal.dart';
+import 'package:onespend/widgets/one_ui_logo_framer.dart';
 
 import '../helpers/test_app.dart';
 
@@ -210,6 +211,47 @@ void main() {
       expect(find.text('#1DB954'), findsWidgets);
     });
 
+    testWidgets('framing set in the image editor comes back with the result', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(412, 1200));
+      IconPickerResult? result;
+      await tester.pumpWidget(
+        routedTestApp(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                result = await IconPickerScreen.open(
+                  context,
+                  currentColor: const Color(0xFF0066FF),
+                  currentIcon: Icons.tv_rounded,
+                  currentLogoUrl: 'https://example.com/logo.png',
+                  subscriptionName: 'Framed',
+                );
+              },
+              child: const Text('Open Picker'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Picker'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Custom image URL'));
+      await tester.pumpAndSettle();
+
+      // Zoom in with the slider.
+      final slider = find.byType(Slider);
+      await tester.drag(slider, const Offset(120, 0));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(result!.logoUrl, 'https://example.com/logo.png');
+      expect(result!.logoTransform, isNotNull);
+      expect(result!.logoTransform!.scale, greaterThan(1.0));
+    });
+
     testWidgets('tapping Custom image URL opens subpage and saves entered link', (tester) async {
       await tester.binding.setSurfaceSize(const Size(412, 900));
 
@@ -241,14 +283,19 @@ void main() {
       await tester.tap(find.text('Custom image URL'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Apply URL'), findsOneWidget);
+      expect(find.text('Image link'), findsOneWidget);
+      expect(find.byType(OneUILogoFramer), findsNothing); // no image yet
 
-      // Enter URL
+      // Enter URL: the image editor appears
       await tester.enterText(find.byType(TextField), 'https://example.com/logo.svg');
+      await tester.pump();
+      expect(find.byType(OneUILogoFramer), findsNothing); // preview waits for typing to pause
+      await tester.pump(const Duration(milliseconds: 600));
       await tester.pumpAndSettle();
+      expect(find.byType(OneUILogoFramer), findsOneWidget);
 
-      // Tap Apply URL button
-      await tester.tap(find.text('Apply URL'));
+      // Save the subpage (Cancel | Save pill)
+      await tester.tap(find.text('Save').last);
       await tester.pumpAndSettle();
 
       // On main screen: verify URL subtitle

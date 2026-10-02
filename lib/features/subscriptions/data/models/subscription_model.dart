@@ -29,6 +29,7 @@ class SubscriptionModel extends Subscription {
     super.autoRenew = true,
     super.anchorDay,
     super.reminderTimeMinutes,
+    super.logoTransform,
   });
 
   factory SubscriptionModel.fromEntity(Subscription entity) {
@@ -57,6 +58,7 @@ class SubscriptionModel extends Subscription {
       autoRenew: entity.autoRenew,
       anchorDay: entity.anchorDay,
       reminderTimeMinutes: entity.reminderTimeMinutes,
+      logoTransform: entity.logoTransform,
     );
   }
 
@@ -95,6 +97,7 @@ class SubscriptionModel extends Subscription {
       autoRenew: json['autoRenew'] as bool? ?? true,
       anchorDay: json['anchorDay'] as int?,
       reminderTimeMinutes: json['reminderTimeMinutes'] as int?,
+      logoTransform: LogoTransform.decode(json['logoTransform'] as String?),
     );
   }
 
@@ -125,6 +128,7 @@ class SubscriptionModel extends Subscription {
       'autoRenew': autoRenew,
       'anchorDay': anchorDay ?? nextBillingDate.day,
       'reminderTimeMinutes': reminderTimeMinutes,
+      'logoTransform': logoTransform?.encode(),
     };
   }
 }

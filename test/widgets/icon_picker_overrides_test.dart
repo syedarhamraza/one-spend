@@ -122,11 +122,11 @@ void main() {
       await tester.tap(find.text('Custom image URL'));
       await tester.pumpAndSettle();
 
-      // Verify Remove custom image URL button exists
-      expect(find.text('Remove custom image URL'), findsOneWidget);
+      // Verify the Remove custom image row exists
+      expect(find.text('Remove custom image'), findsOneWidget);
 
-      // Tap Remove custom image URL
-      await tester.tap(find.text('Remove custom image URL'));
+      // Tap Remove custom image
+      await tester.tap(find.text('Remove custom image'));
       await tester.pumpAndSettle();
 
       // On main screen: custom URL subtitle should now be None

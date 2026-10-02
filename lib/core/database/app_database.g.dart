@@ -277,6 +277,17 @@ class $SubscriptionsTableTable extends SubscriptionsTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _logoTransformMeta = const VerificationMeta(
+    'logoTransform',
+  );
+  @override
+  late final GeneratedColumn<String> logoTransform = GeneratedColumn<String>(
+    'logo_transform',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -303,6 +314,7 @@ class $SubscriptionsTableTable extends SubscriptionsTable
     autoRenew,
     anchorDay,
     reminderTimeMinutes,
+    logoTransform,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -504,6 +516,15 @@ class $SubscriptionsTableTable extends SubscriptionsTable
         ),
       );
     }
+    if (data.containsKey('logo_transform')) {
+      context.handle(
+        _logoTransformMeta,
+        logoTransform.isAcceptableOrUnknown(
+          data['logo_transform']!,
+          _logoTransformMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -611,6 +632,10 @@ class $SubscriptionsTableTable extends SubscriptionsTable
         DriftSqlType.int,
         data['${effectivePrefix}reminder_time_minutes'],
       ),
+      logoTransform: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}logo_transform'],
+      ),
     );
   }
 
@@ -653,6 +678,9 @@ class SubscriptionEntry extends DataClass
 
   /// Added in schema v2: reminder time of day in minutes after midnight (null = global default).
   final int? reminderTimeMinutes;
+
+  /// Custom logo framing ("scale,dx,dy", see LogoTransform). Added in schema v4.
+  final String? logoTransform;
   const SubscriptionEntry({
     required this.id,
     required this.name,
@@ -678,6 +706,7 @@ class SubscriptionEntry extends DataClass
     required this.autoRenew,
     this.anchorDay,
     this.reminderTimeMinutes,
+    this.logoTransform,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -724,6 +753,9 @@ class SubscriptionEntry extends DataClass
     if (!nullToAbsent || reminderTimeMinutes != null) {
       map['reminder_time_minutes'] = Variable<int>(reminderTimeMinutes);
     }
+    if (!nullToAbsent || logoTransform != null) {
+      map['logo_transform'] = Variable<String>(logoTransform);
+    }
     return map;
   }
 
@@ -767,6 +799,9 @@ class SubscriptionEntry extends DataClass
       reminderTimeMinutes: reminderTimeMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(reminderTimeMinutes),
+      logoTransform: logoTransform == null && nullToAbsent
+          ? const Value.absent()
+          : Value(logoTransform),
     );
   }
 
@@ -804,6 +839,7 @@ class SubscriptionEntry extends DataClass
       reminderTimeMinutes: serializer.fromJson<int?>(
         json['reminderTimeMinutes'],
       ),
+      logoTransform: serializer.fromJson<String?>(json['logoTransform']),
     );
   }
   @override
@@ -834,6 +870,7 @@ class SubscriptionEntry extends DataClass
       'autoRenew': serializer.toJson<bool>(autoRenew),
       'anchorDay': serializer.toJson<int?>(anchorDay),
       'reminderTimeMinutes': serializer.toJson<int?>(reminderTimeMinutes),
+      'logoTransform': serializer.toJson<String?>(logoTransform),
     };
   }
 
@@ -862,6 +899,7 @@ class SubscriptionEntry extends DataClass
     bool? autoRenew,
     Value<int?> anchorDay = const Value.absent(),
     Value<int?> reminderTimeMinutes = const Value.absent(),
+    Value<String?> logoTransform = const Value.absent(),
   }) => SubscriptionEntry(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -897,6 +935,9 @@ class SubscriptionEntry extends DataClass
     reminderTimeMinutes: reminderTimeMinutes.present
         ? reminderTimeMinutes.value
         : this.reminderTimeMinutes,
+    logoTransform: logoTransform.present
+        ? logoTransform.value
+        : this.logoTransform,
   );
   SubscriptionEntry copyWithCompanion(SubscriptionsTableCompanion data) {
     return SubscriptionEntry(
@@ -950,6 +991,9 @@ class SubscriptionEntry extends DataClass
       reminderTimeMinutes: data.reminderTimeMinutes.present
           ? data.reminderTimeMinutes.value
           : this.reminderTimeMinutes,
+      logoTransform: data.logoTransform.present
+          ? data.logoTransform.value
+          : this.logoTransform,
     );
   }
 
@@ -979,7 +1023,8 @@ class SubscriptionEntry extends DataClass
           ..write('brandPresetId: $brandPresetId, ')
           ..write('autoRenew: $autoRenew, ')
           ..write('anchorDay: $anchorDay, ')
-          ..write('reminderTimeMinutes: $reminderTimeMinutes')
+          ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
+          ..write('logoTransform: $logoTransform')
           ..write(')'))
         .toString();
   }
@@ -1010,6 +1055,7 @@ class SubscriptionEntry extends DataClass
     autoRenew,
     anchorDay,
     reminderTimeMinutes,
+    logoTransform,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1038,7 +1084,8 @@ class SubscriptionEntry extends DataClass
           other.brandPresetId == this.brandPresetId &&
           other.autoRenew == this.autoRenew &&
           other.anchorDay == this.anchorDay &&
-          other.reminderTimeMinutes == this.reminderTimeMinutes);
+          other.reminderTimeMinutes == this.reminderTimeMinutes &&
+          other.logoTransform == this.logoTransform);
 }
 
 class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
@@ -1066,6 +1113,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
   final Value<bool> autoRenew;
   final Value<int?> anchorDay;
   final Value<int?> reminderTimeMinutes;
+  final Value<String?> logoTransform;
   final Value<int> rowid;
   const SubscriptionsTableCompanion({
     this.id = const Value.absent(),
@@ -1092,6 +1140,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     this.autoRenew = const Value.absent(),
     this.anchorDay = const Value.absent(),
     this.reminderTimeMinutes = const Value.absent(),
+    this.logoTransform = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SubscriptionsTableCompanion.insert({
@@ -1119,6 +1168,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     this.autoRenew = const Value.absent(),
     this.anchorDay = const Value.absent(),
     this.reminderTimeMinutes = const Value.absent(),
+    this.logoTransform = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -1155,6 +1205,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     Expression<bool>? autoRenew,
     Expression<int>? anchorDay,
     Expression<int>? reminderTimeMinutes,
+    Expression<String>? logoTransform,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1183,6 +1234,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
       if (anchorDay != null) 'anchor_day': anchorDay,
       if (reminderTimeMinutes != null)
         'reminder_time_minutes': reminderTimeMinutes,
+      if (logoTransform != null) 'logo_transform': logoTransform,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1212,6 +1264,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     Value<bool>? autoRenew,
     Value<int?>? anchorDay,
     Value<int?>? reminderTimeMinutes,
+    Value<String?>? logoTransform,
     Value<int>? rowid,
   }) {
     return SubscriptionsTableCompanion(
@@ -1239,6 +1292,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
       autoRenew: autoRenew ?? this.autoRenew,
       anchorDay: anchorDay ?? this.anchorDay,
       reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
+      logoTransform: logoTransform ?? this.logoTransform,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1322,6 +1376,9 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     if (reminderTimeMinutes.present) {
       map['reminder_time_minutes'] = Variable<int>(reminderTimeMinutes.value);
     }
+    if (logoTransform.present) {
+      map['logo_transform'] = Variable<String>(logoTransform.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1355,6 +1412,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
           ..write('autoRenew: $autoRenew, ')
           ..write('anchorDay: $anchorDay, ')
           ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
+          ..write('logoTransform: $logoTransform, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2179,6 +2237,7 @@ typedef $$SubscriptionsTableTableCreateCompanionBuilder =
       Value<bool> autoRenew,
       Value<int?> anchorDay,
       Value<int?> reminderTimeMinutes,
+      Value<String?> logoTransform,
       Value<int> rowid,
     });
 typedef $$SubscriptionsTableTableUpdateCompanionBuilder =
@@ -2207,6 +2266,7 @@ typedef $$SubscriptionsTableTableUpdateCompanionBuilder =
       Value<bool> autoRenew,
       Value<int?> anchorDay,
       Value<int?> reminderTimeMinutes,
+      Value<String?> logoTransform,
       Value<int> rowid,
     });
 
@@ -2339,6 +2399,11 @@ class $$SubscriptionsTableTableFilterComposer
     column: $table.reminderTimeMinutes,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get logoTransform => $composableBuilder(
+    column: $table.logoTransform,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$SubscriptionsTableTableOrderingComposer
@@ -2469,6 +2534,11 @@ class $$SubscriptionsTableTableOrderingComposer
     column: $table.reminderTimeMinutes,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get logoTransform => $composableBuilder(
+    column: $table.logoTransform,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SubscriptionsTableTableAnnotationComposer
@@ -2578,6 +2648,11 @@ class $$SubscriptionsTableTableAnnotationComposer
     column: $table.reminderTimeMinutes,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get logoTransform => $composableBuilder(
+    column: $table.logoTransform,
+    builder: (column) => column,
+  );
 }
 
 class $$SubscriptionsTableTableTableManager
@@ -2644,6 +2719,7 @@ class $$SubscriptionsTableTableTableManager
                 Value<bool> autoRenew = const Value.absent(),
                 Value<int?> anchorDay = const Value.absent(),
                 Value<int?> reminderTimeMinutes = const Value.absent(),
+                Value<String?> logoTransform = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SubscriptionsTableCompanion(
                 id: id,
@@ -2670,6 +2746,7 @@ class $$SubscriptionsTableTableTableManager
                 autoRenew: autoRenew,
                 anchorDay: anchorDay,
                 reminderTimeMinutes: reminderTimeMinutes,
+                logoTransform: logoTransform,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2698,6 +2775,7 @@ class $$SubscriptionsTableTableTableManager
                 Value<bool> autoRenew = const Value.absent(),
                 Value<int?> anchorDay = const Value.absent(),
                 Value<int?> reminderTimeMinutes = const Value.absent(),
+                Value<String?> logoTransform = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SubscriptionsTableCompanion.insert(
                 id: id,
@@ -2724,6 +2802,7 @@ class $$SubscriptionsTableTableTableManager
                 autoRenew: autoRenew,
                 anchorDay: anchorDay,
                 reminderTimeMinutes: reminderTimeMinutes,
+                logoTransform: logoTransform,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

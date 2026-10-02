@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -15,6 +16,9 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_icon_picker_modal.dart';
 import '../widgets/one_ui_radio.dart';
+import '../widgets/one_ui_subpage.dart';
+import '../widgets/one_ui_logo_framer.dart';
+import '../features/subscriptions/domain/entities/logo_transform.dart';
 
 /// Samsung One UI Subscription Icon Picker Subpage.
 /// Redesigned to match One UI customization subpages (e.g. Subscription Detail Styling):
@@ -31,6 +35,7 @@ class IconPickerScreen extends StatefulWidget {
   final String? initialLogoUrl;
   final String? initialPresetId;
   final String subscriptionName;
+  final LogoTransform? initialLogoTransform;
 
   const IconPickerScreen({
     super.key,
@@ -39,6 +44,7 @@ class IconPickerScreen extends StatefulWidget {
     this.initialLogoUrl,
     this.initialPresetId,
     this.subscriptionName = '',
+    this.initialLogoTransform,
   });
 
   static Future<IconPickerResult?> open(
@@ -48,6 +54,7 @@ class IconPickerScreen extends StatefulWidget {
     String? currentLogoUrl,
     String? currentPresetId,
     String subscriptionName = '',
+    LogoTransform? currentLogoTransform,
   }) {
     HapticFeedback.lightImpact();
     return context.push<IconPickerResult>(
@@ -58,6 +65,7 @@ class IconPickerScreen extends StatefulWidget {
         initialLogoUrl: currentLogoUrl,
         initialPresetId: currentPresetId,
         subscriptionName: subscriptionName,
+        initialLogoTransform: currentLogoTransform,
       ),
     );
   }
@@ -70,6 +78,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
   late Color _selectedColor;
   late IconData _selectedIcon;
   late String? _selectedLogoUrl;
+  LogoTransform? _selectedLogoTransform;
   late String? _selectedPresetId;
 
   static const List<Color> swatches = [
@@ -172,6 +181,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
     _selectedColor = widget.initialColor;
     _selectedIcon = widget.initialIcon;
     _selectedLogoUrl = widget.initialLogoUrl;
+    _selectedLogoTransform = widget.initialLogoTransform;
     _selectedPresetId = widget.initialPresetId;
     if (_selectedPresetId == null && (_selectedLogoUrl == null || _selectedLogoUrl!.isEmpty)) {
       final autoMatch = OneUIBrandCatalog.findPreset(widget.subscriptionName);
@@ -190,6 +200,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         brandColor: _selectedColor,
         logoUrl: _selectedLogoUrl,
         brandPresetId: _selectedPresetId,
+        logoTransform: _selectedLogoUrl == null ? null : _selectedLogoTransform,
       ),
     );
   }
@@ -226,7 +237,8 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         _selectedPresetId = result.preset.id;
         _selectedColor = result.preset.color;
         _selectedIcon = result.preset.icon;
-        _selectedLogoUrl = null; // Brand logo vector replaces any custom URL!
+        _selectedLogoUrl = null;
+        _selectedLogoTransform = null; // Brand logo vector replaces any custom URL!
       });
     }
   }
@@ -250,6 +262,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         _selectedIcon = result;
         _selectedPresetId = '__none__';
         _selectedLogoUrl = null;
+        _selectedLogoTransform = null;
       });
     }
   }
@@ -261,6 +274,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
       MaterialPageRoute(
         builder: (_) => _CustomUrlPickerSubpage(
           currentUrl: _selectedLogoUrl,
+          currentTransform: _selectedLogoTransform,
           currentColor: _selectedColor,
           currentIcon: _selectedIcon,
           currentPresetId: _selectedPresetId,
@@ -272,6 +286,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
       setState(() {
         final clean = result.url?.trim();
         _selectedLogoUrl = (clean != null && clean.isNotEmpty) ? clean : null;
+        _selectedLogoTransform = _selectedLogoUrl == null ? null : result.transform;
         if (_selectedLogoUrl != null) {
           _selectedPresetId = '__none__';
         }
@@ -345,6 +360,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
                         brandColor: _selectedColor,
                         iconData: _selectedIcon,
                         logoUrl: _selectedLogoUrl,
+                        logoTransform: _selectedLogoTransform,
                         brandPresetId: _selectedPresetId,
                       ),
                       const SizedBox(height: 16),
@@ -483,6 +499,7 @@ class _IconHeroPreviewCard extends StatelessWidget {
   final IconData iconData;
   final String? logoUrl;
   final String? brandPresetId;
+  final LogoTransform? logoTransform;
 
   const _IconHeroPreviewCard({
     required this.subscriptionName,
@@ -490,6 +507,7 @@ class _IconHeroPreviewCard extends StatelessWidget {
     required this.iconData,
     this.logoUrl,
     this.brandPresetId,
+    this.logoTransform,
   });
 
   @override
@@ -557,6 +575,7 @@ class _IconHeroPreviewCard extends StatelessWidget {
                         brandColor: brandColor,
                         iconData: iconData,
                         logoUrl: logoUrl,
+                        logoTransform: logoTransform,
                         brandPresetId: brandPresetId,
                         size: 60,
                         borderRadius: 18,
@@ -609,7 +628,8 @@ class _BrandPresetResult {
 
 class _CustomUrlResult {
   final String? url;
-  const _CustomUrlResult(this.url);
+  final LogoTransform? transform;
+  const _CustomUrlResult(this.url, [this.transform]);
 }
 
 /// Dedicated subpage to select Brand Preset with live interactive Hero Preview
@@ -1010,9 +1030,11 @@ class _SystemIconPickerSubpageState extends State<_SystemIconPickerSubpage> {
   }
 }
 
-/// Dedicated subpage to edit/paste Custom Image URL with live interactive Hero Preview
+/// Custom image subpage: paste a logo link, then frame it in the image editor
+/// (pinch to zoom, drag to move). Follows the subpage recipe: Cancel | Save pill.
 class _CustomUrlPickerSubpage extends StatefulWidget {
   final String? currentUrl;
+  final LogoTransform? currentTransform;
   final Color currentColor;
   final IconData currentIcon;
   final String? currentPresetId;
@@ -1020,6 +1042,7 @@ class _CustomUrlPickerSubpage extends StatefulWidget {
 
   const _CustomUrlPickerSubpage({
     required this.currentUrl,
+    this.currentTransform,
     required this.currentColor,
     required this.currentIcon,
     this.currentPresetId,
@@ -1032,261 +1055,181 @@ class _CustomUrlPickerSubpage extends StatefulWidget {
 
 class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
   final TextEditingController _controller = TextEditingController();
-  late String? _previewUrl;
+  late LogoTransform _transform;
+
+  /// The link the preview shows. Follows the field only after typing pauses, so
+  /// half-typed links aren't fetched on every keystroke.
+  late String _previewUrl;
+  Timer? _previewDebounce;
 
   @override
   void initState() {
     super.initState();
-    _previewUrl = widget.currentUrl;
     _controller.text = widget.currentUrl ?? '';
+    _previewUrl = _url;
+    _transform = widget.currentTransform ?? LogoTransform.identity;
   }
 
   @override
   void dispose() {
+    _previewDebounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
+  String get _url => _controller.text.trim();
+
+  static bool _isLink(String url) => url.startsWith('http://') || url.startsWith('https://');
+
+  bool get _isValid => _url.isEmpty || _isLink(_url);
+
+  bool get _hasImage => _previewUrl.isNotEmpty && _isLink(_previewUrl);
+
+  void _onLinkChanged() {
+    setState(() => _transform = LogoTransform.identity); // a new image starts unframed
+    _previewDebounce?.cancel();
+    _previewDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _previewUrl = _url);
+    });
+  }
+
+  void _save() {
+    HapticFeedback.mediumImpact();
+    Navigator.pop(
+      context,
+      _CustomUrlResult(_url.isEmpty ? null : _url, _transform.isIdentity ? null : _transform),
+    );
+  }
+
+  Future<void> _paste() async {
+    final data = await Clipboard.getData('text/plain');
+    final pasted = data?.text?.trim() ?? '';
+    if (pasted.isEmpty || !mounted) return;
+    HapticFeedback.selectionClick();
+    _previewDebounce?.cancel();
+    setState(() {
+      _controller.text = pasted;
+      _previewUrl = pasted;
+      _transform = LogoTransform.identity; // a new image starts unframed
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final effectiveName = widget.subscriptionName.trim().isNotEmpty
-        ? widget.subscriptionName
-        : 'Icon Preview';
+    final name = widget.subscriptionName.trim().isNotEmpty ? widget.subscriptionName : 'Icon preview';
+    final hadImage = widget.currentUrl != null && widget.currentUrl!.isNotEmpty;
 
-    return Scaffold(
-      backgroundColor: OneUITheme.surfacePitch,
-      body: Stack(
-        children: [
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: OneUICollapsibleHeaderDelegate(
-                  title: 'Custom image URL',
-                  hasBigHeader: false,
-                  showBackButton: true,
-                  onBack: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                  },
+    return OneUISubpage(
+      title: 'Custom image',
+      bottomPill: OneUIFloatingCancelSavePill(
+        onCancel: () => Navigator.pop(context),
+        onSave: _isValid ? _save : null,
+        canSave: _isValid,
+      ),
+      builder: (context) => [
+        if (_hasImage)
+          OneUISection(
+            title: 'Position & size',
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 24, 12, 8),
+              decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.cardBorderRadius),
+              child: Center(
+                child: OneUILogoFramer(
+                  url: _previewUrl,
+                  name: name,
+                  background: widget.currentColor,
+                  value: _transform,
+                  onChanged: (t) => setState(() => _transform = t),
                 ),
               ),
-
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Live Hero Preview Card
-                      _IconHeroPreviewCard(
-                        subscriptionName: effectiveName,
-                        brandColor: widget.currentColor,
-                        iconData: widget.currentIcon,
-                        logoUrl: _previewUrl,
-                        brandPresetId: '__none__',
-                      ),
-                      const SizedBox(height: 16),
-
-                      // URL input card inside OneUISection
-                      Builder(
-                        builder: (context) {
-                          final rawText = _controller.text.trim();
-                          final isValidUrl = rawText.isEmpty || rawText.startsWith('http://') || rawText.startsWith('https://');
-
-                          return OneUISection(
-                            title: 'Web image source',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: OneUIEffectsController.instance.resolveCardBackground(),
-                                    borderRadius: OneUITheme.fieldBorderRadius,
-                                    border: !isValidUrl
-                                        ? Border.all(color: OneUITheme.accentRed, width: 1.5)
-                                        : (rawText.isNotEmpty
-                                            ? Border.all(color: OneUITheme.accentBlue.withValues(alpha: 0.6), width: 1.5)
-                                            : OneUITheme.cardBorder),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.link_rounded,
-                                        size: 22,
-                                        color: !isValidUrl ? OneUITheme.accentRed : OneUITheme.accentBlue,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _controller,
-                                          onChanged: (val) {
-                                            setState(() {
-                                              _previewUrl = val.trim().isNotEmpty ? val.trim() : null;
-                                            });
-                                          },
-                                          style: const TextStyle(fontSize: 14, color: OneUITheme.textPrimary),
-                                          decoration: const InputDecoration(
-                                            hintText: 'https://example.com/logo.png',
-                                            hintStyle: TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-                                            border: InputBorder.none,
-                                          ),
-                                        ),
-                                      ),
-                                      if (_controller.text.isNotEmpty)
-                                        IconButton(
-                                          icon: const Icon(Icons.clear_rounded, size: 20, color: OneUITheme.textSecondary),
-                                          onPressed: () {
-                                            HapticFeedback.selectionClick();
-                                            _controller.clear();
-                                            setState(() {
-                                              _previewUrl = null;
-                                            });
-                                          },
-                                        ),
-                                      IconButton(
-                                        icon: const Icon(Icons.content_paste_rounded, size: 20, color: OneUITheme.accentBlue),
-                                        tooltip: 'Paste from clipboard',
-                                        onPressed: () async {
-                                          final data = await Clipboard.getData('text/plain');
-                                          if (data != null && data.text != null && data.text!.trim().isNotEmpty) {
-                                            HapticFeedback.selectionClick();
-                                            final pasted = data.text!.trim();
-                                            _controller.text = pasted;
-                                            setState(() {
-                                              _previewUrl = pasted;
-                                            });
-                                          }
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (!isValidUrl) ...[
-                                  const SizedBox(height: 6),
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 6),
-                                    child: Text(
-                                      'Please enter a valid URL starting with http:// or https://',
-                                      style: TextStyle(
-                                        color: OneUITheme.accentRed,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.only(left: 16, right: 16, top: 10),
-                        child: Text(
-                          'Supported formats: PNG, WebP, or SVG web links (e.g. from an official website or CDN). The image scales automatically to fit inside the squircle icon.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: OneUITheme.textSecondary,
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Apply Button
-                      Builder(
-                        builder: (context) {
-                          final rawText = _controller.text.trim();
-                          final isValidUrl = rawText.isEmpty || rawText.startsWith('http://') || rawText.startsWith('https://');
-
-                          return SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: isValidUrl
-                                  ? () {
-                                      HapticFeedback.mediumImpact();
-                                      final clean = _previewUrl?.trim();
-                                      Navigator.pop(
-                                        context,
-                                        _CustomUrlResult((clean != null && clean.isNotEmpty) ? clean : null),
-                                      );
-                                    }
-                                  : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: OneUITheme.accentBlue,
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor: OneUITheme.accentBlue.withValues(alpha: 0.35),
-                                disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(100),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Text(
-                                'Apply URL',
-                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Remove Custom URL Button (if a URL was present or previewed)
-                      if ((widget.currentUrl != null && widget.currentUrl!.isNotEmpty) ||
-                          (_previewUrl != null && _previewUrl!.isNotEmpty)) ...[
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              HapticFeedback.mediumImpact();
-                              _controller.clear();
-                              setState(() {
-                                _previewUrl = null;
-                              });
-                              Navigator.pop(context, const _CustomUrlResult(null));
-                            },
-                            icon: const Icon(Icons.delete_outline_rounded, size: 20, color: Color(0xFFFF453A)),
-                            label: const Text(
-                              'Remove custom image URL',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFFF453A),
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: const Color(0xFFFF453A).withValues(alpha: 0.35),
-                                width: 1.0,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+            ),
+          )
+        else
+          _IconHeroPreviewCard(
+            subscriptionName: name,
+            brandColor: widget.currentColor,
+            iconData: widget.currentIcon,
+            logoUrl: null,
+            brandPresetId: '__none__',
+          ),
+        OneUISection(
+          title: 'Image link',
+          child: Container(
+            decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.fieldBorderRadius),
+            padding: const EdgeInsets.only(left: 20, right: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.link_rounded, size: 22, color: OneUITheme.accentBlue),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                    onChanged: (_) => _onLinkChanged(),
+                    style: const TextStyle(fontSize: 15, color: OneUITheme.textPrimary),
+                    decoration: const InputDecoration(
+                      hintText: 'https://example.com/logo.png',
+                      hintStyle: TextStyle(fontSize: 14.5, color: OneUITheme.textSecondary),
+                      border: InputBorder.none,
+                    ),
                   ),
                 ),
+                if (_controller.text.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.clear_rounded, size: 20, color: OneUITheme.textSecondary),
+                    tooltip: 'Clear',
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      _previewDebounce?.cancel();
+                      setState(() {
+                        _controller.clear();
+                        _previewUrl = '';
+                        _transform = LogoTransform.identity;
+                      });
+                    },
+                  )
+                else
+                  IconButton(
+                    icon: const Icon(Icons.content_paste_rounded, size: 20, color: OneUITheme.accentBlue),
+                    tooltip: 'Paste link',
+                    onPressed: _paste,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          child: Text(
+            _isValid
+                ? 'Use a PNG, WebP or JPG link, e.g. the logo from the service\'s website.'
+                : 'Links start with http:// or https://',
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.35,
+              color: _isValid ? OneUITheme.textSecondary : OneUITheme.accentRed,
+            ),
+          ),
+        ),
+        if (hadImage) ...[
+          const SizedBox(height: 24),
+          OneUIGroupCard(
+            margin: EdgeInsets.zero,
+            items: [
+              OneUIGroupItem(
+                leading: const Icon(Icons.delete_outline_rounded, color: OneUITheme.accentRed, size: 22),
+                title: 'Remove custom image',
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.pop(context, const _CustomUrlResult(null));
+                },
               ),
             ],
           ),
-
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: OneUIBottomVignette(hasFloatingElements: false),
-          ),
         ],
-      ),
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../features/payment_methods/domain/entities/payment_method.dart';
 import '../../features/subscriptions/domain/entities/subscription_enums.dart';
 import '../../features/subscriptions/presentation/controllers/subscription_controller.dart';
 import '../../screens/add_subscription_screen.dart';
+import '../../screens/onboarding_screen.dart';
 import '../../screens/analytics_screen.dart';
 import '../../screens/billing_cycle_picker_screen.dart';
 import '../../screens/category_picker_screen.dart';
@@ -44,6 +45,7 @@ import '../../screens/upcoming_schedule_screen.dart';
 import '../../screens/upcoming_screen.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../utils/reminder_format.dart';
+import '../../features/subscriptions/domain/entities/logo_transform.dart';
 
 /// Centralized route paths.
 class AppRoutes {
@@ -51,6 +53,9 @@ class AppRoutes {
 
   // Bottom navigation tabs
   static const subscriptions = '/subscriptions';
+
+  /// First-run welcome (onboarding), shown instead of the tabs on a fresh install.
+  static const welcome = '/welcome';
   static const upcoming = '/upcoming';
   static const analytics = '/analytics';
   static const settings = '/settings';
@@ -96,6 +101,10 @@ class AppRoutes {
 /// Arguments for [AppRoutes.paymentMethods].
 typedef PaymentMethodPickerArgs = ({String? currentMethodId, bool isManageOnly});
 
+/// `extra` for [AppRoutes.addSubscription]: start the new subscription from a
+/// brand preset (e.g. a quick-add chip) and/or with a card pre-selected.
+typedef AddSubscriptionArgs = ({String? paymentMethodId, String? presetId});
+
 /// Arguments for [AppRoutes.settingsCurrency].
 typedef CurrencyPickerArgs = ({String initialCode, String title, String? footnote});
 
@@ -118,6 +127,7 @@ typedef IconPickerArgs = ({
   String? initialLogoUrl,
   String? initialPresetId,
   String subscriptionName,
+  LogoTransform? initialLogoTransform,
 });
 
 /// Resolves a subscription id from the path, or shows a fallback when it no longer exists.
@@ -132,10 +142,20 @@ Widget _withSubscription(GoRouterState state, Widget Function(String id) builder
 /// Every full-screen page route. Shared by the app router and widget tests.
 List<RouteBase> buildPageRoutes() {
   return [
+    GoRoute(path: AppRoutes.welcome, builder: (context, state) => const OnboardingScreen()),
     GoRoute(
       path: AppRoutes.addSubscription,
-      // Optional `extra`: a payment method id to pre-select on the new subscription.
-      builder: (context, state) => AddSubscriptionScreen(initialPaymentMethodId: state.extra as String?),
+      // Optional `extra`: a payment method id (String) to pre-select, or
+      // [AddSubscriptionArgs] to also start from a brand preset.
+      builder: (context, state) {
+        final extra = state.extra;
+        return switch (extra) {
+          AddSubscriptionArgs(:final paymentMethodId, :final presetId) =>
+            AddSubscriptionScreen(initialPaymentMethodId: paymentMethodId, initialPresetId: presetId),
+          String id => AddSubscriptionScreen(initialPaymentMethodId: id),
+          _ => const AddSubscriptionScreen(),
+        };
+      },
     ),
     GoRoute(
       path: '/subscriptions/:id',
@@ -231,6 +251,7 @@ List<RouteBase> buildPageRoutes() {
           initialLogoUrl: args.initialLogoUrl,
           initialPresetId: args.initialPresetId,
           subscriptionName: args.subscriptionName,
+          initialLogoTransform: args.initialLogoTransform,
         );
       },
     ),

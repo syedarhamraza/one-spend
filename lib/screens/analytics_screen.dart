@@ -55,6 +55,7 @@ class AnalyticsScreen extends StatefulWidget {
       horizon: SpendingTrendHorizon.oneYear,
       referenceDate: now,
       toMain: store.toMain,
+      trackingSince: store.trackingSince,
     );
     final summary = SpendingTrendsEngine.calculateSummary(points, monthlyBudget: store.monthlyBudget);
     if (summary.hasData && summary.currentMonth != null) {
@@ -252,6 +253,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       monthlyBudget: store.monthlyBudget,
       includeBudget: _category == null,
       categoryLabel: _category?.label,
+      trackingSince: store.trackingSince,
     ).where((c) => !store.dismissedInsights.contains(c.key)).toList();
 
     return [

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_brand_catalog.dart';
 import 'one_ui_brand_icon.dart';
+import '../features/subscriptions/domain/entities/logo_transform.dart';
 
 class IconPickerResult {
   final IconData iconData;
@@ -10,11 +11,15 @@ class IconPickerResult {
   final String? logoUrl;
   final String? brandPresetId;
 
+  /// Framing of a custom [logoUrl] image from the image editor.
+  final LogoTransform? logoTransform;
+
   const IconPickerResult({
     required this.iconData,
     required this.brandColor,
     this.logoUrl,
     this.brandPresetId,
+    this.logoTransform,
   });
 }
 

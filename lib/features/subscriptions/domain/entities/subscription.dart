@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 import 'package:equatable/equatable.dart';
 import '../../../currency/domain/currency.dart';
+import 'logo_transform.dart';
 import 'subscription_enums.dart';
+
+export 'logo_transform.dart';
 
 /// Pure Dart Subscription Domain Entity (Zero Flutter framework dependencies)
 class Subscription extends Equatable {
@@ -32,6 +35,9 @@ class Subscription extends Equatable {
   /// Reminder time of day in minutes after midnight; null uses the global default.
   final int? reminderTimeMinutes;
 
+  /// Framing of the custom [logoUrl] image (zoom and offset); null = fit as is.
+  final LogoTransform? logoTransform;
+
   const Subscription.raw({
     required this.id,
     required this.name,
@@ -57,6 +63,7 @@ class Subscription extends Equatable {
     this.autoRenew = true,
     this.anchorDay,
     this.reminderTimeMinutes,
+    this.logoTransform,
   });
 
   Subscription({
@@ -86,6 +93,7 @@ class Subscription extends Equatable {
     this.autoRenew = true,
     this.anchorDay,
     this.reminderTimeMinutes,
+    this.logoTransform,
   })  : brandColorValue = brandColorValue ?? _extractColorValue(brandColor),
         iconCodePoint = iconCodePoint ?? _extractIconCodePoint(iconData);
 
@@ -142,6 +150,8 @@ class Subscription extends Equatable {
     int? anchorDay,
     int? reminderTimeMinutes,
     bool clearReminderTime = false,
+    LogoTransform? logoTransform,
+    bool clearLogoTransform = false,
   }) {
     final resolvedColor = brandColorValue ?? (brandColor != null ? _extractColorValue(brandColor) : this.brandColorValue);
     final resolvedIcon = iconCodePoint ?? (iconData != null ? _extractIconCodePoint(iconData) : this.iconCodePoint);
@@ -170,6 +180,7 @@ class Subscription extends Equatable {
       autoRenew: autoRenew ?? this.autoRenew,
       anchorDay: anchorDay ?? this.anchorDay,
       reminderTimeMinutes: clearReminderTime ? null : (reminderTimeMinutes ?? this.reminderTimeMinutes),
+      logoTransform: clearLogoTransform ? null : (logoTransform ?? this.logoTransform),
     );
   }
 
@@ -284,6 +295,7 @@ class Subscription extends Equatable {
       'autoRenew': autoRenew,
       'anchorDay': anchorDay ?? nextBillingDate.day,
       'reminderTimeMinutes': reminderTimeMinutes,
+      'logoTransform': logoTransform?.encode(),
     };
   }
 
@@ -322,6 +334,7 @@ class Subscription extends Equatable {
       autoRenew: json['autoRenew'] as bool? ?? true,
       anchorDay: json['anchorDay'] as int?,
       reminderTimeMinutes: json['reminderTimeMinutes'] as int?,
+      logoTransform: LogoTransform.decode(json['logoTransform'] as String?),
     );
   }
 
@@ -351,5 +364,6 @@ class Subscription extends Equatable {
         autoRenew,
         anchorDay,
         reminderTimeMinutes,
+        logoTransform,
       ];
 }
