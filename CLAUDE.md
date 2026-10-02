@@ -18,7 +18,7 @@ flutter test --plain-name "save and load subscriptions"        # single test by 
 dart run build_runner build --delete-conflicting-outputs       # regenerate Drift code (app_database.g.dart)
 ```
 
-Regenerate with `build_runner` after changing anything under `lib/core/database/tables/` or the `@DriftDatabase` annotation. Bump `schemaVersion` in `app_database.dart` and add a migration when changing table shapes (currently v1, no `MigrationStrategy` defined).
+Regenerate with `build_runner` after changing anything under `lib/core/database/tables/` or the `@DriftDatabase` annotation. Bump `schemaVersion` in `app_database.dart` and add a step to its `MigrationStrategy.onUpgrade` when changing table shapes (currently v4: v2 added `reminder_time_minutes`, v3 converted currency symbols to ISO codes, v4 added `logo_transform`). Guard `addColumn` with `_hasColumn` and add an upgrade test (see `test/features/logo_transform_test.dart`).
 
 ## UI / design language
 

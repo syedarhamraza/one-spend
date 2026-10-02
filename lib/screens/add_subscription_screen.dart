@@ -57,6 +57,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   late String _notes;
   late String _accountUrl;
   String? _logoUrl;
+  LogoTransform? _logoTransform;
   String? _brandPresetId;
 
   bool get isEditing => widget.subscriptionToEdit != null;
@@ -82,6 +83,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       _notes = editSub.notes;
       _accountUrl = editSub.accountUrl;
       _logoUrl = editSub.logoUrl;
+      _logoTransform = editSub.logoTransform;
       _brandPresetId = editSub.brandPresetId;
     } else {
       _name = '';
@@ -124,6 +126,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     _iconData = preset.icon;
     _brandPresetId = preset.id;
     _logoUrl = preset.logoUrl;
+    _logoTransform = null;
     if (_accountUrl.isEmpty) {
       _accountUrl = preset.defaultUrl;
     }
@@ -151,12 +154,14 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       currentLogoUrl: _logoUrl,
       currentPresetId: _brandPresetId,
       subscriptionName: _name,
+      currentLogoTransform: _logoTransform,
     );
     if (!mounted || result == null) return;
     setState(() {
       _brandColor = result.brandColor;
       _iconData = result.iconData;
       _logoUrl = result.logoUrl;
+      _logoTransform = result.logoTransform;
       _brandPresetId = result.brandPresetId;
     });
   }
@@ -248,6 +253,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       paymentHistory: widget.subscriptionToEdit?.paymentHistory ?? [],
       accountUrl: _accountUrl.trim(),
       logoUrl: _logoUrl,
+      logoTransform: _logoUrl == null ? null : _logoTransform,
       brandPresetId: _brandPresetId,
       anchorDay: widget.subscriptionToEdit?.anchorDay ?? _nextBillingDate.day,
     );
@@ -332,6 +338,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
                                     brandColor: _brandColor,
                                     iconData: _iconData,
                                     logoUrl: _logoUrl,
+                                    logoTransform: _logoTransform,
                                     brandPresetId: _brandPresetId,
                                     size: 58,
                                     borderRadius: 18,

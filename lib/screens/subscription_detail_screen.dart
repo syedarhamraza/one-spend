@@ -93,6 +93,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
       currentLogoUrl: _sub.logoUrl,
       currentPresetId: _sub.brandPresetId,
       subscriptionName: _sub.name,
+      currentLogoTransform: _sub.logoTransform,
     );
     if (!mounted || result == null) return;
     setState(() {
@@ -103,6 +104,8 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
         clearLogoUrl: result.logoUrl == null,
         brandPresetId: result.brandPresetId,
         clearBrandPresetId: result.brandPresetId == null,
+        logoTransform: result.logoTransform,
+        clearLogoTransform: result.logoTransform == null,
       );
     });
     SubscriptionStore.instance.updateSubscription(_sub);

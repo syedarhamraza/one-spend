@@ -145,7 +145,9 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar. Pass `docked: true` to get just the action row for the nav bar to host (§5.3) |
 | `OneUISortBottomSheet`, `OneUIFilterBottomSheet`, `OneUIFloatingMenu` | respective files | Sort / filter sheets and overflow menus |
 | `OneUIScrollToTopButton` | `one_ui_scroll_to_top_button.dart` | Long lists |
-| `OneUIBrandIcon`, `OneUIPaymentBrandIcon` | respective files | Service logos and card-network logos. Glyphs use `OneUIBrandCatalog.foregroundOn(background)` so they stay legible on light colours such as white |
+| `OneUILogoFramer` | `one_ui_logo_framer.dart` | Image editor for a custom logo: the real icon, large, with pinch-to-zoom, drag, a zoom slider and Reset. Produces a `LogoTransform` (zoom + offset as fractions of the icon size) |
+| `FirstRunEmptyState` | `features/subscriptions/presentation/widgets/first_run_empty_state.dart` | The Subscriptions tab before anything is added: logo hero (animates once), headline, Add subscription, popular one-tap starts, Restore from backup |
+| `OneUIBrandIcon`, `OneUIPaymentBrandIcon` | respective files | Service logos and card-network logos. A custom logo honours its `LogoTransform`. Glyphs use `OneUIBrandCatalog.foregroundOn(background)` so they stay legible on light colours such as white |
 
 ### Leading icon badges
 - **In list rows:** a 36 px **solid circle** in an accent colour, with a white 20 px icon (see `_buildIconBadge` in `settings_screen.dart`).

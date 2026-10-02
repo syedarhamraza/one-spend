@@ -34,6 +34,9 @@ class SubscriptionsTable extends Table {
   /// Added in schema v2: reminder time of day in minutes after midnight (null = global default).
   IntColumn get reminderTimeMinutes => integer().nullable()();
 
+  /// Custom logo framing ("scale,dx,dy", see LogoTransform). Added in schema v4.
+  TextColumn get logoTransform => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

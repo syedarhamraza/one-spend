@@ -15,7 +15,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -25,6 +25,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(subscriptionsTable, subscriptionsTable.reminderTimeMinutes);
           }
           if (from < 3) await _migrateCurrencySymbolsToCodes();
+          if (from < 4 && !await _hasColumn('subscriptions', 'logo_transform')) {
+            await m.addColumn(subscriptionsTable, subscriptionsTable.logoTransform);
+          }
         },
       );
 

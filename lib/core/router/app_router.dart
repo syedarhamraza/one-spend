@@ -45,6 +45,7 @@ import '../../screens/upcoming_schedule_screen.dart';
 import '../../screens/upcoming_screen.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../utils/reminder_format.dart';
+import '../../features/subscriptions/domain/entities/logo_transform.dart';
 
 /// Centralized route paths.
 class AppRoutes {
@@ -126,6 +127,7 @@ typedef IconPickerArgs = ({
   String? initialLogoUrl,
   String? initialPresetId,
   String subscriptionName,
+  LogoTransform? initialLogoTransform,
 });
 
 /// Resolves a subscription id from the path, or shows a fallback when it no longer exists.
@@ -249,6 +251,7 @@ List<RouteBase> buildPageRoutes() {
           initialLogoUrl: args.initialLogoUrl,
           initialPresetId: args.initialPresetId,
           subscriptionName: args.subscriptionName,
+          initialLogoTransform: args.initialLogoTransform,
         );
       },
     ),

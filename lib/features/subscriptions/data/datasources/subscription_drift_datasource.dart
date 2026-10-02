@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../currency/domain/currency.dart';
+import '../../domain/entities/logo_transform.dart';
 import '../../domain/entities/subscription_enums.dart';
 import '../models/subscription_model.dart';
 import 'subscription_local_datasource.dart';
@@ -42,6 +43,7 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
           autoRenew: row.autoRenew,
           anchorDay: row.anchorDay,
           reminderTimeMinutes: row.reminderTimeMinutes,
+          logoTransform: LogoTransform.decode(row.logoTransform),
         );
       }).toList();
     } catch (e) {
@@ -75,6 +77,7 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
       autoRenew: Value(s.autoRenew),
       anchorDay: Value(s.anchorDay),
       reminderTimeMinutes: Value(s.reminderTimeMinutes),
+      logoTransform: Value(s.logoTransform?.encode()),
     );
   }
 
