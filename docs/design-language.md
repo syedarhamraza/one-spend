@@ -147,7 +147,7 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIScrollToTopButton` | `one_ui_scroll_to_top_button.dart` | Long lists |
 | `OneUILogoFramer` | `one_ui_logo_framer.dart` | Image editor for a custom logo: the real icon, large, with pinch-to-zoom, drag, a zoom slider and Reset. Produces a `LogoTransform` (zoom + offset as fractions of the icon size) |
 | `FirstRunEmptyState` | `features/subscriptions/presentation/widgets/first_run_empty_state.dart` | The Subscriptions tab before anything is added: logo hero (animates once), headline, Add subscription, popular one-tap starts, Restore from backup |
-| `OneUIBrandIcon`, `OneUIPaymentBrandIcon` | respective files | Service logos and card-network logos. A custom logo honours its `LogoTransform`. Glyphs use `OneUIBrandCatalog.foregroundOn(background)` so they stay legible on light colours such as white |
+| `OneUIBrandIcon`, `OneUIPaymentBrandIcon` | respective files | Subscription icons (user's own image, a chosen glyph, or initials in the subscription's colour) and payment badges (network colour + generic card or wallet glyph, name as text). **Never ship or draw third-party logos or logo-like glyphs** (no brand SVGs, no `Icons.apple`/`Icons.paypal`, no private-use logo characters): they're trademarks and a Play Store policy risk. Glyphs use `OneUIBrandCatalog.foregroundOn(background)` so they stay legible on light colours. A custom logo honours its `LogoTransform` |
 
 ### Leading icon badges
 - **In list rows:** a 36 px **solid circle** in an accent colour, with a white 20 px icon (see `_buildIconBadge` in `settings_screen.dart`).

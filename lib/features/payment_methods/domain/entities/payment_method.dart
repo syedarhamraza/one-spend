@@ -14,23 +14,25 @@ enum PaymentMethodType {
 }
 
 enum CardBrand {
-  visa('Visa', 0xFF1A1F71, 'assets/logos/payments/visa.svg'),
-  mastercard('Mastercard', 0xFFEB001B, 'assets/logos/payments/mastercard.svg'),
-  applePay('Apple Pay', 0xFF000000, 'assets/logos/payments/apple-pay.svg'),
-  googlePay('Google Pay', 0xFF4285F4, 'assets/logos/payments/google-pay.svg'),
-  samsungPay('Samsung Pay', 0xFF1428A0, 'assets/logos/payments/samsung-pay.svg'),
-  paypal('PayPal', 0xFF003087, 'assets/logos/payments/paypal.svg'),
-  skrill('Skrill', 0xFF811963, 'assets/logos/payments/skrill.svg'),
-  unionPay('UnionPay', 0xFF007B80, 'assets/logos/payments/unionpay.svg'),
-  jcb('JCB', 0xFF0E4C92, 'assets/logos/payments/jcb.svg'),
-  maestro('Maestro', 0xFF00A2E5, 'assets/logos/payments/maestro.svg'),
-  alipay('Alipay', 0xFF1677FF, 'assets/logos/payments/alipay.svg'),
-  wechatPay('WeChat Pay', 0xFF07C160, 'assets/logos/payments/wechat-pay.svg');
+  visa('Visa', 0xFF1A1F71),
+  mastercard('Mastercard', 0xFFEB001B),
+  applePay('Apple Pay', 0xFF000000, isWallet: true),
+  googlePay('Google Pay', 0xFF4285F4, isWallet: true),
+  samsungPay('Samsung Pay', 0xFF1428A0, isWallet: true),
+  paypal('PayPal', 0xFF003087, isWallet: true),
+  skrill('Skrill', 0xFF811963, isWallet: true),
+  unionPay('UnionPay', 0xFF007B80),
+  jcb('JCB', 0xFF0E4C92),
+  maestro('Maestro', 0xFF00A2E5),
+  alipay('Alipay', 0xFF1677FF, isWallet: true),
+  wechatPay('WeChat Pay', 0xFF07C160, isWallet: true);
 
   final String label;
   final int defaultColorValue;
-  final String? assetPath;
-  const CardBrand(this.label, this.defaultColorValue, [this.assetPath]);
+
+  /// A payment app or wallet rather than a card network.
+  final bool isWallet;
+  const CardBrand(this.label, this.defaultColorValue, {this.isWallet = false});
 
   static CardBrand fromString(String? val) {
     return CardBrand.values.firstWhere(

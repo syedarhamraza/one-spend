@@ -8,23 +8,9 @@ extension CardBrandUIAdapter on CardBrand {
   Color get color => Color(defaultColorValue);
   Color get defaultColor => Color(defaultColorValue);
 
-  IconData get icon {
-    switch (this) {
-      case CardBrand.applePay:
-        return Icons.apple_rounded;
-      case CardBrand.googlePay:
-        return Icons.g_mobiledata_rounded;
-      case CardBrand.samsungPay:
-        return Icons.smartphone_rounded;
-      case CardBrand.paypal:
-        return Icons.paypal_rounded;
-      case CardBrand.skrill:
-      case CardBrand.alipay:
-        return Icons.account_balance_wallet_rounded;
-      default:
-        return Icons.credit_card_rounded;
-    }
-  }
+  /// A generic glyph: a wallet for payment apps, a card for card networks.
+  /// (No company logos: those are third-party trademarks.)
+  IconData get icon => isWallet ? Icons.account_balance_wallet_rounded : Icons.credit_card_rounded;
 }
 
 extension PaymentMethodTypeUIAdapter on PaymentMethodType {

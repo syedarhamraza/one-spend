@@ -12,7 +12,8 @@ void main() {
       expect(CardBrand.values.length, equals(12));
       expect(CardBrand.values, contains(CardBrand.skrill));
       expect(CardBrand.skrill.label, equals('Skrill'));
-      expect(CardBrand.skrill.assetPath, equals('assets/logos/payments/skrill.svg'));
+      expect(CardBrand.skrill.isWallet, isTrue); // generic wallet glyph, no logo
+      expect(CardBrand.visa.isWallet, isFalse);
       expect(CardBrand.skrill.defaultColorValue, equals(0xFF811963));
     });
 

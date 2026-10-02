@@ -6,13 +6,15 @@ import 'package:flutter/services.dart';
 import '../../../../theme/one_ui_theme.dart';
 import '../../../../utils/one_ui_brand_catalog.dart';
 import '../../../../widgets/one_ui_brand_icon.dart';
+import '../../domain/entities/subscription_enums.dart';
+import '../utils/subscription_ui_adapters.dart';
 
 /// The Subscriptions tab before anything has been added: the first screen a new
-/// user sees. A hero of popular service logos that pop in over a soft glow, a
+/// user sees. A hero of category tiles that pop in over a soft glow, a
 /// headline, the main "Add subscription" action, one-tap starts for popular
 /// services, and a way back in for people restoring a backup.
 ///
-/// The hero animates once on entry (never in a loop), and not at all when the
+/// The hero (category glyphs, never third-party logos) animates once on entry (never in a loop), and not at all when the
 /// system's "Remove animations" is on.
 class FirstRunEmptyState extends StatefulWidget {
   final VoidCallback onAdd;
@@ -28,15 +30,16 @@ class FirstRunEmptyState extends StatefulWidget {
     required this.onRestore,
   });
 
-  /// Logos in the hero, placed around the centre (dx, dy in logical px; size).
-  static const List<(String, double, double, double)> heroLogos = [
-    ('netflix', 0, -6, 64),
-    ('spotify', -86, -40, 50),
-    ('youtube_premium', 88, -44, 52),
-    ('disney_plus', -112, 34, 42),
-    ('chatgpt', 106, 36, 44),
-    ('apple_tv', -40, 62, 40),
-    ('amazon_prime', 48, 66, 40),
+  /// Hero tiles: neutral category glyphs (no third-party logos), placed around
+  /// the centre as (category, dx, dy, size) in logical px.
+  static const List<(SubscriptionCategory, double, double, double)> heroTiles = [
+    (SubscriptionCategory.entertainment, 0, -6, 64),
+    (SubscriptionCategory.music, -86, -40, 50),
+    (SubscriptionCategory.cloud, 88, -44, 52),
+    (SubscriptionCategory.gaming, -112, 34, 42),
+    (SubscriptionCategory.productivity, 106, 36, 44),
+    (SubscriptionCategory.health, -40, 62, 40),
+    (SubscriptionCategory.design, 48, 66, 40),
   ];
 
   /// One-tap starts, in order.
@@ -146,7 +149,7 @@ class _FirstRunEmptyStateState extends State<FirstRunEmptyState> with SingleTick
   }
 
   Widget _hero() {
-    const logos = FirstRunEmptyState.heroLogos;
+    const logos = FirstRunEmptyState.heroTiles;
     return ExcludeSemantics(
       child: SizedBox(
         height: 200,
@@ -176,7 +179,7 @@ class _FirstRunEmptyStateState extends State<FirstRunEmptyState> with SingleTick
                     ),
                   ),
                 ),
-                for (final (i, (id, dx, dy, size)) in logos.indexed)
+                for (final (i, (category, dx, dy, size)) in logos.indexed)
                   Transform.translate(
                     offset: Offset(dx, dy + (1 - _stagger(i, logos.length)) * 18),
                     child: Opacity(
@@ -194,10 +197,18 @@ class _FirstRunEmptyStateState extends State<FirstRunEmptyState> with SingleTick
                               ),
                             ],
                           ),
-                          child: OneUIBrandIcon(
-                            name: OneUIBrandCatalog.findById(id)?.name ?? id,
-                            brandPresetId: id,
-                            size: size,
+                          child: Container(
+                            width: size,
+                            height: size,
+                            decoration: BoxDecoration(
+                              color: category.color,
+                              borderRadius: BorderRadius.circular(size * 0.32),
+                            ),
+                            child: Icon(
+                              category.icon,
+                              size: size * 0.5,
+                              color: OneUIBrandCatalog.foregroundOn(category.color),
+                            ),
                           ),
                         ),
                       ),

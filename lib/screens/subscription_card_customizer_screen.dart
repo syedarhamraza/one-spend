@@ -223,7 +223,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                   padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 6),
                                   child: Text(
                                     ctrl.showPaymentMethodChip
-                                        ? 'When Corner payment badge is on, card logos are pinned on the app icon to prevent text clipping on smaller screens.'
+                                        ? 'When Corner payment badge is on, card badges are pinned on the app icon to prevent text clipping on smaller screens.'
                                         : 'Customize which indicator chips and details are displayed on subscription cards across your list.',
                                     style: const TextStyle(
                                       fontSize: 12.5,

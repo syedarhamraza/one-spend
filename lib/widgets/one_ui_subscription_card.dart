@@ -923,7 +923,9 @@ class OneUISubscriptionCard extends StatelessWidget {
           ),
         if (showPaymentChip && hasNoCard) ...[
           const SizedBox(width: 8),
-          Container(
+          // Shrinks with the text on narrow screens / large fonts instead of overflowing.
+          Flexible(
+            child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: OneUITheme.accentRed.withValues(alpha: 0.16),
@@ -931,6 +933,8 @@ class OneUISubscriptionCard extends StatelessWidget {
             ),
             child: const Text(
               'No card',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -939,9 +943,12 @@ class OneUISubscriptionCard extends StatelessWidget {
               ),
             ),
           ),
+          ),
         ] else if (isCardExpiring) ...[
           const SizedBox(width: 8),
-          Container(
+          // Shrinks with the text on narrow screens / large fonts instead of overflowing.
+          Flexible(
+            child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: OneUITheme.accentAmber.withValues(alpha: 0.16),
@@ -949,6 +956,8 @@ class OneUISubscriptionCard extends StatelessWidget {
             ),
             child: const Text(
               'Card expiring',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -956,6 +965,7 @@ class OneUISubscriptionCard extends StatelessWidget {
                 letterSpacing: -0.1,
               ),
             ),
+          ),
           ),
         ],
       ],

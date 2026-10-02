@@ -90,7 +90,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                                 OneUIGroupItem(
                                   title: 'Payment method icon',
                                   subtitle: ctrl.detailPaymentIconStyle == DetailPaymentIconStyle.cardBrand
-                                      ? 'Card brand logo'
+                                      ? 'Card badge'
                                       : 'Setting icon badge',
                                   subtitleColor: OneUITheme.accentBlue,
                                   trailing: const Icon(
@@ -523,7 +523,7 @@ class _DetailPaymentIconOptionScreen extends StatelessWidget {
                           OneUIGroupCard(
                             items: [
                               _buildPaymentRadioItem(
-                                label: 'Card brand logo',
+                                label: 'Card badge',
                                 description: 'Official rectangular card logo (never deformed into circle or squircle)',
                                 value: DetailPaymentIconStyle.cardBrand,
                                 selectedValue: ctrl.detailPaymentIconStyle,
