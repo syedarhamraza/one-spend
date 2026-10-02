@@ -3,19 +3,20 @@ import 'package:drift_flutter/drift_flutter.dart';
 import '../../features/currency/domain/currency.dart';
 import 'converters/date_time_list_converter.dart';
 import 'tables/app_settings_table.dart';
+import 'tables/custom_categories_table.dart';
 import 'tables/payment_methods_table.dart';
 import 'tables/subscriptions_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [SubscriptionsTable, PaymentMethodsTable, AppSettingsTable])
+@DriftDatabase(tables: [SubscriptionsTable, PaymentMethodsTable, AppSettingsTable, CustomCategoriesTable])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? _openConnection());
 
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -27,6 +28,12 @@ class AppDatabase extends _$AppDatabase {
           if (from < 3) await _migrateCurrencySymbolsToCodes();
           if (from < 4 && !await _hasColumn('subscriptions', 'logo_transform')) {
             await m.addColumn(subscriptionsTable, subscriptionsTable.logoTransform);
+          }
+          if (from < 5) {
+            if (!await _hasColumn('subscriptions', 'annual_plan_price')) {
+              await m.addColumn(subscriptionsTable, subscriptionsTable.annualPlanPrice);
+            }
+            if (!await _hasTable('custom_categories')) await m.createTable(customCategoriesTable);
           }
         },
       );
@@ -56,6 +63,14 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> _hasColumn(String table, String column) async {
     final rows = await customSelect('PRAGMA table_info("$table")').get();
     return rows.any((row) => row.read<String>('name') == column);
+  }
+
+  Future<bool> _hasTable(String table) async {
+    final rows = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable.withString(table)],
+    ).get();
+    return rows.isNotEmpty;
   }
 
   static QueryExecutor _openConnection() {
@@ -89,6 +104,7 @@ class AppDatabase extends _$AppDatabase {
       await delete(subscriptionsTable).go();
       await delete(paymentMethodsTable).go();
       await delete(appSettingsTable).go();
+      await delete(customCategoriesTable).go();
     });
   }
 }

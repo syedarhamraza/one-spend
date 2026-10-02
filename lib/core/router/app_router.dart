@@ -9,8 +9,11 @@ import '../../features/subscriptions/presentation/controllers/subscription_contr
 import '../../screens/add_subscription_screen.dart';
 import '../../screens/onboarding_screen.dart';
 import '../../features/reports/presentation/export_share_screen.dart';
+import '../../features/pro/presentation/pro_controller.dart';
+import '../../features/pro/presentation/pro_screen.dart';
 import '../../screens/analytics_screen.dart';
 import '../../screens/billing_cycle_picker_screen.dart';
+import '../../screens/category_editor_screen.dart';
 import '../../screens/category_picker_screen.dart';
 import '../../screens/date_picker_screen.dart';
 import '../../screens/home_screen.dart';
@@ -25,6 +28,7 @@ import '../../screens/settings/appearance_settings_screen.dart';
 import '../../screens/settings/author_screen.dart';
 import '../../screens/settings/backup_data_screen.dart';
 import '../../screens/settings/budget_currency_screen.dart';
+import '../../screens/settings/categories_screen.dart';
 import '../../screens/settings/coming_soon_screen.dart';
 import '../../screens/settings/currency_picker_screen.dart';
 import '../../screens/settings/exchange_rates_screen.dart';
@@ -72,6 +76,9 @@ class AppRoutes {
       '$paymentMethods/${Uri.encodeComponent(methodId)}/subscriptions';
   static const popularPresets = '/presets';
   static const categoryPicker = '/pickers/category';
+
+  /// Create (no `extra`) or edit (`extra`: the custom category id) a custom category.
+  static const categoryEditor = '/categories/editor';
   static const billingCyclePicker = '/pickers/billing-cycle';
   static const reminderPicker = '/pickers/reminder';
   static const iconPicker = '/pickers/icon';
@@ -81,6 +88,8 @@ class AppRoutes {
   static const detailStudio = '/settings/detail-studio';
 
   // Settings subpages
+  static const settingsPro = '/settings/pro';
+  static const settingsCategories = '/settings/categories';
   static const settingsBudget = '/settings/budget';
   static const settingsCurrency = '/settings/budget/currency';
   static const settingsExchangeRates = '/settings/budget/rates';
@@ -211,6 +220,12 @@ List<RouteBase> buildPageRoutes() {
           CategoryPickerScreen(initialCategory: state.extra as SubscriptionCategory? ?? SubscriptionCategory.utilities),
     ),
     GoRoute(
+      path: AppRoutes.categoryEditor,
+      redirect: _requirePro,
+      builder: (context, state) => CategoryEditorScreen(categoryId: state.extra as String?),
+    ),
+    GoRoute(path: AppRoutes.settingsCategories, builder: (context, state) => const CategoriesScreen()),
+    GoRoute(
       path: AppRoutes.billingCyclePicker,
       builder: (context, state) =>
           BillingCyclePickerScreen(initialCycle: state.extra as BillingCycle? ?? BillingCycle.monthly),
@@ -263,8 +278,17 @@ List<RouteBase> buildPageRoutes() {
         );
       },
     ),
-    GoRoute(path: AppRoutes.cardStudio, builder: (context, state) => const SubscriptionCardCustomizerScreen()),
-    GoRoute(path: AppRoutes.detailStudio, builder: (context, state) => const SubscriptionDetailCustomizerScreen()),
+    GoRoute(
+      path: AppRoutes.cardStudio,
+      redirect: _requirePro,
+      builder: (context, state) => const SubscriptionCardCustomizerScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.detailStudio,
+      redirect: _requirePro,
+      builder: (context, state) => const SubscriptionDetailCustomizerScreen(),
+    ),
+    GoRoute(path: AppRoutes.settingsPro, builder: (context, state) => const ProScreen()),
     GoRoute(path: AppRoutes.settingsBudget, builder: (context, state) => const BudgetCurrencyScreen()),
     GoRoute(
       path: AppRoutes.settingsCurrency,
@@ -356,3 +380,7 @@ class _SubscriptionNotFoundScreen extends StatelessWidget {
     );
   }
 }
+
+/// Route guard for Pro-only pages: sends free users to the OneSpend Pro page instead.
+String? _requirePro(BuildContext context, GoRouterState state) =>
+    ProController.instance.isPro ? null : AppRoutes.settingsPro;

@@ -3,6 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import '../features/pro/presentation/pro_controller.dart';
+import '../features/pro/presentation/pro_gate.dart';
+import '../features/subscriptions/domain/services/annual_savings.dart';
+import '../features/pro/presentation/pro_screen.dart';
 import '../utils/external_links.dart';
 import '../models/subscription.dart';
 import 'settings/currency_picker_screen.dart';
@@ -60,10 +64,16 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   void initState() {
     super.initState();
     _sub = widget.subscription;
+    ProController.instance.addListener(_onProChanged);
+  }
+
+  void _onProChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    ProController.instance.removeListener(_onProChanged);
     _undoRenewTimer?.cancel();
     SubscriptionStore.instance.discardRenewUndo(_sub.id);
     super.dispose();
@@ -224,13 +234,17 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
       fallbackBottom: 84.0,
       fallbackRight: 20.0,
       items: [
-        OneUIFloatingMenuItem(label: 'Share as PDF', onTap: _shareSubscriptionPdf),
+        OneUIFloatingMenuItem(label: ProController.instance.isPro ? 'Share as PDF' : 'Share as PDF (Pro)', onTap: _shareSubscriptionPdf),
         OneUIFloatingMenuItem(label: 'Share as text', onTap: _shareSubscriptionText),
       ],
     );
   }
 
   Future<void> _shareSubscriptionPdf() async {
+    if (!ProController.instance.isPro) {
+      ProScreen.open(context);
+      return;
+    }
     try {
       await ReportSharer.shareSubscriptionPdf(SubscriptionStore.instance, _sub);
     } catch (_) {
@@ -840,6 +854,30 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                     SubscriptionStore.instance.updateSubscription(_sub);
                                   },
                                 ),
+                                if (_sub.billingCycle != BillingCycle.yearly)
+                                  OneUIGroupItem(
+                                    leading: _buildDetailIcon(Icons.savings_rounded, OneUITheme.accentGreen),
+                                    title: 'Annual plan price',
+                                    subtitle: _sub.annualPlanPrice == null
+                                        ? 'Compare with paying yearly'
+                                        : '${formatMoney(_sub.annualPlanPrice!, _sub.currency)} / year',
+                                    subtitleColor: _selectableSubtitleColor(fallback: OneUITheme.textSecondary),
+                                    trailing: ProGate.chip(
+                                      unlocked: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
+                                    ),
+                                    onTap: () => ProGate.run(
+                                      context,
+                                      () => _editField<double>(
+                                        title: 'Annual plan price',
+                                        subtitle: 'What ${_sub.name} costs billed yearly. Set to 0 to clear.',
+                                        type: FieldEditorType.number,
+                                        initialValue: _sub.annualPlanPrice ?? 0,
+                                        onApply: (val) => _sub = val <= 0
+                                            ? _sub.copyWith(clearAnnualPlanPrice: true)
+                                            : _sub.copyWith(annualPlanPrice: val),
+                                      ),
+                                    ),
+                                  ),
                                 OneUIGroupItem(
                                   leading: _buildDetailIcon(Icons.calendar_month_rounded, OneUITheme.accentTeal),
                                   title: 'Next renewal date',
@@ -1135,6 +1173,24 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                                       'Monthly equivalent',
                                                       '~${formatMoney(_sub.monthlyCost, _sub.currency, style: MoneyStyle.approximate)} / mo',
                                                     ),
+                                                    if (ProController.instance.isPro)
+                                                      if (AnnualSavings.forSubscription(_sub) case final annual?) ...[
+                                                        Divider(
+                                                          height: 14,
+                                                          thickness: 0.6,
+                                                          color: Colors.white.withValues(alpha: 0.06),
+                                                        ),
+                                                        _keyValueRow(
+                                                          'Switch to yearly',
+                                                          annual.saving > 0
+                                                              ? 'Save ${formatMoney(annual.saving, _sub.currency, style: MoneyStyle.summary)} / yr '
+                                                                  '(${(annual.percent * 100).round()}%)'
+                                                              : annual.saving < 0
+                                                                  ? 'Yearly costs ${formatMoney(-annual.saving, _sub.currency, style: MoneyStyle.summary)} more'
+                                                                  : 'Same price',
+                                                          valueColor: annual.saving > 0 ? OneUITheme.accentGreen : OneUITheme.textSecondary,
+                                                        ),
+                                                      ],
                                                     if (SubscriptionStore.instance.approxInMain(_sub.monthlyCost, _sub.currency)
                                                         case final approx?) ...[
                                                       Divider(
@@ -1253,7 +1309,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
 
   /// Device Care style key-value row. The label shrinks with an ellipsis and the value wraps,
   /// so long amounts never overflow on narrow phones.
-  Widget _keyValueRow(String label, String value) {
+  Widget _keyValueRow(String label, String value, {Color valueColor = OneUITheme.textPrimary}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1270,7 +1326,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: valueColor),
           ),
         ),
       ],

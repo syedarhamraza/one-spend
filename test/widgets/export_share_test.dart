@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/di/injection.dart';
+import 'package:onespend/features/pro/presentation/pro_controller.dart';
 import 'package:onespend/features/reports/presentation/export_share_screen.dart';
 import 'package:onespend/models/subscription.dart';
 import 'package:onespend/screens/subscription_detail_screen.dart';
@@ -24,6 +25,8 @@ void main() {
     setupDependencies(database: AppDatabase.forTesting(NativeDatabase.memory()));
     OneUIFloatingModal.isModalOpen.value = false;
     SubscriptionStore.instance.resetForTesting();
+    // PDF sharing is a Pro feature; the locked state is covered in pro_gate_test.dart.
+    ProController.instance.debugOverride = true;
   });
 
   tearDown(OneUIToast.dismiss);

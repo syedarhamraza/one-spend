@@ -14,6 +14,7 @@ import '../../data/fixtures/popular_catalog.dart';
 import '../../data/subscription_exporter.dart';
 import '../../domain/entities/subscription.dart';
 import '../../domain/entities/subscription_enums.dart';
+import '../../domain/repositories/custom_category_repository.dart';
 import '../../domain/repositories/subscription_repository.dart';
 import '../../domain/services/billing_schedule.dart';
 import '../../domain/services/subscription_stats.dart';
@@ -32,6 +33,9 @@ class SubscriptionController extends ChangeNotifier {
   final SettingsRepository settingsRepository;
   final ExchangeRateRepository rates;
 
+  /// Null keeps custom categories in memory only (controllers built directly in tests).
+  final CustomCategoryRepository? customCategoryRepository;
+
   static SubscriptionController get instance {
     if (!sl.isRegistered<SubscriptionController>()) {
       setupDependencies();
@@ -44,6 +48,7 @@ class SubscriptionController extends ChangeNotifier {
     required this.paymentMethodRepository,
     required this.settingsRepository,
     ExchangeRateRepository? rates,
+    this.customCategoryRepository,
   }) : rates = rates ?? ExchangeRateRepository() {
     this.rates.addListener(notifyListeners);
   }
@@ -133,6 +138,7 @@ class SubscriptionController extends ChangeNotifier {
     _lastBackupAt = null;
     _trackingSince = null;
     _prePauseStatus.clear();
+    CustomCategoryRegistry.replaceAll(const []);
     _isLoaded = true;
     notifyListeners();
     final subs = List<Subscription>.from(_subscriptions);
@@ -140,6 +146,7 @@ class SubscriptionController extends ChangeNotifier {
     _persist(() async {
       await subscriptionRepository.replaceAll(subs);
       await paymentMethodRepository.replaceAll(methods);
+      await customCategoryRepository?.replaceAll(const []);
     });
   }
 
@@ -269,6 +276,8 @@ class SubscriptionController extends ChangeNotifier {
   /// Awaited once at startup, before the first frame.
   Future<void> load() async {
     try {
+      // Categories first, so subscriptions in custom categories resolve their names.
+      CustomCategoryRegistry.replaceAll(await customCategoryRepository?.getCustomCategories() ?? const []);
       final loadedSubs = await subscriptionRepository.getSubscriptions();
       final loadedMethods = await paymentMethodRepository.getPaymentMethods();
       _subscriptions
@@ -689,7 +698,9 @@ class SubscriptionController extends ChangeNotifier {
     required List<PaymentMethod> paymentMethods,
     BackupSettings? settings,
     Map<String, RateOverride>? rateOverrides,
+    List<CustomCategory>? customCategories,
   }) {
+    if (customCategories != null) CustomCategoryRegistry.replaceAll(customCategories);
     _subscriptions
       ..clear()
       ..addAll(subscriptions);
@@ -716,6 +727,7 @@ class SubscriptionController extends ChangeNotifier {
     _persist(() async {
       await subscriptionRepository.replaceAll(subs);
       await paymentMethodRepository.replaceAll(methods);
+      if (customCategories != null) await customCategoryRepository?.replaceAll(customCategories);
       if (settings != null) {
         await settingsRepository.setMonthlyBudget(budget);
         await settingsRepository.setCurrency(currency);
@@ -730,14 +742,78 @@ class SubscriptionController extends ChangeNotifier {
   }
 
   /// Appends subscriptions and cards (restoring a backup with "Add missing items").
-  void addItems({required List<Subscription> subscriptions, required List<PaymentMethod> paymentMethods}) {
+  void addItems({
+    required List<Subscription> subscriptions,
+    required List<PaymentMethod> paymentMethods,
+    List<CustomCategory> customCategories = const [],
+  }) {
     _markTrackingStarted();
-    if (subscriptions.isEmpty && paymentMethods.isEmpty) return;
+    if (customCategories.isNotEmpty) {
+      CustomCategoryRegistry.replaceAll([...CustomCategoryRegistry.categories, ...customCategories]);
+      final snapshot = List<CustomCategory>.from(customCategories);
+      _persist(() async => customCategoryRepository?.upsert(snapshot));
+    }
+    if (subscriptions.isEmpty && paymentMethods.isEmpty) {
+      if (customCategories.isNotEmpty) notifyListeners();
+      return;
+    }
     _subscriptions.addAll(subscriptions);
     _paymentMethods.addAll(paymentMethods);
     notifyListeners();
     _persistSubscriptions(subscriptions);
     _persistPaymentMethods(paymentMethods);
+  }
+
+  // --- Custom categories (Pro) ---
+
+  /// The user's categories, in display order.
+  List<CustomCategory> get customCategories => CustomCategoryRegistry.categories;
+
+  /// How many subscriptions are in [category].
+  int subscriptionCountIn(SubscriptionCategory category) => _subscriptions.where((s) => s.category == category).length;
+
+  /// Adds a category at the end of the list and returns it as a [SubscriptionCategory].
+  SubscriptionCategory addCustomCategory({required String name, required int iconCodePoint, required int colorValue}) {
+    final existing = CustomCategoryRegistry.categories;
+    final category = CustomCategory(
+      id: CustomCategory.newId(),
+      name: name.trim(),
+      iconCodePoint: iconCodePoint,
+      colorValue: colorValue,
+      sortOrder: existing.isEmpty ? 0 : existing.last.sortOrder + 1,
+    );
+    CustomCategoryRegistry.replaceAll([...existing, category]);
+    notifyListeners();
+    _persist(() async => customCategoryRepository?.upsert([category]));
+    return SubscriptionCategory.custom(category.id);
+  }
+
+  void updateCustomCategory(CustomCategory category) {
+    final updated = category.copyWith(name: category.name.trim());
+    CustomCategoryRegistry.replaceAll([
+      for (final c in CustomCategoryRegistry.categories) c.id == updated.id ? updated : c,
+    ]);
+    notifyListeners();
+    _persist(() async => customCategoryRepository?.upsert([updated]));
+  }
+
+  /// Deletes a custom category and moves its subscriptions to [moveTo].
+  void deleteCustomCategory(String id, {required SubscriptionCategory moveTo}) {
+    final from = SubscriptionCategory.custom(id);
+    final target = moveTo == from ? SubscriptionCategory.utilities : moveTo;
+    final moved = <Subscription>[];
+    for (int i = 0; i < _subscriptions.length; i++) {
+      if (_subscriptions[i].category != from) continue;
+      _subscriptions[i] = _subscriptions[i].copyWith(category: target);
+      moved.add(_subscriptions[i]);
+    }
+    CustomCategoryRegistry.replaceAll([
+      for (final c in CustomCategoryRegistry.categories)
+        if (c.id != id) c,
+    ]);
+    notifyListeners();
+    _persistSubscriptions(moved);
+    _persist(() async => customCategoryRepository?.delete([id]));
   }
 
   // --- Dismissed insights ---

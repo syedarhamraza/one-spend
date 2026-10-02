@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import '../features/pro/presentation/pro_controller.dart';
+import '../features/pro/presentation/pro_screen.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
@@ -243,7 +245,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ...SubscriptionCategory.values.map(
+                  ...SubscriptionCategory.all.map(
                     (cat) => InkWell(
                       onTap: () {
                         final count = _selectedIds.length;
@@ -319,13 +321,17 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       fallbackBottom: 84.0,
       fallbackRight: 20.0,
       items: [
-        OneUIFloatingMenuItem(label: 'Share as PDF', onTap: _shareSelectedPdf),
+        OneUIFloatingMenuItem(label: ProController.instance.isPro ? 'Share as PDF' : 'Share as PDF (Pro)', onTap: _shareSelectedPdf),
         OneUIFloatingMenuItem(label: 'Share as text', onTap: _shareSelectedText),
       ],
     );
   }
 
   Future<void> _shareSelectedPdf() async {
+    if (!ProController.instance.isPro) {
+      ProScreen.open(context);
+      return;
+    }
     try {
       await ReportSharer.shareSelectionPdf(SubscriptionStore.instance, Set.of(_selectedIds));
     } catch (_) {
@@ -401,7 +407,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         'id,name,price,currency,category,billingCycle,nextBillingDate,reminderDays,description,status\n');
     for (var s in subs) {
       buffer.writeln(
-          '${s.id},"${s.name.replaceAll('"', '""')}",${s.price},"${s.currency}","${s.category.name}","${s.billingCycle.name}","${s.nextBillingDate.toIso8601String()}",${s.reminderDays},"${s.description.replaceAll('"', '""')}","${s.status.name}"');
+          '${s.id},"${s.name.replaceAll('"', '""')}",${s.price},"${s.currency}","${s.category.label.replaceAll('"', '""')}","${s.billingCycle.name}","${s.nextBillingDate.toIso8601String()}",${s.reminderDays},"${s.description.replaceAll('"', '""')}","${s.status.name}"');
     }
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     _exitSelectionMode();

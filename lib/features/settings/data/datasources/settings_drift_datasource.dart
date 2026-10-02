@@ -18,6 +18,7 @@ class SettingsDriftDataSource {
   static const String keyLastBackupAt = 'onespend_last_backup_at';
   static const String keyTrackingSince = 'onespend_tracking_since';
   static const String keyOnboardingDone = 'onespend_onboarding_done';
+  static const String keyProUnlocked = 'onespend_pro_unlocked';
   static const String keyNotificationsEnabled = 'onespend_notifications_enabled';
   static const String keyReminderTime = 'onespend_reminder_time_minutes';
   static const int defaultReminderTimeMinutes = 9 * 60;
@@ -152,6 +153,12 @@ class SettingsDriftDataSource {
 
   Future<void> setOnboardingDone(bool value) async {
     await db.setSetting(keyOnboardingDone, value.toString());
+  }
+
+  Future<bool> getProUnlocked() async => (await db.getSetting(keyProUnlocked)) == 'true';
+
+  Future<void> setProUnlocked(bool value) async {
+    await db.setSetting(keyProUnlocked, value.toString());
   }
 
   Future<Map<String, String>> getAppearanceSettings() {

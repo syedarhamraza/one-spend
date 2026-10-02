@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../core/config/feature_flags.dart';
+import '../../features/pro/presentation/pro_screen.dart';
 import '../../theme/one_ui_theme.dart';
 import '../payment_methods_screen.dart';
 import 'about_screen.dart';
 import 'appearance_settings_screen.dart';
 import 'backup_data_screen.dart';
 import 'budget_currency_screen.dart';
+import 'categories_screen.dart';
 import 'coming_soon_screen.dart';
 import 'developer_options_screen.dart';
 import 'help_feedback_screen.dart';
@@ -63,6 +65,15 @@ class SettingsCatalog {
   static List<List<SettingsDestination>> _allGroups({required bool developerOptions}) => [
     [
       SettingsDestination(
+        title: 'OneSpend Pro',
+        icon: Icons.workspace_premium_rounded,
+        color: OneUITheme.accentAmber,
+        open: ProScreen.open,
+        keywords: ['pro', 'premium', 'upgrade', 'buy', 'purchase', 'redeem', 'promo code', 'restore'],
+      ),
+    ],
+    [
+      SettingsDestination(
         title: 'Budget & currency',
         icon: Icons.account_balance_wallet_rounded,
         color: OneUITheme.accentGreen,
@@ -72,6 +83,16 @@ class SettingsCatalog {
           (title: 'Monthly budget', keywords: ['limit', 'spending cap'], placeholder: false),
           (title: 'Main currency', keywords: ['currency', 'symbol', 'dollar', 'euro', 'pound', 'rupee', 'yen'], placeholder: false),
           (title: 'Exchange rates', keywords: ['exchange', 'conversion', 'convert', 'rate', 'multi-currency'], placeholder: false),
+        ],
+      ),
+      SettingsDestination(
+        title: 'Categories',
+        icon: Icons.label_rounded,
+        color: OneUITheme.accentOrange,
+        open: CategoriesScreen.open,
+        keywords: ['category', 'categories', 'tag', 'tags', 'custom', 'group', 'pro'],
+        options: [
+          (title: 'New category', keywords: ['create', 'add', 'custom', 'pro'], placeholder: false),
         ],
       ),
       SettingsDestination(
@@ -111,10 +132,10 @@ class SettingsCatalog {
           ),
           (
             title: 'Subscription cards',
-            keywords: ['card studio', 'price display', 'renewal badge', 'chips'],
+            keywords: ['card studio', 'price display', 'renewal badge', 'chips', 'pro'],
             placeholder: false,
           ),
-          (title: 'Subscription details', keywords: ['icons', 'highlight', 'detail screen'], placeholder: false),
+          (title: 'Subscription details', keywords: ['icons', 'highlight', 'detail screen', 'pro'], placeholder: false),
           (title: 'Reset appearance', keywords: ['defaults'], placeholder: false),
         ],
       ),

@@ -44,6 +44,12 @@ class MonthlySpendPoint {
   /// Per-subscription totals for the month, largest first.
   final List<MonthCharge> topCharges;
 
+  /// The part of [amount] that is still unpaid (scheduled charges); the rest is logged or estimated.
+  final double scheduledAmount;
+
+  /// Part of [amount] is estimated: a subscription with no payment history at all.
+  final bool isEstimated;
+
   const MonthlySpendPoint({
     required this.month,
     required this.label,
@@ -57,6 +63,8 @@ class MonthlySpendPoint {
     this.isCurrent = false,
     required this.categoryBreakdown,
     this.topCharges = const [],
+    this.scheduledAmount = 0.0,
+    this.isEstimated = false,
   });
 
   bool get isIncrease => momDifference > 0.001;
@@ -116,6 +124,40 @@ class TrendSummary {
   );
 }
 
+/// Where this calendar year's spending is heading (the Pro year-end projection).
+class YearEndProjection {
+  final int year;
+
+  /// The first month counted: January, or the month tracking started.
+  final DateTime fromMonth;
+
+  /// Logged payments (and estimates for subscriptions without history) up to today.
+  final double spentSoFar;
+
+  /// Unpaid charges from today to December 31, including anything overdue.
+  final double stillToCome;
+
+  /// Monthly budget × months covered; 0 without a budget.
+  final double budgetForYear;
+
+  /// Some months were estimated because no payments were logged.
+  final bool isEstimated;
+
+  const YearEndProjection({
+    required this.year,
+    required this.fromMonth,
+    required this.spentSoFar,
+    required this.stillToCome,
+    required this.budgetForYear,
+    required this.isEstimated,
+  });
+
+  double get total => spentSoFar + stillToCome;
+
+  /// Positive when the year ends over budget.
+  double get overBudget => budgetForYear <= 0 ? 0 : total - budgetForYear;
+}
+
 /// Calculation Engine for Month-over-Month Spending Trends and Trajectory
 class SpendingTrendsEngine {
   static final DateFormat _shortMonthFormat = DateFormat('MMM');
@@ -142,14 +184,57 @@ class SpendingTrendsEngine {
     DateTime? trackingSince,
   }) {
     final now = referenceDate ?? DateTime.now();
-    final currentMonthStart = DateTime(now.year, now.month, 1);
     final firstMonth = firstTrackedMonth(subscriptions, trackingSince);
     final months = [
       for (var i = -horizon.pastMonths; i <= horizon.futureMonths; i++)
         if (firstMonth == null || !DateTime(now.year, now.month + i, 1).isBefore(firstMonth) || i >= 0)
           DateTime(now.year, now.month + i, 1),
     ];
+    return _pointsFor(subscriptions: subscriptions, months: months, now: now, toMain: toMain);
+  }
 
+  /// Where the current calendar year ends up: [projectYear] covers January (or the month
+  /// tracking started) to December.
+  static YearEndProjection projectYear({
+    required List<Subscription> subscriptions,
+    DateTime? referenceDate,
+    ToMainCurrency toMain = sameCurrency,
+    DateTime? trackingSince,
+    double monthlyBudget = 0,
+  }) {
+    final now = referenceDate ?? DateTime.now();
+    final january = DateTime(now.year, 1, 1);
+    final currentMonthStart = DateTime(now.year, now.month, 1);
+    final firstMonth = firstTrackedMonth(subscriptions, trackingSince);
+    var from = firstMonth != null && firstMonth.isAfter(january) ? firstMonth : january;
+    if (from.isAfter(currentMonthStart)) from = currentMonthStart;
+    final months = [for (var m = from.month; m <= 12; m++) DateTime(now.year, m, 1)];
+    final points = _pointsFor(subscriptions: subscriptions, months: months, now: now, toMain: toMain);
+
+    var spent = 0.0;
+    var toCome = 0.0;
+    for (final p in points) {
+      spent += p.amount - p.scheduledAmount;
+      toCome += p.scheduledAmount;
+    }
+    return YearEndProjection(
+      year: now.year,
+      fromMonth: from,
+      spentSoFar: spent,
+      stillToCome: toCome,
+      budgetForYear: monthlyBudget > 0 ? monthlyBudget * months.length : 0,
+      isEstimated: points.any((p) => p.isEstimated),
+    );
+  }
+
+  /// One point per month in [months] (ascending); see [calculateTrends] for the rules.
+  static List<MonthlySpendPoint> _pointsFor({
+    required List<Subscription> subscriptions,
+    required List<DateTime> months,
+    required DateTime now,
+    required ToMainCurrency toMain,
+  }) {
+    final currentMonthStart = DateTime(now.year, now.month, 1);
     final activeSubs = subscriptions
         .where((s) => s.status != SubscriptionStatus.paused && s.status != SubscriptionStatus.trial && s.price > 0)
         .toList();
@@ -173,6 +258,8 @@ class SpendingTrendsEngine {
 
     for (final monthDate in months) {
       final isPast = monthDate.isBefore(currentMonthStart);
+      var scheduledAmount = 0.0;
+      var estimated = false;
       final perSub = <String, ({Subscription subscription, double amount, int count})>{};
       void add(Subscription sub, double amount, int count) {
         final current = perSub[sub.id];
@@ -189,11 +276,13 @@ class SpendingTrendsEngine {
           add(sub, logged * sub.price, logged);
         } else if (isPast && sub.paymentHistory.isEmpty) {
           add(sub, sub.monthlyCost, 1);
+          estimated = true;
         }
       }
       if (!isPast) {
         for (final c in scheduledByMonth[monthDate] ?? const <UpcomingCharge>[]) {
           add(c.subscription, c.amount, 1);
+          scheduledAmount += toMain(c.amount, c.subscription.currency);
         }
       }
       if (monthDate == currentMonthStart) {
@@ -203,7 +292,10 @@ class SpendingTrendsEngine {
         for (final sub in activeSubs) {
           if (sub.paymentHistory.isNotEmpty) continue;
           final earlier = _cycleDatesBefore(sub, from: currentMonthStart, until: today);
-          if (earlier > 0) add(sub, earlier * sub.price, earlier);
+          if (earlier > 0) {
+            add(sub, earlier * sub.price, earlier);
+            estimated = true;
+          }
         }
       }
 
@@ -241,6 +333,8 @@ class SpendingTrendsEngine {
         isCurrent: monthDate == currentMonthStart,
         categoryBreakdown: catBreakdown,
         topCharges: charges,
+        scheduledAmount: scheduledAmount,
+        isEstimated: estimated,
       ));
 
       lastAmount = monthTotal;

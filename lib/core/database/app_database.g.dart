@@ -288,6 +288,17 @@ class $SubscriptionsTableTable extends SubscriptionsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _annualPlanPriceMeta = const VerificationMeta(
+    'annualPlanPrice',
+  );
+  @override
+  late final GeneratedColumn<double> annualPlanPrice = GeneratedColumn<double>(
+    'annual_plan_price',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -315,6 +326,7 @@ class $SubscriptionsTableTable extends SubscriptionsTable
     anchorDay,
     reminderTimeMinutes,
     logoTransform,
+    annualPlanPrice,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -525,6 +537,15 @@ class $SubscriptionsTableTable extends SubscriptionsTable
         ),
       );
     }
+    if (data.containsKey('annual_plan_price')) {
+      context.handle(
+        _annualPlanPriceMeta,
+        annualPlanPrice.isAcceptableOrUnknown(
+          data['annual_plan_price']!,
+          _annualPlanPriceMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -636,6 +657,10 @@ class $SubscriptionsTableTable extends SubscriptionsTable
         DriftSqlType.string,
         data['${effectivePrefix}logo_transform'],
       ),
+      annualPlanPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}annual_plan_price'],
+      ),
     );
   }
 
@@ -681,6 +706,9 @@ class SubscriptionEntry extends DataClass
 
   /// Custom logo framing ("scale,dx,dy", see LogoTransform). Added in schema v4.
   final String? logoTransform;
+
+  /// What the same plan costs billed yearly, in [currency] (annual vs. monthly calculator). Added in schema v5.
+  final double? annualPlanPrice;
   const SubscriptionEntry({
     required this.id,
     required this.name,
@@ -707,6 +735,7 @@ class SubscriptionEntry extends DataClass
     this.anchorDay,
     this.reminderTimeMinutes,
     this.logoTransform,
+    this.annualPlanPrice,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -756,6 +785,9 @@ class SubscriptionEntry extends DataClass
     if (!nullToAbsent || logoTransform != null) {
       map['logo_transform'] = Variable<String>(logoTransform);
     }
+    if (!nullToAbsent || annualPlanPrice != null) {
+      map['annual_plan_price'] = Variable<double>(annualPlanPrice);
+    }
     return map;
   }
 
@@ -802,6 +834,9 @@ class SubscriptionEntry extends DataClass
       logoTransform: logoTransform == null && nullToAbsent
           ? const Value.absent()
           : Value(logoTransform),
+      annualPlanPrice: annualPlanPrice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(annualPlanPrice),
     );
   }
 
@@ -840,6 +875,7 @@ class SubscriptionEntry extends DataClass
         json['reminderTimeMinutes'],
       ),
       logoTransform: serializer.fromJson<String?>(json['logoTransform']),
+      annualPlanPrice: serializer.fromJson<double?>(json['annualPlanPrice']),
     );
   }
   @override
@@ -871,6 +907,7 @@ class SubscriptionEntry extends DataClass
       'anchorDay': serializer.toJson<int?>(anchorDay),
       'reminderTimeMinutes': serializer.toJson<int?>(reminderTimeMinutes),
       'logoTransform': serializer.toJson<String?>(logoTransform),
+      'annualPlanPrice': serializer.toJson<double?>(annualPlanPrice),
     };
   }
 
@@ -900,6 +937,7 @@ class SubscriptionEntry extends DataClass
     Value<int?> anchorDay = const Value.absent(),
     Value<int?> reminderTimeMinutes = const Value.absent(),
     Value<String?> logoTransform = const Value.absent(),
+    Value<double?> annualPlanPrice = const Value.absent(),
   }) => SubscriptionEntry(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -938,6 +976,9 @@ class SubscriptionEntry extends DataClass
     logoTransform: logoTransform.present
         ? logoTransform.value
         : this.logoTransform,
+    annualPlanPrice: annualPlanPrice.present
+        ? annualPlanPrice.value
+        : this.annualPlanPrice,
   );
   SubscriptionEntry copyWithCompanion(SubscriptionsTableCompanion data) {
     return SubscriptionEntry(
@@ -994,6 +1035,9 @@ class SubscriptionEntry extends DataClass
       logoTransform: data.logoTransform.present
           ? data.logoTransform.value
           : this.logoTransform,
+      annualPlanPrice: data.annualPlanPrice.present
+          ? data.annualPlanPrice.value
+          : this.annualPlanPrice,
     );
   }
 
@@ -1024,7 +1068,8 @@ class SubscriptionEntry extends DataClass
           ..write('autoRenew: $autoRenew, ')
           ..write('anchorDay: $anchorDay, ')
           ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
-          ..write('logoTransform: $logoTransform')
+          ..write('logoTransform: $logoTransform, ')
+          ..write('annualPlanPrice: $annualPlanPrice')
           ..write(')'))
         .toString();
   }
@@ -1056,6 +1101,7 @@ class SubscriptionEntry extends DataClass
     anchorDay,
     reminderTimeMinutes,
     logoTransform,
+    annualPlanPrice,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1085,7 +1131,8 @@ class SubscriptionEntry extends DataClass
           other.autoRenew == this.autoRenew &&
           other.anchorDay == this.anchorDay &&
           other.reminderTimeMinutes == this.reminderTimeMinutes &&
-          other.logoTransform == this.logoTransform);
+          other.logoTransform == this.logoTransform &&
+          other.annualPlanPrice == this.annualPlanPrice);
 }
 
 class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
@@ -1114,6 +1161,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
   final Value<int?> anchorDay;
   final Value<int?> reminderTimeMinutes;
   final Value<String?> logoTransform;
+  final Value<double?> annualPlanPrice;
   final Value<int> rowid;
   const SubscriptionsTableCompanion({
     this.id = const Value.absent(),
@@ -1141,6 +1189,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     this.anchorDay = const Value.absent(),
     this.reminderTimeMinutes = const Value.absent(),
     this.logoTransform = const Value.absent(),
+    this.annualPlanPrice = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SubscriptionsTableCompanion.insert({
@@ -1169,6 +1218,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     this.anchorDay = const Value.absent(),
     this.reminderTimeMinutes = const Value.absent(),
     this.logoTransform = const Value.absent(),
+    this.annualPlanPrice = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -1206,6 +1256,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     Expression<int>? anchorDay,
     Expression<int>? reminderTimeMinutes,
     Expression<String>? logoTransform,
+    Expression<double>? annualPlanPrice,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1235,6 +1286,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
       if (reminderTimeMinutes != null)
         'reminder_time_minutes': reminderTimeMinutes,
       if (logoTransform != null) 'logo_transform': logoTransform,
+      if (annualPlanPrice != null) 'annual_plan_price': annualPlanPrice,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1265,6 +1317,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     Value<int?>? anchorDay,
     Value<int?>? reminderTimeMinutes,
     Value<String?>? logoTransform,
+    Value<double?>? annualPlanPrice,
     Value<int>? rowid,
   }) {
     return SubscriptionsTableCompanion(
@@ -1293,6 +1346,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
       anchorDay: anchorDay ?? this.anchorDay,
       reminderTimeMinutes: reminderTimeMinutes ?? this.reminderTimeMinutes,
       logoTransform: logoTransform ?? this.logoTransform,
+      annualPlanPrice: annualPlanPrice ?? this.annualPlanPrice,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1379,6 +1433,9 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
     if (logoTransform.present) {
       map['logo_transform'] = Variable<String>(logoTransform.value);
     }
+    if (annualPlanPrice.present) {
+      map['annual_plan_price'] = Variable<double>(annualPlanPrice.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1413,6 +1470,7 @@ class SubscriptionsTableCompanion extends UpdateCompanion<SubscriptionEntry> {
           ..write('anchorDay: $anchorDay, ')
           ..write('reminderTimeMinutes: $reminderTimeMinutes, ')
           ..write('logoTransform: $logoTransform, ')
+          ..write('annualPlanPrice: $annualPlanPrice, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2190,6 +2248,375 @@ class AppSettingsTableCompanion extends UpdateCompanion<AppSettingEntry> {
   }
 }
 
+class $CustomCategoriesTableTable extends CustomCategoriesTable
+    with TableInfo<$CustomCategoriesTableTable, CustomCategoryEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CustomCategoriesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _iconCodePointMeta = const VerificationMeta(
+    'iconCodePoint',
+  );
+  @override
+  late final GeneratedColumn<int> iconCodePoint = GeneratedColumn<int>(
+    'icon_code_point',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _colorValueMeta = const VerificationMeta(
+    'colorValue',
+  );
+  @override
+  late final GeneratedColumn<int> colorValue = GeneratedColumn<int>(
+    'color_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    iconCodePoint,
+    colorValue,
+    sortOrder,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'custom_categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CustomCategoryEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('icon_code_point')) {
+      context.handle(
+        _iconCodePointMeta,
+        iconCodePoint.isAcceptableOrUnknown(
+          data['icon_code_point']!,
+          _iconCodePointMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_iconCodePointMeta);
+    }
+    if (data.containsKey('color_value')) {
+      context.handle(
+        _colorValueMeta,
+        colorValue.isAcceptableOrUnknown(data['color_value']!, _colorValueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_colorValueMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CustomCategoryEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CustomCategoryEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      iconCodePoint: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}icon_code_point'],
+      )!,
+      colorValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color_value'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $CustomCategoriesTableTable createAlias(String alias) {
+    return $CustomCategoriesTableTable(attachedDatabase, alias);
+  }
+}
+
+class CustomCategoryEntry extends DataClass
+    implements Insertable<CustomCategoryEntry> {
+  /// `c_…`; stored in `subscriptions.category` like the built-in names.
+  final String id;
+  final String name;
+  final int iconCodePoint;
+  final int colorValue;
+  final int sortOrder;
+  const CustomCategoryEntry({
+    required this.id,
+    required this.name,
+    required this.iconCodePoint,
+    required this.colorValue,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['icon_code_point'] = Variable<int>(iconCodePoint);
+    map['color_value'] = Variable<int>(colorValue);
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  CustomCategoriesTableCompanion toCompanion(bool nullToAbsent) {
+    return CustomCategoriesTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      iconCodePoint: Value(iconCodePoint),
+      colorValue: Value(colorValue),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory CustomCategoryEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CustomCategoryEntry(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      iconCodePoint: serializer.fromJson<int>(json['iconCodePoint']),
+      colorValue: serializer.fromJson<int>(json['colorValue']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'iconCodePoint': serializer.toJson<int>(iconCodePoint),
+      'colorValue': serializer.toJson<int>(colorValue),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  CustomCategoryEntry copyWith({
+    String? id,
+    String? name,
+    int? iconCodePoint,
+    int? colorValue,
+    int? sortOrder,
+  }) => CustomCategoryEntry(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    iconCodePoint: iconCodePoint ?? this.iconCodePoint,
+    colorValue: colorValue ?? this.colorValue,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  CustomCategoryEntry copyWithCompanion(CustomCategoriesTableCompanion data) {
+    return CustomCategoryEntry(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      iconCodePoint: data.iconCodePoint.present
+          ? data.iconCodePoint.value
+          : this.iconCodePoint,
+      colorValue: data.colorValue.present
+          ? data.colorValue.value
+          : this.colorValue,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomCategoryEntry(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('iconCodePoint: $iconCodePoint, ')
+          ..write('colorValue: $colorValue, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, iconCodePoint, colorValue, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CustomCategoryEntry &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.iconCodePoint == this.iconCodePoint &&
+          other.colorValue == this.colorValue &&
+          other.sortOrder == this.sortOrder);
+}
+
+class CustomCategoriesTableCompanion
+    extends UpdateCompanion<CustomCategoryEntry> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<int> iconCodePoint;
+  final Value<int> colorValue;
+  final Value<int> sortOrder;
+  final Value<int> rowid;
+  const CustomCategoriesTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.iconCodePoint = const Value.absent(),
+    this.colorValue = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CustomCategoriesTableCompanion.insert({
+    required String id,
+    required String name,
+    required int iconCodePoint,
+    required int colorValue,
+    this.sortOrder = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       iconCodePoint = Value(iconCodePoint),
+       colorValue = Value(colorValue);
+  static Insertable<CustomCategoryEntry> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<int>? iconCodePoint,
+    Expression<int>? colorValue,
+    Expression<int>? sortOrder,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (iconCodePoint != null) 'icon_code_point': iconCodePoint,
+      if (colorValue != null) 'color_value': colorValue,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CustomCategoriesTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<int>? iconCodePoint,
+    Value<int>? colorValue,
+    Value<int>? sortOrder,
+    Value<int>? rowid,
+  }) {
+    return CustomCategoriesTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      iconCodePoint: iconCodePoint ?? this.iconCodePoint,
+      colorValue: colorValue ?? this.colorValue,
+      sortOrder: sortOrder ?? this.sortOrder,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (iconCodePoint.present) {
+      map['icon_code_point'] = Variable<int>(iconCodePoint.value);
+    }
+    if (colorValue.present) {
+      map['color_value'] = Variable<int>(colorValue.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomCategoriesTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('iconCodePoint: $iconCodePoint, ')
+          ..write('colorValue: $colorValue, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2200,6 +2627,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AppSettingsTableTable appSettingsTable = $AppSettingsTableTable(
     this,
   );
+  late final $CustomCategoriesTableTable customCategoriesTable =
+      $CustomCategoriesTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2208,6 +2637,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     subscriptionsTable,
     paymentMethodsTable,
     appSettingsTable,
+    customCategoriesTable,
   ];
 }
 
@@ -2238,6 +2668,7 @@ typedef $$SubscriptionsTableTableCreateCompanionBuilder =
       Value<int?> anchorDay,
       Value<int?> reminderTimeMinutes,
       Value<String?> logoTransform,
+      Value<double?> annualPlanPrice,
       Value<int> rowid,
     });
 typedef $$SubscriptionsTableTableUpdateCompanionBuilder =
@@ -2267,6 +2698,7 @@ typedef $$SubscriptionsTableTableUpdateCompanionBuilder =
       Value<int?> anchorDay,
       Value<int?> reminderTimeMinutes,
       Value<String?> logoTransform,
+      Value<double?> annualPlanPrice,
       Value<int> rowid,
     });
 
@@ -2404,6 +2836,11 @@ class $$SubscriptionsTableTableFilterComposer
     column: $table.logoTransform,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<double> get annualPlanPrice => $composableBuilder(
+    column: $table.annualPlanPrice,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$SubscriptionsTableTableOrderingComposer
@@ -2539,6 +2976,11 @@ class $$SubscriptionsTableTableOrderingComposer
     column: $table.logoTransform,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get annualPlanPrice => $composableBuilder(
+    column: $table.annualPlanPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SubscriptionsTableTableAnnotationComposer
@@ -2653,6 +3095,11 @@ class $$SubscriptionsTableTableAnnotationComposer
     column: $table.logoTransform,
     builder: (column) => column,
   );
+
+  GeneratedColumn<double> get annualPlanPrice => $composableBuilder(
+    column: $table.annualPlanPrice,
+    builder: (column) => column,
+  );
 }
 
 class $$SubscriptionsTableTableTableManager
@@ -2720,6 +3167,7 @@ class $$SubscriptionsTableTableTableManager
                 Value<int?> anchorDay = const Value.absent(),
                 Value<int?> reminderTimeMinutes = const Value.absent(),
                 Value<String?> logoTransform = const Value.absent(),
+                Value<double?> annualPlanPrice = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SubscriptionsTableCompanion(
                 id: id,
@@ -2747,6 +3195,7 @@ class $$SubscriptionsTableTableTableManager
                 anchorDay: anchorDay,
                 reminderTimeMinutes: reminderTimeMinutes,
                 logoTransform: logoTransform,
+                annualPlanPrice: annualPlanPrice,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2776,6 +3225,7 @@ class $$SubscriptionsTableTableTableManager
                 Value<int?> anchorDay = const Value.absent(),
                 Value<int?> reminderTimeMinutes = const Value.absent(),
                 Value<String?> logoTransform = const Value.absent(),
+                Value<double?> annualPlanPrice = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SubscriptionsTableCompanion.insert(
                 id: id,
@@ -2803,6 +3253,7 @@ class $$SubscriptionsTableTableTableManager
                 anchorDay: anchorDay,
                 reminderTimeMinutes: reminderTimeMinutes,
                 logoTransform: logoTransform,
+                annualPlanPrice: annualPlanPrice,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3281,6 +3732,229 @@ typedef $$AppSettingsTableTableProcessedTableManager =
       AppSettingEntry,
       PrefetchHooks Function()
     >;
+typedef $$CustomCategoriesTableTableCreateCompanionBuilder =
+    CustomCategoriesTableCompanion Function({
+      required String id,
+      required String name,
+      required int iconCodePoint,
+      required int colorValue,
+      Value<int> sortOrder,
+      Value<int> rowid,
+    });
+typedef $$CustomCategoriesTableTableUpdateCompanionBuilder =
+    CustomCategoriesTableCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<int> iconCodePoint,
+      Value<int> colorValue,
+      Value<int> sortOrder,
+      Value<int> rowid,
+    });
+
+class $$CustomCategoriesTableTableFilterComposer
+    extends Composer<_$AppDatabase, $CustomCategoriesTableTable> {
+  $$CustomCategoriesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get iconCodePoint => $composableBuilder(
+    column: $table.iconCodePoint,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get colorValue => $composableBuilder(
+    column: $table.colorValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CustomCategoriesTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $CustomCategoriesTableTable> {
+  $$CustomCategoriesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get iconCodePoint => $composableBuilder(
+    column: $table.iconCodePoint,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get colorValue => $composableBuilder(
+    column: $table.colorValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CustomCategoriesTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CustomCategoriesTableTable> {
+  $$CustomCategoriesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get iconCodePoint => $composableBuilder(
+    column: $table.iconCodePoint,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get colorValue => $composableBuilder(
+    column: $table.colorValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+}
+
+class $$CustomCategoriesTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CustomCategoriesTableTable,
+          CustomCategoryEntry,
+          $$CustomCategoriesTableTableFilterComposer,
+          $$CustomCategoriesTableTableOrderingComposer,
+          $$CustomCategoriesTableTableAnnotationComposer,
+          $$CustomCategoriesTableTableCreateCompanionBuilder,
+          $$CustomCategoriesTableTableUpdateCompanionBuilder,
+          (
+            CustomCategoryEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $CustomCategoriesTableTable,
+              CustomCategoryEntry
+            >,
+          ),
+          CustomCategoryEntry,
+          PrefetchHooks Function()
+        > {
+  $$CustomCategoriesTableTableTableManager(
+    _$AppDatabase db,
+    $CustomCategoriesTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CustomCategoriesTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CustomCategoriesTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CustomCategoriesTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> iconCodePoint = const Value.absent(),
+                Value<int> colorValue = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CustomCategoriesTableCompanion(
+                id: id,
+                name: name,
+                iconCodePoint: iconCodePoint,
+                colorValue: colorValue,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required int iconCodePoint,
+                required int colorValue,
+                Value<int> sortOrder = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CustomCategoriesTableCompanion.insert(
+                id: id,
+                name: name,
+                iconCodePoint: iconCodePoint,
+                colorValue: colorValue,
+                sortOrder: sortOrder,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CustomCategoriesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CustomCategoriesTableTable,
+      CustomCategoryEntry,
+      $$CustomCategoriesTableTableFilterComposer,
+      $$CustomCategoriesTableTableOrderingComposer,
+      $$CustomCategoriesTableTableAnnotationComposer,
+      $$CustomCategoriesTableTableCreateCompanionBuilder,
+      $$CustomCategoriesTableTableUpdateCompanionBuilder,
+      (
+        CustomCategoryEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $CustomCategoriesTableTable,
+          CustomCategoryEntry
+        >,
+      ),
+      CustomCategoryEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3291,4 +3965,6 @@ class $AppDatabaseManager {
       $$PaymentMethodsTableTableTableManager(_db, _db.paymentMethodsTable);
   $$AppSettingsTableTableTableManager get appSettingsTable =>
       $$AppSettingsTableTableTableManager(_db, _db.appSettingsTable);
+  $$CustomCategoriesTableTableTableManager get customCategoriesTable =>
+      $$CustomCategoriesTableTableTableManager(_db, _db.customCategoriesTable);
 }

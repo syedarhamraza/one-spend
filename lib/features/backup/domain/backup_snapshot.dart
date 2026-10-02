@@ -35,6 +35,9 @@ class BackupSnapshot {
   /// multi-currency support.
   final Map<String, RateOverride>? rateOverrides;
 
+  /// User-made categories (backup format v2); null for older backups, which had none.
+  final List<CustomCategory>? customCategories;
+
   const BackupSnapshot({
     required this.createdAt,
     required this.appVersion,
@@ -43,6 +46,7 @@ class BackupSnapshot {
     this.settings,
     this.appearance = const {},
     this.rateOverrides,
+    this.customCategories,
   });
 
   /// True for files produced by the old subscriptions-only "Export backup".

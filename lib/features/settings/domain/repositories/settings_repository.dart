@@ -47,6 +47,11 @@ abstract class SettingsRepository {
   Future<bool> getOnboardingDone();
   Future<void> setOnboardingDone(bool value);
 
+  /// Cached OneSpend Pro entitlement (Play is the source of truth; see ProController).
+  /// Deliberately not part of backups.
+  Future<bool> getProUnlocked();
+  Future<void> setProUnlocked(bool value);
+
   /// Raw appearance (card studio / effects) values, keyed by setting name.
   Future<Map<String, String>> getAppearanceSettings();
   Future<void> setAppearanceSettings(Map<String, String> values);

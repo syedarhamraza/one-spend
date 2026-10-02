@@ -100,7 +100,7 @@ class _OneUIFilterBottomSheetState extends State<OneUIFilterBottomSheet> {
                         ),
 
                         // Categories list
-                        ...SubscriptionCategory.values.map((cat) {
+                        ...SubscriptionCategory.all.map((cat) {
                           final isSelected = _selectedCategory == cat;
                           return _buildRadioRow(
                             label: cat.label,
