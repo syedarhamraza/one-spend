@@ -22,4 +22,21 @@ class SubscriptionExporter {
     }
     return buffer.toString();
   }
+
+  /// Every logged payment, newest first: one row per payment.
+  static String paymentsCsv(Iterable<Subscription> subs) {
+    String esc(String val) => val.replaceAll('"', '""');
+    String day(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    final rows = [
+      for (final sub in subs)
+        for (final date in sub.paymentHistory) (sub: sub, date: date),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+    final buffer = StringBuffer()..writeln('Date,Subscription,Category,Amount,Currency');
+    for (final r in rows) {
+      buffer.writeln(
+        '"${day(r.date)}","${esc(r.sub.name)}","${esc(r.sub.category.label)}",${r.sub.price},"${esc(r.sub.currency)}"',
+      );
+    }
+    return buffer.toString();
+  }
 }

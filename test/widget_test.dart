@@ -513,7 +513,7 @@ void main() {
     expect(find.text('Sort'), findsOneWidget);
     expect(find.text('Filter'), findsOneWidget);
     expect(find.text('Edit monthly budget'), findsOneWidget);
-    expect(find.text('Export list (CSV)'), findsOneWidget);
+    expect(find.text('Export & share'), findsOneWidget);
 
     // Tap "Select" to enter selection mode
     await tester.tap(find.text('Select'));
@@ -792,7 +792,7 @@ void main() {
     expect(find.text('Sort'), findsOneWidget);
     expect(find.text('Filter'), findsOneWidget);
     expect(find.text('Edit monthly budget'), findsOneWidget);
-    expect(find.text('Export list (CSV)'), findsOneWidget);
+    expect(find.text('Export & share'), findsOneWidget);
 
     // Verify OneUIFloatingMenu.isOpen is true and the background pill is hidden (opacity 0)
     expect(OneUIFloatingMenu.isOpen.value, isTrue);

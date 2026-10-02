@@ -162,10 +162,10 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'csv');
     await tester.pumpAndSettle();
-    expect(find.text('Export as spreadsheet'), findsOneWidget);
+    expect(find.text('Export & share'), findsOneWidget);
     expect(find.text('Settings › Backup & data'), findsOneWidget);
 
-    await tester.tap(find.text('Export as spreadsheet'));
+    await tester.tap(find.text('Export & share'));
     await tester.pumpAndSettle();
     expect(find.text('Clear all subscriptions'), findsOneWidget);
   });

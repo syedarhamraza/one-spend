@@ -157,7 +157,7 @@ class SettingsCatalog {
             keywords: ['cloud', 'drive', 'automatic', 'pro'],
             placeholder: true,
           ),
-          (title: 'Export as spreadsheet', keywords: ['csv', 'excel', 'sheets'], placeholder: false),
+          (title: 'Export & share', keywords: ['csv', 'spreadsheet', 'pdf', 'report', 'excel'], placeholder: false),
           (title: 'Clear all subscriptions', keywords: ['delete', 'erase', 'reset'], placeholder: false),
         ],
       ),

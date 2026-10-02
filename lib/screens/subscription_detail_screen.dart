@@ -29,6 +29,8 @@ import 'payment_history_screen.dart';
 import 'payment_methods_screen.dart';
 import 'reminder_picker_screen.dart';
 import '../utils/reminder_format.dart';
+import '../features/reports/data/report_sharer.dart';
+import '../widgets/one_ui_subpage.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -210,8 +212,55 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
 
 
 
+  /// Share → choose a one-page PDF or a text summary.
   Future<void> _shareSubscription() async {
     HapticFeedback.lightImpact();
+    final choice = await OneUIFloatingModal.show<String>(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Share ${_sub.name}',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
+          ),
+          const SizedBox(height: 16),
+          OneUIGroupCard(
+            margin: EdgeInsets.zero,
+            items: [
+              OneUIGroupItem(
+                leading: const OneUIIconBadge(Icons.picture_as_pdf_rounded, OneUITheme.accentRed),
+                title: 'As PDF',
+                subtitle: 'One page with details and payment history',
+                subtitleColor: OneUITheme.textSecondary,
+                onTap: () => Navigator.pop(ctx, 'pdf'),
+              ),
+              OneUIGroupItem(
+                leading: const OneUIIconBadge(Icons.notes_rounded, OneUITheme.accentBlue),
+                title: 'As text',
+                subtitle: 'A short summary to paste into a message',
+                subtitleColor: OneUITheme.textSecondary,
+                onTap: () => Navigator.pop(ctx, 'text'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (choice == 'pdf') {
+      try {
+        await ReportSharer.shareSubscriptionPdf(SubscriptionStore.instance, _sub);
+      } catch (_) {
+        if (mounted) OneUIToast.show(context, 'Couldn\'t prepare the PDF');
+      }
+    } else if (choice == 'text') {
+      await _shareSubscriptionText();
+    }
+  }
+
+  Future<void> _shareSubscriptionText() async {
     final formattedDate = OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate);
     final summaryText = '''
 ${_sub.name} Subscription Details:

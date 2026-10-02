@@ -52,6 +52,7 @@ dependencies:
   flutter_timezone: ^5.1.0
   package_info_plus: ^10.2.1
   file_picker: ^13.1.0
+  pdf: ^3.13.1
 
 dev_dependencies:
   flutter_test:
@@ -81,6 +82,8 @@ flutter:
     - assets/logos/
     - assets/logos/brands/
     - assets/logos/payments/
+    # Noto Sans (OFL) for PDF reports: the built-in PDF fonts lack currency symbols.
+    - assets/fonts/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

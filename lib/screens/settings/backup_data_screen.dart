@@ -1,14 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/config/feature_flags.dart';
 import '../../core/di/injection.dart';
@@ -26,6 +22,7 @@ import '../../widgets/one_ui_toast.dart';
 import 'coming_soon_screen.dart';
 import 'planned_feature.dart';
 import 'restore_preview_screen.dart';
+import '../../features/reports/presentation/export_share_screen.dart';
 
 /// Settings › Backup & data.
 ///
@@ -91,28 +88,6 @@ class BackupDataScreen extends StatelessWidget {
     } else {
       final added = outcome.addedSubscriptions + outcome.addedPaymentMethods;
       OneUIToast.show(context, added == 0 ? 'Nothing new to add' : 'Added $added item${added == 1 ? '' : 's'}');
-    }
-  }
-
-  Future<void> _exportCsv(BuildContext context) async {
-    final store = SubscriptionStore.instance;
-    if (store.subscriptions.isEmpty) {
-      OneUIToast.show(context, 'No subscriptions to export');
-      return;
-    }
-    HapticFeedback.lightImpact();
-    try {
-      final dir = await getTemporaryDirectory();
-      final file = File(p.join(dir.path, 'onespend-subscriptions.csv'));
-      await file.writeAsString(store.exportDataAsCsv());
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path, mimeType: 'text/csv')],
-          subject: 'OneSpend subscriptions',
-        ),
-      );
-    } catch (_) {
-      if (context.mounted) OneUIToast.show(context, 'Couldn\'t open the share sheet');
     }
   }
 
@@ -213,11 +188,10 @@ class BackupDataScreen extends StatelessWidget {
               margin: EdgeInsets.zero,
               items: [
                 OneUIGroupItem(
-                  title: 'Export as spreadsheet',
-                  subtitle: 'CSV file for Excel or Google Sheets',
+                  title: 'Export & share',
+                  subtitle: 'PDF report, spreadsheet (CSV) or text summary',
                   subtitleColor: OneUITheme.textSecondary,
-                  trailing: const SizedBox.shrink(),
-                  onTap: () => _exportCsv(context),
+                  onTap: () => ExportShareScreen.open(context),
                 ),
               ],
             ),

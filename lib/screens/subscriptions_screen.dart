@@ -27,6 +27,7 @@ import 'one_ui_field_editor_screen.dart';
 import 'home_screen.dart';
 import '../features/subscriptions/presentation/widgets/first_run_empty_state.dart';
 import 'settings/backup_data_screen.dart';
+import '../features/reports/presentation/export_share_screen.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -161,8 +162,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           onTap: () => _showEditBudgetDialog(),
         ),
         OneUIFloatingMenuItem(
-          label: 'Export list (CSV)',
-          onTap: () => _showExportDialog(context),
+          label: 'Export & share',
+          onTap: () => ExportShareScreen.open(context),
         ),
       ],
     );
@@ -436,37 +437,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         'Budget updated to ${formatMoney(store.monthlyBudget, store.currency, decimals: 0)}',
       );
     }
-  }
-
-  void _showExportDialog(BuildContext context) {
-    final csv = SubscriptionStore.instance.exportDataAsCsv();
-
-    OneUIFloatingModal.showConfirmationDialog(
-      context: context,
-      title: 'Export Subscriptions',
-      message: 'Preview and copy your subscription database as a CSV file:',
-      customContent: Container(
-        height: 130,
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: OneUITheme.surfacePill,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: SingleChildScrollView(
-          child: Text(
-            csv,
-            style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: OneUITheme.textSecondary),
-          ),
-        ),
-      ),
-      cancelLabel: 'Close',
-      confirmLabel: 'Copy CSV',
-      onConfirm: () {
-        Clipboard.setData(ClipboardData(text: csv));
-        OneUIToast.copied(context, 'CSV copied to clipboard');
-      },
-    );
   }
 
   Widget _buildSelectionCountPill({

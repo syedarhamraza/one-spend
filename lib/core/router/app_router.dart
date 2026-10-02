@@ -8,6 +8,7 @@ import '../../features/subscriptions/domain/entities/subscription_enums.dart';
 import '../../features/subscriptions/presentation/controllers/subscription_controller.dart';
 import '../../screens/add_subscription_screen.dart';
 import '../../screens/onboarding_screen.dart';
+import '../../features/reports/presentation/export_share_screen.dart';
 import '../../screens/analytics_screen.dart';
 import '../../screens/billing_cycle_picker_screen.dart';
 import '../../screens/category_picker_screen.dart';
@@ -93,6 +94,9 @@ class AppRoutes {
   static const settingsAuthor = '/settings/about/developer';
   static const settingsLicenses = '/settings/about/licenses';
   static const settingsWhatsNew = '/settings/about/whats-new';
+
+  /// Export & share (PDF report, CSV, text, backup). `extra`: optional category.
+  static const exportShare = '/export';
   static const settingsLicenseDetail = '/settings/about/licenses/detail';
   static const settingsDeveloperOptions = '/settings/developer-options';
   static const comingSoon = '/settings/coming-soon';
@@ -143,6 +147,10 @@ Widget _withSubscription(GoRouterState state, Widget Function(String id) builder
 List<RouteBase> buildPageRoutes() {
   return [
     GoRoute(path: AppRoutes.welcome, builder: (context, state) => const OnboardingScreen()),
+    GoRoute(
+      path: AppRoutes.exportShare,
+      builder: (context, state) => ExportShareScreen(category: state.extra as SubscriptionCategory?),
+    ),
     GoRoute(
       path: AppRoutes.addSubscription,
       // Optional `extra`: a payment method id (String) to pre-select, or

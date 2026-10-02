@@ -3,7 +3,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../core/router/app_router.dart';
 import '../features/subscriptions/domain/services/insight_cards.dart';
@@ -23,6 +22,8 @@ import '../widgets/one_ui_insight_card.dart';
 import '../widgets/one_ui_sliver_scroll_anchor.dart';
 import '../widgets/one_ui_spending_chart.dart';
 import '../widgets/one_ui_toast.dart';
+import '../features/reports/data/text_report.dart';
+import '../features/reports/presentation/export_share_screen.dart';
 
 /// Analytics tab: answers "what am I spending, where is it going, and what's next?".
 ///
@@ -32,57 +33,8 @@ class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
 
   /// Plain-text report for sharing; [category] narrows it to one category.
-  static String buildReport(SubscriptionStore store, {SubscriptionCategory? category, DateTime? now}) {
-    final currency = store.currency;
-    String money(double v) => formatMoney(v, currency, style: MoneyStyle.summary);
-    final subs = [
-      for (final s in store.subscriptions)
-        if (category == null || s.category == category) s,
-    ];
-    final monthly = SubscriptionStats.totalMonthlySpend(subs, store.toMain);
-
-    final buffer = StringBuffer()
-      ..writeln('OneSpend spending report')
-      ..writeln('------------------------');
-    if (category != null) buffer.writeln('Category: ${category.label}');
-    buffer
-      ..writeln('Yearly cost: ${money(monthly * 12)}')
-      ..writeln('Monthly: ${money(monthly)}')
-      ..writeln('Active subscriptions: ${SubscriptionStats.billable(subs).length}');
-
-    final points = SpendingTrendsEngine.calculateTrends(
-      subscriptions: subs,
-      horizon: SpendingTrendHorizon.oneYear,
-      referenceDate: now,
-      toMain: store.toMain,
-      trackingSince: store.trackingSince,
-    );
-    final summary = SpendingTrendsEngine.calculateSummary(points, monthlyBudget: store.monthlyBudget);
-    if (summary.hasData && summary.currentMonth != null) {
-      final diff = summary.latestMoMDifference;
-      final sign = diff > 0.001 ? '+' : (diff < -0.001 ? '-' : '');
-      buffer
-        ..writeln('This month: ${money(summary.currentMonth!.amount)}')
-        ..writeln('Month-over-month: $sign${money(diff.abs())} (${summary.latestMoMPercentage.abs().toStringAsFixed(1)}%)')
-        ..writeln('Forecast, next ${summary.forecastMonths} months: ${money(summary.forecastTotal)}');
-    }
-
-    final categories = SpendingInsights.byCategory(subs, store.toMain);
-    if (category == null && categories.isNotEmpty) {
-      buffer.writeln('\nBy category:');
-      for (final c in categories) {
-        buffer.writeln('• ${c.category.label}: ${money(c.monthly)}/mo (${(c.share * 100).toStringAsFixed(0)}%)');
-      }
-    }
-    final top = SpendingInsights.ranked(subs, store.toMain).take(5).toList();
-    if (top.isNotEmpty) {
-      buffer.writeln('\nTop subscriptions:');
-      for (final s in top) {
-        buffer.writeln('• ${s.name}: ${money(store.monthlyCostInMain(s))}/mo');
-      }
-    }
-    return buffer.toString().trimRight();
-  }
+  static String buildReport(SubscriptionStore store, {SubscriptionCategory? category, DateTime? now}) =>
+      TextReport.build(store, category: category, now: now);
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -142,15 +94,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   // --- Report ----------------------------------------------------------------
 
-  Future<void> _shareReport(SubscriptionStore store) async {
-    final report = AnalyticsScreen.buildReport(store, category: _category);
-    try {
-      await SharePlus.instance.share(ShareParams(text: report, subject: 'OneSpend spending report'));
-    } catch (_) {
-      if (mounted) OneUIToast.show(context, 'Couldn\'t open the share sheet');
-    }
-  }
-
   void _copyReport(SubscriptionStore store) {
     Clipboard.setData(ClipboardData(text: AnalyticsScreen.buildReport(store, category: _category)));
     OneUIToast.copied(context, 'Report copied to clipboard');
@@ -163,7 +106,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       fallbackTop: MediaQuery.of(context).padding.top + 6.0,
       width: 220,
       items: [
-        OneUIFloatingMenuItem(label: 'Share report', onTap: () => _shareReport(store)),
+        OneUIFloatingMenuItem(label: 'Export & share', onTap: () => ExportShareScreen.open(context, category: _category)),
         OneUIFloatingMenuItem(label: 'Copy report', onTap: () => _copyReport(store)),
         if (store.dismissedInsights.isNotEmpty)
           OneUIFloatingMenuItem(
