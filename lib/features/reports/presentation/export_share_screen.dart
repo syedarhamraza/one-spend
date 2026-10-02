@@ -7,6 +7,8 @@ import '../../../theme/one_ui_theme.dart';
 import '../../../widgets/one_ui_group_card.dart';
 import '../../../widgets/one_ui_subpage.dart';
 import '../../../widgets/one_ui_toast.dart';
+import '../../pro/presentation/pro_controller.dart';
+import '../../pro/presentation/pro_gate.dart';
 import '../../subscriptions/domain/entities/subscription_enums.dart';
 import '../../subscriptions/presentation/controllers/subscription_controller.dart';
 import '../data/report_sharer.dart';
@@ -57,7 +59,8 @@ class _ExportShareScreenState extends State<ExportShareScreen> {
         child: CircularProgressIndicator(strokeWidth: 2.2, color: OneUITheme.accentBlue),
       );
     }
-    return const Icon(Icons.ios_share_rounded, size: 20, color: OneUITheme.textSecondary);
+    const share = Icon(Icons.ios_share_rounded, size: 20, color: OneUITheme.textSecondary);
+    return format == ExportFormat.pdf ? ProGate.chip(unlocked: share) : share;
   }
 
   OneUIGroupItem _item(ExportFormat format, IconData icon, Color color, String title, String subtitle) {
@@ -67,7 +70,7 @@ class _ExportShareScreenState extends State<ExportShareScreen> {
       subtitle: subtitle,
       subtitleColor: OneUITheme.textSecondary,
       trailing: _trailing(format),
-      onTap: () => _share(format),
+      onTap: format == ExportFormat.pdf ? () => ProGate.run(context, () => _share(format)) : () => _share(format),
     );
   }
 
@@ -76,6 +79,7 @@ class _ExportShareScreenState extends State<ExportShareScreen> {
     final category = widget.category;
     return OneUISubpage(
       title: 'Export & share',
+      listenable: ProController.instance,
       builder: (context) => [
         if (category != null)
           Padding(

@@ -44,6 +44,7 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
           anchorDay: row.anchorDay,
           reminderTimeMinutes: row.reminderTimeMinutes,
           logoTransform: LogoTransform.decode(row.logoTransform),
+          annualPlanPrice: row.annualPlanPrice,
         );
       }).toList();
     } catch (e) {
@@ -78,6 +79,7 @@ class SubscriptionDriftDataSource implements SubscriptionLocalDataSource {
       anchorDay: Value(s.anchorDay),
       reminderTimeMinutes: Value(s.reminderTimeMinutes),
       logoTransform: Value(s.logoTransform?.encode()),
+      annualPlanPrice: Value(s.annualPlanPrice),
     );
   }
 

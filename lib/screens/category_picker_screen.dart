@@ -3,12 +3,16 @@ import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
+import '../features/pro/presentation/pro_controller.dart';
+import '../features/pro/presentation/pro_gate.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_radio.dart';
+import '../widgets/one_ui_subpage.dart';
+import 'category_editor_screen.dart';
 
 /// Dedicated Samsung One UI Category Picker Subpage.
 /// Matches the design language of ReminderPickerScreen with hero status banner,
@@ -100,14 +104,43 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
     Navigator.pop(context, _selectedCategory);
   }
 
+  void _createCategory() {
+    ProGate.run(context, () async {
+      final created = await CategoryEditorScreen.open(context);
+      if (created != null && mounted) setState(() => _selectedCategory = created);
+    });
+  }
+
+  /// A custom category's hero / list text and colour (built-ins use [_meta]).
+  _CategoryMeta _metaFor(SubscriptionCategory cat) {
+    final builtIn = _meta[cat];
+    if (builtIn != null) return builtIn;
+    if (cat.isCustom) {
+      final count = SubscriptionStore.instance.subscriptionCountIn(cat);
+      final usage = count == 0 ? 'Your category' : '$count ${count == 1 ? 'subscription' : 'subscriptions'}';
+      return _CategoryMeta(heroSubtitle: usage, listSubtitle: usage, color: cat.color);
+    }
+    return const _CategoryMeta(heroSubtitle: 'Subscription service', listSubtitle: 'Service', color: OneUITheme.accentBlue);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentMeta = _meta[_selectedCategory] ??
-        const _CategoryMeta(
-          heroSubtitle: 'Subscription service',
-          listSubtitle: 'Service',
-          color: OneUITheme.accentBlue,
-        );
+    return ListenableBuilder(
+      listenable: Listenable.merge([SubscriptionStore.instance, ProController.instance]),
+      builder: (context, _) => _buildPage(context),
+    );
+  }
+
+  Widget _buildPage(BuildContext context) {
+    // A custom category deleted from the editor falls back to a built-in.
+    if (_selectedCategory.isCustom && _selectedCategory.custom == null) {
+      _selectedCategory = SubscriptionCategory.utilities;
+    }
+    final currentMeta = _metaFor(_selectedCategory);
+    final custom = [
+      for (final c in SubscriptionCategory.all)
+        if (c.isCustom) c,
+    ];
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
@@ -220,6 +253,35 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                             _buildCategoryItem(cat),
                         ],
                       ),
+
+                      const SizedBox(height: 24),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          'YOUR CATEGORIES',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: OneUITheme.textSecondary,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      OneUIGroupCard(
+                        margin: EdgeInsets.zero,
+                        items: [
+                          for (final cat in custom) _buildCategoryItem(cat),
+                          OneUIGroupItem(
+                            leading: const OneUIIconBadge(Icons.add_rounded, OneUITheme.accentBlue),
+                            title: 'New category',
+                            subtitle: 'Your own name, icon and colour',
+                            subtitleColor: OneUITheme.textSecondary,
+                            trailing: ProGate.chip(),
+                            onTap: _createCategory,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -262,14 +324,10 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
 
   OneUIGroupItem _buildCategoryItem(SubscriptionCategory cat) {
     final isSelected = cat == _selectedCategory;
-    final meta = _meta[cat] ??
-        const _CategoryMeta(
-          heroSubtitle: 'Subscription service',
-          listSubtitle: 'Service',
-          color: OneUITheme.accentBlue,
-        );
+    final meta = _metaFor(cat);
 
     return OneUIGroupItem(
+      leading: cat.isCustom ? OneUIIconBadge(cat.icon, cat.color) : null,
       title: cat.label,
       subtitle: meta.listSubtitle,
       subtitleColor: OneUITheme.textSecondary,

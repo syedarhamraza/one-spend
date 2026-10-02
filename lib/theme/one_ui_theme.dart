@@ -31,6 +31,22 @@ class OneUITheme {
   static const Color accentAmber = Color(0xFFF4A261);
   static const Color accentOrange = Color(0xFFFB8C00);
 
+  /// Colours a custom category can use: distinct on black, in the donut and as chip tints.
+  static const List<Color> categorySwatches = [
+    Color(0xFFF07167), // Coral
+    Color(0xFFFB8C00), // Orange
+    Color(0xFFF4A261), // Amber
+    Color(0xFFFFD166), // Yellow
+    Color(0xFF00C05A), // Green
+    Color(0xFF48B5A0), // Teal
+    Color(0xFF34AADC), // Sky
+    Color(0xFF5390F5), // Blue
+    Color(0xFF7E57C2), // Purple
+    Color(0xFFB388FF), // Lavender
+    Color(0xFFEF6C9A), // Pink
+    Color(0xFFA1887F), // Mocha
+  ];
+
   // --- Ambient Glow (hero cards) ---
   static const Color glowDefault = Color(0xFF0381FE); // Samsung Signature Blue
 

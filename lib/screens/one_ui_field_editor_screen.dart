@@ -412,7 +412,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
             boxShadow: OneUITheme.cardShadow,
           ),
           child: Column(
-            children: SubscriptionCategory.values.map((cat) {
+            children: SubscriptionCategory.all.map((cat) {
               final isSelected = _currentValue == cat;
               return InkWell(
                 onTap: () {

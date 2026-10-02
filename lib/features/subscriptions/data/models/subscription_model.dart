@@ -30,6 +30,7 @@ class SubscriptionModel extends Subscription {
     super.anchorDay,
     super.reminderTimeMinutes,
     super.logoTransform,
+    super.annualPlanPrice,
   });
 
   factory SubscriptionModel.fromEntity(Subscription entity) {
@@ -59,6 +60,7 @@ class SubscriptionModel extends Subscription {
       anchorDay: entity.anchorDay,
       reminderTimeMinutes: entity.reminderTimeMinutes,
       logoTransform: entity.logoTransform,
+      annualPlanPrice: entity.annualPlanPrice,
     );
   }
 
@@ -98,6 +100,7 @@ class SubscriptionModel extends Subscription {
       anchorDay: json['anchorDay'] as int?,
       reminderTimeMinutes: json['reminderTimeMinutes'] as int?,
       logoTransform: LogoTransform.decode(json['logoTransform'] as String?),
+      annualPlanPrice: (json['annualPlanPrice'] as num?)?.toDouble(),
     );
   }
 
@@ -129,6 +132,7 @@ class SubscriptionModel extends Subscription {
       'anchorDay': anchorDay ?? nextBillingDate.day,
       'reminderTimeMinutes': reminderTimeMinutes,
       'logoTransform': logoTransform?.encode(),
+      'annualPlanPrice': annualPlanPrice,
     };
   }
 }

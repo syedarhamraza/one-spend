@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../features/notifications/presentation/notification_developer_tools.dart';
+import '../../features/pro/presentation/pro_controller.dart';
 import '../../models/subscription.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_card.dart';
 import '../../widgets/one_ui_floating_modal.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
+import '../../widgets/one_ui_switch.dart';
 import '../../widgets/one_ui_toast.dart';
 
 /// Settings › Developer options. Only reachable in debug builds.
@@ -39,9 +41,27 @@ class DeveloperOptionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final store = SubscriptionStore.instance;
+    final pro = ProController.instance;
+    void toggleSimulatedPro() => pro.debugOverride = pro.debugOverride == true ? null : true;
     return OneUISubpage(
       title: 'Developer options',
+      listenable: pro,
       builder: (context) => [
+        OneUISection(
+          title: 'Pro',
+          child: OneUIGroupCard(
+            margin: EdgeInsets.zero,
+            items: [
+              OneUIGroupItem(
+                leading: const OneUIIconBadge(Icons.workspace_premium_rounded, OneUITheme.accentAmber),
+                title: 'Simulate Pro',
+                subtitle: 'Unlocks Pro features in this debug build without a purchase',
+                trailing: OneUISwitch(value: pro.debugOverride == true, onChanged: (_) => toggleSimulatedPro()),
+                onTap: toggleSimulatedPro,
+              ),
+            ],
+          ),
+        ),
         OneUISection(
           title: 'Notifications',
           child: OneUIGroupCard(

@@ -38,6 +38,9 @@ class Subscription extends Equatable {
   /// Framing of the custom [logoUrl] image (zoom and offset); null = fit as is.
   final LogoTransform? logoTransform;
 
+  /// What the same plan costs billed yearly, in [currency] (annual vs. monthly calculator); null = not set.
+  final double? annualPlanPrice;
+
   const Subscription.raw({
     required this.id,
     required this.name,
@@ -64,6 +67,7 @@ class Subscription extends Equatable {
     this.anchorDay,
     this.reminderTimeMinutes,
     this.logoTransform,
+    this.annualPlanPrice,
   });
 
   Subscription({
@@ -94,6 +98,7 @@ class Subscription extends Equatable {
     this.anchorDay,
     this.reminderTimeMinutes,
     this.logoTransform,
+    this.annualPlanPrice,
   })  : brandColorValue = brandColorValue ?? _extractColorValue(brandColor),
         iconCodePoint = iconCodePoint ?? _extractIconCodePoint(iconData);
 
@@ -152,6 +157,8 @@ class Subscription extends Equatable {
     bool clearReminderTime = false,
     LogoTransform? logoTransform,
     bool clearLogoTransform = false,
+    double? annualPlanPrice,
+    bool clearAnnualPlanPrice = false,
   }) {
     final resolvedColor = brandColorValue ?? (brandColor != null ? _extractColorValue(brandColor) : this.brandColorValue);
     final resolvedIcon = iconCodePoint ?? (iconData != null ? _extractIconCodePoint(iconData) : this.iconCodePoint);
@@ -181,6 +188,7 @@ class Subscription extends Equatable {
       anchorDay: anchorDay ?? this.anchorDay,
       reminderTimeMinutes: clearReminderTime ? null : (reminderTimeMinutes ?? this.reminderTimeMinutes),
       logoTransform: clearLogoTransform ? null : (logoTransform ?? this.logoTransform),
+      annualPlanPrice: clearAnnualPlanPrice ? null : (annualPlanPrice ?? this.annualPlanPrice),
     );
   }
 
@@ -296,6 +304,7 @@ class Subscription extends Equatable {
       'anchorDay': anchorDay ?? nextBillingDate.day,
       'reminderTimeMinutes': reminderTimeMinutes,
       'logoTransform': logoTransform?.encode(),
+      'annualPlanPrice': annualPlanPrice,
     };
   }
 
@@ -335,6 +344,7 @@ class Subscription extends Equatable {
       anchorDay: json['anchorDay'] as int?,
       reminderTimeMinutes: json['reminderTimeMinutes'] as int?,
       logoTransform: LogoTransform.decode(json['logoTransform'] as String?),
+      annualPlanPrice: (json['annualPlanPrice'] as num?)?.toDouble(),
     );
   }
 
@@ -365,5 +375,6 @@ class Subscription extends Equatable {
         anchorDay,
         reminderTimeMinutes,
         logoTransform,
+        annualPlanPrice,
       ];
 }

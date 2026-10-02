@@ -37,6 +37,9 @@ class SubscriptionsTable extends Table {
   /// Custom logo framing ("scale,dx,dy", see LogoTransform). Added in schema v4.
   TextColumn get logoTransform => text().nullable()();
 
+  /// What the same plan costs billed yearly, in [currency] (annual vs. monthly calculator). Added in schema v5.
+  RealColumn get annualPlanPrice => real().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

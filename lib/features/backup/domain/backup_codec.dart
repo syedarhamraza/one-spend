@@ -34,7 +34,8 @@ class BackupCodec {
   const BackupCodec._();
 
   static const String formatId = 'onespend.backup';
-  static const int currentVersion = 1;
+  /// v2 added custom categories (and `annualPlanPrice` on subscriptions).
+  static const int currentVersion = 2;
 
   static String encode(BackupSnapshot snapshot) {
     final settings = snapshot.settings;
@@ -63,6 +64,8 @@ class BackupCodec {
         'appearance': snapshot.appearance,
         if (snapshot.rateOverrides case final overrides?)
           'exchangeRateOverrides': ExchangeRateRepository.encodeOverrides(overrides),
+        if (snapshot.customCategories case final categories?)
+          'customCategories': [for (final c in categories) c.toJson()],
       },
     });
   }
@@ -85,6 +88,12 @@ class BackupCodec {
       if (version > currentVersion) throw BackupFormatException.tooNew;
 
       final data = json['data'] as Map<String, dynamic>;
+      final customCategories = data.containsKey('customCategories')
+          ? [
+              for (final c in data['customCategories'] as List<dynamic>)
+                CustomCategory.fromJson(c as Map<String, dynamic>),
+            ]
+          : null;
       final settings = data['settings'] as Map<String, dynamic>?;
       return BackupSnapshot(
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
@@ -103,6 +112,7 @@ class BackupCodec {
         rateOverrides: data.containsKey('exchangeRateOverrides')
             ? ExchangeRateRepository.decodeOverrides(data['exchangeRateOverrides'])
             : null,
+        customCategories: customCategories,
       );
     } on BackupFormatException {
       rethrow;

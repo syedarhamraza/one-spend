@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
+import '../../features/pro/presentation/pro_controller.dart';
+import '../../features/pro/presentation/pro_gate.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_card.dart';
 import '../../widgets/one_ui_floating_modal.dart';
@@ -49,7 +51,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
     final effects = OneUIEffectsController.instance;
     return OneUISubpage(
       title: 'Appearance',
-      listenable: effects,
+      listenable: Listenable.merge([effects, ProController.instance]),
       builder: (context) => [
         OneUISection(
           title: 'Effects',
@@ -73,18 +75,20 @@ class AppearanceSettingsScreen extends StatelessWidget {
               OneUIGroupItem(
                 title: 'Subscription cards',
                 subtitle: 'Price, renewal badge and details shown on each card',
-                onTap: () {
+                trailing: ProGate.chip(),
+                onTap: () => ProGate.run(context, () {
                   HapticFeedback.lightImpact();
                   context.push(AppRoutes.cardStudio);
-                },
+                }),
               ),
               OneUIGroupItem(
                 title: 'Subscription details',
                 subtitle: 'Icons and highlights on the subscription page',
-                onTap: () {
+                trailing: ProGate.chip(),
+                onTap: () => ProGate.run(context, () {
                   HapticFeedback.lightImpact();
                   context.push(AppRoutes.detailStudio);
-                },
+                }),
               ),
             ],
           ),

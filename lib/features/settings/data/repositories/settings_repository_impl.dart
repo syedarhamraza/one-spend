@@ -91,6 +91,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> setOnboardingDone(bool value) => _dataSource.setOnboardingDone(value);
 
   @override
+  Future<bool> getProUnlocked() => _dataSource.getProUnlocked();
+
+  @override
+  Future<void> setProUnlocked(bool value) => _dataSource.setProUnlocked(value);
+
+  @override
   Future<Map<String, String>> getAppearanceSettings() => _dataSource.getAppearanceSettings();
 
   @override

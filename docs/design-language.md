@@ -51,6 +51,8 @@ The floating getters follow `OneUIEffectsController.floating3dEffect` (one setti
 | `accentPurple` | `#7E57C2` | Appearance / customisation, help |
 | `accentOrange` | `#FB8C00` | Reset / restore actions |
 
+**Category colours.** A custom category picks from `OneUITheme.categorySwatches`: 12 colours that stay distinct on black, in the donut and as chip tints. Never offer white, grey or charcoal there.
+
 **Insight tone.** Tip cards reuse the accents by meaning: `accentRed` = bad news (over budget, spending up), `accentAmber` = heads-up (renewal soon, heavy month), `accentGreen` = good news (under budget, savings), `accentBlue` = neutral information.
 
 **Hero glow.** The glass hero cards glow in a colour that reflects state, never decoration: the Budget card follows its track (blue → orange → red as spending nears the limit), the Upcoming hero takes the biggest charge's brand colour (crimson when anything is overdue), and the Analytics hero takes the largest (or selected) category's colour. Pass raw brand/category colours through `OneUITheme.glowTint` so dark or grey ones still read on black; `glowDefault` (`#0381FE`) is the fallback.
@@ -124,7 +126,8 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIDateWheel` | `one_ui_date_wheel.dart` | Date selection (month / day / year wheels, clamped to a range). Use it via `DatePickerScreen.open` |
 | `OneUIWheelColumn` | `one_ui_wheel_column.dart` | The single flat scroll-wheel column both pickers are built from. Reuse it for any new wheel picker |
 | `OneUIUpcomingHeroCard` | `one_ui_upcoming_hero_card.dart` | Upcoming tab hero: the budget card's glass + glow recipe, hero amount, 12dp track split by payment method, Device Care key-value rows |
-| `OneUIAnalyticsHeroCard` | `one_ui_analytics_hero_card.dart` | Analytics tab hero: same glass + glow recipe, yearly amount, 12dp track split by category colour, key-value rows (per month, budget, paused) |
+| `OneUIAnalyticsHeroCard` | `one_ui_analytics_hero_card.dart` | Analytics tab hero: same glass + glow recipe, yearly amount, 12dp track split by category colour, key-value rows (per month, budget, paused). Also used for the Pro year-end projection ("On track for 2026": spent so far vs. still to come, budget for the year), which free users see as a single locked row |
+| `CategoryEditorScreen` | `screens/category_editor_screen.dart` | Create or edit a custom category (Pro): live preview, pill name field, inline icon grid (`supportedSubscriptionIcons`) and colour swatches (`categorySwatches`), Cancel \| Save. Editing adds Delete, which first asks where to move the category's subscriptions |
 | `OneUISpendingTrendsCard` + `OneUILineChart` | `one_ui_spending_chart.dart` | Spending trajectory: 6M · 1Y · 2Y of past months (solid) and forecast (dashed, from `ChargeSchedule`), budget guide, scrubbing with a tooltip, and the charges behind the highlighted month |
 | `OneUIAmbientGlow` | `one_ui_ambient_glow.dart` | The radial glow behind glass hero cards (first child of the card's `Stack`); cross-fades when its `color` changes |
 | `OneUISliverScrollAnchor` + `OneUISliverScrollAnchorSpacer` | `one_ui_sliver_scroll_anchor.dart` | Keeps a tapped card still while content above it resizes (e.g. a filter). Put the anchor right before that card's sliver, the spacer at the end instead of the 140 px `SizedBox`, and call `controller.hold()` before the change |
@@ -141,7 +144,7 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) with a sliding active capsule |
 | `OneUIFloatingSearchPill` | `one_ui_floating_search_pill.dart` | In-screen search |
 | `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open. `hintText` is required and says what is searched ("Search subscriptions", "Search currencies"), never a generic prompt |
-| `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge), `OneUISoonChip` and `OneUIProChip` (amber, for future Pro features) |
+| `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge), `OneUISoonChip` and `OneUIProChip` (amber; for a locked Pro row use `ProGate.chip()`, which hides it once Pro is unlocked) |
 | `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar. Pass `docked: true` to get just the action row for the nav bar to host (§5.3) |
 | `OneUISortBottomSheet`, `OneUIFilterBottomSheet`, `OneUIFloatingMenu` | respective files | Sort / filter sheets and overflow menus |
 | `OneUIScrollToTopButton` | `one_ui_scroll_to_top_button.dart` | Long lists |
@@ -177,6 +180,7 @@ Settings follows Samsung Settings: the **main page is titles only**. Each row is
 - **New option in an existing area:** add a row to that subpage (built on `OneUISubpage`). Subpage rows show the **current value** as their subtitle, and a `OneUISwitch` is fine here. Also add it to that destination's `options` in `settings_catalog.dart` so search finds it (results show the path, e.g. "Settings › Notifications").
 - **New area:** add a `SettingsDestination` to a group in `SettingsCatalog.groups` (icon, colour, `open`, keywords, options), plus a subpage with a route and an `open()` helper (§5.1).
 - **Not built yet:** add a `PlannedFeature` and point the row at `ComingSoonScreen.open`; show `OneUISoonChip` (or `OneUIProChip`) as the trailing widget. Wrap the row in `if (FeatureFlags.showPlannedFeatures)` and mark catalog options `placeholder: true`: placeholders appear in **debug builds only**, so release users never see features that don't work yet.
+- **Pro-only option:** keep the row visible, give it `trailing: ProGate.chip()` and `onTap: () => ProGate.run(context, …)`, so free users land on the OneSpend Pro page. Add `'pro'` to its catalog keywords.
 - **Debug-only tools** go in Developer options, which only exists in debug builds.
 
 ### 5.3 Quick actions, confirmation, and long-press

@@ -66,6 +66,7 @@ class BackupService {
       ),
       appearance: await settings.getAppearanceSettings(),
       rateOverrides: controller.rates.overrides,
+      customCategories: List.of(controller.customCategories),
     );
   }
 
@@ -85,9 +86,14 @@ class BackupService {
         final missing = BackupMerge.missingItems(
           currentSubscriptions: controller.subscriptions,
           currentPaymentMethods: controller.paymentMethods,
+          currentCustomCategories: controller.customCategories,
           backup: backup,
         );
-        controller.addItems(subscriptions: missing.subscriptions, paymentMethods: missing.paymentMethods);
+        controller.addItems(
+          subscriptions: missing.subscriptions,
+          paymentMethods: missing.paymentMethods,
+          customCategories: missing.customCategories,
+        );
       case RestoreMode.replace:
         await saveRestorePoint();
         await _apply(backup);
@@ -111,6 +117,8 @@ class BackupService {
       settings: backup.settings,
       // Older backups have no pinned rates (null); the current ones are kept then.
       rateOverrides: backup.isLegacy ? null : backup.rateOverrides,
+      // Backups from before custom categories (null) keep the current ones.
+      customCategories: backup.customCategories,
     );
     if (backup.appearance.isNotEmpty) {
       await settings.setAppearanceSettings(backup.appearance);

@@ -18,7 +18,7 @@ flutter test --plain-name "save and load subscriptions"        # single test by 
 dart run build_runner build --delete-conflicting-outputs       # regenerate Drift code (app_database.g.dart)
 ```
 
-Regenerate with `build_runner` after changing anything under `lib/core/database/tables/` or the `@DriftDatabase` annotation. Bump `schemaVersion` in `app_database.dart` and add a step to its `MigrationStrategy.onUpgrade` when changing table shapes (currently v4: v2 added `reminder_time_minutes`, v3 converted currency symbols to ISO codes, v4 added `logo_transform`). Guard `addColumn` with `_hasColumn` and add an upgrade test (see `test/features/logo_transform_test.dart`).
+Regenerate with `build_runner` after changing anything under `lib/core/database/tables/` or the `@DriftDatabase` annotation. Bump `schemaVersion` in `app_database.dart` and add a step to its `MigrationStrategy.onUpgrade` when changing table shapes (currently v5: v2 added `reminder_time_minutes`, v3 converted currency symbols to ISO codes, v4 added `logo_transform`, v5 added `annual_plan_price` and the `custom_categories` table). Guard `addColumn` with `_hasColumn` and `createTable` with `_hasTable`, and add an upgrade test (see `test/features/custom_category_test.dart`).
 
 ## UI / design language
 
@@ -61,7 +61,21 @@ go_router, configured in `lib/core/router/app_router.dart`:
 - **Left pageless:** private in-file sub-pages (icon picker sub-screens, payment method field editors, card-studio option screens, `OneUIFieldEditorScreen`) still use `Navigator.push`.
 - **Router ownership:** `OneSpendApp` creates its own router in state, so each instance (and each test) starts fresh.
 
-### Notifications
+### Pro
+
+OneSpend Pro is a one-time Google Play product (`proProductId = 'onespend_pro'`) in `lib/features/pro/`. Beta testers get it free through Play promo codes, so there is no beta-specific logic.
+- **`ProController`** (`ProController.instance`): `isPro` is the entitlement cached in `app_settings` (`onespend_pro_unlocked`, never included in backups). `init()` loads the cache, then re-checks Google Play in the background, and `refresh()` runs again on every app resume. If Play can't be reached, `ownsPro()` returns `null` and the cached value is kept. When Play reports the product isn't owned (a refund), Pro is revoked.
+- **`PurchaseService`:** `configureDependencies()` registers `PlayPurchaseService` (`in_app_purchase`), and `setupDependencies()` falls back to `NoopPurchaseService`, so tests never touch billing. In tests, set `ProController.instance.debugOverride = true` to unlock Pro. Developer options has the same switch as "Simulate Pro".
+- **Gating:** wrap Pro-only actions in `ProGate.run(context, action)`, which opens the OneSpend Pro page for free users, and give the row `ProGate.chip()` as its trailing widget. Pro-only routes add `redirect: _requirePro` in `app_router.dart`. Currently gated: the card studio, the detail studio, PDF exports, custom categories (creating and editing), the annual plan price and its savings, and the Analytics year-end projection. Custom exchange rates, CSV, text and backup stay free. If Pro is lost, existing custom categories keep working; only creating and editing them is locked.
+
+### Categories
+
+`SubscriptionCategory` is a class, not an enum. The 10 built-ins are `static const` instances with the old enum names, and the stored id is `name`. User-made categories (`CustomCategory`, ids `c_…`) live in the `custom_categories` table and in the static `CustomCategoryRegistry`. `SubscriptionController.load()` fills the registry before it loads subscriptions.
+- Instances are canonical (`SubscriptionCategory.custom(id)` returns a cached instance), so identity equality works for map keys and `const` maps. Don't override `==`.
+- Use `SubscriptionCategory.all` for pickers and filters. `values` lists only the built-ins.
+- `label`, `icon` and `color` resolve custom categories through the registry. A deleted one reads "Other". Custom icons must come from `supportedSubscriptionIcons`, which keeps icon tree-shaking safe.
+- Backups are format version 2 and carry `customCategories`. Version 1 backups still restore.
+
 
 Local notifications only, with no push server. They live in `lib/features/notifications/`:
 - **`NotificationPlanner`:** pure logic that turns the current data into a list of `PlannedNotification`s: renewals, card expiry and over-budget alerts. It covers a rolling 60-day window, capped at 50.
