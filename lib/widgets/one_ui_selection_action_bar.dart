@@ -16,6 +16,9 @@ class OneUISelectionActionBar extends StatelessWidget {
   final VoidCallback onMore;
   final GlobalKey? moreButtonKey;
 
+  /// Anchors the Share menu (Share as PDF / Share as text).
+  final GlobalKey? shareButtonKey;
+
   /// Render only the action row, for hosting inside the tab shell's nav bar so the
   /// bar morphs into these actions instead of being replaced (see HomeShellScope).
   final bool docked;
@@ -30,6 +33,7 @@ class OneUISelectionActionBar extends StatelessWidget {
     required this.onDelete,
     required this.onMore,
     this.moreButtonKey,
+    this.shareButtonKey,
     this.docked = false,
   });
 
@@ -74,6 +78,7 @@ class OneUISelectionActionBar extends StatelessWidget {
         children: [
           // 1. Share
           _buildActionItem(
+            key: shareButtonKey,
             icon: Icons.share_outlined,
             label: 'Share',
             isEnabled: hasSelection,

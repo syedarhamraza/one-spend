@@ -27,6 +27,8 @@ import 'one_ui_field_editor_screen.dart';
 import 'home_screen.dart';
 import '../features/subscriptions/presentation/widgets/first_run_empty_state.dart';
 import 'settings/backup_data_screen.dart';
+import '../features/reports/presentation/export_share_screen.dart';
+import '../features/reports/data/report_sharer.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -58,6 +60,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   final GlobalKey _actionPillKey = GlobalKey();
   final GlobalKey _moreButtonKey = GlobalKey();
   final GlobalKey _selectionMoreButtonKey = GlobalKey();
+  final GlobalKey _selectionShareButtonKey = GlobalKey();
 
   late final VoidCallback _shellBackHandler = _handleShellBack;
 
@@ -99,6 +102,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       docked: docked,
       selectedCount: _selectedIds.length,
       moreButtonKey: _selectionMoreButtonKey,
+      shareButtonKey: _selectionShareButtonKey,
       onMove: _handleMoveSelected,
       onToggleLock: _handleLockSelected,
       onShare: _handleShareSelected,
@@ -161,8 +165,8 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           onTap: () => _showEditBudgetDialog(),
         ),
         OneUIFloatingMenuItem(
-          label: 'Export list (CSV)',
-          onTap: () => _showExportDialog(context),
+          label: 'Export & share',
+          onTap: () => ExportShareScreen.open(context),
         ),
       ],
     );
@@ -305,9 +309,31 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     _exitSelectionMode();
   }
 
-  Future<void> _handleShareSelected() async {
+  /// Share → the same floating menu as More: Share as PDF / Share as text.
+  void _handleShareSelected() {
     if (_selectedIds.isEmpty) return;
     HapticFeedback.lightImpact();
+    OneUIFloatingMenu.show(
+      context: context,
+      anchorKey: _selectionShareButtonKey,
+      fallbackBottom: 84.0,
+      fallbackRight: 20.0,
+      items: [
+        OneUIFloatingMenuItem(label: 'Share as PDF', onTap: _shareSelectedPdf),
+        OneUIFloatingMenuItem(label: 'Share as text', onTap: _shareSelectedText),
+      ],
+    );
+  }
+
+  Future<void> _shareSelectedPdf() async {
+    try {
+      await ReportSharer.shareSelectionPdf(SubscriptionStore.instance, Set.of(_selectedIds));
+    } catch (_) {
+      if (mounted) OneUIToast.show(context, 'Couldn\'t prepare the PDF');
+    }
+  }
+
+  Future<void> _shareSelectedText() async {
     final subs = SubscriptionStore.instance.subscriptions.where((s) => _selectedIds.contains(s.id));
     final buffer = StringBuffer('Subscriptions Summary (${_selectedIds.length} items):\n\n');
     for (var sub in subs) {
@@ -436,37 +462,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         'Budget updated to ${formatMoney(store.monthlyBudget, store.currency, decimals: 0)}',
       );
     }
-  }
-
-  void _showExportDialog(BuildContext context) {
-    final csv = SubscriptionStore.instance.exportDataAsCsv();
-
-    OneUIFloatingModal.showConfirmationDialog(
-      context: context,
-      title: 'Export Subscriptions',
-      message: 'Preview and copy your subscription database as a CSV file:',
-      customContent: Container(
-        height: 130,
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: OneUITheme.surfacePill,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: SingleChildScrollView(
-          child: Text(
-            csv,
-            style: const TextStyle(fontSize: 11, fontFamily: 'monospace', color: OneUITheme.textSecondary),
-          ),
-        ),
-      ),
-      cancelLabel: 'Close',
-      confirmLabel: 'Copy CSV',
-      onConfirm: () {
-        Clipboard.setData(ClipboardData(text: csv));
-        OneUIToast.copied(context, 'CSV copied to clipboard');
-      },
-    );
   }
 
   Widget _buildSelectionCountPill({

@@ -29,6 +29,8 @@ import 'payment_history_screen.dart';
 import 'payment_methods_screen.dart';
 import 'reminder_picker_screen.dart';
 import '../utils/reminder_format.dart';
+import '../features/reports/data/report_sharer.dart';
+import '../widgets/one_ui_floating_menu.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -44,6 +46,9 @@ class SubscriptionDetailScreen extends StatefulWidget {
 
 class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   late Subscription _sub;
+
+  /// Anchors the Share menu above the bottom action bar.
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   /// How long the Renew button stays as "Undo" after renewing.
   static const _undoWindow = Duration(seconds: 8);
@@ -210,8 +215,30 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
 
 
 
-  Future<void> _shareSubscription() async {
+  /// Share → the same floating menu as More: Share as PDF / Share as text.
+  void _shareSubscription() {
     HapticFeedback.lightImpact();
+    OneUIFloatingMenu.show(
+      context: context,
+      anchorKey: _shareButtonKey,
+      fallbackBottom: 84.0,
+      fallbackRight: 20.0,
+      items: [
+        OneUIFloatingMenuItem(label: 'Share as PDF', onTap: _shareSubscriptionPdf),
+        OneUIFloatingMenuItem(label: 'Share as text', onTap: _shareSubscriptionText),
+      ],
+    );
+  }
+
+  Future<void> _shareSubscriptionPdf() async {
+    try {
+      await ReportSharer.shareSubscriptionPdf(SubscriptionStore.instance, _sub);
+    } catch (_) {
+      if (mounted) OneUIToast.show(context, 'Couldn\'t prepare the PDF');
+    }
+  }
+
+  Future<void> _shareSubscriptionText() async {
     final formattedDate = OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate);
     final summaryText = '''
 ${_sub.name} Subscription Details:
@@ -1202,6 +1229,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                         onTap: _togglePause,
                       ),
                       OneUIFloatingActionBarItem(
+                        key: _shareButtonKey,
                         icon: Icons.share_outlined,
                         label: 'Share',
                         onTap: _shareSubscription,
