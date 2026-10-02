@@ -128,6 +128,15 @@ class AboutScreen extends StatelessWidget {
             style: const TextStyle(fontSize: 12.5, color: OneUITheme.textTertiary),
           ),
         ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(24, 8, 24, 0),
+          child: Text(
+            'Product and company names are trademarks of their respective owners. '
+            'Their use does not imply affiliation with or endorsement by them.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 11.5, height: 1.4, color: OneUITheme.textTertiary),
+          ),
+        ),
       ],
     );
   }

@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
-import '../widgets/one_ui_glass_surface.dart';
 import '../utils/one_ui_brand_catalog.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_brand_icon.dart';
@@ -218,29 +216,23 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
     return 'Icon Glyph';
   }
 
-  void _openBrandPresetSubpage() async {
-    HapticFeedback.lightImpact();
-    final result = await Navigator.push<_BrandPresetResult>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _BrandPresetPickerSubpage(
-          currentPresetId: (_selectedPresetId == '__none__' ? null : _selectedPresetId),
-          currentColor: _selectedColor,
-          currentIcon: _selectedIcon,
-          currentLogoUrl: _selectedLogoUrl,
-          subscriptionName: widget.subscriptionName,
-        ),
-      ),
-    );
-    if (result != null && mounted) {
-      setState(() {
-        _selectedPresetId = result.preset.id;
-        _selectedColor = result.preset.color;
-        _selectedIcon = result.preset.icon;
-        _selectedLogoUrl = null;
-        _selectedLogoTransform = null; // Brand logo vector replaces any custom URL!
-      });
-    }
+  /// Letters for the initials tile: the service's short form (e.g. "NF") or
+  /// the name's initials.
+  String get _initials {
+    final preset = OneUIBrandCatalog.findPreset(widget.subscriptionName);
+    final name = widget.subscriptionName.trim();
+    return preset?.monogram ?? OneUIBrandCatalog.getMonogram(name.isEmpty ? '?' : name);
+  }
+
+  /// Switches to the initials tile (the default style).
+  void _useInitials() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedLogoUrl = null;
+      _selectedLogoTransform = null;
+      _selectedIcon = Icons.subscriptions_rounded;
+      _selectedPresetId = OneUIBrandCatalog.findPreset(widget.subscriptionName)?.id ?? '__none__';
+    });
   }
 
   void _openSystemIconSubpage() async {
@@ -322,9 +314,12 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         ? widget.subscriptionName
         : 'Icon Preview';
 
-    final isPresetSelected = _selectedPresetId != null && _selectedPresetId != '__none__';
     final isCustomUrlSelected = _selectedLogoUrl != null && _selectedLogoUrl!.isNotEmpty;
-    final isSystemIconSelected = !isPresetSelected && !isCustomUrlSelected;
+    // An explicitly chosen glyph; otherwise the icon shows initials.
+    final isSystemIconSelected = !isCustomUrlSelected &&
+        _selectedPresetId == '__none__' &&
+        _selectedIcon.codePoint != Icons.subscriptions_rounded.codePoint;
+    final isInitialsSelected = !isCustomUrlSelected && !isSystemIconSelected;
 
     return Scaffold(
       backgroundColor: OneUITheme.surfacePitch,
@@ -371,17 +366,11 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
                         child: OneUIGroupCard(
                           items: [
                             OneUIGroupItem(
-                              title: 'Brand logos',
-                              subtitle: isPresetSelected
-                                  ? (OneUIBrandCatalog.findById(_selectedPresetId)?.name ?? _selectedPresetId!)
-                                  : 'None',
-                              subtitleColor: isPresetSelected ? OneUITheme.accentBlue : OneUITheme.textSecondary,
-                              trailing: const Icon(
-                                Icons.chevron_right_rounded,
-                                size: 20,
-                                color: OneUITheme.textSecondary,
-                              ),
-                              onTap: _openBrandPresetSubpage,
+                              title: 'Initials',
+                              subtitle: isInitialsSelected ? _initials : 'None',
+                              subtitleColor: isInitialsSelected ? OneUITheme.accentBlue : OneUITheme.textSecondary,
+                              trailing: OneUIRadio(isSelected: isInitialsSelected),
+                              onTap: _useInitials,
                             ),
                             OneUIGroupItem(
                               title: 'System icon',
@@ -621,296 +610,10 @@ class _IconHeroPreviewCard extends StatelessWidget {
   }
 }
 
-class _BrandPresetResult {
-  final BrandPreset preset;
-  const _BrandPresetResult(this.preset);
-}
-
 class _CustomUrlResult {
   final String? url;
   final LogoTransform? transform;
   const _CustomUrlResult(this.url, [this.transform]);
-}
-
-/// Dedicated subpage to select Brand Preset with live interactive Hero Preview
-class _BrandPresetPickerSubpage extends StatefulWidget {
-  final String? currentPresetId;
-  final Color currentColor;
-  final IconData currentIcon;
-  final String? currentLogoUrl;
-  final String subscriptionName;
-
-  const _BrandPresetPickerSubpage({
-    required this.currentPresetId,
-    required this.currentColor,
-    required this.currentIcon,
-    this.currentLogoUrl,
-    required this.subscriptionName,
-  });
-
-  @override
-  State<_BrandPresetPickerSubpage> createState() => _BrandPresetPickerSubpageState();
-}
-
-class _BrandPresetPickerSubpageState extends State<_BrandPresetPickerSubpage> {
-  late String? _selectedPresetId;
-  late Color _previewColor;
-  late IconData _previewIcon;
-  late String? _previewLogoUrl;
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _searchFocusNode = FocusNode();
-  String _searchQuery = '';
-  bool _showSearch = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedPresetId = widget.currentPresetId;
-    _previewColor = widget.currentColor;
-    _previewIcon = widget.currentIcon;
-    _previewLogoUrl = widget.currentLogoUrl;
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _searchFocusNode.dispose();
-    super.dispose();
-  }
-
-  void _exitSearchMode() {
-    _searchFocusNode.unfocus();
-    setState(() {
-      _showSearch = false;
-      _searchQuery = '';
-      _searchController.clear();
-    });
-  }
-
-  Widget _buildFloatingSearchPill() {
-    return OneUIGlassSurface(
-      borderRadius: const BorderRadius.all(Radius.circular(32)),
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
-      child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) {
-                      _searchFocusNode.unfocus();
-                    },
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: 'Search brand logos',
-                      hintStyle: TextStyle(
-                        color: Color(0xFF8E95B8),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onChanged: (val) {
-                      setState(() {
-                        _searchQuery = val;
-                      });
-                    },
-                  ),
-                ),
-                if (_searchQuery.isNotEmpty)
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      setState(() {
-                        _searchQuery = '';
-                        _searchController.clear();
-                      });
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.close_rounded,
-                        color: Colors.white70,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final allPresets = OneUIBrandCatalog.presets;
-    final filtered = _searchQuery.trim().isEmpty
-        ? allPresets
-        : allPresets.where((p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
-
-    final effectiveName = widget.subscriptionName.trim().isNotEmpty
-        ? widget.subscriptionName
-        : 'Icon Preview';
-
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final bottomPadding = MediaQuery.paddingOf(context).bottom;
-    final searchPillBottom = math.max(bottomPadding + 16, bottomInset + 14);
-
-    return PopScope(
-      canPop: !_showSearch,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        if (_showSearch) {
-          _exitSearchMode();
-        }
-      },
-      child: Scaffold(
-        backgroundColor: OneUITheme.surfacePitch,
-        resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: [
-            CustomScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: OneUICollapsibleHeaderDelegate(
-                    title: _showSearch ? 'Search logos' : 'Brand logos',
-                    hasBigHeader: false,
-                    showBackButton: true,
-                    onBack: () {
-                      HapticFeedback.lightImpact();
-                      if (_showSearch) {
-                        _exitSearchMode();
-                      } else {
-                        Navigator.pop(context);
-                      }
-                    },
-                    actions: _showSearch
-                        ? null
-                        : [
-                            OneUIHeaderAction(
-                              icon: Icons.search_rounded,
-                              tooltip: 'Search brand logos',
-                              onTap: () {
-                                HapticFeedback.lightImpact();
-                                setState(() => _showSearch = true);
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  _searchFocusNode.requestFocus();
-                                });
-                              },
-                            ),
-                          ],
-                  ),
-                ),
-
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(16, 4, 16, _showSearch ? (searchPillBottom + 70) : 120),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Live Hero Preview Card
-                        _IconHeroPreviewCard(
-                          subscriptionName: effectiveName,
-                          brandColor: _previewColor,
-                          iconData: _previewIcon,
-                          logoUrl: _previewLogoUrl,
-                          brandPresetId: _selectedPresetId,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Brand Logos Grid wrapped in OneUISection and group container
-                        OneUISection(
-                          title: 'Brand logos',
-                          child: filtered.isEmpty
-                              ? Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(vertical: 48),
-                                  decoration: BoxDecoration(
-                                    color: OneUIEffectsController.instance.resolveCardBackground(),
-                                    borderRadius: OneUITheme.cardBorderRadius,
-                                    border: OneUITheme.cardBorder,
-                                  ),
-                                  child: const Column(
-                                    children: [
-                                      Icon(Icons.search_off_rounded, size: 44, color: OneUITheme.textSecondary),
-                                      SizedBox(height: 12),
-                                      Text(
-                                        'No matching brand logos found',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: OneUITheme.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : OneUIGroupCard(
-                                  items: filtered.map((preset) {
-                                    final isSelected = _selectedPresetId == preset.id;
-                                    return OneUIGroupItem(
-                                      leading: OneUIBrandIcon(
-                                        brandPresetId: preset.id,
-                                        name: preset.name,
-                                        brandColor: preset.color,
-                                        size: 38,
-                                        borderRadius: 12,
-                                      ),
-                                      title: preset.name,
-                                      subtitle: preset.category.label,
-                                      trailing: OneUIRadio(isSelected: isSelected),
-                                      onTap: () {
-                                        HapticFeedback.selectionClick();
-                                        Navigator.pop(context, _BrandPresetResult(preset));
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: OneUIBottomVignette(hasFloatingElements: _showSearch),
-            ),
-
-            // Floating Search Pill above keyboard
-            if (_showSearch)
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                left: 18,
-                right: 18,
-                bottom: searchPillBottom,
-                child: RepaintBoundary(
-                  child: _buildFloatingSearchPill(),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 /// Dedicated subpage to select System Icon with live interactive Hero Preview
@@ -1204,7 +907,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: Text(
             _isValid
-                ? 'Use a PNG, WebP or JPG link, e.g. the logo from the service\'s website.'
+                ? 'Use a link to a PNG, WebP or JPG image.'
                 : 'Links start with http:// or https://',
             style: TextStyle(
               fontSize: 12.5,

@@ -403,7 +403,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Switch to Card brand logo
-      final cardBrandOptionFinder = find.text('Card brand logo');
+      final cardBrandOptionFinder = find.text('Card badge');
       expect(cardBrandOptionFinder, findsOneWidget);
       await tester.tap(cardBrandOptionFinder);
       await tester.pumpAndSettle();
