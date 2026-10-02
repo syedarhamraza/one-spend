@@ -288,6 +288,9 @@ void main() {
 
       // Enter URL: the image editor appears
       await tester.enterText(find.byType(TextField), 'https://example.com/logo.svg');
+      await tester.pump();
+      expect(find.byType(OneUILogoFramer), findsNothing); // preview waits for typing to pause
+      await tester.pump(const Duration(milliseconds: 600));
       await tester.pumpAndSettle();
       expect(find.byType(OneUILogoFramer), findsOneWidget);
 

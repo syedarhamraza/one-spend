@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -1056,24 +1057,41 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
   final TextEditingController _controller = TextEditingController();
   late LogoTransform _transform;
 
+  /// The link the preview shows. Follows the field only after typing pauses, so
+  /// half-typed links aren't fetched on every keystroke.
+  late String _previewUrl;
+  Timer? _previewDebounce;
+
   @override
   void initState() {
     super.initState();
     _controller.text = widget.currentUrl ?? '';
+    _previewUrl = _url;
     _transform = widget.currentTransform ?? LogoTransform.identity;
   }
 
   @override
   void dispose() {
+    _previewDebounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   String get _url => _controller.text.trim();
 
-  bool get _isValid => _url.isEmpty || _url.startsWith('http://') || _url.startsWith('https://');
+  static bool _isLink(String url) => url.startsWith('http://') || url.startsWith('https://');
 
-  bool get _hasImage => _url.isNotEmpty && _isValid;
+  bool get _isValid => _url.isEmpty || _isLink(_url);
+
+  bool get _hasImage => _previewUrl.isNotEmpty && _isLink(_previewUrl);
+
+  void _onLinkChanged() {
+    setState(() => _transform = LogoTransform.identity); // a new image starts unframed
+    _previewDebounce?.cancel();
+    _previewDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) setState(() => _previewUrl = _url);
+    });
+  }
 
   void _save() {
     HapticFeedback.mediumImpact();
@@ -1088,8 +1106,10 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
     final pasted = data?.text?.trim() ?? '';
     if (pasted.isEmpty || !mounted) return;
     HapticFeedback.selectionClick();
+    _previewDebounce?.cancel();
     setState(() {
       _controller.text = pasted;
+      _previewUrl = pasted;
       _transform = LogoTransform.identity; // a new image starts unframed
     });
   }
@@ -1116,7 +1136,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
               decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.cardBorderRadius),
               child: Center(
                 child: OneUILogoFramer(
-                  url: _url,
+                  url: _previewUrl,
                   name: name,
                   background: widget.currentColor,
                   value: _transform,
@@ -1147,7 +1167,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                     controller: _controller,
                     keyboardType: TextInputType.url,
                     autocorrect: false,
-                    onChanged: (_) => setState(() => _transform = LogoTransform.identity),
+                    onChanged: (_) => _onLinkChanged(),
                     style: const TextStyle(fontSize: 15, color: OneUITheme.textPrimary),
                     decoration: const InputDecoration(
                       hintText: 'https://example.com/logo.png',
@@ -1162,8 +1182,10 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                     tooltip: 'Clear',
                     onPressed: () {
                       HapticFeedback.selectionClick();
+                      _previewDebounce?.cancel();
                       setState(() {
                         _controller.clear();
+                        _previewUrl = '';
                         _transform = LogoTransform.identity;
                       });
                     },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/subscription.dart';
+import '../utils/logo_image_cache.dart';
 import '../utils/one_ui_brand_catalog.dart';
 
 /// Samsung One UI Squircle Brand & Service Icon
@@ -200,20 +201,17 @@ class OneUIBrandIcon extends StatelessWidget {
   ) {
     // 1. Network image logo if provided (takes absolute precedence when custom URL is specified)
     if (effectiveLogoUrl != null && effectiveLogoUrl.isNotEmpty) {
-      final pixelRatio = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
       final framing = logoTransform ?? subscription?.logoTransform;
-      // Decode at the zoomed size so a zoomed-in logo stays sharp.
-      final cacheDim = (size * pixelRatio * (framing?.scale ?? 1).clamp(1.0, LogoTransform.maxScale)).round();
-      final image = Image.network(
-        effectiveLogoUrl,
+      // One shared, disk-cached decode per URL (see LogoImageCache): resizing,
+      // zooming or another screen showing the same logo never refetches it.
+      final image = Image(
+        image: LogoImageCache.provider(effectiveLogoUrl),
         fit: BoxFit.contain,
-        cacheWidth: cacheDim,
-        cacheHeight: cacheDim,
+        gaplessPlayback: true,
         errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset, explicitIcon, foreground),
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildFallback(subName, preset, explicitIcon, foreground);
-        },
+        // The fallback shows only until the very first download arrives.
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+            frame == null && !wasSynchronouslyLoaded ? _buildFallback(subName, preset, explicitIcon, foreground) : child,
       );
       // The editor's zoom and offset, applied inside the icon's clipped square.
       return Padding(
