@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import '../utils/one_ui_brand_catalog.dart';
 import '../models/payment_method.dart';
 
-/// Samsung One UI Payment Brand Badge / Icon
-/// - Renders official vector SVG from Datatrans payment-logos library
-/// - Preserves card aspect ratio (3:2 standard payment card ratio)
-/// - Graceful fallback to Material Icon if SVG fails or brand is custom
+/// A payment method's badge: a tile in the network's colour with a generic card
+/// or wallet glyph. The network's name is shown as text next to it; no company
+/// logos ship with the app.
 class OneUIPaymentBrandIcon extends StatelessWidget {
   final CardBrand brand;
   final double width;
@@ -35,31 +34,13 @@ class OneUIPaymentBrandIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveRadius = borderRadius ?? (height * 0.22);
-    final assetPath = brand.assetPath;
-
-    Widget content;
-    if (assetPath != null && assetPath.isNotEmpty) {
-      content = SvgPicture.asset(
-        assetPath,
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-        placeholderBuilder: (context) => _buildFallback(),
-      );
-    } else {
-      content = _buildFallback();
-    }
-
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: brand.defaultColor,
         borderRadius: BorderRadius.circular(effectiveRadius),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.08),
-          width: 0.8,
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 0.8),
         boxShadow: showShadow
             ? [
                 BoxShadow(
@@ -70,21 +51,8 @@ class OneUIPaymentBrandIcon extends StatelessWidget {
               ]
             : null,
       ),
-      clipBehavior: Clip.antiAlias,
       alignment: Alignment.center,
-      child: content,
-    );
-  }
-
-  Widget _buildFallback() {
-    return Container(
-      color: brand.defaultColor,
-      alignment: Alignment.center,
-      child: Icon(
-        brand.icon,
-        size: height * 0.55,
-        color: Colors.white,
-      ),
+      child: Icon(brand.icon, size: height * 0.55, color: OneUIBrandCatalog.foregroundOn(brand.defaultColor)),
     );
   }
 }

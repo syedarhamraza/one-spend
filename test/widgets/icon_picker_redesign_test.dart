@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/screens/icon_picker_screen.dart';
 import 'package:onespend/utils/one_ui_brand_catalog.dart';
-import 'package:onespend/widgets/one_ui_brand_icon.dart';
 import 'package:onespend/widgets/one_ui_icon_picker_modal.dart';
 import 'package:onespend/widgets/one_ui_logo_framer.dart';
 
@@ -31,43 +30,11 @@ void main() {
       );
     });
 
-    test('All 12 requested brands resolve to bundled SVG assets', () {
-      final requestedBrands = [
-        ('Nintendo Switch Online', 'nintendo_switch_online'),
-        ('Xbox Game Pass', 'xbox_game_pass'),
-        ('Microsoft 365', 'microsoft_365'),
-        ('Google Workspace', 'google_workspace'),
-        ('Google One', 'google_one'),
-        ('Canva Pro', 'canva'),
-        ('Adobe Creative Cloud', 'adobe_cc'),
-        ('Slack', 'slack'),
-        ('Claude Pro', 'claude'),
-        ('ChatGPT Plus', 'chatgpt'),
-        ('Amazon Prime', 'amazon_prime'),
-        ('Disney+', 'disney_plus'),
-      ];
-
-      for (final (name, presetId) in requestedBrands) {
-        final svg = OneUIBrandIcon.resolveBrandSvg(name, presetId);
-        expect(
-          svg,
-          isNotNull,
-          reason: 'Expected $name ($presetId) to resolve to an SVG asset, but got null',
-        );
+    test('every preset has plain letters for its initials tile', () {
+      for (final preset in OneUIBrandCatalog.presets) {
+        expect(preset.monogram, isNotEmpty, reason: preset.id);
+        expect(preset.monogram.length, lessThanOrEqualTo(3), reason: preset.id);
       }
-    });
-
-    test('Alternative brand name lookups resolve properly to vector SVGs', () {
-      expect(OneUIBrandIcon.resolveBrandSvg('Nintendo'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('Xbox'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('Microsoft'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('Slack'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('Claude'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('ChatGPT'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('OpenAI'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('Amazon'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('Disney'), isNotNull);
-      expect(OneUIBrandIcon.resolveBrandSvg('D+'), isNotNull);
     });
   });
 
@@ -92,11 +59,12 @@ void main() {
 
       // Hero Live Preview Card (flat, no extra pills)
       expect(find.text('Spotify Premium'), findsOneWidget);
-      expect(find.text('Spotify'), findsOneWidget); // Group item subtitle
+      expect(find.text('Sp'), findsWidgets); // Initials tile + its row subtitle
 
       // Group Items
       expect(find.text('Icon style'), findsOneWidget);
-      expect(find.text('Brand logos'), findsOneWidget);
+      expect(find.text('Initials'), findsOneWidget);
+      expect(find.text('Brand logos'), findsNothing); // no third-party logos to pick
       expect(find.text('System icon'), findsOneWidget);
       expect(find.text('Custom image URL'), findsOneWidget);
 
@@ -109,44 +77,40 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
     });
 
-    testWidgets('tapping Brand logos opens dedicated subpage and selecting a brand updates hero', (tester) async {
+    testWidgets('Initials switches a system icon or image back to letters', (tester) async {
       await tester.binding.setSurfaceSize(const Size(412, 900));
-
+      IconPickerResult? result;
       await tester.pumpWidget(
-        const MaterialApp(
-          home: IconPickerScreen(
-            initialColor: Color(0xFF0066FF),
-            initialIcon: Icons.tv_rounded,
-            subscriptionName: 'My Subscription',
+        routedTestApp(
+          Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                result = await IconPickerScreen.open(
+                  context,
+                  currentColor: const Color(0xFF0066FF),
+                  currentIcon: Icons.sports_esports_rounded,
+                  currentPresetId: '__none__',
+                  currentLogoUrl: 'https://example.com/a.png',
+                  subscriptionName: 'Netflix',
+                );
+              },
+              child: const Text('Open'),
+            ),
           ),
         ),
       );
       await tester.pumpAndSettle();
-
-      // Tap on Brand logos group item
-      await tester.tap(find.text('Brand logos'));
+      await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      // Verify Brand logos subpage
-      expect(find.text('Brand logos'), findsWidgets); // Header & Section
-
-      // Tap header search button to reveal floating search bar
-      await tester.tap(find.byIcon(Icons.search_rounded));
+      await tester.tap(find.text('Initials'));
       await tester.pumpAndSettle();
-      expect(find.text('Search brand logos'), findsOneWidget);
-
-      // Search for Nintendo
-      await tester.enterText(find.byType(TextField), 'Nintendo');
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Nintendo Switch Online'), findsOneWidget);
-
-      // Tap on Nintendo Switch Online to select it
-      await tester.tap(find.text('Nintendo Switch Online'));
-      await tester.pumpAndSettle();
-
-      // Back on main screen: verify hero and group item updated!
-      expect(find.text('Nintendo Switch Online'), findsWidgets);
+      expect(result!.logoUrl, isNull);
+      expect(result!.brandPresetId, 'netflix'); // the preset's letters ("NF")
+      expect(result!.iconData.codePoint, Icons.subscriptions_rounded.codePoint);
     });
 
     testWidgets('tapping System icon opens dedicated subpage and selecting an icon updates hero', (tester) async {

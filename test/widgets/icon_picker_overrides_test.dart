@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/features/subscriptions/domain/entities/subscription.dart';
 import 'package:onespend/features/subscriptions/domain/entities/subscription_enums.dart';
 import 'package:onespend/screens/icon_picker_screen.dart';
 import 'package:onespend/widgets/one_ui_brand_icon.dart';
+import 'package:onespend/utils/one_ui_brand_catalog.dart';
 import 'package:onespend/widgets/one_ui_icon_picker_modal.dart';
 
 import '../helpers/test_app.dart';
@@ -39,9 +39,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should render the gaming controller icon, NOT the Spotify SVG
+      // Renders the chosen gaming controller glyph
       expect(find.byIcon(Icons.sports_esports_rounded), findsOneWidget);
-      expect(find.byType(SvgPicture), findsNothing);
     });
 
     testWidgets('custom image URL overrides brand name matching', (tester) async {
@@ -70,24 +69,20 @@ void main() {
       );
       await tester.pump();
 
-      // Should render Image.network, NOT the Netflix SVG
+      // Renders the user's own image
       expect(find.byType(Image), findsOneWidget);
-      expect(find.byType(SvgPicture), findsNothing);
     });
 
-    test('multi-color SVGs are properly identified and preserve color palette', () {
-      expect(OneUIBrandIcon.isMultiColorSvg('google_one', 'Google One'), isTrue);
-      expect(OneUIBrandIcon.isMultiColorSvg('google_workspace', 'Google Workspace'), isTrue);
-      expect(OneUIBrandIcon.isMultiColorSvg('google', 'Google'), isTrue);
-      expect(OneUIBrandIcon.isMultiColorSvg('spotify', 'Spotify'), isFalse);
-    });
-
-    test('brand SVG assets resolution', () {
-      expect(OneUIBrandIcon.resolveBrandSvg('Google One', 'google_one'), 'assets/logos/brands/googleone.svg');
-      expect(OneUIBrandIcon.resolveBrandSvg('Google Workspace', 'google_workspace'), 'assets/logos/brands/google.svg');
-      expect(OneUIBrandIcon.resolveBrandSvg('Amazon Prime', 'amazon_prime'), 'assets/logos/brands/amazonprime.svg');
-      expect(OneUIBrandIcon.resolveBrandSvg('LinkedIn Premium', 'linkedin_premium'), 'assets/logos/brands/linkedin.svg');
-      expect(OneUIBrandIcon.resolveBrandSvg('Spotify', '__none__'), isNull);
+    testWidgets('no third-party logos ship: every brand preset renders its letters', (tester) async {
+      for (final preset in OneUIBrandCatalog.presets) {
+        await tester.pumpWidget(MaterialApp(
+          home: Scaffold(body: OneUIBrandIcon(name: preset.name, brandPresetId: preset.id, size: 60)),
+        ));
+        expect(find.byType(Image), findsNothing, reason: preset.id);
+        expect(find.text(preset.monogram), findsOneWidget, reason: preset.id);
+        // Plain letters only: no private-use or stylised logo characters.
+        expect(preset.monogram.runes.every((r) => r < 0x2000), isTrue, reason: preset.id);
+      }
     });
 
     testWidgets('IconPickerScreen remove custom image URL button clears URL completely', (tester) async {
@@ -211,7 +206,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.music_note_rounded), findsOneWidget);
-      expect(find.byType(SvgPicture), findsNothing);
     });
   });
 }

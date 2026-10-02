@@ -11,7 +11,6 @@ class BrandPreset {
   final IconData icon;
   final String monogram;
   final String defaultUrl;
-  final String? logoUrl;
 
   const BrandPreset({
     required this.id,
@@ -23,7 +22,6 @@ class BrandPreset {
     required this.icon,
     required this.monogram,
     required this.defaultUrl,
-    this.logoUrl,
   });
 }
 
@@ -58,7 +56,7 @@ class OneUIBrandCatalog {
       category: SubscriptionCategory.music,
       color: Color(0xFFFA243C),
       icon: Icons.album_rounded,
-      monogram: '',
+      monogram: 'AM',
       defaultUrl: 'https://music.apple.com/account/settings',
     ),
     BrandPreset(
@@ -67,8 +65,8 @@ class OneUIBrandCatalog {
       category: SubscriptionCategory.utilities,
       color: Color(0xFF000000),
       glowColor: Color(0xFFE5E5EA), // Apple Luminous Silver
-      icon: Icons.apple_rounded,
-      monogram: '',
+      icon: Icons.layers_rounded,
+      monogram: 'A1',
       defaultUrl: 'https://appleid.apple.com/account/manage',
     ),
     BrandPreset(
@@ -201,7 +199,7 @@ class OneUIBrandCatalog {
       monogram: 'DB',
       defaultUrl: 'https://www.dropbox.com/account/plan',
     ),
-    // Google's multicolour logos sit on white, like Google's own app icons.
+    // Google services on white, like Google's own app icons.
     BrandPreset(
       id: 'google_one',
       name: 'Google One',
@@ -230,7 +228,7 @@ class OneUIBrandCatalog {
       category: SubscriptionCategory.productivity,
       color: Color(0xFF0078D4),
       icon: Icons.grid_view_rounded,
-      monogram: 'M365',
+      monogram: 'MS',
       defaultUrl: 'https://account.microsoft.com/services',
     ),
     BrandPreset(
@@ -322,7 +320,7 @@ class OneUIBrandCatalog {
       color: Color(0xFF000000),
       glowColor: Color(0xFFF8FAFC), // X High-Contrast Monochrome
       icon: Icons.close_rounded,
-      monogram: '𝕏',
+      monogram: 'X',
       defaultUrl: 'https://x.com/settings/manage_subscriptions',
     ),
     BrandPreset(

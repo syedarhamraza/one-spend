@@ -125,7 +125,8 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
     _brandColor = preset.color;
     _iconData = preset.icon;
     _brandPresetId = preset.id;
-    _logoUrl = preset.logoUrl;
+    // A preset never brings an image: icons show initials unless the user adds one.
+    _logoUrl = null;
     _logoTransform = null;
     if (_accountUrl.isEmpty) {
       _accountUrl = preset.defaultUrl;
