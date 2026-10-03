@@ -63,7 +63,7 @@ go_router, configured in `lib/core/router/app_router.dart`:
 
 ### Pricing
 
-The app is fully free; there is no paywall or entitlement. The earlier OneSpend Pro (Play Billing) implementation was removed and can be revived from branch `feat/pro-entitlement` (commit `3cb0a10`).
+The app is fully free; there is no paywall or entitlement. The earlier OneSpend Pro (Play Billing) implementation was removed and can be revived from commit `3cb0a10` in `main`'s history (`git checkout -b feat/pro 3cb0a10`).
 
 ### Categories
 
