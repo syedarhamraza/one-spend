@@ -1,0 +1,189 @@
+<!doctype html>
+<!--
+  One Spend Google Play graphics. Each slide is chosen by the URL hash:
+    template.html#1 … #8   phone screenshots, 1080 x 1920
+    template.html#feature  feature graphic, 1024 x 500
+  Rendered to PNG by render.ps1 with headless Chrome.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One Spend store graphics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000;
+    --text: #fff;
+    --muted: #9e9ea4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); overflow: hidden; }
+  body { font-family: 'Inter', system-ui, sans-serif; color: var(--text); -webkit-font-smoothing: antialiased; }
+
+  /* ---------- Phone screenshot slides (1080 x 1920) ---------- */
+  .slide {
+    position: relative; width: 1080px; height: 1920px; overflow: hidden;
+    background:
+      radial-gradient(900px 760px at 50% 34%, var(--glow) 0%, transparent 70%),
+      radial-gradient(700px 500px at 85% 96%, var(--glow2) 0%, transparent 70%),
+      var(--bg);
+  }
+  .copy { position: absolute; top: 132px; left: 92px; right: 92px; }
+  .eyebrow {
+    display: inline-block; font-size: 30px; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent);
+    padding: 12px 26px; border-radius: 999px; margin-bottom: 34px;
+  }
+  h1 { font-size: 92px; line-height: 1.04; font-weight: 800; letter-spacing: -0.035em; }
+  .sub { margin-top: 26px; font-size: 40px; line-height: 1.32; font-weight: 500; color: var(--muted); letter-spacing: -0.01em; }
+
+  .phone {
+    position: absolute; left: 50%; top: 680px; transform: translateX(-50%);
+    width: 860px; padding: 14px; border-radius: 118px;
+    background: linear-gradient(160deg, #3a3a40 0%, #1a1a1e 38%, #2c2c31 70%, #121215 100%);
+    box-shadow:
+      0 0 0 2px #4a4a52 inset,
+      0 60px 140px rgba(0, 0, 0, 0.75),
+      0 0 120px color-mix(in srgb, var(--glow) 55%, transparent);
+  }
+  .screen { position: relative; border-radius: 104px; overflow: hidden; background: #000; aspect-ratio: 1260 / 2800; }
+  .screen img { display: block; width: 100%; }
+  /* A clean status bar drawn over the captured one. */
+  .status {
+    position: absolute; top: 0; left: 0; right: 0; height: 84px; background: #000;
+    display: flex; align-items: center; justify-content: space-between; padding: 6px 70px 0 76px;
+    font-size: 34px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .status.clear { background: transparent; }
+  .camera { position: absolute; top: 26px; left: 50%; width: 34px; height: 34px; margin-left: -17px; border-radius: 50%; background: #0b0b0d; box-shadow: 0 0 0 3px #1a1a1d; }
+  .icons { display: flex; gap: 14px; align-items: center; }
+  .battery { width: 58px; height: 28px; border-radius: 9px; border: 3px solid #fff; position: relative; padding: 3px; }
+  .battery::after { content: ''; position: absolute; right: -9px; top: 8px; width: 5px; height: 10px; border-radius: 0 3px 3px 0; background: #fff; }
+  .battery i { display: block; height: 100%; width: 100%; border-radius: 4px; background: #fff; }
+
+  /* ---------- Feature graphic (1024 x 500) ---------- */
+  .feature {
+    position: relative; width: 1024px; height: 500px; overflow: hidden;
+    background:
+      radial-gradient(520px 420px at 76% 52%, rgba(3, 129, 254, 0.42) 0%, transparent 70%),
+      radial-gradient(420px 320px at 8% 100%, rgba(72, 181, 160, 0.22) 0%, transparent 70%),
+      #000;
+  }
+  .feature .brand { position: absolute; left: 72px; top: 92px; width: 470px; }
+  .feature .logo { width: 108px; height: 108px; border-radius: 30px; display: block; margin-bottom: 30px; box-shadow: 0 16px 50px rgba(3, 129, 254, 0.35); }
+  .feature h2 { font-size: 72px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+  .feature p { margin-top: 18px; font-size: 30px; line-height: 1.3; color: var(--muted); font-weight: 500; }
+  .feature .phone { top: 46px; left: auto; right: 64px; transform: rotate(-8deg); width: 330px; padding: 7px; border-radius: 52px; }
+  .feature .screen { border-radius: 45px; }
+  .feature .status { height: 36px; font-size: 15px; padding: 2px 30px 0 34px; }
+  .feature .camera { top: 11px; width: 15px; height: 15px; margin-left: -7px; }
+  .feature .battery { width: 26px; height: 13px; border-width: 2px; border-radius: 4px; padding: 1px; }
+  .feature .battery::after { right: -5px; top: 3px; width: 3px; height: 5px; }
+  .feature .icons { gap: 6px; }
+  .feature .icons svg { width: 16px; height: 16px; }
+
+  /* Whole phone visible: smaller, centred in the space under the copy. */
+  .full .copy { top: 104px; }
+  .full .eyebrow { font-size: 26px; padding: 10px 22px; margin-bottom: 26px; }
+  .full h1 { font-size: 72px; letter-spacing: -0.03em; }
+  .full .sub { margin-top: 16px; font-size: 32px; }
+  .full .slide .phone { top: 468px !important; width: 650px; padding: 11px; border-radius: 92px; }
+  .full .slide .screen { border-radius: 81px; }
+  .full .slide .status { height: 66px; font-size: 27px; padding: 4px 56px 0 62px; }
+  .full .slide .camera { top: 20px; width: 27px; height: 27px; margin-left: -13px; }
+  .full .slide .battery { width: 40px; height: 20px; border-width: 2px; border-radius: 6px; padding: 2px; }
+  .full .slide .battery::after { right: -6px; top: 5px; width: 4px; height: 7px; }
+  .full .slide .icons { gap: 10px; }
+  .full .slide .icons svg { width: 24px; height: 24px; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<template id="statusbar">
+  <div class="status">
+    <span>9:41</span>
+    <span class="icons">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 18.5a1.5 1.5 0 1 0 0 .01zM4.2 10.3a11 11 0 0 1 15.6 0l-1.5 1.5a8.9 8.9 0 0 0-12.6 0zm3 3a6.8 6.8 0 0 1 9.6 0l-1.5 1.5a4.7 4.7 0 0 0-6.6 0z"/></svg>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M2 21h3v-4H2zm5 0h3v-8H7zm5 0h3V9h-3zm5 0h3V4h-3z"/></svg>
+      <span class="battery"><i></i></span>
+    </span>
+  </div>
+  <div class="camera"></div>
+</template>
+
+<script>
+  // Slide copy. Accent = eyebrow colour; glow = the backdrop light (the app's own accents).
+  // Captures are 1260 x 2800 (vivo X200 Pro). shift: capture pixels scrolled off the top
+  // inside the frame; top: where the phone starts (close-up layout).
+  const slides = {
+    1: { img: '1-subscriptions',
+         eyebrow: 'All in one place', title: 'Every subscription.<br>One place.',
+         sub: 'See what you pay, and when it renews.', accent: '#5390F5', glow: 'rgba(3,129,254,.30)', glow2: 'rgba(83,144,245,.16)' },
+    2: { img: '2-upcoming',
+         eyebrow: 'Upcoming', title: 'Never miss<br>a renewal.',
+         sub: 'Every charge for the months ahead, at a glance.', accent: '#48B5A0', glow: 'rgba(72,181,160,.28)', glow2: 'rgba(72,181,160,.14)' },
+    3: { img: '3-trends',
+         eyebrow: 'Analytics', title: 'Spot the trend<br>before it costs you.',
+         sub: 'Your yearly total, budget and smart money tips.', accent: '#00C05A', glow: 'rgba(0,192,90,.24)', glow2: 'rgba(0,192,90,.12)' },
+    4: { img: '4-categories', shift: 150,
+         eyebrow: 'Categories', title: 'See where every<br>dollar goes.',
+         sub: 'A clear breakdown of what each kind of service costs.', accent: '#7E57C2', glow: 'rgba(126,87,194,.32)', glow2: 'rgba(240,113,103,.14)' },
+    5: { img: '5-detail',
+         eyebrow: 'Details', title: 'Every detail<br>in one tap.',
+         sub: 'Price, billing cycle, next renewal and notes.', accent: '#F4A261', glow: 'rgba(244,162,97,.24)', glow2: 'rgba(83,144,245,.14)' },
+    6: { img: '6-reminders',
+         eyebrow: 'Reminders', title: 'Reminders on<br>your schedule.',
+         sub: 'Choose exactly when each heads-up arrives.', accent: '#48B5A0', glow: 'rgba(72,181,160,.28)', glow2: 'rgba(83,144,245,.12)' },
+    7: { img: '7-currency',
+         eyebrow: 'Multi-currency', title: 'Any currency.<br>One total.',
+         sub: 'Pay in 45+ currencies and see it all in yours.', accent: '#5390F5', glow: 'rgba(3,129,254,.28)', glow2: 'rgba(0,192,90,.12)' },
+    8: { img: '8-backup',
+         eyebrow: 'Backup', title: 'Never lose<br>a thing.',
+         sub: 'One-file backups and automatic restore points.', accent: '#FB8C00', glow: 'rgba(251,140,0,.22)', glow2: 'rgba(83,144,245,.12)' },
+  };
+
+  function phone(img, shift = 0, top = null) {
+    const status = document.getElementById('statusbar').innerHTML;
+    // margin-top in % is relative to the width, so this moves the capture by `shift` of its 1260 px.
+    const imgStyle = shift ? ` style="margin-top:-${(shift / 1260 * 100).toFixed(3)}%"` : '';
+    const phoneStyle = top ? ` style="top:${top}px"` : '';
+    return `<div class="phone"${phoneStyle}><div class="screen"><img src="captures/${img}.png" alt=""${imgStyle}>${status}</div></div>`;
+  }
+
+  // `#1-full` shows the whole phone (smaller copy) instead of letting it run off the bottom.
+  const [key, mode] = (location.hash.slice(1) || '1').split('-');
+  const full = mode === 'full';
+  if (full) document.body.classList.add('full');
+  const root = document.getElementById('root');
+  if (key === 'feature') {
+    root.innerHTML = `
+      <div class="feature">
+        <div class="brand">
+          <img class="logo" src="captures/logo.png" alt="">
+          <h2>One Spend</h2>
+          <p>Track every subscription.<br>Never miss a renewal.</p>
+        </div>
+        ${phone('1-subscriptions')}
+      </div>`;
+  } else {
+    const s = slides[key];
+    document.documentElement.style.setProperty('--accent', s.accent);
+    document.documentElement.style.setProperty('--glow', s.glow);
+    document.documentElement.style.setProperty('--glow2', s.glow2);
+    root.innerHTML = `
+      <div class="slide">
+        <div class="copy">
+          <div class="eyebrow">${s.eyebrow}</div>
+          <h1>${s.title}</h1>
+          <p class="sub">${s.sub}</p>
+        </div>
+        ${full ? phone(s.img) : phone(s.img, s.shift, s.top)}
+      </div>`;
+  }
+</script>
+</body>
+</html>
