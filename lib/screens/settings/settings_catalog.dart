@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/config/feature_flags.dart';
-import '../../features/pro/presentation/pro_screen.dart';
 import '../../theme/one_ui_theme.dart';
 import '../payment_methods_screen.dart';
 import 'about_screen.dart';
@@ -63,15 +62,6 @@ class SettingsCatalog {
   ].where((g) => g.isNotEmpty).toList();
 
   static List<List<SettingsDestination>> _allGroups({required bool developerOptions}) => [
-    [
-      SettingsDestination(
-        title: 'OneSpend Pro',
-        icon: Icons.workspace_premium_rounded,
-        color: OneUITheme.accentAmber,
-        open: ProScreen.open,
-        keywords: ['pro', 'premium', 'upgrade', 'buy', 'purchase', 'redeem', 'promo code', 'restore'],
-      ),
-    ],
     [
       SettingsDestination(
         title: 'Budget & currency',
@@ -175,7 +165,7 @@ class SettingsCatalog {
           (title: 'Restore from backup', keywords: ['restore', 'import', 'load'], placeholder: false),
           (
             title: PlannedFeature.driveBackup.title,
-            keywords: ['cloud', 'drive', 'automatic', 'pro'],
+            keywords: ['cloud', 'drive', 'automatic'],
             placeholder: true,
           ),
           (title: 'Export & share', keywords: ['csv', 'spreadsheet', 'pdf', 'report', 'excel'], placeholder: false),

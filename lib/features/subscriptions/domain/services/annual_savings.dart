@@ -7,7 +7,7 @@ import 'subscription_stats.dart';
 /// [saving] is negative when the yearly plan costs more.
 typedef AnnualSaving = ({Subscription subscription, double currentYearly, double annualPlan, double saving, double percent});
 
-/// Pure logic behind the annual vs. monthly calculator (Pro).
+/// Pure logic behind the annual vs. monthly calculator.
 class AnnualSavings {
   const AnnualSavings._();
 

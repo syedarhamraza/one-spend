@@ -1,4 +1,4 @@
-/// A user-made subscription category (Pro). Subscriptions refer to it by [id]
+/// A user-made subscription category. Subscriptions refer to it by [id]
 /// through `SubscriptionCategory.custom(id)`.
 class CustomCategory {
   static const idPrefix = 'c_';

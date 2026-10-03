@@ -13,7 +13,7 @@ import '../widgets/one_ui_subpage.dart';
 import '../widgets/one_ui_toast.dart';
 import 'category_picker_screen.dart';
 
-/// Create or edit a custom category (Pro): name, icon and colour, with a live preview.
+/// Create or edit a custom category: name, icon and colour, with a live preview.
 /// Pops with the saved [SubscriptionCategory], or nothing when cancelled or deleted.
 class CategoryEditorScreen extends StatefulWidget {
   /// The custom category being edited; null creates a new one.

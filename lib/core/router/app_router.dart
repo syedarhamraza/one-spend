@@ -9,8 +9,6 @@ import '../../features/subscriptions/presentation/controllers/subscription_contr
 import '../../screens/add_subscription_screen.dart';
 import '../../screens/onboarding_screen.dart';
 import '../../features/reports/presentation/export_share_screen.dart';
-import '../../features/pro/presentation/pro_controller.dart';
-import '../../features/pro/presentation/pro_screen.dart';
 import '../../screens/analytics_screen.dart';
 import '../../screens/billing_cycle_picker_screen.dart';
 import '../../screens/category_editor_screen.dart';
@@ -88,7 +86,6 @@ class AppRoutes {
   static const detailStudio = '/settings/detail-studio';
 
   // Settings subpages
-  static const settingsPro = '/settings/pro';
   static const settingsCategories = '/settings/categories';
   static const settingsBudget = '/settings/budget';
   static const settingsCurrency = '/settings/budget/currency';
@@ -221,7 +218,6 @@ List<RouteBase> buildPageRoutes() {
     ),
     GoRoute(
       path: AppRoutes.categoryEditor,
-      redirect: _requirePro,
       builder: (context, state) => CategoryEditorScreen(categoryId: state.extra as String?),
     ),
     GoRoute(path: AppRoutes.settingsCategories, builder: (context, state) => const CategoriesScreen()),
@@ -278,17 +274,8 @@ List<RouteBase> buildPageRoutes() {
         );
       },
     ),
-    GoRoute(
-      path: AppRoutes.cardStudio,
-      redirect: _requirePro,
-      builder: (context, state) => const SubscriptionCardCustomizerScreen(),
-    ),
-    GoRoute(
-      path: AppRoutes.detailStudio,
-      redirect: _requirePro,
-      builder: (context, state) => const SubscriptionDetailCustomizerScreen(),
-    ),
-    GoRoute(path: AppRoutes.settingsPro, builder: (context, state) => const ProScreen()),
+    GoRoute(path: AppRoutes.cardStudio, builder: (context, state) => const SubscriptionCardCustomizerScreen()),
+    GoRoute(path: AppRoutes.detailStudio, builder: (context, state) => const SubscriptionDetailCustomizerScreen()),
     GoRoute(path: AppRoutes.settingsBudget, builder: (context, state) => const BudgetCurrencyScreen()),
     GoRoute(
       path: AppRoutes.settingsCurrency,
@@ -380,7 +367,3 @@ class _SubscriptionNotFoundScreen extends StatelessWidget {
     );
   }
 }
-
-/// Route guard for Pro-only pages: sends free users to the OneSpend Pro page instead.
-String? _requirePro(BuildContext context, GoRouterState state) =>
-    ProController.instance.isPro ? null : AppRoutes.settingsPro;

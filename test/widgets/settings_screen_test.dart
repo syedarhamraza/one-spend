@@ -189,7 +189,7 @@ void main() {
     await back(tester);
     await tester.tap(find.text('Backup & data'));
     await tester.pumpAndSettle();
-    expect(find.byType(OneUIProChip), findsNothing);
+    expect(find.text('Automatic backups'), findsNothing);
     expect(find.text('Save backup to device'), findsOneWidget);
     await back(tester);
     await tester.scrollUntilVisible(find.text('Help & feedback'), 200);
@@ -198,12 +198,13 @@ void main() {
     expect(find.text('Rate OneSpend'), findsNothing);
   });
 
-  testWidgets('debug builds show the Drive backup as Pro', (tester) async {
+  testWidgets('debug builds show the Drive backup as Soon', (tester) async {
     await pumpSettings(tester);
     await tester.scrollUntilVisible(find.text('Backup & data'), 200);
     await tester.tap(find.text('Backup & data'));
     await tester.pumpAndSettle();
-    expect(find.byType(OneUIProChip), findsOneWidget);
+    final driveRow = find.ancestor(of: find.text('Automatic backups'), matching: find.byType(OneUIGroupItemTile));
+    expect(find.descendant(of: driveRow, matching: find.byType(OneUISoonChip)), findsOneWidget);
     expect(find.text('Never saved'), findsOneWidget);
   });
 

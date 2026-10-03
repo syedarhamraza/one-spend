@@ -14,9 +14,6 @@ import '../../features/payment_methods/domain/repositories/payment_method_reposi
 import '../../features/notifications/data/local_notification_service.dart';
 import '../../features/notifications/data/notification_service.dart';
 import '../../features/notifications/presentation/notification_scheduler.dart';
-import '../../features/pro/data/play_purchase_service.dart';
-import '../../features/pro/data/purchase_service.dart';
-import '../../features/pro/presentation/pro_controller.dart';
 import '../../features/settings/data/datasources/settings_drift_datasource.dart';
 import '../../features/settings/data/repositories/settings_repository_impl.dart';
 import '../../features/settings/domain/repositories/settings_repository.dart';
@@ -36,9 +33,6 @@ final sl = GetIt.instance;
 
 void setupDependencies({AppDatabase? database}) {
   if (database != null) {
-    if (sl.isRegistered<ProController>()) {
-      sl.unregister<ProController>();
-    }
     if (sl.isRegistered<BackupService>()) {
       sl.unregister<BackupService>();
     }
@@ -144,17 +138,7 @@ void setupDependencies({AppDatabase? database}) {
     sl.registerLazySingleton<OneUIEffectsController>(() => OneUIEffectsController.instance);
   }
 
-  // 4. Pro: no store unless configureDependencies() registered Google Play
-  if (!sl.isRegistered<PurchaseService>()) {
-    sl.registerSingleton<PurchaseService>(NoopPurchaseService());
-  }
-  if (!sl.isRegistered<ProController>()) {
-    sl.registerLazySingleton<ProController>(
-      () => ProController(purchases: sl<PurchaseService>(), settings: sl<SettingsRepository>()),
-    );
-  }
-
-  // 5. Notifications: a no-op unless configureDependencies() registered the platform service
+  // 4. Notifications: a no-op unless configureDependencies() registered the platform service
   if (!sl.isRegistered<NotificationService>()) {
     sl.registerSingleton<NotificationService>(NoopNotificationService());
   }
@@ -202,9 +186,6 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   if (!sl.isRegistered<RatesRemoteDataSource>()) {
     sl.registerSingleton<RatesRemoteDataSource>(HttpRatesRemoteDataSource());
   }
-  if (!sl.isRegistered<PurchaseService>()) {
-    sl.registerSingleton<PurchaseService>(PlayPurchaseService());
-  }
   setupDependencies();
 
   // 6. Load persisted state before the first frame so nothing renders stale data.
@@ -215,10 +196,6 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   AppLifecycleListener(onResume: () => unawaited(rates.refresh()));
   await sl<SubscriptionController>().load();
   await sl<OneUIEffectsController>().init();
-  // Cached Pro state now; Google Play is re-checked in the background and on every resume.
-  final pro = sl<ProController>();
-  await pro.init();
-  AppLifecycleListener(onResume: () => unawaited(pro.refresh()));
 
   // 7. Keep scheduled reminders in sync with the data from now on
   if (!sl.isRegistered<NotificationScheduler>()) {

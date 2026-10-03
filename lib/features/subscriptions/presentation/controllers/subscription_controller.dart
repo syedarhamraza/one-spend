@@ -764,7 +764,7 @@ class SubscriptionController extends ChangeNotifier {
     _persistPaymentMethods(paymentMethods);
   }
 
-  // --- Custom categories (Pro) ---
+  // --- Custom categories ---
 
   /// The user's categories, in display order.
   List<CustomCategory> get customCategories => CustomCategoryRegistry.categories;

@@ -23,7 +23,7 @@ enum BillingCycle {
   }
 }
 
-/// A subscription's category: one of the 10 built-ins, or a user-made [CustomCategory] (Pro).
+/// A subscription's category: one of the 10 built-ins, or a user-made [CustomCategory].
 ///
 /// Built-ins are `const` and custom categories are canonical instances (see [custom]), so
 /// identity equality works and categories can be map keys and `const` map keys.

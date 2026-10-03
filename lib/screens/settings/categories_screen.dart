@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
-import '../../features/pro/presentation/pro_controller.dart';
-import '../../features/pro/presentation/pro_gate.dart';
 import '../../models/subscription.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_card.dart';
@@ -12,7 +10,7 @@ import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../category_editor_screen.dart';
 
-/// Settings › Categories: the built-in categories and the user's own (Pro).
+/// Settings › Categories: the built-in categories and the user's own.
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
 
@@ -31,7 +29,7 @@ class CategoriesScreen extends StatelessWidget {
     final store = SubscriptionStore.instance;
     return OneUISubpage(
       title: 'Categories',
-      listenable: Listenable.merge([store, ProController.instance]),
+      listenable: store,
       builder: (context) {
         final custom = [
           for (final c in SubscriptionCategory.all)
@@ -49,16 +47,14 @@ class CategoriesScreen extends StatelessWidget {
                     title: category.label,
                     subtitle: _usage(store, category),
                     subtitleColor: OneUITheme.textSecondary,
-                    trailing: ProGate.chip(),
-                    onTap: () => ProGate.run(context, () => CategoryEditorScreen.open(context, categoryId: category.name)),
+                    onTap: () => CategoryEditorScreen.open(context, categoryId: category.name),
                   ),
                 OneUIGroupItem(
                   leading: const OneUIIconBadge(Icons.add_rounded, OneUITheme.accentBlue),
                   title: 'New category',
                   subtitle: 'Your own name, icon and colour',
                   subtitleColor: OneUITheme.textSecondary,
-                  trailing: ProGate.chip(),
-                  onTap: () => ProGate.run(context, () => CategoryEditorScreen.open(context)),
+                  onTap: () => CategoryEditorScreen.open(context),
                 ),
               ],
             ),

@@ -61,12 +61,9 @@ go_router, configured in `lib/core/router/app_router.dart`:
 - **Left pageless:** private in-file sub-pages (icon picker sub-screens, payment method field editors, card-studio option screens, `OneUIFieldEditorScreen`) still use `Navigator.push`.
 - **Router ownership:** `OneSpendApp` creates its own router in state, so each instance (and each test) starts fresh.
 
-### Pro
+### Pricing
 
-OneSpend Pro is a one-time Google Play product (`proProductId = 'onespend_pro'`) in `lib/features/pro/`. Beta testers get it free through Play promo codes, so there is no beta-specific logic.
-- **`ProController`** (`ProController.instance`): `isPro` is the entitlement cached in `app_settings` (`onespend_pro_unlocked`, never included in backups). `init()` loads the cache, then re-checks Google Play in the background, and `refresh()` runs again on every app resume. If Play can't be reached, `ownsPro()` returns `null` and the cached value is kept. When Play reports the product isn't owned (a refund), Pro is revoked.
-- **`PurchaseService`:** `configureDependencies()` registers `PlayPurchaseService` (`in_app_purchase`), and `setupDependencies()` falls back to `NoopPurchaseService`, so tests never touch billing. In tests, set `ProController.instance.debugOverride = true` to unlock Pro. Developer options has the same switch as "Simulate Pro".
-- **Gating:** wrap Pro-only actions in `ProGate.run(context, action)`, which opens the OneSpend Pro page for free users, and give the row `ProGate.chip()` as its trailing widget. Pro-only routes add `redirect: _requirePro` in `app_router.dart`. Currently gated: the card studio, the detail studio, PDF exports, custom categories (creating and editing), the annual plan price and its savings, and the Analytics year-end projection. Custom exchange rates, CSV, text and backup stay free. If Pro is lost, existing custom categories keep working; only creating and editing them is locked.
+The app is fully free; there is no paywall or entitlement. The earlier OneSpend Pro (Play Billing) implementation was removed and can be revived from branch `feat/pro-entitlement` (commit `3cb0a10`).
 
 ### Categories
 

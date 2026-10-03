@@ -5,17 +5,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/di/injection.dart';
-import 'package:onespend/features/pro/presentation/pro_controller.dart';
-import 'package:onespend/features/pro/presentation/pro_screen.dart';
 import 'package:onespend/models/subscription.dart';
+import 'package:onespend/features/reports/presentation/export_share_screen.dart';
 import 'package:onespend/screens/analytics_screen.dart';
 import 'package:onespend/screens/category_editor_screen.dart';
 import 'package:onespend/screens/category_picker_screen.dart';
+import 'package:onespend/screens/one_ui_field_editor_screen.dart';
+import 'package:onespend/screens/settings/appearance_settings_screen.dart';
+import 'package:onespend/screens/subscription_card_customizer_screen.dart';
 import 'package:onespend/screens/subscription_detail_screen.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
 import 'package:onespend/widgets/one_ui_analytics_hero_card.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
-import 'package:onespend/widgets/one_ui_subpage.dart';
+import 'package:onespend/widgets/one_ui_group_card.dart';
 import 'package:onespend/widgets/one_ui_toast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -58,18 +60,7 @@ void main() {
   }
 
   group('Custom categories', () {
-    testWidgets('free: "New category" opens the Pro page', (tester) async {
-      await pump(tester, const CategoryPickerScreen(initialCategory: SubscriptionCategory.music));
-      await tester.scrollUntilVisible(find.text('New category'), 300);
-      expect(find.descendant(of: find.byType(Scrollable).first, matching: find.byType(OneUIProChip)), findsOneWidget);
-      await tester.tap(find.text('New category'));
-      await tester.pumpAndSettle();
-      expect(find.byType(ProScreen), findsOneWidget);
-      expect(find.byType(CategoryEditorScreen), findsNothing);
-    });
-
-    testWidgets('Pro: create a category and it gets selected', (tester) async {
-      ProController.instance.debugOverride = true;
+    testWidgets('create a category and it gets selected', (tester) async {
       await pump(tester, const CategoryPickerScreen(initialCategory: SubscriptionCategory.music));
       await tester.scrollUntilVisible(find.text('New category'), 300);
       await tester.tap(find.text('New category'));
@@ -88,8 +79,7 @@ void main() {
       expect(find.text('Kids'), findsWidgets);
     });
 
-    testWidgets('Pro: a duplicate name cannot be saved', (tester) async {
-      ProController.instance.debugOverride = true;
+    testWidgets('a duplicate name cannot be saved', (tester) async {
       await pump(tester, const CategoryEditorScreen());
       await tester.enterText(find.byType(TextField), 'gaming');
       await tester.pumpAndSettle();
@@ -101,16 +91,15 @@ void main() {
   });
 
   group('Annual plan price', () {
-    testWidgets('free: the row is locked and no saving is shown', (tester) async {
+    testWidgets('the row opens its editor', (tester) async {
       await pump(tester, SubscriptionDetailScreen(subscription: monthly));
       await tester.scrollUntilVisible(find.text('Annual plan price'), 300);
       await tester.tap(find.text('Annual plan price'));
       await tester.pumpAndSettle();
-      expect(find.byType(ProScreen), findsOneWidget);
+      expect(find.byWidgetPredicate((w) => w is OneUIFieldEditorScreen), findsOneWidget);
     });
 
-    testWidgets('Pro: the saving shows under the estimated annual cost', (tester) async {
-      ProController.instance.debugOverride = true;
+    testWidgets('the saving shows under the estimated annual cost', (tester) async {
       await pump(tester, SubscriptionDetailScreen(subscription: monthly));
       await tester.scrollUntilVisible(find.text('Switch to yearly'), 300);
       expect(find.textContaining('Save \$20'), findsOneWidget);
@@ -118,15 +107,7 @@ void main() {
   });
 
   group('Analytics', () {
-    testWidgets('free: year-end projection is a locked row; no yearly savings section', (tester) async {
-      await pump(tester, const AnalyticsScreen());
-      await tester.scrollUntilVisible(find.text('Year-end projection'), 300);
-      expect(find.text('Year-end projection'), findsOneWidget);
-      expect(find.text('Switch to yearly'), findsNothing);
-    });
-
-    testWidgets('Pro: year-end row in the hero and yearly savings', (tester) async {
-      ProController.instance.debugOverride = true;
+    testWidgets('year-end row in the hero and yearly savings', (tester) async {
       await pump(tester, const AnalyticsScreen());
       // Tracking started today, so the row names the months left rather than the whole year.
       final label = switch (now.month) {
@@ -140,6 +121,21 @@ void main() {
       expect(find.byType(OneUIAnalyticsHeroCard, skipOffstage: false), findsOneWidget);
       await tester.scrollUntilVisible(find.text('Save \$20 a year'), 300);
       expect(find.text('Save \$20 a year'), findsOneWidget);
+    });
+  });
+
+  group('Formerly Pro', () {
+    testWidgets('the studios open straight from Appearance', (tester) async {
+      await pump(tester, const AppearanceSettingsScreen());
+      await tester.tap(find.text('Subscription cards'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SubscriptionCardCustomizerScreen), findsOneWidget);
+    });
+
+    testWidgets('the PDF export row shows the share icon like the others', (tester) async {
+      await pump(tester, const ExportShareScreen());
+      final pdfRow = find.ancestor(of: find.text('PDF report'), matching: find.byType(OneUIGroupItemTile));
+      expect(find.descendant(of: pdfRow, matching: find.byIcon(Icons.ios_share_rounded)), findsOneWidget);
     });
   });
 }

@@ -52,8 +52,6 @@ dependencies:
   package_info_plus: ^10.2.1
   file_picker: ^13.1.0
   pdf: ^3.13.1
-  in_app_purchase: ^3.3.1
-  in_app_purchase_android: ^0.5.3
 
 dev_dependencies:
   flutter_test:

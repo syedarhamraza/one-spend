@@ -22,7 +22,7 @@ enum PlannedFeature {
     'Google Drive backup',
     Icons.add_to_drive_rounded,
     OneUITheme.accentTeal,
-    'Automatic backups to a private folder in your Google Drive. Part of OneSpend Pro.',
+    'Automatic backups to a private folder in your Google Drive.',
     ['Daily or weekly automatic backups', 'Keeps several versions', 'Restore on a new phone in one tap'],
   ),
   rateApp(
