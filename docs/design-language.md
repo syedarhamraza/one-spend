@@ -188,6 +188,10 @@ Settings follows Samsung Settings: the **main page is titles only**. Each row is
 
 - **New option in an existing area:** add a row to that subpage (built on `OneUISubpage`). Subpage rows show the **current value** as their subtitle, and a `OneUISwitch` is fine here. Also add it to that destination's `options` in `settings_catalog.dart` so search finds it (results show the path, e.g. "Settings › Notifications").
 - **New area:** add a `SettingsDestination` to a group in `SettingsCatalog.groups` (icon, colour, `open`, keywords, options), plus a subpage with a route and an `open()` helper (§5.1).
+- **First-run intro** (`onboarding_screen.dart`, illustrations in `screens/onboarding/onboarding_heroes.dart`):
+  - One UI app-intro style: a glass `OneUIGlassSurface` **Skip** capsule (top right), one `OneUIAmbientGlow` that cross-fades per page, an illustration built from real components, a 34 pt left-aligned title, info rows in an `OneUIGroupCard`, page dots and an accent pill with an arrow.
+  - Page content fades out above the dots when it doesn't fit.
+  - It runs before Settings exists, so design it in the default flat look.
 - **Not built yet:** add a `PlannedFeature` and point the row at `ComingSoonScreen.open`; show `OneUISoonChip` as the trailing widget. Wrap the row in `if (FeatureFlags.showPlannedFeatures)` and mark catalog options `placeholder: true`: placeholders appear in **debug builds only**, so release users never see features that don't work yet.
 - **Debug-only tools** go in Developer options, which only exists in debug builds.
 
