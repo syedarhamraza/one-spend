@@ -77,13 +77,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('hero shows the yearly total and trajectory card renders', (tester) async {
+  testWidgets('hero shows the yearly total and trend card renders', (tester) async {
     await pumpScreen(tester);
     // (20 + 12 + 120 / 12) * 12 = 504
     expect(find.descendant(of: find.byType(OneUIAnalyticsHeroCard), matching: find.text('\$504')), findsOneWidget);
     expect(find.byType(OneUISpendingTrendsCard), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Spending by category'), 300);
-    expect(find.text('Spending by category'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('By category'), 300);
+    expect(find.text('By category'), findsOneWidget);
   });
 
   testWidgets('tapping a category filters the page and the pill clears it', (tester) async {

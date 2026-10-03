@@ -11,6 +11,7 @@ class OneUITheme {
   static const Color surfaceCardHighlight = Color(0xFF262628);
   static const Color surfacePill = Color(0xFF2C2C2E); // Distinct One UI Gray Floating Capsule Surface
   static const Color surfacePillActive = Color(0xFF3E3E42); // Active Tab Capsule
+  static const Color surfaceInset = Color(0x0AFFFFFF); // Panel nested inside a card (with innerBorderRadius)
   static const Color surfaceButtonLight = Color(0xFFB5B5BA); // Light grey pill button (Digital Wellbeing tip cards)
   static const Color textOnLight = Color(0xFF0E0E10); // Label on surfaceButtonLight
   static const Color surfacePillBorder = Colors.transparent;

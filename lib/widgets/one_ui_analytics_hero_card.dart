@@ -2,13 +2,32 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_ambient_glow.dart';
+import 'one_ui_key_value_row.dart';
 
 /// One row of the hero card's key-value panel.
-typedef AnalyticsHeroRow = ({String label, String value, String? caption, Color? valueColor});
+class AnalyticsHeroRow {
+  final String label;
+  final String value;
+  final String? caption;
+  final Color? valueColor;
+
+  /// Replaces [value] and [caption] on the right, e.g. a Pro chip on a locked row.
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const AnalyticsHeroRow({
+    required this.label,
+    this.value = '',
+    this.caption,
+    this.valueColor,
+    this.trailing,
+    this.onTap,
+  });
+}
 
 /// Samsung One UI hero card for the Analytics tab, the sibling of [OneUIUpcomingHeroCard]:
 /// the soft blue glow under a frosted glass body, a 32pt yearly amount, a 12dp track split
-/// by category and a Device Care style key-value panel.
+/// by category and a Device Care style key-value panel. It is the page's only glass card.
 class OneUIAnalyticsHeroCard extends StatelessWidget {
   /// e.g. "Yearly cost" or "Entertainment · yearly".
   final String title;
@@ -99,8 +118,8 @@ class OneUIAnalyticsHeroCard extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(18),
+                        color: OneUITheme.surfaceInset,
+                        borderRadius: OneUITheme.innerBorderRadius,
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -149,47 +168,26 @@ class OneUIAnalyticsHeroCard extends StatelessWidget {
   }
 
   Widget _row(AnalyticsHeroRow row) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 1),
-          child: Text(
-            row.label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: OneUITheme.textSecondary),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
+    final content = row.trailing != null
+        ? Row(
             children: [
-              Text(
-                row.value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: row.valueColor ?? OneUITheme.textPrimary,
-                ),
+              Expanded(
+                child: Text(row.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: OneUIKeyValueRow.labelStyle),
               ),
-              if (row.caption != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  row.caption!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(fontSize: 12, color: OneUITheme.textSecondary),
-                ),
-              ],
+              const SizedBox(width: 12),
+              row.trailing!,
             ],
-          ),
-        ),
-      ],
+          )
+        : OneUIKeyValueRow(
+            label: row.label,
+            value: row.value,
+            caption: row.caption,
+            valueColor: row.valueColor,
+          );
+    if (row.onTap == null) return content;
+    return Semantics(
+      button: true,
+      child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: row.onTap, child: content),
     );
   }
 }

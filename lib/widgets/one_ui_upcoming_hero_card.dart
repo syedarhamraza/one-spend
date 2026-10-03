@@ -9,6 +9,7 @@ import '../features/subscriptions/domain/services/charge_schedule.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_ambient_glow.dart';
 import 'one_ui_brand_icon.dart';
+import 'one_ui_key_value_row.dart';
 
 /// Samsung One UI hero card for the Upcoming tab, the sibling of [OneUIBudgetCard]:
 /// the same soft blue glow under a frosted glass body, a 32pt hero amount, a 12dp
@@ -164,8 +165,8 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(18),
+                        color: OneUITheme.surfaceInset,
+                        borderRadius: OneUITheme.innerBorderRadius,
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -213,7 +214,8 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
     );
   }
 
-  /// Device Care style key-value row: label on the left, title + subtitle right-aligned.
+  /// Device Care style key-value row: label on the left, title + subtitle right-aligned
+  /// (or under the label when they don't fit; see [OneUIKeyValueRow]).
   Widget _row({
     required String label,
     required String title,
@@ -221,50 +223,7 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
     Widget? leading,
     VoidCallback? onTap,
   }) {
-    final content = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 1),
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: OneUITheme.textSecondary),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (leading != null) ...[leading, const SizedBox(width: 6)],
-                  Flexible(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 12, color: OneUITheme.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+    final content = OneUIKeyValueRow(label: label, value: title, caption: subtitle, leading: leading);
     if (onTap == null) return content;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,

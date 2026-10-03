@@ -31,8 +31,9 @@ import '../features/reports/presentation/export_share_screen.dart';
 
 /// Analytics tab: answers "what am I spending, where is it going, and what's next?".
 ///
-/// Tapping a category filters the whole page (hero, trajectory, insights, lists) until the
-/// filter pill is dismissed.
+/// One glass hero holds the headline figures; every card below it sits under a section title
+/// and shows each figure once. Tapping a category filters the whole page (hero, trend,
+/// insights, lists) until the filter pill is dismissed.
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
 
@@ -46,15 +47,17 @@ class AnalyticsScreen extends StatefulWidget {
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
   static final DateFormat _monthDayYear = DateFormat('MMM d, y');
+  static final DateFormat _monthDay = DateFormat('MMM d');
+  static final DateFormat _shortMonth = DateFormat('MMM');
 
   static const int _topLimit = 5;
   static const int _paymentsLimit = 6;
 
-  static const Map<BillingCycle, Color> _cycleColors = {
-    BillingCycle.monthly: OneUITheme.accentBlue,
-    BillingCycle.yearly: OneUITheme.accentGreen,
-    BillingCycle.quarterly: OneUITheme.accentPurple,
-    BillingCycle.weekly: OneUITheme.accentAmber,
+  static const Map<BillingCycle, IconData> _cycleIcons = {
+    BillingCycle.weekly: Icons.view_week_rounded,
+    BillingCycle.monthly: Icons.calendar_month_rounded,
+    BillingCycle.quarterly: Icons.date_range_rounded,
+    BillingCycle.yearly: Icons.event_repeat_rounded,
   };
 
   /// Height of the pinned header once collapsed (see [OneUICollapsibleHeaderDelegate]).
@@ -186,6 +189,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
+  /// Top to bottom: the overview, how it changes over time, where it goes, what to do
+  /// about it, and what was paid.
   List<Widget> _contentSlivers(SubscriptionStore store, List<Subscription> subs, double monthly) {
     final now = DateTime.now();
     final currency = store.currency;
@@ -204,12 +209,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     ).where((c) => !store.dismissedInsights.contains(c.key)).toList();
 
     return [
-      if (_category != null) _padded(_filterPill(_category!), top: 6),
-      _padded(_insightCard(store, insights), top: _category != null ? 12 : 6),
-      _padded(_hero(store, subs, monthly), top: 0),
+      if (_category != null) _padded(_filterPill(_category!), top: 6, key: const ValueKey('filter')),
+      _padded(_insightCard(store, insights), top: _category != null ? 12 : 6, key: const ValueKey('insight')),
+      _padded(_hero(store, subs, monthly, now), top: 0, key: const ValueKey('hero')),
       _padded(
-        KeyedSubtree(
+        OneUISection(
           key: _trajectoryKey,
+          title: 'Spending trend',
           child: OneUISpendingTrendsCard(
             subscriptions: subs,
             currency: currency,
@@ -218,58 +224,64 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             onOpenSubscription: _openSubscription,
           ),
         ),
-        top: 12,
+        key: const ValueKey('trend'),
       ),
-      _padded(_yearEndSection(store, subs, now), top: 12),
       // Filtering resizes the cards above; keep the category card still under the finger.
-      if (allCategories.isNotEmpty) OneUISliverScrollAnchor(controller: _categoryAnchor),
+      if (allCategories.isNotEmpty)
+        OneUISliverScrollAnchor(key: const ValueKey('category-anchor'), controller: _categoryAnchor),
       if (allCategories.isNotEmpty)
         _padded(
-          OneUICategoryBreakdownCard(
-            categories: allCategories,
-            currency: currency,
-            selected: _category,
-            onSelect: (category) {
-              _categoryAnchor.hold();
-              _setCategory(category);
-            },
+          OneUISection(
+            title: 'By category',
+            child: OneUICategoryBreakdownCard(
+              categories: allCategories,
+              currency: currency,
+              selected: _category,
+              onSelect: (category) {
+                _categoryAnchor.hold();
+                _setCategory(category);
+              },
+            ),
           ),
-          top: 12,
+          key: const ValueKey('categories'),
         ),
       if (ranked.isNotEmpty)
-        _padded(KeyedSubtree(key: _topSubscriptionsKey, child: _topSection(currency, ranked, monthly))),
-      if (cycles.isNotEmpty) _padded(_cycleSection(currency, subs, cycles)),
+        _padded(
+          KeyedSubtree(key: _topSubscriptionsKey, child: _topSection(currency, ranked, monthly)),
+          key: const ValueKey('top'),
+        ),
+      // A single cycle would only say "100% monthly".
+      if (cycles.length > 1) _padded(_cycleSection(currency, subs, cycles), key: const ValueKey('cycles')),
       if (ProController.instance.isPro)
         if (AnnualSavings.potential(subs, store.toMain) case final annual when annual.savings.isNotEmpty)
-          _padded(_annualSection(currency, annual)),
-      _padded(_paymentsSection(store, subs, now)),
+          _padded(_annualSection(currency, annual), key: const ValueKey('annual')),
+      _padded(_paymentsSection(store, subs, now), key: const ValueKey('payments')),
     ];
   }
 
   // --- Hero ------------------------------------------------------------------
 
-  Widget _hero(SubscriptionStore store, List<Subscription> subs, double monthly) {
+  Widget _hero(SubscriptionStore store, List<Subscription> subs, double monthly, DateTime now) {
     final currency = store.currency;
     final category = _category;
     final paused = SpendingInsights.pausedSavings(subs, store.toMain);
     final budget = store.monthlyBudget;
+    final categories = SpendingInsights.byCategory(subs, store.toMain);
 
     final rows = <AnalyticsHeroRow>[
-      (
+      AnalyticsHeroRow(
         label: 'Per month',
         value: _money(currency, monthly),
         caption: 'about ${_money(currency, monthly * 12 / 365)} a day',
-        valueColor: null,
       ),
       if (category != null && store.totalMonthlySpend > 0)
-        (
+        AnalyticsHeroRow(
           label: 'Share of spend',
           value: _percent(monthly / store.totalMonthlySpend),
           caption: 'of ${_money(currency, store.totalMonthlySpend)}/mo in total',
-          valueColor: null,
         )
       else if (category == null && budget > 0.01)
-        (
+        AnalyticsHeroRow(
           label: 'Budget',
           value: monthly <= budget
               ? '${_money(currency, budget - monthly)} left'
@@ -278,27 +290,56 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           valueColor: monthly <= budget ? OneUITheme.accentGreen : OneUITheme.accentRed,
         ),
       if (paused.count > 0)
-        (
+        AnalyticsHeroRow(
           label: 'Paused',
           value: '${_money(currency, paused.monthly)}/mo saved',
           caption: _plural(paused.count, 'paused subscription'),
-          valueColor: null,
         ),
+      _yearEndRow(store, subs, now),
     ];
 
     return OneUIAnalyticsHeroCard(
       title: category == null ? 'Yearly cost' : '${category.label} · yearly',
       amount: _money(currency, monthly * 12),
       badge: '${SubscriptionStats.billable(subs).length} active',
-      segments: [
-        for (final c in SpendingInsights.byCategory(subs, store.toMain)) (color: c.category.color, total: c.monthly),
-      ],
+      segments: [for (final c in categories) (color: c.category.color, total: c.monthly)],
       rows: rows,
       // Glow in the colour of the biggest category (the selected one when filtered).
-      glowColor: () {
-        final categories = SpendingInsights.byCategory(subs, store.toMain);
-        return categories.isEmpty ? OneUITheme.glowDefault : OneUITheme.glowTint(categories.first.category.color);
-      }(),
+      glowColor: categories.isEmpty ? OneUITheme.glowDefault : OneUITheme.glowTint(categories.first.category.color),
+    );
+  }
+
+  /// Pro: what this calendar year adds up to (paid so far plus what's still due). Free users
+  /// see the row locked.
+  AnalyticsHeroRow _yearEndRow(SubscriptionStore store, List<Subscription> subs, DateTime now) {
+    if (!ProController.instance.isPro) {
+      return AnalyticsHeroRow(
+        label: 'Year-end projection',
+        trailing: ProGate.chip(),
+        onTap: () => ProGate.run(context, () {}),
+      );
+    }
+    // The budget covers all spending, so it's only a fair guide when unfiltered.
+    final projection = SpendingTrendsEngine.projectYear(
+      subscriptions: subs,
+      referenceDate: now,
+      toMain: store.toMain,
+      trackingSince: store.trackingSince,
+      monthlyBudget: _category == null ? store.monthlyBudget : 0,
+    );
+    // Tracking that started mid-year only covers part of it, so name the months rather than
+    // implying a whole year next to the yearly cost.
+    final from = projection.fromMonth.month;
+    final label = from == 1
+        ? 'On track for ${projection.year}'
+        : from == 12
+            ? 'Dec ${projection.year}'
+            : '${_shortMonth.format(projection.fromMonth)} – Dec ${projection.year}';
+    return AnalyticsHeroRow(
+      label: label,
+      value: _money(store.currency, projection.total),
+      caption: '${projection.isEstimated ? 'about ' : ''}${_money(store.currency, projection.spentSoFar)} spent so far',
+      valueColor: projection.budgetForYear > 0 && projection.overBudget > 0 ? OneUITheme.accentRed : null,
     );
   }
 
@@ -434,33 +475,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             OneUIGroupItem(
               leading: OneUIBrandIcon(subscription: sub, size: 42, borderRadius: 13),
               title: sub.name,
-              customSubtitle: Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${sub.billingCycle.label} · ${formatMoney(sub.price, sub.currency)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: LinearProgressIndicator(
-                        value: monthly <= 0 ? 0 : (_mainMonthly(sub) / monthly).clamp(0.0, 1.0),
-                        minHeight: 4,
-                        backgroundColor: OneUITheme.surfacePill,
-                        color: sub.category.color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              trailing: Text(
+              subtitle: '${sub.billingCycle.label} · ${formatMoney(sub.price, sub.currency)}',
+              trailing: _rowValue(
                 '${_money(currency, _mainMonthly(sub))}/mo',
-                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
+                caption: monthly <= 0 ? null : _percent(_mainMonthly(sub) / monthly),
               ),
               onTap: () => _openSubscription(sub),
             ),
@@ -481,100 +499,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  // --- Year-end projection (Pro) ---------------------------------------------------
-
-  static final DateFormat _shortMonth = DateFormat('MMM');
-
-  Widget _yearEndSection(SubscriptionStore store, List<Subscription> subs, DateTime now) {
-    if (!ProController.instance.isPro) {
-      return OneUIGroupCard(
-        margin: EdgeInsets.zero,
-        items: [
-          OneUIGroupItem(
-            leading: const OneUIIconBadge(Icons.flag_rounded, OneUITheme.accentAmber),
-            title: 'Year-end projection',
-            subtitle: 'See what ${now.year} adds up to',
-            subtitleColor: OneUITheme.textSecondary,
-            trailing: const OneUIProChip(),
-            onTap: () => ProGate.run(context, () {}),
-          ),
-        ],
-      );
-    }
-
-    final currency = store.currency;
-    // The budget covers all spending, so it's only a fair guide when unfiltered.
-    final projection = SpendingTrendsEngine.projectYear(
-      subscriptions: subs,
-      referenceDate: now,
-      toMain: store.toMain,
-      trackingSince: store.trackingSince,
-      monthlyBudget: _category == null ? store.monthlyBudget : 0,
-    );
-    final monthsLeft = 12 - now.month;
-    final rest = monthsLeft == 0 ? 'Rest of December' : 'Rest of ${_shortMonth.format(now)}–Dec';
-    final over = projection.overBudget;
-    return OneUIAnalyticsHeroCard(
-      title: _category == null ? 'On track for ${projection.year}' : '${_category!.label} · ${projection.year}',
-      amount: _money(currency, projection.total),
-      badge: monthsLeft == 0 ? 'Last month' : '${_plural(monthsLeft, 'month')} left',
-      glowColor: over > 0 ? OneUITheme.accentRed : OneUITheme.glowDefault,
-      segments: [
-        (color: OneUITheme.accentBlue, total: projection.spentSoFar),
-        (color: OneUITheme.accentBlue.withValues(alpha: 0.4), total: projection.stillToCome),
-      ],
-      rows: [
-        (
-          label: projection.fromMonth.month == 1 ? 'Spent so far' : 'Spent since ${_shortMonth.format(projection.fromMonth)}',
-          value: _money(currency, projection.spentSoFar),
-          caption: projection.isEstimated ? 'Includes estimates where no payments were logged' : null,
-          valueColor: null,
-        ),
-        (label: rest, value: _money(currency, projection.stillToCome), caption: null, valueColor: null),
-        if (projection.budgetForYear > 0)
-          (
-            label: 'Budget for the year',
-            value: _money(currency, projection.budgetForYear),
-            caption: over > 0 ? '${_money(currency, over)} over' : '${_money(currency, -over)} under',
-            valueColor: over > 0 ? OneUITheme.accentRed : OneUITheme.accentGreen,
-          ),
-      ],
-    );
-  }
-
-  // --- Switch to yearly (Pro) -------------------------------------------------------
-
-  Widget _annualSection(String currency, ({double total, List<AnnualSaving> savings}) annual) {
-    return OneUISection(
-      title: 'Switch to yearly',
-      child: OneUIGroupCard(
-        margin: EdgeInsets.zero,
-        items: [
-          OneUIGroupItem(
-            leading: const OneUIIconBadge(Icons.savings_rounded, OneUITheme.accentGreen),
-            title: 'Save ${_money(currency, annual.total)} a year',
-            subtitle: 'By paying yearly for ${_plural(annual.savings.length, 'subscription')}',
-            subtitleColor: OneUITheme.textSecondary,
-            trailing: const SizedBox.shrink(),
-          ),
-          for (final s in annual.savings)
-            OneUIGroupItem(
-              leading: OneUIBrandIcon(subscription: s.subscription, size: 42, borderRadius: 13),
-              title: s.subscription.name,
-              subtitle: '${formatMoney(s.annualPlan, s.subscription.currency)} / yr instead of '
-                  '${formatMoney(s.currentYearly, s.subscription.currency)}',
-              subtitleColor: OneUITheme.textSecondary,
-              trailing: Text(
-                '−${_percent(s.percent)}',
-                style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: OneUITheme.accentGreen),
-              ),
-              onTap: () => _openSubscription(s.subscription),
-            ),
-        ],
-      ),
-    );
-  }
-
   // --- Billing cycles ----------------------------------------------------------
 
   Widget _cycleSection(String currency, List<Subscription> subs, List<CycleSpend> cycles) {
@@ -582,7 +506,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     for (final s in SubscriptionStats.billable(subs)) {
       billed[s.billingCycle] = (billed[s.billingCycle] ?? 0) + _toMain(s.price, s.currency);
     }
-    final total = cycles.fold(0.0, (sum, c) => sum + c.monthly);
     String per(BillingCycle cycle) => switch (cycle) {
           BillingCycle.weekly => 'wk',
           BillingCycle.monthly => 'mo',
@@ -592,92 +515,47 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return OneUISection(
       title: 'Billing cycles',
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
-        decoration: BoxDecoration(
-          color: OneUITheme.cardColor,
-          borderRadius: OneUITheme.cardBorderRadius,
-          border: OneUITheme.cardBorder,
-          boxShadow: OneUITheme.cardShadow,
-        ),
-        child: Column(
-          children: [
-            Container(
-              height: 12,
-              decoration: BoxDecoration(
-                color: OneUIAnalyticsHeroCard.trackBackground,
-                borderRadius: BorderRadius.circular(100),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: total <= 0
-                  ? null
-                  : Row(
-                      children: [
-                        for (final (i, c) in cycles.indexed)
-                          Expanded(
-                            flex: (c.monthly / total * 1000).round().clamp(1, 1000),
-                            child: Container(
-                              margin: EdgeInsets.only(left: i == 0 ? 0 : 2),
-                              color: _cycleColors[c.cycle],
-                            ),
-                          ),
-                      ],
-                    ),
+      child: OneUIGroupCard(
+        margin: EdgeInsets.zero,
+        items: [
+          for (final c in cycles)
+            OneUIGroupItem(
+              leading: OneUIIconBadge(_cycleIcons[c.cycle]!, OneUITheme.accentTeal),
+              title: c.cycle.label,
+              // Monthly plans already show their bill on the right.
+              subtitle: c.cycle == BillingCycle.monthly
+                  ? _plural(c.count, 'subscription')
+                  : '${_plural(c.count, 'subscription')} · ${_money(currency, billed[c.cycle] ?? 0)}/${per(c.cycle)}',
+              trailing: _rowValue('${_money(currency, c.monthly)}/mo', caption: _percent(c.share)),
             ),
-            const SizedBox(height: 8),
-            for (final c in cycles)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(color: _cycleColors[c.cycle], shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            c.cycle.label,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: OneUITheme.textPrimary),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            // Monthly plans already show their bill on the right.
-                            c.cycle == BillingCycle.monthly
-                                ? _plural(c.count, 'subscription')
-                                : '${_plural(c.count, 'subscription')} · ${_money(currency, billed[c.cycle] ?? 0)}/${per(c.cycle)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12.5, color: OneUITheme.textSecondary),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${_money(currency, c.monthly)}/mo',
-                          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _percent(c.share),
-                          style: const TextStyle(fontSize: 12.5, color: OneUITheme.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+        ],
+      ),
+    );
+  }
+
+  // --- Switch to yearly (Pro) -------------------------------------------------------
+
+  Widget _annualSection(String currency, ({double total, List<AnnualSaving> savings}) annual) {
+    return OneUISection(
+      title: 'Switch to yearly',
+      trailing: _sectionNote('Save ${_money(currency, annual.total)} a year'),
+      child: OneUIGroupCard(
+        margin: EdgeInsets.zero,
+        items: [
+          for (final s in annual.savings)
+            OneUIGroupItem(
+              leading: OneUIBrandIcon(subscription: s.subscription, size: 42, borderRadius: 13),
+              title: s.subscription.name,
+              subtitle: '${formatMoney(s.annualPlan, s.subscription.currency)}/yr instead of '
+                  '${formatMoney(s.currentYearly, s.subscription.currency)}',
+              trailing: _rowValue(
+                '−${formatMoney(s.currentYearly - s.annualPlan, s.subscription.currency)}',
+                caption: '${_percent(s.percent)} less',
+                color: OneUITheme.accentGreen,
               ),
-          ],
-        ),
+              onTap: () => _openSubscription(s.subscription),
+            ),
+        ],
       ),
     );
   }
@@ -692,41 +570,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return OneUISection(
       title: 'Recent payments',
-      trailing: paidThisMonth > 0
-          ? Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Text(
-                '${_money(store.currency, paidThisMonth)} this month',
-                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: OneUITheme.accentGreen),
-              ),
-            )
-          : null,
+      trailing: paidThisMonth > 0 ? _sectionNote('${_money(store.currency, paidThisMonth)} this month') : null,
       child: payments.isEmpty
-          ? Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: OneUITheme.cardColor,
-                borderRadius: OneUITheme.cardBorderRadius,
-                border: OneUITheme.cardBorder,
-                boxShadow: OneUITheme.cardShadow,
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.history_rounded, size: 36, color: OneUITheme.textSecondary),
-                  SizedBox(height: 8),
-                  Text(
-                    'No payments logged yet',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: OneUITheme.textPrimary),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Mark renewals as paid on the Upcoming tab to build your payment history',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: OneUITheme.textSecondary),
-                  ),
-                ],
-              ),
+          ? const OneUIEmptyCard(
+              icon: Icons.history_rounded,
+              title: 'No payments logged yet',
+              message: 'Mark renewals as paid on the Upcoming tab to build your payment history',
             )
           : OneUIGroupCard(
               margin: EdgeInsets.zero,
@@ -735,16 +584,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   OneUIGroupItem(
                     leading: OneUIBrandIcon(subscription: p.subscription, size: 42, borderRadius: 13),
                     title: p.subscription.name,
-                    subtitle: () {
-                      final card = store.getPaymentMethod(p.subscription.paymentMethodId);
-                      final date = _monthDayYear.format(p.date);
-                      return card == null ? date : '$date · ${card.displayName}';
-                    }(),
-                    subtitleColor: OneUITheme.textSecondary,
-                    trailing: Text(
-                      formatMoney(p.subscription.price, p.subscription.currency),
-                      style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
-                    ),
+                    subtitle: (p.date.year == now.year ? _monthDay : _monthDayYear).format(p.date),
+                    trailing: _rowValue(formatMoney(p.subscription.price, p.subscription.currency)),
                     onTap: () {
                       HapticFeedback.lightImpact();
                       context.push(AppRoutes.paymentHistory(p.subscription.id));
@@ -759,57 +600,51 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   Widget _noSubscriptionsSliver() {
     return _padded(
-      Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: OneUITheme.cardColor,
-          borderRadius: OneUITheme.cardBorderRadius,
-          border: OneUITheme.cardBorder,
-          boxShadow: OneUITheme.cardShadow,
-        ),
-        child: Column(
-          children: [
-            const Icon(Icons.pie_chart_outline_rounded, size: 48, color: OneUITheme.textSecondary),
-            const SizedBox(height: 12),
-            const Text(
-              'No spending data yet',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: OneUITheme.textPrimary),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Add subscriptions to see your spending trajectory, categories and insights',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: OneUITheme.textSecondary),
-            ),
-            const SizedBox(height: 18),
-            Material(
-              color: OneUITheme.accentBlue.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(100),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(100),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  context.push(AppRoutes.addSubscription);
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                  child: Text(
-                    'Add subscription',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: OneUITheme.accentBlue),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+      OneUIEmptyCard(
+        icon: Icons.pie_chart_outline_rounded,
+        title: 'No spending data yet',
+        message: 'Add subscriptions to see your spending trend, categories and insights',
+        actionLabel: 'Add subscription',
+        onAction: () {
+          HapticFeedback.lightImpact();
+          context.push(AppRoutes.addSubscription);
+        },
       ),
       top: 14,
     );
   }
 
-  Widget _padded(Widget child, {double top = 8}) {
+  /// Right-hand value of every list row: a bold amount over an optional grey caption.
+  Widget _rowValue(String value, {String? caption, Color color = OneUITheme.textPrimary}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: color)),
+        if (caption != null) ...[
+          const SizedBox(height: 2),
+          Text(caption, style: const TextStyle(fontSize: 12.5, color: OneUITheme.textSecondary)),
+        ],
+      ],
+    );
+  }
+
+  /// Small grey figure on the right of a section title.
+  Widget _sectionNote(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: OneUITheme.textSecondary),
+      ),
+    );
+  }
+
+  /// Sections are keyed so one appearing or disappearing (e.g. Billing cycles under a
+  /// filter) doesn't remount its neighbours or the scroll anchor.
+  Widget _padded(Widget child, {double top = 8, Key? key}) {
     return SliverPadding(
+      key: key,
       padding: EdgeInsets.fromLTRB(16, top, 16, 0),
       sliver: SliverToBoxAdapter(child: child),
     );

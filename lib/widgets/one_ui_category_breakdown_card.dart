@@ -5,8 +5,9 @@ import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_category_ring.dart';
 
-/// Digital Wellbeing "Screen time today" style card: a big monthly total beside a donut,
-/// then a legend of colour bar · icon · name · amount. Tapping a row selects that category.
+/// Digital Wellbeing style card: a donut with the monthly total (or the selected category's)
+/// in its centre, then a legend of icon · name · share · amount. Tapping a row selects that
+/// category. Its title comes from the surrounding [OneUISection].
 class OneUICategoryBreakdownCard extends StatefulWidget {
   /// Categories, largest first (see [SpendingInsights.byCategory]).
   final List<CategorySpend> categories;
@@ -49,7 +50,7 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
       decoration: BoxDecoration(
         color: OneUITheme.cardColor,
         borderRadius: OneUITheme.cardBorderRadius,
@@ -59,75 +60,23 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Spending by category',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: OneUITheme.textSecondary),
+          Center(
+            child: OneUICategoryRing(
+              size: 168,
+              strokeWidth: 22,
+              segments: [for (final c in categories) (color: c.category.color, value: c.monthly)],
+              highlightedIndex: selectedIndex >= 0 ? selectedIndex : null,
+              centerValue: '${formatMoney(amount, widget.currency, style: MoneyStyle.summary)}/mo',
+              centerLabel: selected != null
+                  ? '${(selected.share * 100).round()}% of total'
+                  : '${categories.length} ${categories.length == 1 ? 'category' : 'categories'}',
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: _bigAmount(amount),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      selected == null
-                          ? '${categories.length} ${categories.length == 1 ? 'category' : 'categories'}'
-                          : '${(selected.share * 100).round()}% of spending',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              OneUICategoryRing(
-                size: 140,
-                strokeWidth: 26,
-                segments: [for (final c in categories) (color: c.category.color, value: c.monthly)],
-                highlightedIndex: selectedIndex >= 0 ? selectedIndex : null,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           for (final c in visible) _legendRow(c, dimmed: selected != null && c.category != widget.selected),
           if (collapsible && selectedIndex < OneUICategoryBreakdownCard.collapsedRows)
             _moreRow(categories.length - OneUICategoryBreakdownCard.collapsedRows),
         ],
-      ),
-    );
-  }
-
-  /// "$83.96 /mo" with whole units large, as in "53 m".
-  Widget _bigAmount(double amount) {
-    final text = formatMoney(amount, widget.currency, style: MoneyStyle.summary);
-    final decimals = RegExp(r'\.\d+').firstMatch(text);
-    final whole = decimals == null ? text : text.substring(0, decimals.start);
-    final rest = decimals == null ? '' : text.substring(decimals.start);
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: whole),
-          if (rest.isNotEmpty) TextSpan(text: rest, style: const TextStyle(fontSize: 26)),
-          const TextSpan(
-            text: ' /mo',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: OneUITheme.textSecondary),
-          ),
-        ],
-      ),
-      maxLines: 1,
-      style: const TextStyle(
-        fontSize: 44,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -1.0,
-        color: OneUITheme.textPrimary,
       ),
     );
   }
@@ -146,22 +95,16 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
         child: Opacity(
           opacity: dimmed ? 0.45 : 1,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 7),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
                 Container(
-                  width: 4,
-                  height: 22,
-                  decoration: BoxDecoration(color: c.category.color, borderRadius: BorderRadius.circular(2)),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 26,
-                  height: 26,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(color: c.category.color, shape: BoxShape.circle),
-                  child: Icon(c.category.icon, size: 15, color: Colors.white),
+                  child: Icon(c.category.icon, size: 16, color: Colors.white),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     c.category.label,
@@ -176,8 +119,13 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
                 ),
                 const SizedBox(width: 8),
                 Text(
+                  '${(c.share * 100).round()}%',
+                  style: const TextStyle(fontSize: 13.5, color: OneUITheme.textSecondary),
+                ),
+                const SizedBox(width: 12),
+                Text(
                   formatMoney(c.monthly, widget.currency, style: MoneyStyle.summary),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: OneUITheme.textPrimary),
+                  style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
                 ),
               ],
             ),
@@ -198,7 +146,7 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
         padding: const EdgeInsets.symmetric(vertical: 9),
         child: Row(
           children: [
-            const SizedBox(width: 14),
+            const SizedBox(width: 2),
             Icon(
               _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
               size: 22,

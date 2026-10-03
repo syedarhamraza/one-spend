@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/di/injection.dart';
 import 'package:onespend/features/pro/presentation/pro_controller.dart';
@@ -124,12 +125,19 @@ void main() {
       expect(find.text('Switch to yearly'), findsNothing);
     });
 
-    testWidgets('Pro: year-end card and yearly savings', (tester) async {
+    testWidgets('Pro: year-end row in the hero and yearly savings', (tester) async {
       ProController.instance.debugOverride = true;
       await pump(tester, const AnalyticsScreen());
-      await tester.scrollUntilVisible(find.text('On track for ${now.year}'), 300);
-      expect(find.text('On track for ${now.year}'), findsOneWidget);
-      expect(find.byType(OneUIAnalyticsHeroCard, skipOffstage: false), findsNWidgets(2));
+      // Tracking started today, so the row names the months left rather than the whole year.
+      final label = switch (now.month) {
+        1 => 'On track for ${now.year}',
+        12 => 'Dec ${now.year}',
+        _ => '${DateFormat('MMM').format(now)} – Dec ${now.year}',
+      };
+      await tester.scrollUntilVisible(find.text(label), 300);
+      expect(find.text(label), findsOneWidget);
+      expect(find.textContaining('spent so far'), findsOneWidget);
+      expect(find.byType(OneUIAnalyticsHeroCard, skipOffstage: false), findsOneWidget);
       await tester.scrollUntilVisible(find.text('Save \$20 a year'), 300);
       expect(find.text('Save \$20 a year'), findsOneWidget);
     });

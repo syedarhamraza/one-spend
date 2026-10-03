@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_brand_icon.dart';
+import 'one_ui_card.dart';
 import 'one_ui_segmented_pills.dart';
 
 /// "$1.2k" / "Rs 42k" / "Rp 2.4M" style labels for chart axes.
@@ -24,8 +25,9 @@ String compactMoney(String currency, double value) {
   return c.symbolAfter ? '$number ${c.symbol}' : '${currencyPrefix(currency)}$number';
 }
 
-/// Samsung One UI spending trajectory card: past months as a solid line, the current month,
+/// Samsung One UI spending trend card: past months as a solid line, the current month,
 /// and a dashed forecast, with a budget guide, touch scrubbing, and the charges behind each month.
+/// Its title comes from the surrounding [OneUISection].
 class OneUISpendingTrendsCard extends StatefulWidget {
   final List<Subscription>? subscriptions;
   final double? monthlyBudget;
@@ -130,26 +132,10 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
         );
 
         if (points.isEmpty || !summary.hasData) {
-          return Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: decoration,
-            child: const Column(
-              children: [
-                Icon(Icons.show_chart_rounded, size: 40, color: OneUITheme.textSecondary),
-                SizedBox(height: 10),
-                Text(
-                  'No spending trajectory yet',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: OneUITheme.textPrimary),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Add active subscriptions to view month-over-month spending trends',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12.5, color: OneUITheme.textSecondary),
-                ),
-              ],
-            ),
+          return const OneUIEmptyCard(
+            icon: Icons.show_chart_rounded,
+            title: 'No spending trend yet',
+            message: 'Add active subscriptions to see month-over-month spending',
           );
         }
 
@@ -166,13 +152,22 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
-                    child: Text(
-                      'Spending trajectory',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: OneUITheme.textSecondary),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _money(currency, activePoint.amount),
+                        maxLines: 1,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.6,
+                          color: OneUITheme.textPrimary,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -187,17 +182,17 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
+              _headline(activePoint, currency),
               // New users: no past months yet, so say why the chart starts now.
               if (points.first.isCurrent) ...[
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
                   'Your history starts in ${DateFormat('MMMM').format(points.first.month)}. '
                   'Past months appear here as you track.',
                   style: const TextStyle(fontSize: 12.5, height: 1.35, color: OneUITheme.textTertiary),
                 ),
               ],
-              const SizedBox(height: 14),
-              _headline(activePoint, currency),
               const SizedBox(height: 16),
               SizedBox(
                 height: 200,
@@ -230,71 +225,48 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
     );
   }
 
+  /// The highlighted month's name, its chip and the change from the month before.
   Widget _headline(MonthlySpendPoint point, String currency) {
     final (String? chip, Color chipColor) = point.isCurrent
         ? ('This month', OneUITheme.accentBlue)
         : point.isForecast
             ? ('Forecast', OneUITheme.accentTeal)
             : (null, OneUITheme.textSecondary);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _money(currency, point.amount),
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.8,
-                    color: OneUITheme.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      point.fullLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: OneUITheme.textSecondary),
-                    ),
-                  ),
-                  if (chip != null) ...[
-                    const SizedBox(width: 6),
-                    // Shrinks with the label on narrow screens / large fonts.
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: chipColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          chip,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: chipColor),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
+        Text(
+          point.fullLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: OneUITheme.textSecondary),
         ),
-        const SizedBox(width: 8),
+        if (chip != null) _chip(chip, chipColor),
         _buildMoMBadge(point, currency),
       ],
+    );
+  }
+
+  /// Small tinted label, shared by the month chip and the month-over-month change.
+  Widget _chip(String text, Color color, {IconData? icon}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 3),
+          ],
+          Text(text, maxLines: 1, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+        ],
+      ),
     );
   }
 
@@ -349,8 +321,8 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
+        color: OneUITheme.surfaceInset,
+        borderRadius: OneUITheme.innerBorderRadius,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,8 +384,8 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
+        color: OneUITheme.surfaceInset,
+        borderRadius: OneUITheme.innerBorderRadius,
       ),
       child: Row(
         children: [
@@ -434,19 +406,7 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
   }
 
   Widget _buildMoMBadge(MonthlySpendPoint point, String currency) {
-    if (point.previousAmount == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Text(
-          'Baseline',
-          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: OneUITheme.textSecondary),
-        ),
-      );
-    }
+    if (point.previousAmount == null) return _chip('Baseline', OneUITheme.textSecondary);
 
     final isIncrease = point.isIncrease;
     final isDecrease = point.isDecrease;
@@ -455,24 +415,10 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
         ? Icons.trending_up_rounded
         : (isDecrease ? Icons.trending_down_rounded : Icons.trending_flat_rounded);
     final sign = isIncrease ? '+' : (isDecrease ? '-' : '');
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            '$sign${compactMoney(currency, point.momDifference.abs())} (${point.momPercentage.abs().toStringAsFixed(0)}%)',
-            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: color),
-          ),
-        ],
-      ),
+    return _chip(
+      '$sign${compactMoney(currency, point.momDifference.abs())} (${point.momPercentage.abs().toStringAsFixed(0)}%)',
+      color,
+      icon: icon,
     );
   }
 

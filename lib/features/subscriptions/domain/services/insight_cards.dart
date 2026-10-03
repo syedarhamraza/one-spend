@@ -125,7 +125,7 @@ class InsightCards {
           tone: InsightTone.negative,
           title: 'Spending is up ${(share * 100).round()}% this month',
           message: '${money(diff)} more than $previousName${driver == null ? '' : ', led by ${driver.name}'}.',
-          actionLabel: 'See trajectory',
+          actionLabel: 'See trend',
           action: InsightAction.showTrajectory,
         ));
       } else if (previous.amount > 0 && -diff >= notableChangeAmount && -share >= notableChangeShare) {

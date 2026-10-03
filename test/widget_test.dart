@@ -1915,7 +1915,7 @@ void main() {
     await tester.tap(find.text('Analytics'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Spending trajectory'), findsOneWidget);
+    expect(find.text('Spending trend'), findsOneWidget);
     expect(find.text('6M'), findsOneWidget);
     expect(find.text('1Y'), findsOneWidget);
     expect(find.text('2Y'), findsOneWidget);
@@ -1957,7 +1957,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No spending trajectory yet'), findsOneWidget);
+    expect(find.text('No spending trend yet'), findsOneWidget);
   });
 
   testWidgets('Samsung One UI Bottom Gradient Vignette renders on all main tabs and isolates GPU repaints', (WidgetTester tester) async {
