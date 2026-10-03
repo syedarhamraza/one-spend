@@ -106,7 +106,8 @@ class CurrencyHero extends StatelessWidget {
 
   const CurrencyHero({super.key, required this.code});
 
-  static const _others = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'PKR'];
+  /// The first four that aren't the main currency float around it (AED fills in when one is).
+  static const _others = ['USD', 'EUR', 'GBP', 'JPY', 'PKR', 'AED'];
 
   @override
   Widget build(BuildContext context) {
