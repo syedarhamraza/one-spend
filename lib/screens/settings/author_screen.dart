@@ -42,7 +42,7 @@ class AuthorScreen extends StatelessWidget {
           OneUITheme.accentBlue,
           'Email',
           AuthorInfo.email,
-          mailtoUrl(AuthorInfo.email, subject: 'Hello from OneSpend'),
+          mailtoUrl(AuthorInfo.email, subject: 'Hello from One Spend'),
         ),
       if (AuthorInfo.linkedInUrl.isNotEmpty)
         link(

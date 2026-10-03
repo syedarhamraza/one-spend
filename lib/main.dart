@@ -87,7 +87,7 @@ class _OneSpendAppState extends State<OneSpendApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'OneSpend',
+      title: 'One Spend',
       debugShowCheckedModeBanner: false,
       theme: OneUITheme.darkTheme,
       routerConfig: _router,

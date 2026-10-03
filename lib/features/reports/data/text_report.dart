@@ -20,7 +20,7 @@ class TextReport {
   final monthly = SubscriptionStats.totalMonthlySpend(subs, store.toMain);
 
   final buffer = StringBuffer()
-    ..writeln('OneSpend spending report')
+    ..writeln('One Spend spending report')
     ..writeln('------------------------');
   if (category != null) buffer.writeln('Category: ${category.label}');
   buffer

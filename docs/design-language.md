@@ -1,6 +1,6 @@
-# OneSpend Design Language
+# One Spend Design Language
 
-OneSpend follows **Samsung One UI 8.5** on a pure-black (OLED) dark theme. This document is the source of truth for UI work. Read it before adding a screen, option or widget, and reuse the widgets listed here rather than Material defaults.
+One Spend follows **Samsung One UI 8.5** on a pure-black (OLED) dark theme. This document is the source of truth for UI work. Read it before adding a screen, option or widget, and reuse the widgets listed here rather than Material defaults.
 
 Everything below is backed by real code: tokens live in [`lib/theme/one_ui_theme.dart`](../lib/theme/one_ui_theme.dart) and components in [`lib/widgets/`](../lib/widgets).
 

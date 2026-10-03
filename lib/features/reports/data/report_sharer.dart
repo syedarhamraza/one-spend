@@ -76,34 +76,34 @@ class ReportSharer {
           await loadFonts(),
         );
         await _shareFiles(
-          [await _file('OneSpend-report$suffix-${_day(at)}.pdf', bytes, 'application/pdf')],
-          'OneSpend spending report',
+          [await _file('One-Spend-report$suffix-${_day(at)}.pdf', bytes, 'application/pdf')],
+          'One Spend spending report',
         );
       case ExportFormat.csv:
         await _shareFiles(
           [
             await _file(
-              'OneSpend-subscriptions$suffix-${_day(at)}.csv',
+              'One-Spend-subscriptions$suffix-${_day(at)}.csv',
               Uint8List.fromList(utf8.encode(SubscriptionExporter.toCsv(subs))),
               'text/csv',
             ),
             await _file(
-              'OneSpend-payments$suffix-${_day(at)}.csv',
+              'One-Spend-payments$suffix-${_day(at)}.csv',
               Uint8List.fromList(utf8.encode(SubscriptionExporter.paymentsCsv(subs))),
               'text/csv',
             ),
           ],
-          'OneSpend subscriptions',
+          'One Spend subscriptions',
         );
       case ExportFormat.text:
         await SharePlus.instance.share(
-          ShareParams(text: TextReport.build(store, category: category, now: at), subject: 'OneSpend spending report'),
+          ShareParams(text: TextReport.build(store, category: category, now: at), subject: 'One Spend spending report'),
         );
       case ExportFormat.backup:
         final contents = await sl<BackupService>().exportBackup(now: at);
         await _shareFiles(
           [await _file(BackupService.fileName(at), Uint8List.fromList(utf8.encode(contents)), 'application/json')],
-          'OneSpend backup',
+          'One Spend backup',
         );
     }
   }
@@ -116,8 +116,8 @@ class ReportSharer {
       await loadFonts(),
     );
     await _shareFiles(
-      [await _file('OneSpend-${ids.length}-subscriptions-${_day(at)}.pdf', bytes, 'application/pdf')],
-      'OneSpend subscriptions (${ids.length})',
+      [await _file('One-Spend-${ids.length}-subscriptions-${_day(at)}.pdf', bytes, 'application/pdf')],
+      'One Spend subscriptions (${ids.length})',
     );
   }
 

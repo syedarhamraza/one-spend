@@ -192,7 +192,7 @@ class SettingsCatalog {
         ],
       ),
       SettingsDestination(
-        title: 'About OneSpend',
+        title: 'About One Spend',
         icon: Icons.info_rounded,
         color: OneUITheme.textTertiary,
         open: AboutScreen.open,

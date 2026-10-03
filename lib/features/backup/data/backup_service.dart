@@ -78,7 +78,7 @@ class BackupService {
 
   /// Suggested file name, e.g. `OneSpend-backup-2026-09-30.json`.
   static String fileName(DateTime now) =>
-      'OneSpend-backup-${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}.json';
+      'One-Spend-backup-${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}.json';
 
   /// Applies [backup]. [RestoreMode.replace] saves a restore point first, tagged with
   /// [reason].

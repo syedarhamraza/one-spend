@@ -39,7 +39,7 @@ class AboutScreen extends StatelessWidget {
     if (!context.mounted) return;
     switch (result) {
       case UpdateInstallResult.started:
-        break; // Play takes over and restarts OneSpend
+        break; // Play takes over and restarts One Spend
       case UpdateInstallResult.declined:
         OneUIToast.show(context, 'Update cancelled. You can install it any time from here.');
       case UpdateInstallResult.failed:
@@ -53,7 +53,7 @@ class AboutScreen extends StatelessWidget {
     final (subtitle, color) = switch (updates.status) {
       UpdateStatus.notChecked => ('Check Google Play for a newer version', OneUITheme.textSecondary),
       UpdateStatus.checking => ('Checking…', OneUITheme.textSecondary),
-      UpdateStatus.upToDate => ('OneSpend is up to date', OneUITheme.textSecondary),
+      UpdateStatus.upToDate => ('One Spend is up to date', OneUITheme.textSecondary),
       UpdateStatus.available => ('A new version is ready to install', OneUITheme.accentBlue),
       UpdateStatus.notFromPlay => ("Updates come from Google Play. This copy wasn't installed from Play.",
           OneUITheme.textSecondary),

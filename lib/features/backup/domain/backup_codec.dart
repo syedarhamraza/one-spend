@@ -13,8 +13,8 @@ class BackupFormatException implements Exception {
 
   const BackupFormatException(this.message);
 
-  static const notABackup = BackupFormatException('This isn\'t a OneSpend backup');
-  static const tooNew = BackupFormatException('This backup was made by a newer version of OneSpend. Update the app to restore it.');
+  static const notABackup = BackupFormatException('This isn\'t a One Spend backup');
+  static const tooNew = BackupFormatException('This backup was made by a newer version of One Spend. Update the app to restore it.');
   static const damaged = BackupFormatException('The backup file is damaged');
 
   @override

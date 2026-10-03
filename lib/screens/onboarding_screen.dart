@@ -335,7 +335,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: 'Get a reminder a few days before each charge, so you can cancel what you no longer use in time.',
       extra: allowed == false
           ? const Text(
-              'Notifications are blocked for OneSpend. You can allow them later in Android settings.',
+              'Notifications are blocked for One Spend. You can allow them later in Android settings.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13.5, height: 1.4, color: OneUITheme.accentAmber),
             )

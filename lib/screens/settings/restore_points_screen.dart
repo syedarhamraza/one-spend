@@ -96,7 +96,7 @@ class _RestorePointsScreenState extends State<RestorePointsScreen> {
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: Text(
-            'OneSpend saves a copy of your data automatically before it replaces or clears it. The newest '
+            'One Spend saves a copy of your data automatically before it replaces or clears it. The newest '
             '${BackupService.maxRestorePoints} are kept on this phone only, so also save a backup file now and then.',
             style: TextStyle(fontSize: 13, height: 1.35, color: OneUITheme.textSecondary),
           ),

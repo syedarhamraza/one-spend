@@ -1,4 +1,4 @@
-package com.onespend.onespend
+package com.syedarhamraza.onespend
 
 import android.os.Build
 import io.flutter.embedding.android.FlutterActivity

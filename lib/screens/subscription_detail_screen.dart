@@ -250,7 +250,7 @@ ${_sub.name} Subscription Details:
 • Payment Method: ${_sub.paymentMethod}
 • Monthly Equivalent: ${formatMoney(_sub.monthlyCost, _sub.currency, style: MoneyStyle.summary)}/mo
 • Annual Equivalent: ${formatMoney(_sub.yearlyCost, _sub.currency, style: MoneyStyle.summary)}/yr
-${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with OneSpend
+${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_sub.notes.isNotEmpty ? '• Notes: ${_sub.notes}\n' : ''}Tracked with One Spend
 '''.trim();
 
     try {

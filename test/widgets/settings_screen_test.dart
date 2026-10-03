@@ -71,7 +71,7 @@ void main() {
       'Security & privacy',
       'Backup & data',
       'Help & feedback',
-      'About OneSpend',
+      'About One Spend',
     ]) {
       await tester.scrollUntilVisible(find.text(title), 200);
       expect(find.text(title), findsOneWidget, reason: title);
@@ -104,7 +104,7 @@ void main() {
       'Security & privacy': 'App lock',
       'Backup & data': 'Save backup to device',
       'Help & feedback': 'Send feedback',
-      'About OneSpend': 'Open source licences',
+      'About One Spend': 'Open source licences',
     };
     for (final e in expectations.entries) {
       await tester.scrollUntilVisible(find.text(e.key), 200);
@@ -195,7 +195,7 @@ void main() {
     await tester.scrollUntilVisible(find.text('Help & feedback'), 200);
     await tester.tap(find.text('Help & feedback'));
     await tester.pumpAndSettle();
-    expect(find.text('Rate OneSpend'), findsNothing);
+    expect(find.text('Rate One Spend'), findsNothing);
   });
 
   testWidgets('debug builds show the Drive backup as Soon', (tester) async {
@@ -225,7 +225,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(AppInfo.name), findsOneWidget);
     expect(find.text(AppInfo.tagline), findsOneWidget);
-    expect(find.text('About'), findsWidgets); // page title (not "About OneSpend")
+    expect(find.text('About'), findsWidgets); // page title (not "About One Spend")
     expect(find.text('Source code'), findsNothing);
 
     await tester.tap(find.text('Open source licences'));
@@ -253,6 +253,6 @@ void main() {
     expect(find.text('Email'), AuthorInfo.email.isEmpty ? findsNothing : findsOneWidget);
     expect(find.text('LinkedIn'), AuthorInfo.linkedInUrl.isEmpty ? findsNothing : findsOneWidget);
     expect(find.text('Website'), AuthorInfo.websiteUrl.isEmpty ? findsNothing : findsOneWidget);
-    expect(find.text('OneSpend source code'), findsNothing); // closed source
+    expect(find.text('One Spend source code'), findsNothing); // closed source
   });
 }

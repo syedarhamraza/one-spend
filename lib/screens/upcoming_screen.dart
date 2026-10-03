@@ -330,7 +330,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path, mimeType: 'text/calendar')],
-          subject: 'OneSpend renewals',
+          subject: 'One Spend renewals',
         ),
       );
     } catch (_) {

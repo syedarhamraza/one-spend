@@ -53,7 +53,7 @@ class SecuritySettingsScreen extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: Text(
-            'OneSpend stores everything on this device. It has no account, no ads and no analytics.',
+            'One Spend stores everything on this device. It has no account, no ads and no analytics.',
             style: TextStyle(fontSize: 13, height: 1.35, color: OneUITheme.textSecondary),
           ),
         ),

@@ -96,7 +96,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   OneUIGroupItem(
                     leading: const OneUIIconBadge(Icons.notifications_off_rounded, OneUITheme.accentRed),
                     title: 'Blocked by Android',
-                    subtitle: 'Tap to allow notifications for OneSpend',
+                    subtitle: 'Tap to allow notifications for One Spend',
                     subtitleColor: OneUITheme.accentRed,
                     onTap: () async {
                       await ensureNotificationPermission();
