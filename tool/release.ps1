@@ -199,7 +199,7 @@ if ((Get-Content $changelogPath -Raw).Contains("'TODO: what changed'")) {
 }
 
 # The version tests check pubspec and What's new agree.
-Invoke-Checked 'Version check' { flutter test test/features/app_version_test.dart --reporter compact }
+Invoke-Checked 'Version check' { flutter test test/features/app_version_test.dart --reporter failures-only }
 
 # --- Commit, build, tag -----------------------------------------------------------
 git add $pubspecPath $changelogPath
