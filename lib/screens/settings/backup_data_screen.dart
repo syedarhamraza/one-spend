@@ -21,14 +21,18 @@ import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
 import 'coming_soon_screen.dart';
 import 'planned_feature.dart';
+import 'restore_points_screen.dart';
 import 'restore_preview_screen.dart';
 import '../../features/reports/presentation/export_share_screen.dart';
 
 /// Settings › Backup & data.
 ///
-/// One backup file, used both ways: "Save backup to device" writes it and "Restore from
-/// backup" reads it. Replacing data or clearing it always saves a restore point first,
-/// and an inline Undo row appears at the top until you leave the screen.
+/// - **Backup file:** one file, used both ways: "Save backup to device" writes it and
+///   "Restore from backup" reads it, on this or any phone.
+/// - **Restore points:** replacing or clearing data always saves one first. An inline
+///   Undo row appears at the top until you leave the screen; all of them stay listed
+///   under Restore points.
+/// - **Export:** PDF, CSV and text are for reading and can't be restored.
 class BackupDataScreen extends StatelessWidget {
   const BackupDataScreen({super.key});
 
@@ -83,12 +87,7 @@ class BackupDataScreen extends StatelessWidget {
 
     final outcome = await RestorePreviewScreen.open(context, backup);
     if (outcome == null || !context.mounted) return;
-    if (outcome.mode == RestoreMode.replace) {
-      OneUIToast.show(context, 'Backup restored');
-    } else {
-      final added = outcome.addedSubscriptions + outcome.addedPaymentMethods;
-      OneUIToast.show(context, added == 0 ? 'Nothing new to add' : 'Added $added item${added == 1 ? '' : 's'}');
-    }
+    OneUIToast.show(context, outcome.mode == RestoreMode.replace ? 'Backup restored' : restoreOutcomeMessage(outcome));
   }
 
   void _clearAll(BuildContext context) {
@@ -141,7 +140,7 @@ class BackupDataScreen extends StatelessWidget {
               ),
             ),
           OneUISection(
-            title: 'Backup',
+            title: 'Backup file',
             child: OneUIGroupCard(
               margin: EdgeInsets.zero,
               items: [
@@ -160,12 +159,21 @@ class BackupDataScreen extends StatelessWidget {
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: Text(
-              'Saves subscriptions, cards and settings in one file. Keep it somewhere safe, like Downloads or '
-              'your own cloud storage.',
-              style: TextStyle(fontSize: 13, height: 1.35, color: OneUITheme.textSecondary),
+          const _Footnote(
+            'One file with all your subscriptions, cards, categories and settings. Restore it on this or any '
+            'phone. Keep it somewhere safe, like Downloads or your own cloud storage.',
+          ),
+          OneUISection(
+            title: 'Automatic safety net',
+            child: OneUIGroupCard(
+              margin: EdgeInsets.zero,
+              items: [
+                OneUIGroupItem(
+                  title: 'Restore points',
+                  customSubtitle: const _RestorePointCount(),
+                  onTap: () => RestorePointsScreen.open(context),
+                ),
+              ],
             ),
           ),
           if (FeatureFlags.showPlannedFeatures)
@@ -196,6 +204,7 @@ class BackupDataScreen extends StatelessWidget {
               ],
             ),
           ),
+          const _Footnote("For reading or spreadsheets. Exports can't be restored; use a backup file for that."),
           const SizedBox(height: 14),
           OneUIGroupCard(
             margin: EdgeInsets.zero,
@@ -208,6 +217,40 @@ class BackupDataScreen extends StatelessWidget {
             ],
           ),
         ];
+      },
+    );
+  }
+}
+
+class _Footnote extends StatelessWidget {
+  final String text;
+
+  const _Footnote(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Text(text, style: const TextStyle(fontSize: 13, height: 1.35, color: OneUITheme.textSecondary)),
+    );
+  }
+}
+
+/// "3 saved" / "None yet". Re-reads the folder on every rebuild of the page, which happens
+/// when the store or the Undo row changes, and when returning to it.
+class _RestorePointCount extends StatelessWidget {
+  const _RestorePointCount();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<int>(
+      future: sl<BackupService>().restorePoints().then((points) => points.length),
+      builder: (context, snapshot) {
+        final count = snapshot.data;
+        return Text(
+          count == null ? ' ' : (count == 0 ? 'None yet' : '$count saved'),
+          style: const TextStyle(fontSize: 13.5, height: 1.25, color: OneUITheme.textSecondary),
+        );
       },
     );
   }

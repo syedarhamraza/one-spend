@@ -12,11 +12,13 @@ import '../../subscriptions/presentation/controllers/subscription_controller.dar
 import '../domain/backup_codec.dart';
 import '../domain/backup_merge.dart';
 import '../domain/backup_snapshot.dart';
+import '../domain/restore_point.dart';
 
 /// Creates and restores backups, and keeps restore points so no restore or wipe is final.
 ///
 /// A **restore point** is a full backup file written to app storage right before
-/// "Replace everything" or "Clear all subscriptions"; [undoLast] puts it back.
+/// "Replace everything" or "Clear all subscriptions". [undoLast] puts the newest back
+/// straight away; Backup & data › Restore points lists them all ([listRestorePoints]).
 class BackupService {
   final SubscriptionController controller;
   final SettingsRepository settings;
@@ -29,7 +31,8 @@ class BackupService {
   /// "Clear all"), or null. Screens offer an inline Undo while it is set.
   final ValueNotifier<String?> undoableAction = ValueNotifier(null);
 
-  static const int maxRestorePoints = 3;
+  /// Restoring a point saves one too, so keep enough to step back a few times.
+  static const int maxRestorePoints = 5;
 
   BackupService({
     required this.controller,
@@ -77,10 +80,15 @@ class BackupService {
   static String fileName(DateTime now) =>
       'OneSpend-backup-${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}.json';
 
-  /// Applies [backup]. [RestoreMode.replace] saves a restore point first.
+  /// Applies [backup]. [RestoreMode.replace] saves a restore point first, tagged with
+  /// [reason].
   ///
   /// A legacy (subscriptions-only) backup never replaces cards or settings.
-  Future<void> restore(BackupSnapshot backup, RestoreMode mode) async {
+  Future<void> restore(
+    BackupSnapshot backup,
+    RestoreMode mode, {
+    RestorePointReason reason = RestorePointReason.beforeRestore,
+  }) async {
     switch (mode) {
       case RestoreMode.addMissing:
         final missing = BackupMerge.missingItems(
@@ -95,7 +103,7 @@ class BackupService {
           customCategories: missing.customCategories,
         );
       case RestoreMode.replace:
-        await saveRestorePoint();
+        await saveRestorePoint(reason: reason);
         await _apply(backup);
         undoableAction.value = 'Restore';
     }
@@ -104,7 +112,7 @@ class BackupService {
 
   /// Saves a restore point, then clears every subscription.
   Future<void> clearAll() async {
-    await saveRestorePoint();
+    await saveRestorePoint(reason: RestorePointReason.beforeClearAll);
     controller.clearAllData();
     await controller.pendingWrites;
     undoableAction.value = 'Clear all';
@@ -141,17 +149,41 @@ class BackupService {
   }
 
   /// Writes the current data as a restore point and keeps only the newest [maxRestorePoints].
-  Future<File> saveRestorePoint() async {
+  Future<File> saveRestorePoint({RestorePointReason reason = RestorePointReason.beforeRestore}) async {
     final now = DateTime.now();
     final dir = await _restorePointDir();
-    // Zero-padded microseconds sort chronologically by name.
-    final file = File(p.join(dir.path, 'restore-${now.microsecondsSinceEpoch.toString().padLeft(20, '0')}.json'));
+    // Zero-padded microseconds sort chronologically by name; the reason follows.
+    final stamp = now.microsecondsSinceEpoch.toString().padLeft(20, '0');
+    final file = File(p.join(dir.path, 'restore-$stamp-${reason.id}.json'));
     await file.writeAsString(BackupCodec.encode(await createSnapshot(now: now)));
     final points = await restorePoints();
     for (final old in points.skip(maxRestorePoints)) {
       await old.delete();
     }
     return file;
+  }
+
+  /// Restore points with their contents, newest first. Files that can't be read are skipped.
+  Future<List<RestorePoint>> listRestorePoints() async {
+    final points = <RestorePoint>[];
+    for (final file in await restorePoints()) {
+      try {
+        points.add(RestorePoint(
+          path: file.path,
+          reason: _reasonOf(file),
+          snapshot: BackupCodec.decode(await file.readAsString()),
+        ));
+      } catch (e) {
+        debugPrint('OneSpend: Skipping unreadable restore point ${p.basename(file.path)}: $e');
+      }
+    }
+    return points;
+  }
+
+  /// `restore-<stamp>-<reason>.json`; older points have no reason part.
+  static RestorePointReason _reasonOf(File file) {
+    final parts = p.basenameWithoutExtension(file.path).split('-');
+    return RestorePointReason.fromId(parts.length > 2 ? parts[2] : null);
   }
 
   /// Puts back the newest restore point (and removes it). Returns false if there is none.

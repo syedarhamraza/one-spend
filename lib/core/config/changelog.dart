@@ -1,8 +1,10 @@
 /// Release notes shown on Settings › About › What's new, newest first.
 ///
-/// When you bump `version:` in pubspec.yaml, add an entry here with the same
-/// version so the app and its notes stay in step.
+/// `tool/release.ps1` adds an entry for each new version name in pubspec.yaml; fill in
+/// its changes before uploading. A test checks that the newest entry matches pubspec.
+/// Several uploads of the same name (`-Rebuild`) share one entry.
 class ChangelogEntry {
+  /// The version name from pubspec.yaml, e.g. `1.0.0-beta.1` (see [AppVersion]).
   final String version;
 
   /// Release date as shown to users (e.g. "Oct 2026"), or a status like "In development".
@@ -17,12 +19,13 @@ class Changelog {
 
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
-      version: '1.0.0',
+      version: '1.0.0-beta.1',
       date: 'In development',
       changes: [
         'Track subscriptions with renewal reminders, budgets and spending insights',
         'Multiple currencies with exchange rates and main-currency totals',
-        'Backup to a file and restore, with restore points',
+        'Backup to a file and restore, with automatic restore points you can go back to',
+        'Custom categories, annual plan savings and a year-end projection',
         'One UI 8.5 glass with an optional 3D look',
         'Selection mode that morphs the header and nav bar in place',
         'Undo an accidental Renew',
@@ -31,7 +34,7 @@ class Changelog {
   ];
 }
 
-/// Build details passed in at build time (see tool/build.ps1). Empty in plain
+/// Build details passed in at build time (see tool/release.ps1). Empty in plain
 /// `flutter run` builds.
 class BuildInfo {
   const BuildInfo._();

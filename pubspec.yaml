@@ -4,19 +4,12 @@ description: "OneSpend: a subscription and spend tracker styled after Samsung On
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-# The following defines the version and build number for your application.
-# A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
-# Both the version and the builder number may be overridden in flutter
-# build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
-# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
-# Read more about iOS versioning at
-# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-# In Windows, build-name is used as the major, minor, and patch parts
-# of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+# The ONE place the app version lives:  MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE
+#   name (before +): what users see; MAJOR = big changes, MINOR = features, PATCH = fixes,
+#                    -alpha.N / -beta.N = pre-releases for Play's testing tracks.
+#   CODE (after +):  Android versionCode; +1 for every Play upload, never reused.
+# Don't edit by hand: run ./tool/release.ps1 (see README "Releasing").
+version: 1.0.0-beta.1+1
 
 environment:
   sdk: ^3.13.3

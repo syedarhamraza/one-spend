@@ -8,6 +8,7 @@ import 'package:onespend/core/di/injection.dart';
 import 'package:onespend/features/backup/data/backup_service.dart';
 import 'package:onespend/features/backup/domain/backup_codec.dart';
 import 'package:onespend/features/backup/domain/backup_snapshot.dart';
+import 'package:onespend/features/backup/domain/restore_point.dart';
 import 'package:onespend/features/settings/data/datasources/settings_drift_datasource.dart';
 import 'package:onespend/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:onespend/features/settings/domain/repositories/settings_repository.dart';
@@ -152,6 +153,41 @@ void main() {
       await service.saveRestorePoint();
     }
     expect(await service.restorePoints(), hasLength(BackupService.maxRestorePoints));
+  });
+
+  test('restore points are listed newest first with why they were saved', () async {
+    await service.restore(backupWith([sub('fromBackup')]), RestoreMode.replace);
+    await service.clearAll();
+
+    final points = await service.listRestorePoints();
+    expect(points.map((p) => p.reason), [RestorePointReason.beforeClearAll, RestorePointReason.beforeRestore]);
+    // Each holds the data from just before: first the restored backup, then the original.
+    expect(points[0].snapshot.subscriptions.map((s) => s.id), ['fromBackup']);
+    expect(points[1].snapshot.subscriptions.map((s) => s.id), ['mine1', 'mine2']);
+  });
+
+  test('going back to a restore point is itself undoable', () async {
+    await service.clearAll();
+    final point = (await service.listRestorePoints()).single;
+
+    await service.restore(point.snapshot, RestoreMode.replace, reason: RestorePointReason.beforeRestorePoint);
+    expect(controller.subscriptions.map((s) => s.id), ['mine1', 'mine2']);
+
+    final points = await service.listRestorePoints();
+    expect(points.first.reason, RestorePointReason.beforeRestorePoint);
+    expect(points.first.snapshot.subscriptions, isEmpty);
+    expect(await service.undoLast(), isTrue);
+    expect(controller.subscriptions, isEmpty);
+  });
+
+  test('unreadable restore points are skipped and old file names still list', () async {
+    final dir = Directory('${tempDir.path}/restore_points')..createSync(recursive: true);
+    File('${dir.path}/restore-00000000000000000001.json').writeAsStringSync(await service.exportBackup());
+    File('${dir.path}/restore-00000000000000000002-clear.json').writeAsStringSync('not json');
+
+    final points = await service.listRestorePoints();
+    expect(points.single.reason, RestorePointReason.beforeRestore);
+    expect(points.single.snapshot.subscriptions, hasLength(2));
   });
 
   test('suggested file name uses the date', () {

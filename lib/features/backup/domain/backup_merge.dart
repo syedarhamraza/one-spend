@@ -11,6 +11,9 @@ typedef RestorePlan = ({
   int newPaymentMethods,
   int currentSubscriptions,
   int currentPaymentMethods,
+  int backupCustomCategories,
+  int newCustomCategories,
+  int currentCustomCategories,
 });
 
 /// Pure logic for "Add missing items".
@@ -21,10 +24,12 @@ class BackupMerge {
     required List<Subscription> currentSubscriptions,
     required List<PaymentMethod> currentPaymentMethods,
     required BackupSnapshot backup,
+    List<CustomCategory> currentCustomCategories = const [],
   }) {
     final missing = missingItems(
       currentSubscriptions: currentSubscriptions,
       currentPaymentMethods: currentPaymentMethods,
+      currentCustomCategories: currentCustomCategories,
       backup: backup,
     );
     return (
@@ -34,6 +39,9 @@ class BackupMerge {
       newPaymentMethods: missing.paymentMethods.length,
       currentSubscriptions: currentSubscriptions.length,
       currentPaymentMethods: currentPaymentMethods.length,
+      backupCustomCategories: backup.customCategories?.length ?? 0,
+      newCustomCategories: missing.customCategories.length,
+      currentCustomCategories: currentCustomCategories.length,
     );
   }
 

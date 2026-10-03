@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_version.dart';
 import '../../core/config/changelog.dart';
 import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
@@ -24,7 +25,7 @@ class WhatsNewScreen extends StatelessWidget {
       builder: (context) => [
         for (final entry in Changelog.entries)
           OneUISection(
-            title: 'Version ${entry.version} · ${entry.date}',
+            title: '${AppVersion.describe(entry.version)} · ${entry.date}',
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),

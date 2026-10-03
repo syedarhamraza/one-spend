@@ -7,6 +7,7 @@ import 'package:onespend/core/di/injection.dart';
 import 'package:onespend/features/backup/data/backup_service.dart';
 import 'package:onespend/features/backup/domain/backup_merge.dart';
 import 'package:onespend/features/backup/domain/backup_snapshot.dart';
+import 'package:onespend/features/backup/domain/restore_point.dart';
 import 'package:onespend/features/settings/domain/repositories/settings_repository.dart';
 import 'package:onespend/models/subscription.dart';
 import 'package:onespend/screens/settings/restore_preview_screen.dart';
@@ -19,12 +20,18 @@ import '../helpers/test_app.dart';
 /// Applies restores without touching the file system (restore points need real I/O).
 class _FakeBackupService extends BackupService {
   final List<RestoreMode> calls = [];
+  final List<RestorePointReason> reasons = [];
 
   _FakeBackupService() : super(controller: SubscriptionStore.instance, settings: sl<SettingsRepository>());
 
   @override
-  Future<void> restore(BackupSnapshot backup, RestoreMode mode) async {
+  Future<void> restore(
+    BackupSnapshot backup,
+    RestoreMode mode, {
+    RestorePointReason reason = RestorePointReason.beforeRestore,
+  }) async {
     calls.add(mode);
+    reasons.add(reason);
     if (mode == RestoreMode.addMissing) {
       final missing = BackupMerge.missingItems(
         currentSubscriptions: controller.subscriptions,
@@ -82,7 +89,7 @@ void main() {
   });
 
   /// Opens the preview from a host page; returns a getter for the popped outcome.
-  Future<RestoreOutcome? Function()> openPreview(WidgetTester tester) async {
+  Future<RestoreOutcome? Function()> openPreview(WidgetTester tester, {RestorePoint? point}) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -90,7 +97,9 @@ void main() {
     await tester.pumpWidget(routedTestApp(Builder(
       builder: (context) => Center(
         child: TextButton(
-          onPressed: () async => outcome = await RestorePreviewScreen.open(context, backup),
+          onPressed: () async => outcome = point == null
+              ? await RestorePreviewScreen.open(context, backup)
+              : await RestorePreviewScreen.openPoint(context, point),
           child: const Text('open'),
         ),
       ),
@@ -133,6 +142,21 @@ void main() {
     expect(service.calls, [RestoreMode.replace]);
     expect(outcome()?.mode, RestoreMode.replace);
     expect(SubscriptionStore.instance.subscriptions.map((s) => s.id), ['mine1', 'new1']);
+  });
+
+  testWidgets('a restore point is labelled as one and replacing saves the right kind of point', (tester) async {
+    final point = RestorePoint(path: 'restore-1-clear.json', reason: RestorePointReason.beforeClearAll, snapshot: backup);
+    await openPreview(tester, point: point);
+    expect(find.text('Restore point'), findsOneWidget);
+    expect(find.text('Before clearing all'), findsOneWidget);
+
+    await tester.tap(find.text('Replace everything'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restore'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Replace'));
+    await tester.pumpAndSettle();
+    expect(service.reasons, [RestorePointReason.beforeRestorePoint]);
   });
 
   testWidgets('cancel leaves everything as it was', (tester) async {

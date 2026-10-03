@@ -23,13 +23,15 @@ class BackupFormatException implements Exception {
 
 /// Reads and writes the OneSpend backup file (JSON).
 ///
-/// Format v1:
+/// Format v2:
 /// ```json
-/// {"format": "onespend.backup", "version": 1, "createdAt": "…", "appVersion": "1.0.0 (1)",
+/// {"format": "onespend.backup", "version": 2, "createdAt": "…", "appVersion": "1.0.0 (1)",
 ///  "counts": {"subscriptions": 14, "paymentMethods": 3},
-///  "data": {"subscriptions": [...], "paymentMethods": [...], "settings": {...}, "appearance": {...}}}
+///  "data": {"subscriptions": [...], "paymentMethods": [...], "settings": {...}, "appearance": {...},
+///           "exchangeRateOverrides": {...}, "customCategories": [...]}}
 /// ```
-/// A bare JSON list is read as the legacy subscriptions-only export.
+/// v1 files (no custom categories) still restore. A bare JSON list is read as the legacy
+/// subscriptions-only export.
 class BackupCodec {
   const BackupCodec._();
 

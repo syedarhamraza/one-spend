@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/config/app_info.dart';
+import '../../core/config/app_version.dart';
 import '../../core/config/changelog.dart';
 import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
@@ -23,14 +23,6 @@ class AboutScreen extends StatelessWidget {
   static Future<void> open(BuildContext context) {
     HapticFeedback.lightImpact();
     return context.push(AppRoutes.settingsAbout);
-  }
-
-  static Future<PackageInfo?> _packageInfo() async {
-    try {
-      return await PackageInfo.fromPlatform();
-    } catch (_) {
-      return null;
-    }
   }
 
   @override
@@ -57,24 +49,10 @@ class AboutScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              FutureBuilder<PackageInfo?>(
-                future: _packageInfo(),
-                builder: (context, snapshot) {
-                  final info = snapshot.data;
-                  return Text(
-                    info == null ? 'Version' : 'Version ${info.version} (${info.buildNumber})',
-                    style: const TextStyle(fontSize: 14.5, color: OneUITheme.textSecondary),
-                  );
-                },
+              FutureBuilder<AppVersion?>(
+                future: AppVersion.current(),
+                builder: (context, snapshot) => _VersionLine(snapshot.data),
               ),
-              // Debug builds made with tool/build.ps1 also show the commit.
-              if (kDebugMode && BuildInfo.commit.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                const Text(
-                  'Build ${BuildInfo.commit}',
-                  style: TextStyle(fontSize: 12.5, color: OneUITheme.textTertiary),
-                ),
-              ],
               const SizedBox(height: 14),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
@@ -93,7 +71,7 @@ class AboutScreen extends StatelessWidget {
           items: [
             OneUIGroupItem(
               title: "What's new",
-              subtitle: 'Version ${Changelog.entries.first.version}',
+              subtitle: 'Version ${AppVersion.describe(Changelog.entries.first.version)}',
               subtitleColor: OneUITheme.textSecondary,
               onTap: () => WhatsNewScreen.open(context),
             ),
@@ -138,6 +116,66 @@ class AboutScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// "Version 1.0.0 [Beta 1]" with "Build 5" underneath (plus the commit in debug builds).
+class _VersionLine extends StatelessWidget {
+  final AppVersion? version;
+
+  const _VersionLine(this.version);
+
+  @override
+  Widget build(BuildContext context) {
+    final v = version;
+    if (v == null) {
+      return const Text('Version', style: TextStyle(fontSize: 14.5, color: OneUITheme.textSecondary));
+    }
+    final build = [
+      if (v.code != null) 'Build ${v.code}',
+      // Builds made with tool/release.ps1 carry the commit; only debug builds show it.
+      if (kDebugMode && BuildInfo.commit.isNotEmpty) BuildInfo.commit,
+    ].join(' · ');
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Version ${v.number}', style: const TextStyle(fontSize: 14.5, color: OneUITheme.textSecondary)),
+            if (v.isPreRelease) ...[
+              const SizedBox(width: 8),
+              _ChannelChip(v.channelLabel),
+            ],
+          ],
+        ),
+        if (build.isNotEmpty) ...[
+          const SizedBox(height: 3),
+          Text(build, style: const TextStyle(fontSize: 12.5, color: OneUITheme.textTertiary)),
+        ],
+      ],
+    );
+  }
+}
+
+/// Amber capsule naming the pre-release, e.g. "Beta 1".
+class _ChannelChip extends StatelessWidget {
+  final String label;
+
+  const _ChannelChip(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+      decoration: BoxDecoration(
+        color: OneUITheme.accentAmber.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(OneUITheme.radiusBadge),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: OneUITheme.accentAmber),
+      ),
     );
   }
 }
