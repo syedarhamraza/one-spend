@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/di/injection.dart';
@@ -11,7 +12,9 @@ import 'package:onespend/screens/subscription_detail_screen.dart';
 import 'package:onespend/screens/subscriptions_screen.dart';
 import 'package:onespend/screens/upcoming_screen.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
+import 'package:onespend/widgets/one_ui_analytics_hero_card.dart';
 import 'package:onespend/widgets/one_ui_budget_card.dart';
+import 'package:onespend/widgets/one_ui_key_value_row.dart';
 import 'package:onespend/widgets/one_ui_upcoming_hero_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -124,6 +127,29 @@ void main() {
     testWidgets('Analytics tab', (tester) async {
       await pumpScreen(tester, const AnalyticsScreen());
       expect(tester.takeException(), isNull);
+    });
+
+    /// The key-value rows in [card] show every value and caption in full (the card's own
+    /// title may still ellipsize).
+    void expectAmountsInFull(WidgetTester tester, Type card) {
+      final rows = find.descendant(of: find.byType(card), matching: find.byType(OneUIKeyValueRow));
+      expect(rows, findsWidgets);
+      final paragraphs = tester.renderObjectList<RenderParagraph>(
+        find.descendant(of: rows, matching: find.byType(RichText)),
+      );
+      for (final p in paragraphs) {
+        expect(p.didExceedMaxLines, isFalse, reason: '${p.text.toPlainText()} is cut off');
+      }
+    }
+
+    testWidgets('Analytics hero rows show large amounts in full', (tester) async {
+      await pumpScreen(tester, const AnalyticsScreen());
+      expectAmountsInFull(tester, OneUIAnalyticsHeroCard);
+    });
+
+    testWidgets('Upcoming hero rows show large amounts in full', (tester) async {
+      await pumpScreen(tester, const UpcomingScreen());
+      expectAmountsInFull(tester, OneUIUpcomingHeroCard);
     });
 
     testWidgets('Subscription detail', (tester) async {
