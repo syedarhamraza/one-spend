@@ -98,6 +98,20 @@ class OneUISoonChip extends StatelessWidget {
   }
 }
 
+/// Small orange dot marking something new on a row, e.g. an available update.
+class OneUIDot extends StatelessWidget {
+  const OneUIDot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 9,
+      height: 9,
+      decoration: const BoxDecoration(color: OneUITheme.accentOrange, shape: BoxShape.circle),
+    );
+  }
+}
+
 /// 36dp solid circle list badge with a white icon (design doc §4, "Leading icon badges").
 class OneUIIconBadge extends StatelessWidget {
   final IconData icon;

@@ -8,9 +8,12 @@ import '../../core/config/app_version.dart';
 import '../../core/config/changelog.dart';
 import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
+import '../../features/updates/data/update_service.dart';
+import '../../features/updates/presentation/update_controller.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
+import '../../widgets/one_ui_toast.dart';
 import 'coming_soon_screen.dart';
 import 'planned_feature.dart';
 import 'whats_new_screen.dart';
@@ -25,10 +28,58 @@ class AboutScreen extends StatelessWidget {
     return context.push(AppRoutes.settingsAbout);
   }
 
+  Future<void> _onUpdateTap(BuildContext context) async {
+    HapticFeedback.lightImpact();
+    final updates = UpdateController.instance;
+    if (!updates.updateAvailable) {
+      await updates.check();
+      if (!updates.updateAvailable) return; // the row's subtitle shows the result
+    }
+    final result = await updates.install();
+    if (!context.mounted) return;
+    switch (result) {
+      case UpdateInstallResult.started:
+        break; // Play takes over and restarts OneSpend
+      case UpdateInstallResult.declined:
+        OneUIToast.show(context, 'Update cancelled. You can install it any time from here.');
+      case UpdateInstallResult.failed:
+        OneUIToast.show(context, "Couldn't start the update. Try again from Google Play.");
+    }
+  }
+
+  /// "Check for updates": Google Play in-app updates (immediate flow).
+  OneUIGroupItem _updateItem(BuildContext context) {
+    final updates = UpdateController.instance;
+    final (subtitle, color) = switch (updates.status) {
+      UpdateStatus.notChecked => ('Check Google Play for a newer version', OneUITheme.textSecondary),
+      UpdateStatus.checking => ('Checking…', OneUITheme.textSecondary),
+      UpdateStatus.upToDate => ('OneSpend is up to date', OneUITheme.textSecondary),
+      UpdateStatus.available => ('A new version is ready to install', OneUITheme.accentBlue),
+      UpdateStatus.notFromPlay => ("Updates come from Google Play. This copy wasn't installed from Play.",
+          OneUITheme.textSecondary),
+      UpdateStatus.failed => ("Couldn't reach Google Play. Tap to try again.", OneUITheme.textSecondary),
+    };
+    return OneUIGroupItem(
+      title: updates.updateAvailable ? 'Update available' : 'Check for updates',
+      subtitle: subtitle,
+      subtitleColor: color,
+      trailing: updates.status == UpdateStatus.checking || updates.installing
+          ? const SizedBox.square(
+              dimension: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: OneUITheme.accentBlue),
+            )
+          : updates.updateAvailable
+              ? const OneUIDot()
+              : const SizedBox.shrink(),
+      onTap: () => _onUpdateTap(context),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return OneUISubpage(
       title: 'About',
+      listenable: UpdateController.instance,
       builder: (context) => [
         const SizedBox(height: 18),
         Center(
@@ -66,6 +117,11 @@ class AboutScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
+        OneUIGroupCard(
+          margin: EdgeInsets.zero,
+          items: [_updateItem(context)],
+        ),
+        const SizedBox(height: 14),
         OneUIGroupCard(
           margin: EdgeInsets.zero,
           items: [

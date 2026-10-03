@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/config/feature_flags.dart';
+import '../../features/updates/presentation/update_controller.dart';
 import '../../theme/one_ui_theme.dart';
 import '../payment_methods_screen.dart';
 import 'about_screen.dart';
@@ -33,6 +34,9 @@ class SettingsDestination {
   final List<String> keywords;
   final List<SettingsOption> options;
 
+  /// When it returns true the row shows an orange dot (e.g. an update is available).
+  final bool Function()? badge;
+
   const SettingsDestination({
     required this.title,
     required this.icon,
@@ -42,6 +46,7 @@ class SettingsDestination {
     this.placeholderOnly = false,
     this.keywords = const [],
     this.options = const [],
+    this.badge,
   });
 }
 
@@ -122,10 +127,10 @@ class SettingsCatalog {
           ),
           (
             title: 'Subscription cards',
-            keywords: ['card studio', 'price display', 'renewal badge', 'chips', 'pro'],
+            keywords: ['card studio', 'price display', 'renewal badge', 'chips'],
             placeholder: false,
           ),
-          (title: 'Subscription details', keywords: ['icons', 'highlight', 'detail screen', 'pro'], placeholder: false),
+          (title: 'Subscription details', keywords: ['icons', 'highlight', 'detail screen'], placeholder: false),
           (title: 'Reset appearance', keywords: ['defaults'], placeholder: false),
         ],
       ),
@@ -192,7 +197,13 @@ class SettingsCatalog {
         color: OneUITheme.textTertiary,
         open: AboutScreen.open,
         keywords: ['version'],
+        badge: () => UpdateController.instance.updateAvailable,
         options: [
+          (
+            title: 'Check for updates',
+            keywords: ['update', 'software update', 'upgrade', 'new version', 'play store'],
+            placeholder: false,
+          ),
           (title: "What's new", keywords: ['changelog', 'release notes', 'updates'], placeholder: false),
           (title: 'Developer', keywords: ['author', 'made by'], placeholder: false),
           (title: 'Open source licences', keywords: ['licenses', 'legal'], placeholder: false),

@@ -65,6 +65,7 @@ OneSpend keeps track of your recurring payments: what you pay, when it renews, w
 - Automatic restore points before data is replaced or cleared, listed under Backup & data › Restore points.
 - Export a PDF report, CSV or text summary, or renewals to a calendar (`.ics`). Exports are for reading and can't be restored.
 - Restore the sample catalog, or clear all data.
+- Check for updates from Google Play (Settings › About), with a quiet check on launch.
 
 ### Appearance
 - Card studio: price format, cycle progress bar and metadata chips.
