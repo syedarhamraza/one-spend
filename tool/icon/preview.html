@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- Icon concept sheet: each concept under launcher masks, at real sizes, themed and as a
+     notification icon. Adaptive icons are 108 units with only the middle 72 visible, so the
+     artwork is drawn at 150% of the mask and centred. Rendered by headless Chrome. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One Spend icon concepts</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0b0b0d; color: #fff; font-family: Inter, sans-serif; width: 1960px; padding: 48px 56px; }
+  h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .note { color: #9e9ea4; font-size: 17px; margin-bottom: 30px; }
+  .row { display: grid; grid-template-columns: 250px 1fr; gap: 28px; align-items: center; padding: 26px 0; border-top: 1px solid #222226; }
+  .name { font-size: 24px; font-weight: 800; }
+  .name small { display: block; font-size: 15px; font-weight: 500; color: #9e9ea4; margin-top: 6px; line-height: 1.35; }
+  .cells { display: flex; gap: 30px; align-items: flex-end; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .cell span { font-size: 12.5px; color: #8a8a90; }
+  .icon { position: relative; overflow: hidden; }
+  .icon img { position: absolute; width: 150%; height: 150%; left: -25%; top: -25%; }
+  .circle { border-radius: 50%; }
+  .squircle { border-radius: 30%; }
+  .tear { border-radius: 50% 50% 50% 18%; }
+  .themed { position: relative; overflow: hidden; border-radius: 50%; }
+  .themed i { position: absolute; inset: -25%; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+  .home { display: flex; gap: 18px; padding: 18px 22px; border-radius: 28px; background: linear-gradient(135deg, #2a3550, #4a2d4e); }
+  .home .app { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: #f2f2f5; width: 64px; }
+  .ph { width: 56px; height: 56px; border-radius: 30%; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+  .bar { display: flex; align-items: center; gap: 10px; background: #1c1c1e; padding: 10px 16px; border-radius: 14px; font-size: 14px; color: #d4d4d8; }
+  .bar i { width: 22px; height: 22px; background: #fff; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+</style>
+</head>
+<body>
+<h1>One Spend: icon concepts</h1>
+<p class="note">Each concept on the adaptive grid (only the middle 72 of 108 units show), under the circle, squircle and teardrop masks launchers use. Shown at real sizes, as an Android 13 themed icon and as the notification icon.</p>
+<div id="rows"></div>
+<script>
+  const concepts = [
+    ['1-renewal-loop', 'Renewal loop', 'A circular arrow around a dot: things that renew.'],
+    ['2-card-stack', 'Card stack', 'Three cards stacked: all your subscriptions in one place.'],
+    ['3-spend-ring', 'Spend ring', 'A segmented ring like the category donut: where it goes.'],
+    ['4-monogram', '"1" monogram', 'A bold "1" (One Spend) inside an open ring.'],
+    ['5-renewing-ring', 'Renewing ring', 'The spend ring whose lead share ends in an arrow: where it goes, and it renews.'],
+  ];
+  const others = [['#F97316', 'A'], ['#22C55E', 'M'], ['#A855F7', 'P']];
+  const icon = (id, size, shape) =>
+    `<div class="icon ${shape}" style="width:${size}px;height:${size}px"><img src="concepts/${id}.svg" alt=""></div>`;
+  const mono = (id, size, bg, fg) =>
+    `<div class="themed" style="width:${size}px;height:${size}px;background:${bg}"><i style="background:${fg};-webkit-mask-image:url(concepts/${id}-mono.svg);mask-image:url(concepts/${id}-mono.svg)"></i></div>`;
+  document.getElementById('rows').innerHTML = concepts.map(([id, name, desc]) => `
+    <div class="row">
+      <div class="name">${name}<small>${desc}</small></div>
+      <div class="cells">
+        <div class="cell">${icon(id, 190, 'squircle')}<span>192 px</span></div>
+        <div class="cell">${icon(id, 96, 'circle')}<span>circle</span></div>
+        <div class="cell">${icon(id, 96, 'squircle')}<span>squircle</span></div>
+        <div class="cell">${icon(id, 96, 'tear')}<span>teardrop</span></div>
+        <div class="cell">${icon(id, 48, 'squircle')}<span>48 px</span></div>
+        <div class="cell">${mono(id, 72, '#D3E3FD', '#0B3D91')}<span>themed light</span></div>
+        <div class="cell">${mono(id, 72, '#1F2A3D', '#A8C7FA')}<span>themed dark</span></div>
+        <div class="cell"><div class="home">${others.map(([c, l]) => `<div class="app"><div class="ph" style="background:${c}">${l}</div>App</div>`).join('')}<div class="app">${icon(id, 56, 'squircle')}One Spend</div></div><span>home screen</span></div>
+        <div class="cell"><div class="bar"><i style="-webkit-mask-image:url(concepts/${id}-mono.svg);mask-image:url(concepts/${id}-mono.svg)"></i>Streamly renews in 2 days</div><span>notification</span></div>
+      </div>
+    </div>`).join('');
+</script>
+</body>
+</html>
