@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/di/injection.dart';
 import '../../../theme/one_ui_theme.dart';
 import '../../settings/domain/repositories/settings_repository.dart';
+import '../../../core/telemetry/telemetry.dart';
 
 /// How high a floating glass surface sits, which picks its shadow.
 enum OneUIGlassElevation {
@@ -231,7 +232,7 @@ class OneUIEffectsController extends ChangeNotifier {
     if (repository == null) return;
     _writeQueue = _writeQueue
         .then((_) => repository.setAppearanceSettings({key: value.toString()}))
-        .catchError((Object e) => debugPrint('OneSpend: Failed to save appearance setting $key: $e'));
+        .catchError((Object e, StackTrace stack) => AppLog.error(e, stack, reason: 'Failed to save appearance setting $key'));
   }
 
   void _saveSetting(String key, bool value) => _write(key, value);

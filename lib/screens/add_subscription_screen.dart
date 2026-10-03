@@ -21,6 +21,8 @@ import 'billing_cycle_picker_screen.dart';
 import 'category_picker_screen.dart';
 import '../features/notifications/presentation/notification_permission.dart';
 import '../utils/reminder_format.dart';
+import '../core/telemetry/events.dart';
+import '../core/telemetry/telemetry.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
@@ -264,6 +266,11 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
       OneUIToast.show(context, '${newSub.name} updated');
     } else {
       SubscriptionStore.instance.addSubscription(newSub);
+      AppLog.event(TelemetryEvent.subscriptionAdded(
+        category: newSub.category,
+        billingCycle: newSub.billingCycle,
+        fromPreset: newSub.brandPresetId != null,
+      ));
       OneUIToast.show(context, '${newSub.name} added');
       ensureNotificationPermission();
     }

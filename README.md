@@ -182,6 +182,50 @@ The application id is `com.syedarhamraza.onespend`. It can't change once the app
 
 ---
 
+### Crash reports and analytics (one-time setup)
+
+The code is ready. Until a Firebase project is connected, `lib/firebase_options.dart` is a placeholder and the app only logs to the console.
+
+1. Create a project at [console.firebase.google.com](https://console.firebase.google.com). Add an **Android app** with package `com.syedarhamraza.onespend`, then turn on **Crashlytics** and **Analytics**.
+2. Install the tools and connect the project from the repo root:
+
+   ```bash
+   npm install -g firebase-tools
+   ```
+   ```bash
+   dart pub global activate flutterfire_cli
+   ```
+   ```bash
+   firebase login
+   ```
+   ```bash
+   flutterfire configure --platforms=android --android-package-name=com.syedarhamraza.onespend
+   ```
+
+   This replaces `lib/firebase_options.dart`, adds `android/app/google-services.json` and adds the Google Services and Crashlytics Gradle plugins. Commit all of it: these are project identifiers, not secrets.
+3. Check that it works:
+   - Build a debug APK with sending forced on: `flutter run --dart-define=TELEMETRY_IN_DEBUG=true`.
+   - Tap **Settings › Developer options › Send test error**.
+   - The error appears in the Crashlytics console within a few minutes.
+   - For live analytics, run `adb shell setprop debug.firebase.analytics.app com.syedarhamraza.onespend` and watch **Analytics › DebugView**.
+
+**Play Console › App content › Data safety** (answers for this setup):
+
+| Data type | Collected | Shared | Why |
+|---|---|---|---|
+| Crash logs | Yes | No | App functionality (crash fixing) |
+| Diagnostics | Yes | No | App functionality, Analytics |
+| App interactions | Yes | No | Analytics |
+| Device or other IDs (Firebase installation ID) | Yes | No | Analytics |
+
+The rest of the form:
+- Data is encrypted in transit.
+- Collection is required, with no opt-out.
+- Users can't ask for deletion in the app: there's no account, and the data isn't linked to a person.
+- Under **Advertising ID**, answer **No**: it's removed in the manifest.
+
+Play also needs a **privacy policy URL**. Host `docs/privacy-policy.md`, for example with GitHub Pages.
+
 ## Development
 
 | Task | Command |
@@ -333,7 +377,11 @@ All UI follows [`docs/design-language.md`](docs/design-language.md), which cover
 
 ## Privacy
 
-One Spend has no accounts, analytics, network sync or push server. All data, including subscriptions, payment method details and settings, stays in the app's local SQLite database. For cards, only the last 4 digits are stored. Data leaves the device only when you choose to share an export.
+One Spend has no accounts, ads, network sync or push server. All data, including subscriptions, payment method details and settings, stays in the app's local SQLite database. For cards, only the last 4 digits are stored.
+
+To fix bugs, release builds send **crash reports** (Firebase Crashlytics) and **anonymous usage statistics** (Firebase Analytics: screens viewed and features used) to Google Firebase. These never include subscription names, prices, notes, URLs or card details; events carry only fixed names, counts and on/off flags (see `lib/core/telemetry/events.dart`). The Advertising ID and ad attribution are switched off. Debug builds send nothing. Your own data leaves the device only when you choose to share an export or backup.
+
+The privacy policy draft is in [`docs/privacy-policy.md`](docs/privacy-policy.md).
 
 ---
 

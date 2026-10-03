@@ -24,6 +24,8 @@ import 'planned_feature.dart';
 import 'restore_points_screen.dart';
 import 'restore_preview_screen.dart';
 import '../../features/reports/presentation/export_share_screen.dart';
+import '../../core/telemetry/events.dart';
+import '../../core/telemetry/telemetry.dart';
 
 /// Settings › Backup & data.
 ///
@@ -63,6 +65,7 @@ class BackupDataScreen extends StatelessWidget {
       );
       if (uri == null) return; // cancelled
       SubscriptionStore.instance.markBackupSaved(now);
+      AppLog.event(TelemetryEvent.backupSaved);
       if (context.mounted) OneUIToast.show(context, 'Backup saved');
     } catch (_) {
       if (context.mounted) OneUIToast.show(context, 'Couldn\'t save the backup');

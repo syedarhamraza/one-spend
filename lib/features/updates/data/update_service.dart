@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_update/in_app_update.dart' as play;
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../../core/telemetry/telemetry.dart';
 
 /// What Google Play says about updates for this install.
 enum UpdateCheckResult {
@@ -93,10 +94,10 @@ class PlayUpdateService implements UpdateService {
       if (_notFromPlayCodes.any((code) => message.contains('($code)') || message.startsWith('$code:'))) {
         return UpdateCheckResult.notFromPlay;
       }
-      debugPrint('OneSpend: Update check failed: ${e.code} ${e.message}');
+      AppLog.info('Update check failed: ${e.code} ${e.message}');
       return UpdateCheckResult.failed;
     } catch (e) {
-      debugPrint('OneSpend: Update check failed: $e');
+      AppLog.info('Update check failed: ${e.runtimeType}');
       return UpdateCheckResult.failed;
     }
   }
@@ -109,8 +110,8 @@ class PlayUpdateService implements UpdateService {
         play.AppUpdateResult.userDeniedUpdate => UpdateInstallResult.declined,
         play.AppUpdateResult.inAppUpdateFailed => UpdateInstallResult.failed,
       };
-    } catch (e) {
-      debugPrint('OneSpend: Update install failed: $e');
+    } catch (e, stack) {
+      AppLog.error(e, stack, reason: 'Update install failed');
       return UpdateInstallResult.failed;
     }
   }

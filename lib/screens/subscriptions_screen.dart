@@ -29,6 +29,8 @@ import '../features/subscriptions/presentation/widgets/first_run_empty_state.dar
 import 'settings/backup_data_screen.dart';
 import '../features/reports/presentation/export_share_screen.dart';
 import '../features/reports/data/report_sharer.dart';
+import '../core/telemetry/events.dart';
+import '../core/telemetry/telemetry.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -341,6 +343,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     }
     buffer.writeln('\nTracked with One Spend');
 
+    AppLog.event(TelemetryEvent.exportShared(format: 'text', scope: 'selection'));
     try {
       await SharePlus.instance.share(
         ShareParams(
@@ -369,6 +372,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       onConfirm: () {
         HapticFeedback.mediumImpact();
         SubscriptionStore.instance.batchDelete(_selectedIds);
+        AppLog.event(TelemetryEvent.subscriptionsDeleted(count));
         _exitSelectionMode();
         OneUIToast.show(context, 'Deleted $count subscription${count > 1 ? "s" : ""}');
       },

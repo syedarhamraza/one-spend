@@ -15,6 +15,10 @@ Future<void> openExternalLink(BuildContext context, String url) async {
 }
 
 /// A `mailto:` URL with an optional subject.
-String mailtoUrl(String email, {String? subject}) =>
-    Uri(scheme: 'mailto', path: email, query: subject == null ? null : 'subject=${Uri.encodeComponent(subject)}')
-        .toString();
+String mailtoUrl(String email, {String? subject, String? body}) {
+  final query = [
+    if (subject != null) 'subject=${Uri.encodeComponent(subject)}',
+    if (body != null) 'body=${Uri.encodeComponent(body)}',
+  ];
+  return Uri(scheme: 'mailto', path: email, query: query.isEmpty ? null : query.join('&')).toString();
+}

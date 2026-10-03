@@ -53,7 +53,10 @@ class SecuritySettingsScreen extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: Text(
-            'One Spend stores everything on this device. It has no account, no ads and no analytics.',
+            'Your subscriptions and cards stay on this device, with no account and no ads. To fix bugs and '
+            'improve the app, One Spend sends crash reports and anonymous usage statistics (which screens and '
+            'features are used) to Google Firebase. It never sends your subscription names, prices, notes or '
+            'card details.',
             style: TextStyle(fontSize: 13, height: 1.35, color: OneUITheme.textSecondary),
           ),
         ),

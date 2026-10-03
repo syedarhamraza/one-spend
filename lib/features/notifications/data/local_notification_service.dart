@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import '../domain/planned_notification.dart';
 import 'notification_service.dart';
+import '../../../core/telemetry/telemetry.dart';
 
 /// [NotificationService] backed by flutter_local_notifications (Android).
 class LocalNotificationService implements NotificationService {
@@ -50,7 +50,7 @@ class LocalNotificationService implements NotificationService {
       final zone = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(zone.identifier));
     } catch (e) {
-      debugPrint('OneSpend: Could not resolve local timezone, reminders use UTC: $e');
+      AppLog.info('Could not resolve local timezone, reminders use UTC: ${e.runtimeType}');
     }
 
     await _plugin.initialize(

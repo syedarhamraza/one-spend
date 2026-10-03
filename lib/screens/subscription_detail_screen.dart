@@ -32,6 +32,8 @@ import 'reminder_picker_screen.dart';
 import '../utils/reminder_format.dart';
 import '../features/reports/data/report_sharer.dart';
 import '../widgets/one_ui_floating_menu.dart';
+import '../core/telemetry/events.dart';
+import '../core/telemetry/telemetry.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -187,6 +189,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
       return;
     }
     _syncFromStore();
+    AppLog.event(TelemetryEvent.renewTapped);
     OneUIToast.show(context, 'Renewed ${_sub.name}! Next: ${OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate)}');
     // The Renew button turns into "Undo" for a few seconds in case it was a mis-tap.
     _undoRenewTimer?.cancel();
@@ -201,6 +204,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
     _undoRenewTimer?.cancel();
     _undoRenewTimer = null;
     if (SubscriptionStore.instance.undoRenew(_sub.id)) {
+      AppLog.event(TelemetryEvent.renewUndone);
       _syncFromStore();
       OneUIToast.show(context, 'Renewal undone. Next: ${OneUIDateFormats.monthDayYear.format(_sub.nextBillingDate)}');
     } else {
@@ -254,6 +258,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
 '''.trim();
 
     try {
+      AppLog.event(TelemetryEvent.exportShared(format: 'text', scope: 'single'));
       await SharePlus.instance.share(
         ShareParams(
           text: summaryText,
@@ -281,6 +286,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
         HapticFeedback.mediumImpact();
         final name = _sub.name;
         SubscriptionStore.instance.removeSubscription(_sub.id);
+        AppLog.event(TelemetryEvent.subscriptionsDeleted(1));
         Navigator.pop(context);
         OneUIToast.show(context, '$name removed');
       },

@@ -13,6 +13,8 @@ import '../domain/backup_codec.dart';
 import '../domain/backup_merge.dart';
 import '../domain/backup_snapshot.dart';
 import '../domain/restore_point.dart';
+import '../../../core/telemetry/telemetry.dart';
+import '../../../core/telemetry/events.dart';
 
 /// Creates and restores backups, and keeps restore points so no restore or wipe is final.
 ///
@@ -108,6 +110,10 @@ class BackupService {
         undoableAction.value = 'Restore';
     }
     await controller.pendingWrites;
+    AppLog.event(TelemetryEvent.backupRestored(
+      mode: mode == RestoreMode.replace ? 'replace' : 'add_missing',
+      fromRestorePoint: reason == RestorePointReason.beforeRestorePoint,
+    ));
   }
 
   /// Saves a restore point, then clears every subscription.
@@ -116,6 +122,7 @@ class BackupService {
     controller.clearAllData();
     await controller.pendingWrites;
     undoableAction.value = 'Clear all';
+    AppLog.event(TelemetryEvent.clearAll);
   }
 
   Future<void> _apply(BackupSnapshot backup) async {
@@ -173,8 +180,8 @@ class BackupService {
           reason: _reasonOf(file),
           snapshot: BackupCodec.decode(await file.readAsString()),
         ));
-      } catch (e) {
-        debugPrint('OneSpend: Skipping unreadable restore point ${p.basename(file.path)}: $e');
+      } catch (e, stack) {
+        AppLog.error(e, stack, reason: 'Unreadable restore point');
       }
     }
     return points;
@@ -195,6 +202,7 @@ class BackupService {
     await _apply(BackupCodec.decode(await latest.readAsString()));
     await latest.delete();
     await controller.pendingWrites;
+    AppLog.event(TelemetryEvent.undoLast);
     return true;
   }
 }

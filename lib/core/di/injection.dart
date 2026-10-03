@@ -1,9 +1,14 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../firebase_options.dart';
 import '../database/app_database.dart';
+import '../telemetry/firebase_telemetry.dart';
+import '../telemetry/telemetry.dart';
+import '../telemetry/telemetry_context_sync.dart';
 import '../database/migration/shared_preferences_migrator.dart';
 import '../../features/currency/data/exchange_rate_repository.dart';
 import '../../features/currency/data/rates_remote_datasource.dart';
@@ -155,9 +160,31 @@ void setupDependencies({AppDatabase? database}) {
   if (!sl.isRegistered<UpdateController>()) {
     sl.registerLazySingleton<UpdateController>(() => UpdateController(service: sl<UpdateService>()));
   }
+
+  // 6. Crash reports and analytics: console only unless configureDependencies() started Firebase
+  if (!sl.isRegistered<Telemetry>()) {
+    sl.registerSingleton<Telemetry>(NoopTelemetry());
+  }
+}
+
+/// Starts Firebase for crash reports and analytics. Without a Firebase project
+/// (`lib/firebase_options.dart` still the placeholder) the app logs to the console only.
+Future<Telemetry> _startTelemetry() async {
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    return await FirebaseTelemetry.create();
+  } catch (e) {
+    debugPrint('OneSpend: Crash reports and analytics are off: $e');
+    return NoopTelemetry();
+  }
 }
 
 Future<void> configureDependencies({AppDatabase? database}) async {
+  // 0. Crash reports first, so anything below that fails is reported
+  if (!sl.isRegistered<Telemetry>()) {
+    sl.registerSingleton<Telemetry>(await _startTelemetry());
+  }
+
   // 1. SharedPreferences for bootstrap/theme keys and legacy migration
   if (!sl.isRegistered<SharedPreferences>()) {
     final prefs = await SharedPreferences.getInstance();
@@ -187,8 +214,8 @@ Future<void> configureDependencies({AppDatabase? database}) async {
     try {
       await notifications.init();
       sl.registerSingleton<NotificationService>(notifications);
-    } catch (e) {
-      debugPrint('OneSpend: Notifications unavailable: $e');
+    } catch (e, stack) {
+      AppLog.error(e, stack, reason: 'Notifications unavailable');
     }
   }
 
@@ -212,6 +239,9 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   AppLifecycleListener(onResume: () => unawaited(rates.refresh()));
   await sl<SubscriptionController>().load();
   await sl<OneUIEffectsController>().init();
+  unawaited(
+    TelemetryContextSync(controller: sl<SubscriptionController>(), effects: sl<OneUIEffectsController>()).start(),
+  );
 
   // 7. Keep scheduled reminders in sync with the data from now on
   if (!sl.isRegistered<NotificationScheduler>()) {
