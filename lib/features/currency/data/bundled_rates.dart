@@ -39,7 +39,6 @@ const Map<String, double> bundledUsdRates = {
   'TRY': 41.5,
   'RUB': 82.0,
   'UAH': 41.3,
-  'ILS': 3.35,
   'EGP': 48.3,
   'NGN': 1500.0,
   'KES': 129.0,

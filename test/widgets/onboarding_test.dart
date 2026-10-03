@@ -8,9 +8,11 @@ import 'package:onespend/features/settings/domain/repositories/settings_reposito
 import 'package:onespend/features/subscriptions/presentation/widgets/first_run_empty_state.dart';
 import 'package:onespend/main.dart';
 import 'package:onespend/models/subscription.dart';
+import 'package:onespend/screens/onboarding/onboarding_heroes.dart';
 import 'package:onespend/screens/onboarding_screen.dart';
 import 'package:onespend/screens/settings/backup_data_screen.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
+import 'package:onespend/widgets/one_ui_glass_surface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -108,6 +110,61 @@ void main() {
     await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
     expect(recording.onboardingDone, isTrue);
+  });
+
+  group('redesign', () {
+    testWidgets('Skip is a glass capsule that screen readers call "Skip setup"', (tester) async {
+      await pumpOnboarding(tester);
+      expect(find.ancestor(of: find.text('Skip'), matching: find.byType(OneUIGlassSurface)), findsOneWidget);
+      expect(find.bySemanticsLabel('Skip setup'), findsOneWidget);
+    });
+
+    testWidgets('the currency illustration follows the picked currency', (tester) async {
+      await pumpOnboarding(tester);
+      await tester.tap(find.text('Get started'));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(CurrencyHero), matching: find.text('USD')), findsOneWidget);
+
+      await tester.tap(find.text('Main currency').first);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'EUR');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Euro').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.descendant(of: find.byType(CurrencyHero), matching: find.text('EUR')), findsOneWidget);
+    });
+
+    testWidgets('the last page sums up the choices', (tester) async {
+      await pumpOnboarding(tester);
+      for (final label in ['Get started', 'Continue', 'Not now']) {
+        await tester.tap(find.text(label));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text("You're all set"), findsOneWidget);
+      expect(find.text('USD · US dollar'), findsOneWidget);
+      expect(find.text('Off for now · turn on any time in Settings'), findsOneWidget);
+    });
+
+    testWidgets('a small phone with large text never overflows', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      tester.view.physicalSize = const Size(1080, 2160); // 360 x 720 dp
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(const OneSpendApp(showOnboarding: true));
+      await tester.pumpAndSettle();
+      for (final label in ['Get started', 'Continue', 'Not now']) {
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.text(label));
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+      expect(find.text("You're all set"), findsOneWidget);
+    });
   });
 }
 

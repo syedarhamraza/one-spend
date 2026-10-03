@@ -71,7 +71,6 @@ class CurrencyCatalog {
     Currency('TRY', '₺', 'Turkish lira'),
     Currency('RUB', '₽', 'Russian ruble', symbolAfter: true),
     Currency('UAH', '₴', 'Ukrainian hryvnia'),
-    Currency('ILS', '₪', 'Israeli shekel'),
     Currency('EGP', 'E£', 'Egyptian pound'),
     Currency('NGN', '₦', 'Nigerian naira', decimals: 0),
     Currency('KES', 'KSh', 'Kenyan shilling', decimals: 0),

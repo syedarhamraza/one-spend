@@ -7,14 +7,19 @@ import 'package:go_router/go_router.dart';
 import '../core/config/app_info.dart';
 import '../core/di/injection.dart';
 import '../core/router/app_router.dart';
+import '../core/telemetry/events.dart';
+import '../core/telemetry/telemetry.dart';
 import '../features/notifications/data/notification_service.dart';
 import '../features/settings/domain/repositories/settings_repository.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/reminder_format.dart';
+import '../widgets/one_ui_ambient_glow.dart';
+import '../widgets/one_ui_glass_surface.dart';
 import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_subpage.dart';
+import 'onboarding/onboarding_heroes.dart';
 import 'settings/currency_picker_screen.dart';
-import '../core/telemetry/events.dart';
-import '../core/telemetry/telemetry.dart';
 
 /// Whether to open the first-run welcome. A fresh install sees it once; installs
 /// that already have data (from before onboarding existed) are marked done
@@ -32,6 +37,11 @@ Future<bool> needsOnboarding() async {
 /// First-run welcome, shown once on a fresh install before the tabs:
 /// welcome → main currency → reminders → all set (start, or restore a backup).
 ///
+/// One UI app-intro style: a glowing illustration per page (see `onboarding_heroes.dart`),
+/// a big left-aligned title, info rows in group cards, a glass "Skip" capsule and an
+/// accent pill. It runs before Settings can be reached, so it always shows the default
+/// flat glass look.
+///
 /// Every page can be skipped; finishing or skipping marks onboarding done and
 /// opens the Subscriptions tab.
 class OnboardingScreen extends StatefulWidget {
@@ -43,6 +53,14 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   static const int _pageCount = 4;
+
+  /// Glow behind each page's illustration (welcome, currency, reminders, all set).
+  static const _glowColors = [
+    OneUITheme.glowDefault,
+    OneUITheme.accentGreen,
+    OneUITheme.accentTeal,
+    OneUITheme.accentGreen,
+  ];
 
   final PageController _pages = PageController();
   int _page = 0;
@@ -123,73 +141,121 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Scaffold(
         backgroundColor: OneUITheme.surfacePitch,
         body: SafeArea(
-          child: Column(
-            children: [
-              SizedBox(
-                height: 52,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: AnimatedOpacity(
-                    opacity: isLast ? 0 : 1,
-                    duration: const Duration(milliseconds: 200),
-                    child: IgnorePointer(
-                      ignoring: isLast,
-                      child: TextButton(
-                        onPressed: () => _finish(),
-                        child: const Text(
-                          'Skip',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: OneUITheme.textSecondary),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final heroHeight = (box.maxHeight * 0.28).clamp(170.0, 236.0);
+              // Centre the glow on the illustration (56 = the Skip row above it).
+              final glowY = ((56 + heroHeight / 2) / box.maxHeight) * 2 - 1;
+              return Stack(
+                children: [
+                  // One glow for the whole flow; it cross-fades to each page's colour.
+                  OneUIAmbientGlow(color: _glowColors[_page], center: Alignment(0, glowY), radius: 0.95),
+                  Column(
+                    children: [
+                      SizedBox(
+                        height: 56,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: AnimatedOpacity(
+                              opacity: isLast ? 0 : 1,
+                              duration: const Duration(milliseconds: 200),
+                              child: IgnorePointer(ignoring: isLast, child: _skipButton()),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: PageView(
-                  controller: _pages,
-                  onPageChanged: (i) => setState(() => _page = i),
-                  children: [
-                    _welcomePage(),
-                    _currencyPage(),
-                    _remindersPage(),
-                    _donePage(),
-                  ],
-                ),
-              ),
-              _dots(),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                child: _primaryButton(
-                  label: switch (_page) {
-                    0 => 'Get started',
-                    2 => _remindersAllowed == null ? 'Turn on reminders' : 'Continue',
-                    3 => 'Start tracking',
-                    _ => 'Continue',
-                  },
-                  onTap: _page == 2 && _remindersAllowed == null ? _allowReminders : _next,
-                ),
-              ),
-              SizedBox(
-                height: 44,
-                child: switch (_page) {
-                  2 when _remindersAllowed == null => TextButton(
-                      onPressed: _next,
-                      child: const Text('Not now', style: TextStyle(fontSize: 15, color: OneUITheme.textSecondary)),
-                    ),
-                  3 => TextButton(
-                      onPressed: () => _finish(then: AppRoutes.settingsData),
-                      child: const Text(
-                        'Restore from backup',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: OneUITheme.accentBlue),
+                      Expanded(
+                        // Content that doesn't fit fades out above the dots, hinting it scrolls.
+                        child: ShaderMask(
+                          blendMode: BlendMode.dstIn,
+                          shaderCallback: (rect) => const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.black, Colors.black, Colors.transparent],
+                            stops: [0, 0.93, 1],
+                          ).createShader(rect),
+                          child: PageView(
+                            controller: _pages,
+                            onPageChanged: (i) => setState(() => _page = i),
+                            children: [
+                              _welcomePage(heroHeight),
+                              _currencyPage(heroHeight),
+                              _remindersPage(heroHeight),
+                              _donePage(heroHeight),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  _ => const SizedBox.shrink(),
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
+                      const SizedBox(height: 12),
+                      _dots(),
+                      const SizedBox(height: 18),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                        child: _primaryButton(
+                          label: switch (_page) {
+                            0 => 'Get started',
+                            2 => _remindersAllowed == null ? 'Turn on reminders' : 'Continue',
+                            3 => 'Start tracking',
+                            _ => 'Continue',
+                          },
+                          onTap: _page == 2 && _remindersAllowed == null ? _allowReminders : _next,
+                        ),
+                      ),
+                      SizedBox(
+                        height: 44,
+                        child: switch (_page) {
+                          2 when _remindersAllowed == null => TextButton(
+                            onPressed: _next,
+                            child: const Text(
+                              'Not now',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: OneUITheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                          3 => TextButton(
+                            onPressed: () => _finish(then: AppRoutes.settingsData),
+                            child: const Text(
+                              'Restore from backup',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: OneUITheme.accentBlue),
+                            ),
+                          ),
+                          _ => const SizedBox.shrink(),
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A glass capsule like the app's other floating buttons, so it reads as tappable.
+  Widget _skipButton() {
+    return Semantics(
+      button: true,
+      label: 'Skip setup',
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          _finish();
+        },
+        child: const OneUIGlassSurface(
+          padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Text(
+            'Skip',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: OneUITheme.textPrimary),
           ),
         ),
       ),
@@ -198,128 +264,117 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // --- Pages ----------------------------------------------------------------
 
-  Widget _pageLayout({required Widget art, required String title, required String body, Widget? extra}) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      child: Column(
-        children: [
-          const SizedBox(height: 12),
-          art,
-          const SizedBox(height: 24),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 28,
-              height: 1.2,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.6,
-              color: OneUITheme.textPrimary,
+  /// Illustration, big left-aligned title, text, then [extra] (usually a group card).
+  Widget _pageLayout({
+    required int index,
+    required double heroHeight,
+    required Widget hero,
+    required String title,
+    required String body,
+    Widget? extra,
+  }) {
+    // Clipped to the page, so a trailing illustration never shows on the neighbouring page.
+    return ClipRect(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: heroHeight, width: double.infinity, child: _parallax(index, hero)),
+            const SizedBox(height: 22),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 34,
+                height: 1.12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.8,
+                color: OneUITheme.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            body,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15.5, height: 1.45, color: OneUITheme.textSecondary),
-          ),
-          if (extra != null) ...[const SizedBox(height: 28), extra],
-        ],
-      ),
-    );
-  }
-
-  /// A large glowing badge used as each page's illustration.
-  Widget _badge(IconData icon, Color color) {
-    return ExcludeSemantics(
-      child: Container(
-        width: 200,
-        height: 140,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            colors: [color.withValues(alpha: 0.28), color.withValues(alpha: 0.08), Colors.transparent],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: Icon(icon, size: 48, color: color),
+            const SizedBox(height: 10),
+            Text(body, style: const TextStyle(fontSize: 15.5, height: 1.45, color: OneUITheme.textSecondary)),
+            if (extra != null) ...[const SizedBox(height: 22), extra],
+            // Room to scroll the last row clear of the fade at the bottom.
+            const SizedBox(height: 28),
+          ],
         ),
       ),
     );
   }
 
-  Widget _welcomePage() {
-    return _pageLayout(
-      art: ExcludeSemantics(
-        child: Container(
-          width: 200,
-          height: 140,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              colors: [
-                OneUITheme.glowDefault.withValues(alpha: 0.30),
-                OneUITheme.glowDefault.withValues(alpha: 0.08),
-                Colors.transparent,
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: Image.asset(AppInfo.logoAsset, width: 104, height: 104, fit: BoxFit.cover),
-          ),
-        ),
-      ),
-      title: 'Welcome to ${AppInfo.name}',
-      body: 'Keep every subscription in one place, get a heads-up before renewals, and see where your money goes.',
-      extra: Column(
-        children: [
-          _point(Icons.notifications_active_rounded, OneUITheme.accentBlue, 'Reminders before every renewal'),
-          _point(Icons.insights_rounded, OneUITheme.accentGreen, 'Monthly spending and trends'),
-          _point(Icons.lock_rounded, OneUITheme.accentAmber, 'Private: your data stays on this phone'),
-        ],
-      ),
+  /// The illustration trails the page slightly as you swipe (off with reduced motion).
+  Widget _parallax(int index, Widget hero) {
+    if (MediaQuery.disableAnimationsOf(context)) return hero;
+    return AnimatedBuilder(
+      animation: _pages,
+      child: hero,
+      builder: (context, child) {
+        final position = _pages.hasClients && _pages.position.haveDimensions ? _pages.page ?? 0.0 : _page.toDouble();
+        final width = MediaQuery.sizeOf(context).width;
+        return Transform.translate(offset: Offset((position - index) * width * 0.25, 0), child: child);
+      },
     );
   }
 
-  Widget _point(IconData icon, Color color, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(11)),
-            child: Icon(icon, size: 19, color: color),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 15, color: OneUITheme.textPrimary)),
-          ),
-        ],
-      ),
+  /// A row in an info card: icon badge, title, subtitle, and no chevron (not tappable).
+  OneUIGroupItem _info(IconData icon, Color color, String title, String subtitle, {Color? subtitleColor}) {
+    return OneUIGroupItem(
+      leading: OneUIIconBadge(icon, color),
+      title: title,
+      subtitle: subtitle,
+      subtitleColor: subtitleColor ?? OneUITheme.textSecondary,
+      trailing: const SizedBox.shrink(),
     );
   }
 
-  Widget _currencyPage() {
+  Widget _welcomePage(double heroHeight) {
     final store = SubscriptionStore.instance;
     return _pageLayout(
-      art: _badge(Icons.currency_exchange_rounded, OneUITheme.accentGreen),
+      index: 0,
+      heroHeight: heroHeight,
+      hero: WelcomeHero(currency: store.currency, toMain: store.toMain),
+      title: 'Welcome to\n${AppInfo.name}',
+      body: 'Every subscription in one place, with a heads-up before it renews.',
+      extra: OneUIGroupCard(
+        margin: EdgeInsets.zero,
+        items: [
+          _info(
+            Icons.notifications_active_rounded,
+            OneUITheme.accentTeal,
+            'Renewal reminders',
+            'A heads-up before every charge',
+          ),
+          _info(
+            Icons.insights_rounded,
+            OneUITheme.accentGreen,
+            'Spending insights',
+            'Monthly totals, trends and budgets',
+          ),
+          _info(
+            Icons.smartphone_rounded,
+            OneUITheme.accentBlue,
+            'Your subscriptions stay on this phone',
+            'No account needed',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _currencyPage(double heroHeight) {
+    final store = SubscriptionStore.instance;
+    return _pageLayout(
+      index: 1,
+      heroHeight: heroHeight,
+      hero: CurrencyHero(code: store.currency),
       title: 'Your main currency',
       body: 'Totals, budgets and insights use this currency. Subscriptions billed in other currencies are converted.',
       extra: OneUIGroupCard(
         margin: EdgeInsets.zero,
         items: [
           OneUIGroupItem(
+            leading: const OneUIIconBadge(Icons.currency_exchange_rounded, OneUITheme.accentGreen),
             title: 'Main currency',
             subtitle: currencyLabel(store.currency),
             subtitleColor: OneUITheme.accentBlue,
@@ -330,27 +385,61 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _remindersPage() {
-    final allowed = _remindersAllowed;
+  Widget _remindersPage(double heroHeight) {
+    final store = SubscriptionStore.instance;
     return _pageLayout(
-      art: _badge(Icons.notifications_active_rounded, OneUITheme.accentBlue),
+      index: 2,
+      heroHeight: heroHeight,
+      hero: ReminderHero(currency: store.currency, reminderDays: store.defaultReminderDays, toMain: store.toMain),
       title: 'Never miss a renewal',
-      body: 'Get a reminder a few days before each charge, so you can cancel what you no longer use in time.',
-      extra: allowed == false
-          ? const Text(
-              'Notifications are blocked for One Spend. You can allow them later in Android settings.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13.5, height: 1.4, color: OneUITheme.accentAmber),
-            )
-          : null,
+      body: 'Get a reminder before each charge, so you can cancel what you no longer use in time.',
+      extra: OneUIGroupCard(
+        margin: EdgeInsets.zero,
+        items: [
+          _info(
+            Icons.alarm_rounded,
+            OneUITheme.accentTeal,
+            'Reminder',
+            describeReminder(store.defaultReminderDays, store.defaultReminderTimeMinutes),
+          ),
+          if (_remindersAllowed == false)
+            _info(
+              Icons.notifications_off_rounded,
+              OneUITheme.accentAmber,
+              'Notifications are blocked',
+              'You can allow them later in Android settings',
+              subtitleColor: OneUITheme.accentAmber,
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _donePage() {
+  Widget _donePage(double heroHeight) {
+    final store = SubscriptionStore.instance;
+    final reminders = switch (_remindersAllowed) {
+      true => 'On · ${describeReminder(store.defaultReminderDays, store.defaultReminderTimeMinutes)}',
+      false => 'Blocked in Android settings',
+      null => 'Off for now · turn on any time in Settings',
+    };
     return _pageLayout(
-      art: _badge(Icons.check_rounded, OneUITheme.accentGreen),
+      index: 3,
+      heroHeight: heroHeight,
+      hero: const DoneHero(),
       title: "You're all set",
       body: 'Add your first subscription to start tracking. Switching phones? Restore your backup instead.',
+      extra: OneUIGroupCard(
+        margin: EdgeInsets.zero,
+        items: [
+          _info(
+            Icons.currency_exchange_rounded,
+            OneUITheme.accentGreen,
+            'Main currency',
+            currencyLabel(store.currency),
+          ),
+          _info(Icons.notifications_active_rounded, OneUITheme.accentTeal, 'Reminders', reminders),
+        ],
+      ),
     );
   }
 
@@ -388,13 +477,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: SizedBox(
             width: double.infinity,
             height: 54,
-            child: Center(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w700, color: Colors.white),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_rounded, size: 20, color: Colors.white),
+              ],
             ),
           ),
         ),
