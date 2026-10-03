@@ -5,8 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../core/router/app_router.dart';
-import '../features/pro/presentation/pro_controller.dart';
-import '../features/pro/presentation/pro_gate.dart';
 import '../features/subscriptions/domain/services/annual_savings.dart';
 import '../features/subscriptions/domain/services/insight_cards.dart';
 import '../features/subscriptions/domain/services/spending_insights.dart';
@@ -132,7 +130,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([SubscriptionStore.instance, OneUIEffectsController.instance, ProController.instance]),
+      animation: Listenable.merge([SubscriptionStore.instance, OneUIEffectsController.instance]),
       builder: (context, _) {
         final store = SubscriptionStore.instance;
         final all = store.subscriptions;
@@ -252,9 +250,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         ),
       // A single cycle would only say "100% monthly".
       if (cycles.length > 1) _padded(_cycleSection(currency, subs, cycles), key: const ValueKey('cycles')),
-      if (ProController.instance.isPro)
-        if (AnnualSavings.potential(subs, store.toMain) case final annual when annual.savings.isNotEmpty)
-          _padded(_annualSection(currency, annual), key: const ValueKey('annual')),
+      if (AnnualSavings.potential(subs, store.toMain) case final annual when annual.savings.isNotEmpty)
+        _padded(_annualSection(currency, annual), key: const ValueKey('annual')),
       _padded(_paymentsSection(store, subs, now), key: const ValueKey('payments')),
     ];
   }
@@ -309,16 +306,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  /// Pro: what this calendar year adds up to (paid so far plus what's still due). Free users
-  /// see the row locked.
+  /// What this calendar year adds up to (paid so far plus what's still due).
   AnalyticsHeroRow _yearEndRow(SubscriptionStore store, List<Subscription> subs, DateTime now) {
-    if (!ProController.instance.isPro) {
-      return AnalyticsHeroRow(
-        label: 'Year-end projection',
-        trailing: ProGate.chip(),
-        onTap: () => ProGate.run(context, () {}),
-      );
-    }
     // The budget covers all spending, so it's only a fair guide when unfiltered.
     final projection = SpendingTrendsEngine.projectYear(
       subscriptions: subs,
@@ -533,7 +522,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  // --- Switch to yearly (Pro) -------------------------------------------------------
+  // --- Switch to yearly -------------------------------------------------------------
 
   Widget _annualSection(String currency, ({double total, List<AnnualSaving> savings}) annual) {
     return OneUISection(

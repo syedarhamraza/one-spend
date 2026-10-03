@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
-import '../features/pro/presentation/pro_controller.dart';
-import '../features/pro/presentation/pro_gate.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -104,11 +102,9 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
     Navigator.pop(context, _selectedCategory);
   }
 
-  void _createCategory() {
-    ProGate.run(context, () async {
-      final created = await CategoryEditorScreen.open(context);
-      if (created != null && mounted) setState(() => _selectedCategory = created);
-    });
+  Future<void> _createCategory() async {
+    final created = await CategoryEditorScreen.open(context);
+    if (created != null && mounted) setState(() => _selectedCategory = created);
   }
 
   /// A custom category's hero / list text and colour (built-ins use [_meta]).
@@ -126,7 +122,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([SubscriptionStore.instance, ProController.instance]),
+      listenable: SubscriptionStore.instance,
       builder: (context, _) => _buildPage(context),
     );
   }
@@ -277,7 +273,6 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
                             title: 'New category',
                             subtitle: 'Your own name, icon and colour',
                             subtitleColor: OneUITheme.textSecondary,
-                            trailing: ProGate.chip(),
                             onTap: _createCategory,
                           ),
                         ],

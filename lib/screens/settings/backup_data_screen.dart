@@ -176,7 +176,7 @@ class BackupDataScreen extends StatelessWidget {
                 items: [
                   OneUIGroupItem(
                     title: 'Automatic backups',
-                    trailing: const OneUIProChip(),
+                    trailing: const OneUISoonChip(),
                     onTap: () => ComingSoonScreen.open(context, PlannedFeature.driveBackup),
                   ),
                 ],

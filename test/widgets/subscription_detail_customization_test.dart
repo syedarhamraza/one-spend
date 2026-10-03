@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:onespend/features/pro/presentation/pro_controller.dart';
 import 'package:onespend/models/subscription.dart';
 import 'package:onespend/screens/settings_screen.dart';
 import 'package:onespend/screens/subscription_detail_customizer_screen.dart';
@@ -287,8 +286,6 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      ProController.instance.debugOverride = true;
-      addTearDown(() => ProController.instance.debugOverride = null);
 
       await tester.pumpWidget(
         routedTestApp(const SettingsScreen()),
