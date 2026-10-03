@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   Writes to store/play/:
-    screenshots/1-subscriptions.png … 6-backup.png  (1080 x 1920)
+    screenshots/1-subscriptions.png … 8-backup.png  (1080 x 1920)
     feature-graphic.png                             (1024 x 500)
     icon-512.png                                    (512 x 512, from the app logo)
 
@@ -38,11 +38,11 @@ function Render([string]$hash, [string]$file, [int]$w, [int]$h) {
   Write-Host "  $file"
 }
 
-$names = @('1-subscriptions', '2-upcoming', '3-trends', '4-categories', '5-savings', '6-backup')
+$names = @('1-subscriptions', '2-upcoming', '3-trends', '4-categories', '5-detail', '6-reminders', '7-currency', '8-backup')
 Write-Host 'Rendering store graphics...'
-# "-full" = the whole phone under a short one-line headline. Drop it for the close-up layout
-# (bigger phone running off the bottom, two-line headline).
-$layout = '-full'
+# '' = close-up (bigger phone running off the bottom, two-line headline);
+# '-full' = the whole phone under a short one-line headline.
+$layout = ''
 for ($i = 0; $i -lt $names.Count; $i++) {
   Render "$($i + 1)$layout" (Join-Path $out "screenshots/$($names[$i]).png") 1080 1920
 }

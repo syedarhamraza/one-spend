@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   One Spend Google Play graphics. Each slide is chosen by the URL hash:
-    template.html#1 … #6   phone screenshots, 1080 x 1920
+    template.html#1 … #8   phone screenshots, 1080 x 1920
     template.html#feature  feature graphic, 1024 x 500
   Rendered to PNG by render.ps1 with headless Chrome.
 -->
@@ -47,7 +47,7 @@
       0 60px 140px rgba(0, 0, 0, 0.75),
       0 0 120px color-mix(in srgb, var(--glow) 55%, transparent);
   }
-  .screen { position: relative; border-radius: 104px; overflow: hidden; background: #000; aspect-ratio: 1080 / 2340; }
+  .screen { position: relative; border-radius: 104px; overflow: hidden; background: #000; aspect-ratio: 1260 / 2800; }
   .screen img { display: block; width: 100%; }
   /* A clean status bar drawn over the captured one. */
   .status {
@@ -117,26 +117,39 @@
 
 <script>
   // Slide copy. Accent = eyebrow colour; glow = the backdrop light (the app's own accents).
+  // Captures are 1260 x 2800 (vivo X200 Pro). shift: capture pixels scrolled off the top
+  // inside the frame; top: where the phone starts (close-up layout).
   const slides = {
-    1: { img: '1-subscriptions', short: 'All your subscriptions', shortSub: 'See what you pay and when it renews.', eyebrow: 'All in one place', title: 'Every subscription.<br>One place.',
+    1: { img: '1-subscriptions', short: 'All your subscriptions', shortSub: 'See what you pay and when it renews.',
+         eyebrow: 'All in one place', title: 'Every subscription.<br>One place.',
          sub: 'See what you pay, and when it renews.', accent: '#5390F5', glow: 'rgba(3,129,254,.30)', glow2: 'rgba(83,144,245,.16)' },
-    2: { img: '2-upcoming', short: 'Never miss a renewal', shortSub: 'Reminders before every charge.', eyebrow: 'Upcoming', title: 'Never miss<br>a renewal.',
-         sub: 'Every charge for the month ahead, with reminders before each one.', accent: '#48B5A0', glow: 'rgba(72,181,160,.28)', glow2: 'rgba(72,181,160,.14)' },
-    3: { img: '3-trends', short: 'Spot every trend', shortSub: 'Your yearly total and forecast.', eyebrow: 'Analytics', title: 'Spot the trend<br>before it costs you.',
-         sub: 'Your yearly total, budget and spending forecast.', accent: '#F4A261', glow: 'rgba(244,162,97,.24)', glow2: 'rgba(83,144,245,.14)' },
-    4: { img: '4-categories', short: 'See where it goes', shortSub: 'Your spending by category.', eyebrow: 'Categories', title: 'See where every<br>dollar goes.',
+    2: { img: '2-upcoming', short: 'Never miss a renewal', shortSub: 'Every charge, months ahead.',
+         eyebrow: 'Upcoming', title: 'Never miss<br>a renewal.',
+         sub: 'Every charge for the months ahead, at a glance.', accent: '#48B5A0', glow: 'rgba(72,181,160,.28)', glow2: 'rgba(72,181,160,.14)' },
+    3: { img: '3-trends', short: 'Spot every trend', shortSub: 'Your yearly total and smart tips.',
+         eyebrow: 'Analytics', title: 'Spot the trend<br>before it costs you.',
+         sub: 'Your yearly total, budget and smart money tips.', accent: '#00C05A', glow: 'rgba(0,192,90,.24)', glow2: 'rgba(0,192,90,.12)' },
+    4: { img: '4-categories', shift: 150, short: 'See where it goes', shortSub: 'Your spending by category.',
+         eyebrow: 'Categories', title: 'See where every<br>dollar goes.',
          sub: 'A clear breakdown of what each kind of service costs.', accent: '#7E57C2', glow: 'rgba(126,87,194,.32)', glow2: 'rgba(240,113,103,.14)' },
-    // shift: capture pixels scrolled off the top inside the frame; top: where the phone starts.
-    5: { img: '5-savings', short: 'Pay less yearly', shortSub: 'Find the cheaper annual plans.', shift: 590, eyebrow: 'Save money', title: 'Pay less by going yearly.',
-         sub: 'Spot the plans that cost less on an annual plan.', accent: '#00C05A', glow: 'rgba(0,192,90,.24)', glow2: 'rgba(0,192,90,.12)' },
-    6: { img: '6-backup', short: 'Never lose a thing', shortSub: 'Backups and restore points.', top: 820, eyebrow: 'Backup', title: 'Never lose<br>a thing.',
+    5: { img: '5-detail', short: 'Every detail, one tap', shortSub: 'Price, cycle and renewal date.',
+         eyebrow: 'Details', title: 'Every detail<br>in one tap.',
+         sub: 'Price, billing cycle, next renewal and notes.', accent: '#F4A261', glow: 'rgba(244,162,97,.24)', glow2: 'rgba(83,144,245,.14)' },
+    6: { img: '6-reminders', short: 'Reminders, your way', shortSub: 'Pick when each heads-up arrives.',
+         eyebrow: 'Reminders', title: 'Reminders on<br>your schedule.',
+         sub: 'Choose exactly when each heads-up arrives.', accent: '#48B5A0', glow: 'rgba(72,181,160,.28)', glow2: 'rgba(83,144,245,.12)' },
+    7: { img: '7-currency', short: 'Any currency, one total', shortSub: '45+ currencies, shown in yours.',
+         eyebrow: 'Multi-currency', title: 'Any currency.<br>One total.',
+         sub: 'Pay in 45+ currencies and see it all in yours.', accent: '#5390F5', glow: 'rgba(3,129,254,.28)', glow2: 'rgba(0,192,90,.12)' },
+    8: { img: '8-backup', short: 'Never lose a thing', shortSub: 'Backups and restore points.',
+         eyebrow: 'Backup', title: 'Never lose<br>a thing.',
          sub: 'One-file backups and automatic restore points.', accent: '#FB8C00', glow: 'rgba(251,140,0,.22)', glow2: 'rgba(83,144,245,.12)' },
   };
 
   function phone(img, shift = 0, top = null) {
     const status = document.getElementById('statusbar').innerHTML;
-    // margin-top in % is relative to the width, so this moves the capture by `shift` of its 1080 px.
-    const imgStyle = shift ? ` style="margin-top:-${(shift / 1080 * 100).toFixed(3)}%"` : '';
+    // margin-top in % is relative to the width, so this moves the capture by `shift` of its 1260 px.
+    const imgStyle = shift ? ` style="margin-top:-${(shift / 1260 * 100).toFixed(3)}%"` : '';
     const phoneStyle = top ? ` style="top:${top}px"` : '';
     return `<div class="phone"${phoneStyle}><div class="screen"><img src="captures/${img}.png" alt=""${imgStyle}>${status}</div></div>`;
   }
