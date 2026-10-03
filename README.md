@@ -182,32 +182,27 @@ The application id is `com.syedarhamraza.onespend`. It can't change once the app
 
 ---
 
-### Crash reports and analytics (one-time setup)
+### Crash reports and analytics
 
-The code is ready. Until a Firebase project is connected, `lib/firebase_options.dart` is a placeholder and the app only logs to the console.
+Firebase project **`one-spend`** is connected through `android/app/google-services.json`. That file is committed: it identifies the project and holds no secrets. The Google Services and Crashlytics Gradle plugins are set up in `android/settings.gradle.kts` and `android/app/build.gradle.kts`. Without the file, the app starts normally and only logs to the console.
 
-1. Create a project at [console.firebase.google.com](https://console.firebase.google.com). Add an **Android app** with package `com.syedarhamraza.onespend`, then turn on **Crashlytics** and **Analytics**.
-2. Install the tools and connect the project from the repo root:
+**What sends:**
+- Release builds send crash reports and analytics.
+- Debug builds don't, unless you run with `--dart-define=TELEMETRY_IN_DEBUG=true`.
+
+**To check it works:**
+1. Run:
 
    ```bash
-   npm install -g firebase-tools
-   ```
-   ```bash
-   dart pub global activate flutterfire_cli
-   ```
-   ```bash
-   firebase login
-   ```
-   ```bash
-   flutterfire configure --platforms=android --android-package-name=com.syedarhamraza.onespend
+   flutter run --dart-define=TELEMETRY_IN_DEBUG=true
    ```
 
-   This replaces `lib/firebase_options.dart`, adds `android/app/google-services.json` and adds the Google Services and Crashlytics Gradle plugins. Commit all of it: these are project identifiers, not secrets.
-3. Check that it works:
-   - Build a debug APK with sending forced on: `flutter run --dart-define=TELEMETRY_IN_DEBUG=true`.
-   - Tap **Settings › Developer options › Send test error**.
-   - The error appears in the Crashlytics console within a few minutes.
-   - For live analytics, run `adb shell setprop debug.firebase.analytics.app com.syedarhamraza.onespend` and watch **Analytics › DebugView**.
+2. Tap **Settings › Developer options › Send test error**. It appears in the Crashlytics console within a few minutes. Crash reports are sent the next time the app starts, so restart the app if one doesn't show up.
+3. For live analytics, run this, then watch **Analytics › DebugView**:
+
+   ```bash
+   adb shell setprop debug.firebase.analytics.app com.syedarhamraza.onespend
+   ```
 
 **Play Console › App content › Data safety** (answers for this setup):
 

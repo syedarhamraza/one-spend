@@ -4,7 +4,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../firebase_options.dart';
 import '../database/app_database.dart';
 import '../telemetry/firebase_telemetry.dart';
 import '../telemetry/telemetry.dart';
@@ -167,11 +166,11 @@ void setupDependencies({AppDatabase? database}) {
   }
 }
 
-/// Starts Firebase for crash reports and analytics. Without a Firebase project
-/// (`lib/firebase_options.dart` still the placeholder) the app logs to the console only.
+/// Starts Firebase for crash reports and analytics. On Android the project settings come
+/// from `android/app/google-services.json`; without Firebase the app logs to the console only.
 Future<Telemetry> _startTelemetry() async {
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp();
     return await FirebaseTelemetry.create();
   } catch (e) {
     debugPrint('OneSpend: Crash reports and analytics are off: $e');

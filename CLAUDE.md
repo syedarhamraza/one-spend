@@ -90,7 +90,7 @@ The app is fully free; there is no paywall or entitlement. The earlier OneSpend 
   - List sizes go through `TelemetryContext.bucket`.
 - **Which implementation runs:**
   - `configureDependencies()` starts Firebase first and registers `FirebaseTelemetry`.
-  - If `lib/firebase_options.dart` is still the placeholder, it falls back to `NoopTelemetry`.
+  - Firebase reads its settings from `android/app/google-services.json` (project `one-spend`). If that file is missing, the app falls back to `NoopTelemetry`.
   - `setupDependencies()` always registers `NoopTelemetry`, so tests never touch Firebase. To assert on reports, swap in a recording fake (see `test/features/telemetry_test.dart`).
 - **Screen views** are the go_router route *pattern* (`/subscriptions/:id`), reported from `OneSpendApp`.
 

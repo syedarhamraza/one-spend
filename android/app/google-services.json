@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "76859373375",
+    "project_id": "one-spend",
+    "storage_bucket": "one-spend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:76859373375:android:8b2f6a5872965bfe4f858a",
+        "android_client_info": {
+          "package_name": "com.syedarhamraza.onespend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-NM69e5oEgfWJA1BU1sO203M53UHskRE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
