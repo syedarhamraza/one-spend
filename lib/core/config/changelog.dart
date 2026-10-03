@@ -26,6 +26,7 @@ class Changelog {
         'Multiple currencies with exchange rates and main-currency totals',
         'Backup to a file and restore, with automatic restore points you can go back to',
         'Custom categories, annual plan savings and a year-end projection',
+        'Check for updates from Google Play in Settings › About',
         'One UI 8.5 glass with an optional 3D look',
         'Selection mode that morphs the header and nav bar in place',
         'Undo an accidental Renew',

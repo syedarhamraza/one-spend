@@ -25,6 +25,8 @@ import '../../features/subscriptions/data/repositories/subscription_repository_i
 import '../../features/subscriptions/domain/repositories/custom_category_repository.dart';
 import '../../features/subscriptions/domain/repositories/subscription_repository.dart';
 import '../../features/backup/data/backup_service.dart';
+import '../../features/updates/data/update_service.dart';
+import '../../features/updates/presentation/update_controller.dart';
 import '../../features/subscriptions/presentation/controllers/subscription_controller.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_toast.dart';
@@ -33,6 +35,9 @@ final sl = GetIt.instance;
 
 void setupDependencies({AppDatabase? database}) {
   if (database != null) {
+    if (sl.isRegistered<UpdateController>()) {
+      sl.unregister<UpdateController>();
+    }
     if (sl.isRegistered<BackupService>()) {
       sl.unregister<BackupService>();
     }
@@ -142,6 +147,14 @@ void setupDependencies({AppDatabase? database}) {
   if (!sl.isRegistered<NotificationService>()) {
     sl.registerSingleton<NotificationService>(NoopNotificationService());
   }
+
+  // 5. App updates: no Play unless configureDependencies() registered it
+  if (!sl.isRegistered<UpdateService>()) {
+    sl.registerSingleton<UpdateService>(NoopUpdateService());
+  }
+  if (!sl.isRegistered<UpdateController>()) {
+    sl.registerLazySingleton<UpdateController>(() => UpdateController(service: sl<UpdateService>()));
+  }
 }
 
 Future<void> configureDependencies({AppDatabase? database}) async {
@@ -185,6 +198,9 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   // 5. Wire dependencies
   if (!sl.isRegistered<RatesRemoteDataSource>()) {
     sl.registerSingleton<RatesRemoteDataSource>(HttpRatesRemoteDataSource());
+  }
+  if (!sl.isRegistered<UpdateService>()) {
+    sl.registerSingleton<UpdateService>(PlayUpdateService());
   }
   setupDependencies();
 

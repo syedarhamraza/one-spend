@@ -73,6 +73,15 @@ go_router, configured in `lib/core/router/app_router.dart`:
 
 The app is fully free; there is no paywall or entitlement. The earlier OneSpend Pro (Play Billing) implementation was removed and can be revived from commit `3cb0a10` in `main`'s history (`git checkout -b feat/pro 3cb0a10`).
 
+### App updates (`lib/features/updates/`)
+
+- **Play In-App Updates, immediate flow** (`in_app_update`).
+  - `PlayUpdateService` talks to Play. It reports `notFromPlay` for `flutter run` or sideloaded builds (Play error -10), and `failed` when Play can't be reached.
+  - `setupDependencies()` registers `NoopUpdateService` unless `configureDependencies()` registered Play, so tests never touch the plugin.
+- **`UpdateController.instance`** holds the status shown by About › "Check for updates" and the orange `OneUIDot` on Settings › About OneSpend.
+- **Launch check:** `OneSpendApp` calls `check()` once per launch after the first frame, because Play needs a foreground activity. It never shows a pop-up.
+- **Testing a real update:** this only works on a Play-installed build. Use Internal app sharing or an internal-test track with a higher versionCode.
+
 ### Versioning and releases
 
 - `version:` in `pubspec.yaml` is the only source: `MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE`. CODE is the Android versionCode, +1 per Play upload.

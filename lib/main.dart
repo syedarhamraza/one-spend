@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
 import 'features/notifications/data/notification_service.dart';
+import 'features/updates/presentation/update_controller.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 import 'theme/one_ui_theme.dart';
@@ -63,6 +64,8 @@ class _OneSpendAppState extends State<OneSpendApp> {
     if (launchRoute != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _openNotificationRoute(launchRoute));
     }
+    // Once per launch, quietly: Play needs the activity in the foreground, hence after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(UpdateController.instance.check()));
   }
 
   /// Tabs switch in place; pages are pushed above the tabs so back returns to them.

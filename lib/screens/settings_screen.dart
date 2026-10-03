@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../features/updates/presentation/update_controller.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -136,23 +137,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Samsung Settings rows carry no chevron; "Soon" rows get a chip and news a dot instead.
+  Widget _trailing(SettingsDestination d) {
+    if (d.soon) return const OneUISoonChip();
+    if (d.badge?.call() ?? false) return const OneUIDot();
+    return const SizedBox.shrink();
+  }
+
   Widget _groups(List<List<SettingsDestination>> groups) {
-    return Column(
-      children: [
-        for (final group in groups)
-          OneUIGroupCard(
-            items: [
-              for (final d in group)
-                OneUIGroupItem(
-                  leading: OneUIIconBadge(d.icon, d.color),
-                  title: d.title,
-                  // Samsung Settings rows carry no chevron; "Soon" rows get a chip instead.
-                  trailing: d.soon ? const OneUISoonChip() : const SizedBox.shrink(),
-                  onTap: () => _open(d),
-                ),
-            ],
-          ),
-      ],
+    return ListenableBuilder(
+      listenable: UpdateController.instance,
+      builder: (context, _) => Column(
+        children: [
+          for (final group in groups)
+            OneUIGroupCard(
+              items: [
+                for (final d in group)
+                  OneUIGroupItem(
+                    leading: OneUIIconBadge(d.icon, d.color),
+                    title: d.title,
+                    trailing: _trailing(d),
+                    onTap: () => _open(d),
+                  ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 
@@ -182,7 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: r.title,
             subtitle: r.path == null ? null : 'Settings › ${r.path}',
             subtitleColor: OneUITheme.textSecondary,
-            trailing: r.destination.soon ? const OneUISoonChip() : const SizedBox.shrink(),
+            trailing: _trailing(r.destination),
             onTap: () => _open(r.destination),
           ),
       ],
