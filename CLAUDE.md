@@ -73,6 +73,27 @@ go_router, configured in `lib/core/router/app_router.dart`:
 
 The app is fully free; there is no paywall or entitlement. The earlier OneSpend Pro (Play Billing) implementation was removed and can be revived from commit `3cb0a10` in `main`'s history (`git checkout -b feat/pro 3cb0a10`).
 
+### Telemetry (`lib/core/telemetry/`)
+
+- **Firebase Crashlytics and Analytics, always on in release builds.**
+  - Debug builds send nothing unless built with `--dart-define=TELEMETRY_IN_DEBUG=true`.
+  - The Advertising ID and ad-services permissions are removed in `AndroidManifest.xml`.
+- **Report only through `AppLog`:**
+  - `info` is a breadcrumb.
+  - `error` is a non-fatal report with a fixed `reason`.
+  - `fatal` is used by the uncaught-error handlers in `main.dart`.
+  - `event` takes a `TelemetryEvent`; `context` sets crash keys.
+  - Don't add `debugPrint('OneSpend: …')` for failures.
+- **Never send user content.** No subscription names, prices, notes, URLs or card digits.
+  - Events are defined only in `events.dart`, and their params are fixed strings, ints or bools.
+  - Custom categories are reported as `custom`.
+  - List sizes go through `TelemetryContext.bucket`.
+- **Which implementation runs:**
+  - `configureDependencies()` starts Firebase first and registers `FirebaseTelemetry`.
+  - Firebase reads its settings from `android/app/google-services.json` (project `one-spend`). If that file is missing, the app falls back to `NoopTelemetry`.
+  - `setupDependencies()` always registers `NoopTelemetry`, so tests never touch Firebase. To assert on reports, swap in a recording fake (see `test/features/telemetry_test.dart`).
+- **Screen views** are the go_router route *pattern* (`/subscriptions/:id`), reported from `OneSpendApp`.
+
 ### App updates (`lib/features/updates/`)
 
 - **Play In-App Updates, immediate flow** (`in_app_update`).

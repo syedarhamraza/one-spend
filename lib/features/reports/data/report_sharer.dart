@@ -16,6 +16,8 @@ import '../../subscriptions/presentation/controllers/subscription_controller.dar
 import 'pdf_report_builder.dart';
 import 'report_data.dart';
 import 'text_report.dart';
+import '../../../core/telemetry/events.dart';
+import '../../../core/telemetry/telemetry.dart';
 
 /// The formats the whole subscription list can be shared in.
 enum ExportFormat { pdf, csv, text, backup }
@@ -64,6 +66,7 @@ class ReportSharer {
     DateTime? now,
   }) async {
     final at = now ?? DateTime.now();
+    AppLog.event(TelemetryEvent.exportShared(format: format.name, scope: category == null ? 'all' : 'category'));
     final suffix = category == null ? '' : '-${safeFileName(category.label)}';
     final subs = [
       for (final s in store.subscriptions)
@@ -110,6 +113,7 @@ class ReportSharer {
 
   /// Shares the subscriptions in [ids] (a selection) as a PDF report.
   static Future<void> shareSelectionPdf(SubscriptionController store, Set<String> ids, {DateTime? now}) async {
+    AppLog.event(TelemetryEvent.exportShared(format: 'pdf', scope: 'selection'));
     final at = now ?? DateTime.now();
     final bytes = await PdfReportBuilder.spendingReport(
       SpendingReportData.fromStore(store, onlyIds: ids, now: at),
@@ -123,6 +127,7 @@ class ReportSharer {
 
   /// Shares one subscription as a one-page PDF.
   static Future<void> shareSubscriptionPdf(SubscriptionController store, Subscription sub, {DateTime? now}) async {
+    AppLog.event(TelemetryEvent.exportShared(format: 'pdf', scope: 'single'));
     final at = now ?? DateTime.now();
     final bytes = await PdfReportBuilder.subscriptionSheet(
       sub,

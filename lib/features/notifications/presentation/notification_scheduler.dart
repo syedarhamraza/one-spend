@@ -5,6 +5,7 @@ import '../../subscriptions/presentation/controllers/subscription_controller.dar
 import '../data/notification_service.dart';
 import '../domain/notification_planner.dart';
 import '../domain/planned_notification.dart';
+import '../../../core/telemetry/telemetry.dart';
 
 /// Keeps the OS's scheduled notifications equal to [NotificationPlanner]'s output.
 ///
@@ -70,8 +71,8 @@ class NotificationScheduler with WidgetsBindingObserver {
   /// Re-plans immediately; returns how many notifications are now scheduled.
   Future<int> syncNow() {
     // Serialize syncs so a slow one never interleaves with the next.
-    return _syncQueue = _syncQueue.then((_) => _sync()).catchError((Object e) {
-      debugPrint('OneSpend: Failed to sync notifications: $e');
+    return _syncQueue = _syncQueue.then((_) => _sync()).catchError((Object e, StackTrace stack) {
+      AppLog.error(e, stack, reason: 'Failed to sync notifications');
       return 0;
     });
   }

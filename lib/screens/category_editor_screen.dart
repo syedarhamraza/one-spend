@@ -12,6 +12,8 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_subpage.dart';
 import '../widgets/one_ui_toast.dart';
 import 'category_picker_screen.dart';
+import '../core/telemetry/events.dart';
+import '../core/telemetry/telemetry.dart';
 
 /// Create or edit a custom category: name, icon and colour, with a live preview.
 /// Pops with the saved [SubscriptionCategory], or nothing when cancelled or deleted.
@@ -79,6 +81,7 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
         iconCodePoint: _icon.codePoint,
         colorValue: _color.toARGB32(),
       );
+      AppLog.event(TelemetryEvent.customCategoryCreated);
       OneUIToast.show(context, '$_trimmedName added');
     } else {
       _store.updateCustomCategory(

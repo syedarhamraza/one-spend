@@ -10,6 +10,8 @@ import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_switch.dart';
 import '../../widgets/one_ui_toast.dart';
+import '../../core/telemetry/events.dart';
+import '../../core/telemetry/telemetry.dart';
 
 /// Settings › Appearance: the 3D effect for floating controls, and the two customisation studios.
 class AppearanceSettingsScreen extends StatelessWidget {
@@ -75,6 +77,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                 subtitle: 'Price, renewal badge and details shown on each card',
                 onTap: () {
                   HapticFeedback.lightImpact();
+                  AppLog.event(TelemetryEvent.studioOpened('cards'));
                   context.push(AppRoutes.cardStudio);
                 },
               ),
@@ -83,6 +86,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                 subtitle: 'Icons and highlights on the subscription page',
                 onTap: () {
                   HapticFeedback.lightImpact();
+                  AppLog.event(TelemetryEvent.studioOpened('details'));
                   context.push(AppRoutes.detailStudio);
                 },
               ),

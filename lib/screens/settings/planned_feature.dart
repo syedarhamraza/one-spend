@@ -36,8 +36,10 @@ enum PlannedFeature {
     'Privacy policy',
     Icons.privacy_tip_rounded,
     OneUITheme.accentTeal,
-    'One Spend keeps everything on your device. It has no account, no ads and no analytics. A full policy will be published with the Play Store release.',
-    ['Data stays on your device', 'No tracking or ads', 'You can export or delete everything'],
+    'Your subscriptions and cards stay on your device. One Spend sends crash reports and anonymous usage '
+        'statistics to Google Firebase to fix bugs, never your subscription details. A full policy will be '
+        'published with the Play Store release.',
+    ['Your data stays on your device', 'Anonymous crash reports and usage statistics', 'No ads, no account'],
   );
 
   final String title;

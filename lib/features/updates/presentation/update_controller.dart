@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/di/injection.dart';
 import '../data/update_service.dart';
+import '../../../core/telemetry/events.dart';
+import '../../../core/telemetry/telemetry.dart';
 
 /// State of "Check for updates", shared by Settings and About.
 enum UpdateStatus { notChecked, checking, upToDate, available, notFromPlay, failed }
@@ -35,6 +37,7 @@ class UpdateController extends ChangeNotifier {
     _set(UpdateStatus.checking);
     final result = await service.check();
     _lastChecked = DateTime.now();
+    AppLog.event(TelemetryEvent.updateCheck(result.name));
     switch (result) {
       case UpdateCheckResult.upToDate:
         _set(UpdateStatus.upToDate);
@@ -61,7 +64,9 @@ class UpdateController extends ChangeNotifier {
     _installing = true;
     notifyListeners();
     try {
-      return await service.installNow();
+      final result = await service.installNow();
+      if (result == UpdateInstallResult.started) AppLog.event(TelemetryEvent.updateStarted);
+      return result;
     } finally {
       _installing = false;
       notifyListeners();

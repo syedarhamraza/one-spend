@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:isolate';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/di/injection.dart';
 import 'core/router/app_router.dart';
+import 'core/telemetry/events.dart';
+import 'core/telemetry/telemetry.dart';
 import 'features/notifications/data/notification_service.dart';
 import 'features/updates/presentation/update_controller.dart';
 import 'screens/onboarding_screen.dart';
@@ -14,6 +18,7 @@ import 'theme/one_ui_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _reportUncaughtErrors();
   await configureDependencies();
   final launchRoute = await sl<NotificationService>().launchRoute();
   final showOnboarding = launchRoute == null && await needsOnboarding();
@@ -30,6 +35,22 @@ Future<void> main() async {
   );
 
   runApp(OneSpendApp(launchRoute: launchRoute, showOnboarding: showOnboarding));
+}
+
+/// Sends every error nothing else caught to Crashlytics (see [AppLog]).
+void _reportUncaughtErrors() {
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    AppLog.fatal(details.exception, details.stack, reason: 'Flutter: ${details.context ?? details.library}');
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppLog.fatal(error, stack, reason: 'Uncaught async error');
+    return true;
+  };
+  Isolate.current.addErrorListener(RawReceivePort((List<dynamic> pair) {
+    final stack = pair.last == null ? null : StackTrace.fromString(pair.last as String);
+    AppLog.fatal(pair.first ?? 'Unknown isolate error', stack, reason: 'Isolate error');
+  }).sendPort);
 }
 
 class OneSpendApp extends StatefulWidget {
@@ -50,6 +71,7 @@ class _OneSpendAppState extends State<OneSpendApp> {
   late final GoRouter _router =
       createAppRouter(initialLocation: widget.showOnboarding ? AppRoutes.welcome : AppRoutes.subscriptions);
   StreamSubscription<String>? _notificationTaps;
+  String? _lastScreen;
 
   static const _tabRoutes = {AppRoutes.subscriptions, AppRoutes.upcoming, AppRoutes.analytics, AppRoutes.settings};
 
@@ -57,6 +79,7 @@ class _OneSpendAppState extends State<OneSpendApp> {
   void initState() {
     super.initState();
     HomeChrome.reset();
+    _router.routerDelegate.addListener(_reportScreen);
     if (sl.isRegistered<NotificationService>()) {
       _notificationTaps = sl<NotificationService>().taps.listen(_openNotificationRoute);
     }
@@ -70,6 +93,12 @@ class _OneSpendAppState extends State<OneSpendApp> {
 
   /// Tabs switch in place; pages are pushed above the tabs so back returns to them.
   void _openNotificationRoute(String route) {
+    final target = _tabRoutes.contains(route)
+        ? 'tab'
+        : route.startsWith(AppRoutes.paymentMethods)
+            ? 'card'
+            : 'subscription';
+    AppLog.event(TelemetryEvent.notificationOpened(target));
     if (_tabRoutes.contains(route)) {
       _router.go(route);
     } else {
@@ -77,8 +106,18 @@ class _OneSpendAppState extends State<OneSpendApp> {
     }
   }
 
+  /// Screen views for analytics and crash breadcrumbs: the route pattern
+  /// (`/subscriptions/:id`), never the ids in it.
+  void _reportScreen() {
+    final screen = _router.routerDelegate.currentConfiguration.fullPath;
+    if (screen.isEmpty || screen == _lastScreen) return;
+    _lastScreen = screen;
+    AppLog.screen(screen);
+  }
+
   @override
   void dispose() {
+    _router.routerDelegate.removeListener(_reportScreen);
     _notificationTaps?.cancel();
     _router.dispose();
     super.dispose();

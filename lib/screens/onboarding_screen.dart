@@ -13,6 +13,8 @@ import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_group_card.dart';
 import 'settings/currency_picker_screen.dart';
+import '../core/telemetry/events.dart';
+import '../core/telemetry/telemetry.dart';
 
 /// Whether to open the first-run welcome. A fresh install sees it once; installs
 /// that already have data (from before onboarding existed) are marked done
@@ -68,6 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   /// Marks onboarding done and opens the tabs, then [then] (e.g. Backup & data).
   void _finish({String? then}) {
+    AppLog.event(TelemetryEvent.onboardingCompleted);
     // Saved in the background: navigating never waits on the database.
     if (sl.isRegistered<SettingsRepository>()) {
       unawaited(sl<SettingsRepository>().setOnboardingDone(true));

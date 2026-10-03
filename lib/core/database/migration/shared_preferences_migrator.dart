@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../features/payment_methods/data/models/payment_method_model.dart';
 import '../../../features/subscriptions/data/models/subscription_model.dart';
 import '../app_database.dart';
+import '../../telemetry/telemetry.dart';
 
 /// One-time migrator from legacy SharedPreferences JSON storage to Drift SQLite.
 class SharedPreferencesMigrator {
@@ -164,9 +164,9 @@ class SharedPreferencesMigrator {
 
       // Mark migration complete
       await prefs.setBool(keyMigrated, true);
-      debugPrint('OneSpend: Successfully migrated data from SharedPreferences to Drift SQLite.');
+      AppLog.info('Migrated data from SharedPreferences to Drift');
     } catch (e, stack) {
-      debugPrint('OneSpend: SharedPreferences migration failed: $e\n$stack');
+      AppLog.error(e, stack, reason: 'SharedPreferences migration failed');
     }
   }
 
@@ -187,7 +187,7 @@ class SharedPreferencesMigrator {
       }
       await prefs.setBool(keyAppearanceMigrated, true);
     } catch (e, stack) {
-      debugPrint('OneSpend: Appearance settings migration failed: $e\n$stack');
+      AppLog.error(e, stack, reason: 'Appearance settings migration failed');
     }
   }
 }

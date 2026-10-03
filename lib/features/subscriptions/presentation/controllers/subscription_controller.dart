@@ -18,6 +18,7 @@ import '../../domain/repositories/custom_category_repository.dart';
 import '../../domain/repositories/subscription_repository.dart';
 import '../../domain/services/billing_schedule.dart';
 import '../../domain/services/subscription_stats.dart';
+import '../../../../core/telemetry/telemetry.dart';
 
 /// Reactive Controller managing Subscriptions, Payment Methods, and Settings.
 /// Injected via GetIt; depends on abstract repositories, not storage directly.
@@ -315,8 +316,8 @@ class SubscriptionController extends ChangeNotifier {
         _trackingSince = day;
         _persist(() => settingsRepository.setTrackingSince(day));
       }
-    } catch (e) {
-      debugPrint('OneSpend: Failed to load data from repository: $e');
+    } catch (e, stack) {
+      AppLog.error(e, stack, reason: 'Failed to load data');
     }
     _isLoaded = true;
     checkAndProcessAutoRenewals();
@@ -329,8 +330,8 @@ class SubscriptionController extends ChangeNotifier {
   Future<void> get pendingWrites => _writeQueue;
 
   void _persist(Future<void> Function() write) {
-    _writeQueue = _writeQueue.then((_) => write()).catchError((Object e) {
-      debugPrint('OneSpend: Failed to save data to repository: $e');
+    _writeQueue = _writeQueue.then((_) => write()).catchError((Object e, StackTrace stack) {
+      AppLog.error(e, stack, reason: 'Failed to save data');
     });
   }
 

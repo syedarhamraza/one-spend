@@ -32,6 +32,8 @@ import '../widgets/one_ui_selection_header_pills.dart';
 import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_upcoming_hero_card.dart';
 import 'home_screen.dart';
+import '../core/telemetry/events.dart';
+import '../core/telemetry/telemetry.dart';
 
 /// How far ahead the Upcoming timeline looks.
 enum UpcomingHorizon {
@@ -325,7 +327,8 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
     );
     try {
       final dir = await getTemporaryDirectory();
-      final file = File(p.join(dir.path, 'onespend-renewals.ics'));
+      final file = File(p.join(dir.path, 'One-Spend-renewals.ics'));
+      AppLog.event(TelemetryEvent.exportShared(format: 'calendar', scope: 'upcoming'));
       await file.writeAsString(ics);
       await SharePlus.instance.share(
         ShareParams(

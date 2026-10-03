@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../domain/exchange_rates.dart';
 import 'bundled_rates.dart';
 import 'rates_remote_datasource.dart';
+import '../../../core/telemetry/telemetry.dart';
 
 /// Holds the current [CurrencyConverter]: downloaded rates (cached in `app_settings`),
 /// user-pinned rates, and the built-in fallback. Notifies when any of them change.
@@ -57,8 +58,8 @@ class ExchangeRateRepository extends ChangeNotifier {
       if (rawRates != null) _live = ExchangeRateSnapshot.tryFromJson(jsonDecode(rawRates) as Map<String, dynamic>);
       final rawOverrides = await db.getSetting(keyOverrides);
       if (rawOverrides != null) _overrides = decodeOverrides(jsonDecode(rawOverrides));
-    } catch (e) {
-      debugPrint('OneSpend: Failed to load exchange rates: $e');
+    } catch (e, stack) {
+      AppLog.error(e, stack, reason: 'Failed to load cached exchange rates');
     }
     _rebuild();
   }
@@ -83,7 +84,8 @@ class ExchangeRateRepository extends ChangeNotifier {
       await _db?.setSetting(keyRates, jsonEncode(snapshot.toJson()));
       return true;
     } catch (e) {
-      debugPrint('OneSpend: Exchange rate download failed: $e');
+      // Usually just offline; the cached or bundled rates are used meanwhile.
+      AppLog.info('Exchange rate download failed: ${e.runtimeType}');
       _lastRefreshFailed = true;
       return _live != null;
     }

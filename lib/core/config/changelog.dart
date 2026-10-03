@@ -27,6 +27,8 @@ class Changelog {
         'Backup to a file and restore, with automatic restore points you can go back to',
         'Custom categories, annual plan savings and a year-end projection',
         'Check for updates from Google Play in Settings › About',
+        'Crash reports and anonymous usage statistics help fix bugs faster (never your subscription details)',
+        'Send feedback and problem reports with your app version and phone filled in',
         'One UI 8.5 glass with an optional 3D look',
         'Selection mode that morphs the header and nav bar in place',
         'Undo an accidental Renew',
