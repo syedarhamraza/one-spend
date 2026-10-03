@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/config/app_version.dart';
 import '../../core/di/injection.dart';
 import '../../core/router/app_router.dart';
 import '../../features/backup/data/backup_service.dart';
 import '../../features/backup/domain/backup_merge.dart';
 import '../../features/backup/domain/backup_snapshot.dart';
+import '../../features/backup/domain/restore_point.dart';
 import '../../models/subscription.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_cancel_save_pill.dart';
@@ -18,18 +20,37 @@ import '../../widgets/one_ui_radio.dart';
 import '../../widgets/one_ui_subpage.dart';
 
 /// What a restore did, returned to the caller so it can show the toast (with Undo for replace).
-typedef RestoreOutcome = ({RestoreMode mode, int addedSubscriptions, int addedPaymentMethods});
+typedef RestoreOutcome = ({RestoreMode mode, int addedSubscriptions, int addedPaymentMethods, int addedCategories});
+
+/// The toast to show after a restore.
+String restoreOutcomeMessage(RestoreOutcome outcome) {
+  if (outcome.mode == RestoreMode.replace) return 'Restored';
+  final added = outcome.addedSubscriptions + outcome.addedPaymentMethods + outcome.addedCategories;
+  return added == 0 ? 'Nothing new to add' : 'Added $added item${added == 1 ? '' : 's'}';
+}
 
 /// Preview of a backup file before restoring: what's in it, what you have, and how to apply it.
 /// "Add missing items" is the default and never changes existing data.
+///
+/// Also used for going back to a [RestorePoint] (see `RestorePointsScreen`).
 class RestorePreviewScreen extends StatefulWidget {
   final BackupSnapshot backup;
 
-  const RestorePreviewScreen({super.key, required this.backup});
+  /// Set when previewing one of OneSpend's automatic restore points instead of a file.
+  final RestorePoint? restorePoint;
 
+  const RestorePreviewScreen({super.key, required this.backup, this.restorePoint});
+
+  /// Previews a backup file.
   static Future<RestoreOutcome?> open(BuildContext context, BackupSnapshot backup) {
     HapticFeedback.lightImpact();
     return context.push<RestoreOutcome>(AppRoutes.settingsRestore, extra: backup);
+  }
+
+  /// Previews a restore point.
+  static Future<RestoreOutcome?> openPoint(BuildContext context, RestorePoint point) {
+    HapticFeedback.lightImpact();
+    return context.push<RestoreOutcome>(AppRoutes.settingsRestore, extra: point);
   }
 
   @override
@@ -44,8 +65,11 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
 
   String _plural(int n, String noun) => '$n $noun${n == 1 ? '' : 's'}';
 
-  String _items(int subs, int cards) =>
-      cards == 0 ? _plural(subs, 'subscription') : '${_plural(subs, 'subscription')} · ${_plural(cards, 'card')}';
+  String _items(int subs, int cards, [int categories = 0]) => [
+        _plural(subs, 'subscription'),
+        if (cards > 0) _plural(cards, 'card'),
+        if (categories > 0) categories == 1 ? '1 category' : '$categories categories',
+      ].join(' · ');
 
   Future<void> _restore(RestorePlan plan) async {
     if (_busy) return;
@@ -54,7 +78,7 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
         context: context,
         title: 'Replace all data?',
         message:
-            'Your ${_items(plan.currentSubscriptions, plan.currentPaymentMethods)} will be saved as a restore '
+            'Your ${_items(plan.currentSubscriptions, plan.currentPaymentMethods, plan.currentCustomCategories)} will be saved as a restore '
             'point first, so you can undo this.',
         cancelLabel: 'Cancel',
         confirmLabel: 'Replace',
@@ -69,12 +93,17 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
   Future<void> _apply(RestorePlan plan) async {
     setState(() => _busy = true);
     HapticFeedback.mediumImpact();
-    await sl<BackupService>().restore(widget.backup, _mode);
+    await sl<BackupService>().restore(
+      widget.backup,
+      _mode,
+      reason: widget.restorePoint == null ? RestorePointReason.beforeRestore : RestorePointReason.beforeRestorePoint,
+    );
     if (!mounted) return;
     Navigator.pop<RestoreOutcome>(context, (
       mode: _mode,
       addedSubscriptions: _mode == RestoreMode.addMissing ? plan.newSubscriptions : plan.backupSubscriptions,
       addedPaymentMethods: _mode == RestoreMode.addMissing ? plan.newPaymentMethods : plan.backupPaymentMethods,
+      addedCategories: _mode == RestoreMode.addMissing ? plan.newCustomCategories : plan.backupCustomCategories,
     ));
   }
 
@@ -85,12 +114,14 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
     final plan = BackupMerge.plan(
       currentSubscriptions: store.subscriptions,
       currentPaymentMethods: store.paymentMethods,
+      currentCustomCategories: store.customCategories,
       backup: backup,
     );
-    final nothingNew = plan.newSubscriptions == 0 && plan.newPaymentMethods == 0;
+    final nothingNew = plan.newSubscriptions == 0 && plan.newPaymentMethods == 0 && plan.newCustomCategories == 0;
+    final point = widget.restorePoint;
 
     return OneUISubpage(
-      title: 'Restore backup',
+      title: point == null ? 'Restore backup' : 'Restore point',
       bottomPill: OneUIFloatingCancelSavePill(
         saveLabel: 'Restore',
         onCancel: () => Navigator.pop(context),
@@ -98,18 +129,21 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
       ),
       builder: (context) => [
         OneUISection(
-          title: 'Backup',
+          title: point == null ? 'Backup' : point.reason.label,
           child: OneUIGroupCard(
             margin: EdgeInsets.zero,
             items: [
               OneUIGroupItem(
-                leading: const OneUIIconBadge(Icons.inventory_2_rounded, OneUITheme.accentTeal),
-                title: _items(plan.backupSubscriptions, plan.backupPaymentMethods),
+                leading: point == null
+                    ? const OneUIIconBadge(Icons.inventory_2_rounded, OneUITheme.accentTeal)
+                    : const OneUIIconBadge(Icons.history_rounded, OneUITheme.accentPurple),
+                title: _items(plan.backupSubscriptions, plan.backupPaymentMethods, plan.backupCustomCategories),
                 subtitle: backup.isLegacy
                     ? 'Older export · subscriptions only'
                     : [
                         _date.format(backup.createdAt),
-                        if (backup.appVersion.isNotEmpty) 'v${backup.appVersion}',
+                        if (point == null && backup.appVersion.isNotEmpty)
+                          'OneSpend ${AppVersion.describe(backup.appVersion)}',
                       ].join(' · '),
                 subtitleColor: OneUITheme.textSecondary,
                 trailing: const SizedBox.shrink(),
@@ -117,7 +151,7 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
               OneUIGroupItem(
                 leading: const OneUIIconBadge(Icons.smartphone_rounded, OneUITheme.accentBlue),
                 title: 'On this phone',
-                subtitle: _items(plan.currentSubscriptions, plan.currentPaymentMethods),
+                subtitle: _items(plan.currentSubscriptions, plan.currentPaymentMethods, plan.currentCustomCategories),
                 subtitleColor: OneUITheme.textSecondary,
                 trailing: const SizedBox.shrink(),
               ),
@@ -133,7 +167,8 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
                 title: 'Add missing items',
                 subtitle: nothingNew
                     ? 'Everything in this backup is already here'
-                    : 'Adds ${_items(plan.newSubscriptions, plan.newPaymentMethods)}. Nothing you have is changed.',
+                    : 'Adds ${_items(plan.newSubscriptions, plan.newPaymentMethods, plan.newCustomCategories)}. '
+                        'Nothing you have is changed.',
                 subtitleColor: OneUITheme.textSecondary,
                 trailing: OneUIRadio(isSelected: _mode == RestoreMode.addMissing),
                 onTap: () {
@@ -145,7 +180,8 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
                 title: 'Replace everything',
                 subtitle: backup.isLegacy
                     ? 'Replaces your subscriptions. Cards and settings are kept. You can undo.'
-                    : 'Replaces subscriptions, cards and settings. Your current data is saved first, so you can undo.',
+                    : 'Replaces subscriptions, cards, categories and settings. Your current data is saved first, '
+                        'so you can undo.',
                 subtitleColor: OneUITheme.textSecondary,
                 trailing: OneUIRadio(isSelected: _mode == RestoreMode.replace),
                 onTap: () {

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/currency/domain/currency.dart';
 import '../../features/backup/domain/backup_snapshot.dart';
+import '../../features/backup/domain/restore_point.dart';
 import '../../features/payment_methods/domain/entities/payment_method.dart';
 import '../../features/subscriptions/domain/entities/subscription_enums.dart';
 import '../../features/subscriptions/presentation/controllers/subscription_controller.dart';
@@ -36,6 +37,7 @@ import '../../screens/settings/licenses_screen.dart';
 import '../../screens/settings/whats_new_screen.dart';
 import '../../screens/settings/notification_settings_screen.dart';
 import '../../screens/settings/planned_feature.dart';
+import '../../screens/settings/restore_points_screen.dart';
 import '../../screens/settings/restore_preview_screen.dart';
 import '../../screens/settings/security_settings_screen.dart';
 import '../../screens/settings_screen.dart';
@@ -95,6 +97,7 @@ class AppRoutes {
   static const settingsSecurity = '/settings/security';
   static const settingsData = '/settings/data';
   static const settingsRestore = '/settings/data/restore';
+  static const settingsRestorePoints = '/settings/data/restore-points';
   static const settingsHelp = '/settings/help';
   static const settingsAbout = '/settings/about';
   static const settingsAuthor = '/settings/about/developer';
@@ -295,8 +298,12 @@ List<RouteBase> buildPageRoutes() {
     GoRoute(path: AppRoutes.settingsData, builder: (context, state) => const BackupDataScreen()),
     GoRoute(
       path: AppRoutes.settingsRestore,
-      builder: (context, state) => RestorePreviewScreen(backup: state.extra! as BackupSnapshot),
+      builder: (context, state) => switch (state.extra) {
+        final RestorePoint point => RestorePreviewScreen(backup: point.snapshot, restorePoint: point),
+        final extra => RestorePreviewScreen(backup: extra! as BackupSnapshot),
+      },
     ),
+    GoRoute(path: AppRoutes.settingsRestorePoints, builder: (context, state) => const RestorePointsScreen()),
     GoRoute(path: AppRoutes.settingsHelp, builder: (context, state) => const HelpFeedbackScreen()),
     GoRoute(path: AppRoutes.settingsAbout, builder: (context, state) => const AboutScreen()),
     GoRoute(path: AppRoutes.settingsAuthor, builder: (context, state) => const AuthorScreen()),

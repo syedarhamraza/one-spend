@@ -51,6 +51,14 @@ Data and domain logic follow feature-first clean architecture; most UI still liv
 
 Drift SQLite (`lib/core/database/`): tables for subscriptions, payment methods, and a key/value `app_settings` table (`getSetting` / `setSetting` / `getSettingsWithPrefix`). Setting keys are the legacy `onespend_*` names, kept for migration compatibility. List fields are stored as JSON via `converters/`.
 
+### Backups (`lib/features/backup/`)
+
+- **Backup file:** `BackupCodec` handles the JSON (`onespend.backup`, format v2; v1 and the legacy bare-list export still restore). Users save it through the system file picker and restore it with `RestorePreviewScreen`, choosing "Add missing items" (`BackupMerge`) or "Replace everything". Bump `BackupCodec.currentVersion` when the file gains data, and keep decoding older versions.
+- **Restore points:** `BackupService.saveRestorePoint(reason:)` writes a full snapshot to app storage (`restore_points/restore-<micros>-<reason>.json`, newest 5 kept) before every Replace or Clear all.
+  - `undoLast()` is the inline Undo.
+  - `listRestorePoints()` feeds Settings › Backup & data › Restore points. Opening a point reuses `RestorePreviewScreen` (`openPoint`), and replacing from a point saves a new point first.
+- **Android Auto Backup is off** (`allowBackup=false`, `data_extraction_rules.xml`). Exports (PDF, CSV, text, `.ics`) are not backups.
+
 ### Navigation
 
 go_router, configured in `lib/core/router/app_router.dart`:
@@ -64,6 +72,14 @@ go_router, configured in `lib/core/router/app_router.dart`:
 ### Pricing
 
 The app is fully free; there is no paywall or entitlement. The earlier OneSpend Pro (Play Billing) implementation was removed and can be revived from commit `3cb0a10` in `main`'s history (`git checkout -b feat/pro 3cb0a10`).
+
+### Versioning and releases
+
+- `version:` in `pubspec.yaml` is the only source: `MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE`. CODE is the Android versionCode, +1 per Play upload.
+- `tool/release.ps1` bumps it, adds or stamps the `Changelog` entry, builds the bundle, commits `chore(release): …` and tags `v<name>`. Don't hand-edit the version.
+- `AppVersion` (`lib/core/config/app_version.dart`) parses and labels it ("1.0.0 Beta 2"). About and What's new use it.
+- `test/features/app_version_test.dart` fails when the pubspec name and `Changelog.entries.first.version` differ.
+- Release signing reads `android/key.properties` (git-ignored) and falls back to the debug key.
 
 ### Categories
 

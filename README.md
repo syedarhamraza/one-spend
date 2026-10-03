@@ -61,7 +61,9 @@ OneSpend keeps track of your recurring payments: what you pay, when it renews, w
 
 ### Data
 - Everything is stored on-device in SQLite (Drift).
-- Export a JSON backup, export CSV, or export renewals to a calendar (`.ics`).
+- Save a backup file (JSON) and restore it on any phone, either adding what's missing or replacing everything.
+- Automatic restore points before data is replaced or cleared, listed under Backup & data › Restore points.
+- Export a PDF report, CSV or text summary, or renewals to a calendar (`.ics`). Exports are for reading and can't be restored.
 - Restore the sample catalog, or clear all data.
 
 ### Appearance
@@ -115,17 +117,67 @@ flutter run
 
 A fresh install starts empty. To load the demo catalog, go to **Settings → Restore sample subscriptions**.
 
-### Release builds
+### Releasing
 
-```bash
-flutter build apk --release
+The version lives in **one place**, `pubspec.yaml`:
+
+```yaml
+version: 1.0.0-alpha.1+1   # MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE
 ```
 
-```bash
-flutter build appbundle --release
-```
+- **Name** (before `+`) is what users see in Settings › About.
+  - `MAJOR`: big redesigns or breaking changes.
+  - `MINOR`: new features.
+  - `PATCH`: fixes only.
+  - `-alpha.N` and `-beta.N` mark pre-releases.
+- **Code** (after `+`) is the Android `versionCode`. It goes up by one for **every** upload to Google Play and is never reused.
 
-The application id is `com.onespend.onespend`. Before publishing to the Play Store, set up a release signing config in `android/app/build.gradle.kts`, which currently falls back to debug signing. Set the version in `pubspec.yaml` (`version: 1.0.0+1`, where the part after `+` is the Android `versionCode`).
+| Suffix | Play Console track |
+|---|---|
+| `-alpha.N` | Internal or Closed testing |
+| `-beta.N` | Open testing |
+| none | Production |
+
+Don't edit the version by hand. When you're ready to upload, run one command from a clean tree:
+
+| You want to… | Command | Version change |
+|---|---|---|
+| Start a feature version in beta | `./tool/release.ps1 -Bump minor -Pre beta` | `1.0.0` → `1.1.0-beta.1` |
+| Ship the next beta | `./tool/release.ps1 -Pre beta` | `1.1.0-beta.1` → `1.1.0-beta.2` |
+| Release it | `./tool/release.ps1 -Promote` | `1.1.0-beta.2` → `1.1.0` |
+| Ship a bug fix | `./tool/release.ps1 -Bump patch` | `1.1.0` → `1.1.1` |
+| Re-upload the same version | `./tool/release.ps1 -Rebuild` | build number only |
+
+Every one of these also raises the build number.
+
+The script:
+1. bumps `pubspec.yaml`;
+2. adds a What's new entry to `lib/core/config/changelog.dart`, then pauses so you can write the notes;
+3. builds `build/app/outputs/bundle/release/app-release.aab`;
+4. commits `chore(release): …` and tags `v<name>`.
+
+Then upload the bundle and run `git push --follow-tags`. `./tool/release.ps1 -Help` lists everything. `./tool/release.ps1 -Debug` builds a debug APK of the current version without changing it.
+
+**Upload key (one-time setup).** Play only accepts bundles signed with your upload key.
+
+1. Create the keystore, and keep it and its passwords somewhere safe outside the repo:
+
+   ```bash
+   keytool -genkey -v -keystore C:/Users/<you>/keys/onespend-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+
+2. Create `android/key.properties`. It's ignored by git.
+
+   ```properties
+   storeFile=C:/Users/<you>/keys/onespend-upload.jks
+   storePassword=…
+   keyAlias=upload
+   keyPassword=…
+   ```
+
+Without `key.properties`, release builds are signed with the debug key and the script warns you.
+
+The application id is `com.onespend.onespend`.
 
 ---
 

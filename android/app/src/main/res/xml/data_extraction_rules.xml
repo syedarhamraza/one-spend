@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 12+: no cloud backup of app data (OneSpend has its own backup file).
-     Device-to-device transfer while setting up a new phone is still allowed; it only runs at setup. -->
+     Device-to-device transfer while setting up a new phone is still allowed; it only runs at setup
+     and copies everything, including the in-app restore points. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" path="." />
