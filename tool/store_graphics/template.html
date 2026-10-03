@@ -88,8 +88,8 @@
   .full .eyebrow { font-size: 26px; padding: 10px 22px; margin-bottom: 26px; }
   .full h1 { font-size: 72px; letter-spacing: -0.03em; }
   .full .sub { margin-top: 16px; font-size: 32px; }
-  .full .slide .phone { top: 398px !important; width: 690px; padding: 11px; border-radius: 96px; }
-  .full .slide .screen { border-radius: 85px; }
+  .full .slide .phone { top: 468px !important; width: 650px; padding: 11px; border-radius: 92px; }
+  .full .slide .screen { border-radius: 81px; }
   .full .slide .status { height: 66px; font-size: 27px; padding: 4px 56px 0 62px; }
   .full .slide .camera { top: 20px; width: 27px; height: 27px; margin-left: -13px; }
   .full .slide .battery { width: 40px; height: 20px; border-width: 2px; border-radius: 6px; padding: 2px; }
@@ -120,28 +120,28 @@
   // Captures are 1260 x 2800 (vivo X200 Pro). shift: capture pixels scrolled off the top
   // inside the frame; top: where the phone starts (close-up layout).
   const slides = {
-    1: { img: '1-subscriptions', short: 'All your subscriptions', shortSub: 'See what you pay and when it renews.',
+    1: { img: '1-subscriptions',
          eyebrow: 'All in one place', title: 'Every subscription.<br>One place.',
          sub: 'See what you pay, and when it renews.', accent: '#5390F5', glow: 'rgba(3,129,254,.30)', glow2: 'rgba(83,144,245,.16)' },
-    2: { img: '2-upcoming', short: 'Never miss a renewal', shortSub: 'Every charge, months ahead.',
+    2: { img: '2-upcoming',
          eyebrow: 'Upcoming', title: 'Never miss<br>a renewal.',
          sub: 'Every charge for the months ahead, at a glance.', accent: '#48B5A0', glow: 'rgba(72,181,160,.28)', glow2: 'rgba(72,181,160,.14)' },
-    3: { img: '3-trends', short: 'Spot every trend', shortSub: 'Your yearly total and smart tips.',
+    3: { img: '3-trends',
          eyebrow: 'Analytics', title: 'Spot the trend<br>before it costs you.',
          sub: 'Your yearly total, budget and smart money tips.', accent: '#00C05A', glow: 'rgba(0,192,90,.24)', glow2: 'rgba(0,192,90,.12)' },
-    4: { img: '4-categories', shift: 150, short: 'See where it goes', shortSub: 'Your spending by category.',
+    4: { img: '4-categories', shift: 150,
          eyebrow: 'Categories', title: 'See where every<br>dollar goes.',
          sub: 'A clear breakdown of what each kind of service costs.', accent: '#7E57C2', glow: 'rgba(126,87,194,.32)', glow2: 'rgba(240,113,103,.14)' },
-    5: { img: '5-detail', short: 'Every detail, one tap', shortSub: 'Price, cycle and renewal date.',
+    5: { img: '5-detail',
          eyebrow: 'Details', title: 'Every detail<br>in one tap.',
          sub: 'Price, billing cycle, next renewal and notes.', accent: '#F4A261', glow: 'rgba(244,162,97,.24)', glow2: 'rgba(83,144,245,.14)' },
-    6: { img: '6-reminders', short: 'Reminders, your way', shortSub: 'Pick when each heads-up arrives.',
+    6: { img: '6-reminders',
          eyebrow: 'Reminders', title: 'Reminders on<br>your schedule.',
          sub: 'Choose exactly when each heads-up arrives.', accent: '#48B5A0', glow: 'rgba(72,181,160,.28)', glow2: 'rgba(83,144,245,.12)' },
-    7: { img: '7-currency', short: 'Any currency, one total', shortSub: '45+ currencies, shown in yours.',
+    7: { img: '7-currency',
          eyebrow: 'Multi-currency', title: 'Any currency.<br>One total.',
          sub: 'Pay in 45+ currencies and see it all in yours.', accent: '#5390F5', glow: 'rgba(3,129,254,.28)', glow2: 'rgba(0,192,90,.12)' },
-    8: { img: '8-backup', short: 'Never lose a thing', shortSub: 'Backups and restore points.',
+    8: { img: '8-backup',
          eyebrow: 'Backup', title: 'Never lose<br>a thing.',
          sub: 'One-file backups and automatic restore points.', accent: '#FB8C00', glow: 'rgba(251,140,0,.22)', glow2: 'rgba(83,144,245,.12)' },
   };
@@ -154,7 +154,7 @@
     return `<div class="phone"${phoneStyle}><div class="screen"><img src="captures/${img}.png" alt=""${imgStyle}>${status}</div></div>`;
   }
 
-  // `#1-full` shows the whole phone instead of letting it run off the bottom.
+  // `#1-full` shows the whole phone (smaller copy) instead of letting it run off the bottom.
   const [key, mode] = (location.hash.slice(1) || '1').split('-');
   const full = mode === 'full';
   if (full) document.body.classList.add('full');
@@ -178,8 +178,8 @@
       <div class="slide">
         <div class="copy">
           <div class="eyebrow">${s.eyebrow}</div>
-          <h1>${full ? s.short : s.title}</h1>
-          <p class="sub">${full ? s.shortSub : s.sub}</p>
+          <h1>${s.title}</h1>
+          <p class="sub">${s.sub}</p>
         </div>
         ${full ? phone(s.img) : phone(s.img, s.shift, s.top)}
       </div>`;
