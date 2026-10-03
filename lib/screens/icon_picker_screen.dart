@@ -81,7 +81,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
 
   static const List<Color> swatches = [
     Color(0xFFE50914), // Red
-    Color(0xFF1DB954), // Spotify Green
+    Color(0xFF1DB954), // Fresh Green
     Color(0xFF0066FF), // One UI Blue
     Color(0xFF8A2BE2), // Purple
     Color(0xFFFF9500), // Orange
@@ -100,8 +100,8 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
   }
 
   static final Map<int, String> swatchNames = {
-    const Color(0xFFE50914).toARGB32(): 'Netflix Red',
-    const Color(0xFF1DB954).toARGB32(): 'Spotify Green',
+    const Color(0xFFE50914).toARGB32(): 'Cinema Red',
+    const Color(0xFF1DB954).toARGB32(): 'Fresh Green',
     const Color(0xFF0066FF).toARGB32(): 'One UI Blue',
     const Color(0xFF8A2BE2).toARGB32(): 'Electric Purple',
     const Color(0xFFFF9500).toARGB32(): 'Sunset Orange',

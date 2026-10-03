@@ -15,16 +15,17 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
   const SubscriptionCardCustomizerScreen({super.key});
 
   static final Subscription _previewSub = Subscription(
-    id: 'pop_spotify',
-    name: 'Spotify Premium',
+    id: 'preview_tunebox',
+    name: 'Tunebox Premium',
     description: 'Music & Podcasts streaming',
-    price: 10.99,
+    price: 11.99,
     currency: 'USD',
     billingCycle: BillingCycle.monthly,
-    category: SubscriptionCategory.entertainment,
+    category: SubscriptionCategory.music,
     nextBillingDate: DateTime.now().add(const Duration(days: 5)),
-    brandColorValue: 0xFF1DB954,
-    brandPresetId: 'spotify',
+    brandColorValue: 0xFF1DB97A,
+    iconCodePoint: Icons.music_note_rounded.codePoint,
+    iconFontFamily: Icons.music_note_rounded.fontFamily,
   );
 
   @override
@@ -342,16 +343,17 @@ class _SubscriptionCardOptionScreenState<T> extends State<SubscriptionCardOption
       animation: OneUIEffectsController.instance,
       builder: (context, _) {
         final previewSub = Subscription(
-          id: 'pop_spotify',
-          name: 'Spotify Premium',
+          id: 'preview_tunebox',
+          name: 'Tunebox Premium',
           description: 'Music & Podcasts streaming',
-          price: 10.99,
+          price: 11.99,
           currency: 'USD',
           billingCycle: BillingCycle.monthly,
-          category: SubscriptionCategory.entertainment,
+          category: SubscriptionCategory.music,
           nextBillingDate: DateTime.now().add(const Duration(days: 5)),
-          brandColorValue: 0xFF1DB954,
-          brandPresetId: 'spotify',
+          brandColorValue: 0xFF1DB97A,
+          iconCodePoint: Icons.music_note_rounded.codePoint,
+          iconFontFamily: Icons.music_note_rounded.fontFamily,
         );
 
         return Scaffold(

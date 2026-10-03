@@ -295,7 +295,7 @@ class _DetailScreenLivePreview extends StatelessWidget {
             OneUIGroupItem(
               leading: _buildPreviewIcon(Icons.badge_outlined, OneUITheme.accentBlue),
               title: 'Service name',
-              subtitle: 'Netflix Premium',
+              subtitle: 'Streamly Premium',
               subtitleColor: _selectableColor(fallback: OneUITheme.textPrimary),
               trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
             ),
