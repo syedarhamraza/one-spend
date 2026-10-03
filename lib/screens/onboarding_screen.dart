@@ -273,29 +273,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required String body,
     Widget? extra,
   }) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: heroHeight, width: double.infinity, child: _parallax(index, hero)),
-          const SizedBox(height: 22),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 34,
-              height: 1.12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.8,
-              color: OneUITheme.textPrimary,
+    // Clipped to the page, so a trailing illustration never shows on the neighbouring page.
+    return ClipRect(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: heroHeight, width: double.infinity, child: _parallax(index, hero)),
+            const SizedBox(height: 22),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 34,
+                height: 1.12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.8,
+                color: OneUITheme.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(body, style: const TextStyle(fontSize: 15.5, height: 1.45, color: OneUITheme.textSecondary)),
-          if (extra != null) ...[const SizedBox(height: 22), extra],
-          // Room to scroll the last row clear of the fade at the bottom.
-          const SizedBox(height: 28),
-        ],
+            const SizedBox(height: 10),
+            Text(body, style: const TextStyle(fontSize: 15.5, height: 1.45, color: OneUITheme.textSecondary)),
+            if (extra != null) ...[const SizedBox(height: 22), extra],
+            // Room to scroll the last row clear of the fade at the bottom.
+            const SizedBox(height: 28),
+          ],
+        ),
       ),
     );
   }
@@ -309,7 +312,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       builder: (context, child) {
         final position = _pages.hasClients && _pages.position.haveDimensions ? _pages.page ?? 0.0 : _page.toDouble();
         final width = MediaQuery.sizeOf(context).width;
-        return Transform.translate(offset: Offset((position - index) * width * 0.35, 0), child: child);
+        return Transform.translate(offset: Offset((position - index) * width * 0.25, 0), child: child);
       },
     );
   }
