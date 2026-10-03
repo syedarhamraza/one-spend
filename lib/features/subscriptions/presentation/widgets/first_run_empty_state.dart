@@ -108,7 +108,7 @@ class _FirstRunEmptyStateState extends State<FirstRunEmptyState> with SingleTick
           ),
           const SizedBox(height: 10),
           const Text(
-            'Add what you pay for. OneSpend reminds you before each renewal and shows where your money goes.',
+            'Add what you pay for. One Spend reminds you before each renewal and shows where your money goes.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 15, height: 1.45, color: OneUITheme.textSecondary),
           ),

@@ -8,7 +8,7 @@ enum PlannedFeature {
     'Widgets',
     Icons.widgets_rounded,
     OneUITheme.accentPurple,
-    'Home screen widgets so you can check what\'s due without opening OneSpend.',
+    'Home screen widgets so you can check what\'s due without opening One Spend.',
     ['Next renewals at a glance', 'Monthly budget progress', 'Tap a renewal to open it'],
   ),
   appLock(
@@ -26,17 +26,17 @@ enum PlannedFeature {
     ['Daily or weekly automatic backups', 'Keeps several versions', 'Restore on a new phone in one tap'],
   ),
   rateApp(
-    'Rate OneSpend',
+    'Rate One Spend',
     Icons.star_rounded,
     OneUITheme.accentAmber,
-    'Rating will open once OneSpend is on the Play Store.',
-    ['Leave a rating and review', 'Share OneSpend with friends'],
+    'Rating will open once One Spend is on the Play Store.',
+    ['Leave a rating and review', 'Share One Spend with friends'],
   ),
   privacyPolicy(
     'Privacy policy',
     Icons.privacy_tip_rounded,
     OneUITheme.accentTeal,
-    'OneSpend keeps everything on your device. It has no account, no ads and no analytics. A full policy will be published with the Play Store release.',
+    'One Spend keeps everything on your device. It has no account, no ads and no analytics. A full policy will be published with the Play Store release.',
     ['Data stays on your device', 'No tracking or ads', 'You can export or delete everything'],
   );
 

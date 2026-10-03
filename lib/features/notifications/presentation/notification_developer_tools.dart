@@ -59,7 +59,7 @@ class NotificationDeveloperTools {
       id: id,
       kind: NotificationKind.developer,
       fireAt: fireAt,
-      title: sub == null ? 'OneSpend test notification' : 'Test: ${sub.name} renews tomorrow',
+      title: sub == null ? 'One Spend test notification' : 'Test: ${sub.name} renews tomorrow',
       body: sub == null
           ? 'Notifications are working.'
           : '${formatMoney(sub.price, sub.currency)} will be charged. Tap to open it.',
@@ -71,7 +71,7 @@ class NotificationDeveloperTools {
     if (await sl<NotificationService>().areEnabled()) return true;
     final granted = await ensureNotificationPermission();
     if (!granted && context.mounted) {
-      OneUIToast.show(context, 'Notifications are off or blocked for OneSpend');
+      OneUIToast.show(context, 'Notifications are off or blocked for One Spend');
     }
     return granted;
   }

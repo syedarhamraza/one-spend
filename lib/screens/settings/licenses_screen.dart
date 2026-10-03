@@ -50,7 +50,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
               child: Text(
                 data == null
                     ? 'Loading…'
-                    : 'OneSpend is built with Flutter and ${data.length} open source packages. Thank you to their authors.',
+                    : 'One Spend is built with Flutter and ${data.length} open source packages. Thank you to their authors.',
                 style: const TextStyle(fontSize: 14, height: 1.4, color: OneUITheme.textSecondary),
               ),
             ),

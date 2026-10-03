@@ -9,8 +9,8 @@ void main() {
   testWidgets('About shows the version, its pre-release channel and the build', (tester) async {
     // AppVersion.current() caches the first answer, so this file sets it once.
     PackageInfo.setMockInitialValues(
-      appName: 'OneSpend',
-      packageName: 'com.onespend.onespend',
+      appName: 'One Spend',
+      packageName: 'com.syedarhamraza.onespend',
       version: '1.0.0-beta.2',
       buildNumber: '7',
       buildSignature: '',

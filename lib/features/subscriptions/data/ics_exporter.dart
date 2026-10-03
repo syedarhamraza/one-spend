@@ -27,7 +27,7 @@ class IcsExporter {
       'PRODID:-//OneSpend//Subscription renewals//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      'X-WR-CALNAME:OneSpend renewals',
+      'X-WR-CALNAME:One Spend renewals',
     ];
 
     for (final charge in charges.where((c) => !c.isPaid)) {
@@ -39,7 +39,7 @@ class IcsExporter {
       final description = [
         '${sub.billingCycle.label} subscription · $amount',
         if (card != null && card.isNotEmpty) 'Paid with $card',
-        'Exported from OneSpend',
+        'Exported from One Spend',
       ].join('\n');
 
       lines.addAll([

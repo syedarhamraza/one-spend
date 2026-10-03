@@ -6,7 +6,7 @@
     <!-- Android Auto Backup is off: backups are the in-app "Save backup to device" file only,
          so nothing restores silently over the user's data. -->
     <application
-        android:label="onespend"
+        android:label="One Spend"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"

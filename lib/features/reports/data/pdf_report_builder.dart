@@ -46,7 +46,7 @@ class PdfReportBuilder {
   // --- Spending report --------------------------------------------------------
 
   static Future<Uint8List> spendingReport(SpendingReportData d, ReportFonts fonts) {
-    final doc = pw.Document(title: 'OneSpend spending report', author: 'OneSpend', creator: 'OneSpend');
+    final doc = pw.Document(title: 'One Spend spending report', author: 'One Spend', creator: 'One Spend');
     final cur = d.currency;
 
     doc.addPage(pw.MultiPage(
@@ -119,7 +119,7 @@ class PdfReportBuilder {
     DateTime? now,
   }) {
     final at = now ?? DateTime.now();
-    final doc = pw.Document(title: sub.name, author: 'OneSpend', creator: 'OneSpend');
+    final doc = pw.Document(title: sub.name, author: 'One Spend', creator: 'One Spend');
     final lifetime = sub.paymentHistory.length * sub.price;
     final history = [...sub.paymentHistory]..sort((a, b) => b.compareTo(a));
     final rows = <(String, String)>[
@@ -462,7 +462,7 @@ class PdfReportBuilder {
       margin: const pw.EdgeInsets.only(top: 12),
       child: pw.Row(
         children: [
-          pw.Text('OneSpend  ·  ${_date.format(at)}', style: const pw.TextStyle(fontSize: 8, color: _faint)),
+          pw.Text('One Spend  ·  ${_date.format(at)}', style: const pw.TextStyle(fontSize: 8, color: _faint)),
           pw.Spacer(),
           pw.Text(
             'Page ${context.pageNumber} of ${context.pagesCount}',

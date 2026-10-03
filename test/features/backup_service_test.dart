@@ -191,6 +191,6 @@ void main() {
   });
 
   test('suggested file name uses the date', () {
-    expect(BackupService.fileName(DateTime(2026, 3, 7)), 'OneSpend-backup-2026-03-07.json');
+    expect(BackupService.fileName(DateTime(2026, 3, 7)), 'One-Spend-backup-2026-03-07.json');
   });
 }

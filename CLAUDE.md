@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-OneSpend (`package:onespend`) is a Flutter subscription/spend tracker styled after Samsung One UI (pitch-black dark theme only). Android is the only platform directory present. Dart SDK `^3.13.3`.
+One Spend (Dart `package:onespend`, Android application id `com.syedarhamraza.onespend`) is a Flutter subscription/spend tracker styled after Samsung One UI (pitch-black dark theme only). The user-facing name is "One Spend" (two words; `AppInfo.name`); file names use `One-Spend-…`; code identifiers keep `OneSpend`. Android is the only platform directory present. Dart SDK `^3.13.3`.
 
 ## Commands
 
@@ -78,7 +78,7 @@ The app is fully free; there is no paywall or entitlement. The earlier OneSpend 
 - **Play In-App Updates, immediate flow** (`in_app_update`).
   - `PlayUpdateService` talks to Play. It reports `notFromPlay` for `flutter run` or sideloaded builds (Play error -10), and `failed` when Play can't be reached.
   - `setupDependencies()` registers `NoopUpdateService` unless `configureDependencies()` registered Play, so tests never touch the plugin.
-- **`UpdateController.instance`** holds the status shown by About › "Check for updates" and the orange `OneUIDot` on Settings › About OneSpend.
+- **`UpdateController.instance`** holds the status shown by About › "Check for updates" and the orange `OneUIDot` on Settings › About One Spend.
 - **Launch check:** `OneSpendApp` calls `check()` once per launch after the first frame, because Play needs a foreground activity. It never shows a pop-up.
 - **Testing a real update:** this only works on a Play-installed build. Use Internal app sharing or an internal-test track with a higher versionCode.
 

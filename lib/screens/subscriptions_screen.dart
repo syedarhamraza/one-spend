@@ -339,13 +339,13 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     for (var sub in subs) {
       buffer.writeln('• ${sub.name}: ${formatMoney(sub.price, sub.currency)} / ${sub.billingCycle.label} (${sub.category.label}) - Due in ${sub.daysRemaining} days');
     }
-    buffer.writeln('\nTracked with OneSpend');
+    buffer.writeln('\nTracked with One Spend');
 
     try {
       await SharePlus.instance.share(
         ShareParams(
           text: buffer.toString().trim(),
-          subject: 'OneSpend Subscriptions (${_selectedIds.length})',
+          subject: 'One Spend Subscriptions (${_selectedIds.length})',
         ),
       );
     } catch (_) {

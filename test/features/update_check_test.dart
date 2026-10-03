@@ -53,7 +53,7 @@ void main() {
           'flexibleAllowed': true,
           'availableVersionCode': 7,
           'installStatus': 0,
-          'packageName': 'com.onespend.onespend',
+          'packageName': 'com.syedarhamraza.onespend',
           'clientVersionStalenessDays': null,
           'updatePriority': 0,
         };
@@ -178,7 +178,7 @@ void main() {
 
       await tester.tap(find.text('Check for updates'));
       await tester.pumpAndSettle();
-      expect(find.text('OneSpend is up to date'), findsOneWidget);
+      expect(find.text('One Spend is up to date'), findsOneWidget);
       expect(service.installs, 0);
 
       service.next = UpdateCheckResult.available;
@@ -202,13 +202,13 @@ void main() {
 
     testWidgets('Settings: the About row gets a dot only when an update is available', (tester) async {
       await pump(tester, const SettingsScreen());
-      await tester.scrollUntilVisible(find.text('About OneSpend'), 200);
-      expect(find.descendant(of: rowWith('About OneSpend'), matching: find.byType(OneUIDot)), findsNothing);
+      await tester.scrollUntilVisible(find.text('About One Spend'), 200);
+      expect(find.descendant(of: rowWith('About One Spend'), matching: find.byType(OneUIDot)), findsNothing);
 
       service.next = UpdateCheckResult.available;
       await UpdateController.instance.check();
       await tester.pumpAndSettle();
-      expect(find.descendant(of: rowWith('About OneSpend'), matching: find.byType(OneUIDot)), findsOneWidget);
+      expect(find.descendant(of: rowWith('About One Spend'), matching: find.byType(OneUIDot)), findsOneWidget);
     });
   });
 }

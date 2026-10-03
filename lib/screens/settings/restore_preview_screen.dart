@@ -143,7 +143,7 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
                     : [
                         _date.format(backup.createdAt),
                         if (point == null && backup.appVersion.isNotEmpty)
-                          'OneSpend ${AppVersion.describe(backup.appVersion)}',
+                          'One Spend ${AppVersion.describe(backup.appVersion)}',
                       ].join(' · '),
                 subtitleColor: OneUITheme.textSecondary,
                 trailing: const SizedBox.shrink(),

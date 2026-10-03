@@ -1,8 +1,8 @@
-# OneSpend
+# One Spend
 
 **A subscription and spend tracker for Android, styled after Samsung One UI 8.5.**
 
-OneSpend keeps track of your recurring payments: what you pay, when it renews, which card it's charged to, and how it adds up against your monthly budget. It works entirely offline on a pitch-black OLED theme with reachable floating controls.
+One Spend keeps track of your recurring payments: what you pay, when it renews, which card it's charged to, and how it adds up against your monthly budget. It works entirely offline on a pitch-black OLED theme with reachable floating controls.
 
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-%5E3.13.3-0175C2?logo=dart&logoColor=white)
@@ -178,7 +178,7 @@ Then upload the bundle and run `git push --follow-tags`. `./tool/release.ps1 -He
 
 Without `key.properties`, release builds are signed with the debug key and the script warns you.
 
-The application id is `com.onespend.onespend`.
+The application id is `com.syedarhamraza.onespend`. It can't change once the app is on Google Play.
 
 ---
 
@@ -333,7 +333,7 @@ All UI follows [`docs/design-language.md`](docs/design-language.md), which cover
 
 ## Privacy
 
-OneSpend has no accounts, analytics, network sync or push server. All data, including subscriptions, payment method details and settings, stays in the app's local SQLite database. For cards, only the last 4 digits are stored. Data leaves the device only when you choose to share an export.
+One Spend has no accounts, analytics, network sync or push server. All data, including subscriptions, payment method details and settings, stays in the app's local SQLite database. For cards, only the last 4 digits are stored. Data leaves the device only when you choose to share an export.
 
 ---
 

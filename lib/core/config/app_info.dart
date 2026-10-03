@@ -4,7 +4,7 @@
 class AppInfo {
   const AppInfo._();
 
-  static const String name = 'OneSpend';
+  static const String name = 'One Spend';
   static const String tagline = 'Track every subscription, in the style of One UI.';
   static const String logoAsset = 'assets/logos/app_logo.png';
 }
