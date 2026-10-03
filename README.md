@@ -122,7 +122,7 @@ A fresh install starts empty. To load the demo catalog, go to **Settings → Res
 The version lives in **one place**, `pubspec.yaml`:
 
 ```yaml
-version: 1.0.0-beta.1+1   # MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE
+version: 1.0.0-alpha.1+1   # MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE
 ```
 
 - **Name** (before `+`) is what users see in Settings › About.

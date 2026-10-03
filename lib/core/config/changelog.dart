@@ -19,7 +19,7 @@ class Changelog {
 
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
-      version: '1.0.0-beta.1',
+      version: '1.0.0-alpha.1',
       date: 'In development',
       changes: [
         'Track subscriptions with renewal reminders, budgets and spending insights',
