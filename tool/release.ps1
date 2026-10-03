@@ -226,8 +226,10 @@ if ($next.Pre -eq 'beta') { $track = 'Open testing' }
 if ($next.Pre -eq 'alpha') { $track = 'Internal or Closed testing' }
 Write-Host "`nDone: OneSpend $newName (build $($next.Code))" -ForegroundColor Green
 if (-not $SkipBuild) {
-  if ($Target -eq 'appbundle') { Write-Host '  1. Upload build/app/outputs/bundle/release/app-release.aab' }
-  else { Write-Host '  1. APKs are in build/app/outputs/flutter-apk/' }
-  Write-Host "     to Play Console > $track."
+  if ($Target -eq 'appbundle') {
+    Write-Host '  1. Upload build/app/outputs/bundle/release/app-release.aab'
+    Write-Host "     to Play Console > $track."
+  }
+  else { Write-Host '  1. Install or share build/app/outputs/flutter-apk/app-release.apk (Play needs the .aab).' }
 }
 Write-Host '  2. Push the release commit and tag:  git push --follow-tags'
