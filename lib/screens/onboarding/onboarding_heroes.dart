@@ -23,7 +23,17 @@ class WelcomeHero extends StatelessWidget {
 
   const WelcomeHero({super.key, required this.currency, required this.toMain});
 
-  Subscription _sample(String id, String name, double usd, int color, int days, SubscriptionCategory category) {
+  /// Fictional services (as in the store listing), so no real brand appears in the app's
+  /// own illustrations.
+  Subscription _sample(
+    String id,
+    String name,
+    double usd,
+    int color,
+    IconData icon,
+    int days,
+    SubscriptionCategory category,
+  ) {
     final converted = currency == 'USD' ? usd : toMain(usd, 'USD');
     return Subscription(
       id: 'onboarding_$id',
@@ -35,16 +45,17 @@ class WelcomeHero extends StatelessWidget {
       category: category,
       nextBillingDate: DateTime.now().add(Duration(days: days)),
       brandColorValue: color,
-      brandPresetId: id,
+      iconCodePoint: icon.codePoint,
+      iconFontFamily: icon.fontFamily,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final cards = [
-      _sample('icloud', 'iCloud+', 2.99, 0xFF3693F3, 12, SubscriptionCategory.cloud),
-      _sample('spotify', 'Spotify', 10.99, 0xFF1DB954, 5, SubscriptionCategory.music),
-      _sample('netflix', 'Netflix', 15.49, 0xFFE50914, 2, SubscriptionCategory.entertainment),
+      _sample('cloudvault', 'CloudVault', 9.99, 0xFF3B82F6, Icons.cloud_rounded, 12, SubscriptionCategory.cloud),
+      _sample('tunebox', 'Tunebox', 11.99, 0xFF1DB97A, Icons.music_note_rounded, 5, SubscriptionCategory.music),
+      _sample('streamly', 'Streamly', 15.99, 0xFFE5484D, Icons.movie_rounded, 2, SubscriptionCategory.entertainment),
     ];
     return ExcludeSemantics(
       child: IgnorePointer(
@@ -213,8 +224,8 @@ class ReminderHero extends StatelessWidget {
                   opacity: 0.5,
                   child: _Notification(
                     width: width * 0.9,
-                    title: 'Netflix renews ${_relativeDay(reminderDays + 3)}',
-                    body: '${_price(15.49)} will be charged soon.',
+                    title: 'CloudVault renews ${_relativeDay(reminderDays + 3)}',
+                    body: '${_price(9.99)} will be charged soon.',
                   ),
                 ),
               ),
@@ -222,8 +233,8 @@ class ReminderHero extends StatelessWidget {
                 offset: const Offset(0, -12),
                 child: _Notification(
                   width: width,
-                  title: 'Spotify renews ${_relativeDay(reminderDays)}',
-                  body: '${_price(10.99)} will be charged on $dueText.',
+                  title: 'Streamly renews ${_relativeDay(reminderDays)}',
+                  body: '${_price(15.99)} will be charged on $dueText.',
                 ),
               ),
             ],

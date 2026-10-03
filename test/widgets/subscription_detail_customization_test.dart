@@ -323,7 +323,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Row 1, 2, 3 should exist in Live Preview
-      expect(find.text('Netflix Premium'), findsOneWidget);
+      expect(find.text('Streamly Premium'), findsOneWidget);
       expect(find.text('\$15.99 / Monthly'), findsOneWidget);
       expect(find.text('Visa •••• 4242'), findsOneWidget);
 
@@ -457,7 +457,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Preview in subpage also has 3 rows
-      expect(find.text('Netflix Premium'), findsOneWidget);
+      expect(find.text('Streamly Premium'), findsOneWidget);
       expect(find.text('\$15.99 / Monthly'), findsOneWidget);
       expect(find.text('Visa •••• 4242'), findsOneWidget);
 
