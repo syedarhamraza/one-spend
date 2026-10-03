@@ -40,8 +40,11 @@ function Render([string]$hash, [string]$file, [int]$w, [int]$h) {
 
 $names = @('1-subscriptions', '2-upcoming', '3-trends', '4-categories', '5-savings', '6-backup')
 Write-Host 'Rendering store graphics...'
+# "-full" = the whole phone under a short one-line headline. Drop it for the close-up layout
+# (bigger phone running off the bottom, two-line headline).
+$layout = '-full'
 for ($i = 0; $i -lt $names.Count; $i++) {
-  Render "$($i + 1)" (Join-Path $out "screenshots/$($names[$i]).png") 1080 1920
+  Render "$($i + 1)$layout" (Join-Path $out "screenshots/$($names[$i]).png") 1080 1920
 }
 Render 'feature' (Join-Path $out 'feature-graphic.png') 1024 500
 

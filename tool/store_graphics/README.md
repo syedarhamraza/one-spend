@@ -45,6 +45,10 @@ All the data in the screenshots is fictional: Streamly, Tunebox, Nova Bank and s
 ## How it's built
 
 - **`template.html`**: one slide per URL hash (`#1`–`#6`, `#feature`). Headline copy, accent colours, phone position (`top`) and capture offset (`shift`) are set in the `slides` table at the bottom.
+- **Two layouts:**
+  - **Full phone** (`#1-full`, the default in `render.ps1`): the whole phone under a short one-line headline (`short` / `shortSub`).
+  - **Close-up** (`#1`): a bigger phone running off the bottom, with a two-line headline (`title` / `sub`).
+  - To switch, set `$layout` in `render.ps1`.
 - **`render.ps1`**: screenshots each slide with headless Chrome at exact pixel sizes.
 - **`finish.py`**: flattens the images to opaque PNGs, which Play requires for the feature graphic, checks their sizes, and writes the 512 px icon.
 - **The status bar is drawn**, always showing 9:41 with full battery and signal. The captured one is covered rather than changing the phone's demo mode.
