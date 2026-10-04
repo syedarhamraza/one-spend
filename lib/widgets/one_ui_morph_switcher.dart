@@ -66,6 +66,11 @@ class _MorphEntry {
   /// Size from the last layout as the current child; outgoing content keeps it.
   Size? lastSize;
 
+  /// Content fade and scale (0.9 → 1), applied by the compositor without rebuilding
+  /// the content each frame.
+  late final Animation<double> opacity = controller.drive(CurveTween(curve: OneUIMorphSwitcher.contentCurve));
+  late final Animation<double> scale = opacity.drive(Tween(begin: 0.9, end: 1.0));
+
   Key? get key => widget.key;
 }
 
@@ -125,17 +130,10 @@ class _OneUIMorphSwitcherState extends State<OneUIMorphSwitcher> with TickerProv
   }
 
   Widget _content(_MorphEntry e) {
-    return AnimatedBuilder(
+    return FadeTransition(
       key: e.slotKey,
-      animation: e.controller,
-      builder: (context, child) {
-        final t = OneUIMorphSwitcher.contentCurve.transform(e.controller.value);
-        return Opacity(
-          opacity: t,
-          child: Transform.scale(scale: 0.9 + 0.1 * t, child: child),
-        );
-      },
-      child: e.widget,
+      opacity: e.opacity,
+      child: ScaleTransition(scale: e.scale, child: e.widget),
     );
   }
 

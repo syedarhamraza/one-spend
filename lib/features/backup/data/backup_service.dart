@@ -150,7 +150,7 @@ class BackupService {
   /// Restore points, newest first.
   Future<List<File>> restorePoints() async {
     final dir = await _restorePointDir();
-    final files = dir.listSync().whereType<File>().where((f) => f.path.endsWith('.json')).toList()
+    final files = (await dir.list().toList()).whereType<File>().where((f) => f.path.endsWith('.json')).toList()
       ..sort((a, b) => p.basename(b.path).compareTo(p.basename(a.path)));
     return files;
   }

@@ -43,10 +43,13 @@ class ExchangeRatesScreen extends StatelessWidget {
     return 'Updated $when${rates.lastRefreshFailed ? ' · offline' : ''}';
   }
 
+  static final NumberFormat _twoDecimals = NumberFormat('#,##0.00');
+  static final NumberFormat _upToFourDecimals = NumberFormat('#,##0.####');
+
   /// Rate text with sensible precision: 282.45, 1.0873, 0.003546.
   static String formatRate(double rate) {
-    if (rate >= 100) return NumberFormat('#,##0.00').format(rate);
-    if (rate >= 1) return NumberFormat('#,##0.####').format(rate);
+    if (rate >= 100) return _twoDecimals.format(rate);
+    if (rate >= 1) return _upToFourDecimals.format(rate);
     return rate.toStringAsPrecision(4);
   }
 

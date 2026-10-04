@@ -10,12 +10,11 @@ import '../widgets/one_ui_glass_surface.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_budget_card.dart';
-import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_filter_bottom_sheet.dart';
 import '../widgets/one_ui_floating_menu.dart';
 import '../widgets/one_ui_floating_modal.dart';
-import '../widgets/one_ui_group_card.dart';
+import '../widgets/one_ui_group_sliver.dart';
 import '../widgets/one_ui_floating_search_field.dart';
 import '../widgets/one_ui_scroll_to_top_button.dart';
 import '../widgets/one_ui_selection_action_bar.dart';
@@ -547,47 +546,66 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     required String title,
     required List<Subscription> subs,
   }) {
-    return OneUISection(
+    // A lazy sliver: with a long list only the rows on screen are built.
+    return OneUIGroupSliver(
       title: title,
-      child: OneUIGroupCard(
-        items: subs.map((sub) {
-          final store = SubscriptionStore.instance;
-          final method = store.getPaymentMethod(sub.paymentMethodId);
-          final hasNoCard = sub.paymentMethodId == null || method == null;
-          final isCardExpiring = method != null && (method.isExpiringSoon || method.isExpired);
+      itemCount: subs.length,
+      itemBuilder: (context, index) {
+        final sub = subs[index];
+        final store = SubscriptionStore.instance;
+        final method = store.getPaymentMethod(sub.paymentMethodId);
+        final hasNoCard = sub.paymentMethodId == null || method == null;
+        final isCardExpiring = method != null && (method.isExpiringSoon || method.isExpired);
 
-          return OneUISubscriptionCard.toGroupItem(
-            subscription: sub,
-            isSelectionMode: _isSelectionMode,
-            isSelected: _selectedIds.contains(sub.id),
-            onToggleSelect: _toggleSelectItem,
-            paymentMethodNickname: method?.nickname,
-            cardBrand: method?.brand,
-            cardBrandIcon: method?.brand.icon,
-            isCardExpiring: isCardExpiring,
-            hasNoCard: hasNoCard,
-            onTap: () {
-              if (_isSelectionMode) {
-                HapticFeedback.selectionClick();
-                _toggleSelectItem(sub.id);
-              } else {
-                if (_showSearch && _searchQuery.trim().isNotEmpty) {
-                  SubscriptionStore.instance.addRecentSearch(_searchQuery.trim());
-                }
-                HapticFeedback.lightImpact();
-                context.push(AppRoutes.subscriptionDetail(sub.id));
+        return OneUISubscriptionCard.toGroupItem(
+          subscription: sub,
+          isSelectionMode: _isSelectionMode,
+          isSelected: _selectedIds.contains(sub.id),
+          onToggleSelect: _toggleSelectItem,
+          paymentMethodNickname: method?.nickname,
+          cardBrand: method?.brand,
+          cardBrandIcon: method?.brand.icon,
+          isCardExpiring: isCardExpiring,
+          hasNoCard: hasNoCard,
+          onTap: () {
+            if (_isSelectionMode) {
+              HapticFeedback.selectionClick();
+              _toggleSelectItem(sub.id);
+            } else {
+              if (_showSearch && _searchQuery.trim().isNotEmpty) {
+                SubscriptionStore.instance.addRecentSearch(_searchQuery.trim());
               }
-            },
-            onLongPress: () {
-              if (!_isSelectionMode) {
-                HapticFeedback.mediumImpact();
-                _enterSelectionMode(sub.id);
-              }
-            },
-          );
-        }).toList(),
-      ),
+              HapticFeedback.lightImpact();
+              context.push(AppRoutes.subscriptionDetail(sub.id));
+            }
+          },
+          onLongPress: () {
+            if (!_isSelectionMode) {
+              HapticFeedback.mediumImpact();
+              _enterSelectionMode(sub.id);
+            }
+          },
+        );
+      },
     );
+  }
+
+  // The filtered list from the last build, reused while the data, sort order, search
+  // and filters are unchanged (e.g. while toggling selection).
+  List<Subscription>? _filteredMemo;
+  Object? _filteredKey;
+
+  List<Subscription> _filtered(
+    SubscriptionStore store,
+    List<Subscription> sorted,
+    List<Subscription> Function() compute,
+  ) {
+    final key = (sorted, store.revision, _searchQuery, _filterCategory, widget.filterPaymentMethodId);
+    if (_filteredMemo == null || _filteredKey != key) {
+      _filteredMemo = compute();
+      _filteredKey = key;
+    }
+    return _filteredMemo!;
   }
 
   @override
@@ -605,24 +623,26 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         final cardTitle = card != null ? '${card.nickname} Subscriptions' : 'Card Subscriptions';
         final isTrueEmpty = allSubs.isEmpty;
 
-        final filteredSubs = allSubs.where((s) {
-          if (isCardFilter && s.paymentMethodId != widget.filterPaymentMethodId) {
-            return false;
-          }
-          if (_filterCategory != null && s.category != _filterCategory) {
-            return false;
-          }
-          if (_searchQuery.isNotEmpty) {
-            final q = _searchQuery.toLowerCase();
-            return s.name.toLowerCase().contains(q) ||
-                s.category.label.toLowerCase().contains(q) ||
-                s.description.toLowerCase().contains(q) ||
-                s.price.toString().contains(q) ||
-                s.paymentMethod.toLowerCase().contains(q) ||
-                s.notes.toLowerCase().contains(q);
-          }
-          return true;
-        }).toList();
+        final filteredSubs = _filtered(store, allSubs, () {
+          final q = _searchQuery.toLowerCase();
+          return allSubs.where((s) {
+            if (isCardFilter && s.paymentMethodId != widget.filterPaymentMethodId) {
+              return false;
+            }
+            if (_filterCategory != null && s.category != _filterCategory) {
+              return false;
+            }
+            if (_searchQuery.isNotEmpty) {
+              return s.name.toLowerCase().contains(q) ||
+                  s.category.label.toLowerCase().contains(q) ||
+                  s.description.toLowerCase().contains(q) ||
+                  s.price.toString().contains(q) ||
+                  s.paymentMethod.toLowerCase().contains(q) ||
+                  s.notes.toLowerCase().contains(q);
+            }
+            return true;
+          }).toList();
+        });
 
         final upcomingSubs = List<Subscription>.from(store.upcomingDue);
 
@@ -909,11 +929,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                             16,
                             searchPillBottom + 70,
                           ),
-                          sliver: SliverToBoxAdapter(
-                            child: _buildSubscriptionSection(
-                              title: 'Results (${filteredSubs.length})',
-                              subs: filteredSubs,
-                            ),
+                          sliver: _buildSubscriptionSection(
+                            title: 'Results (${filteredSubs.length})',
+                            subs: filteredSubs,
                           ),
                         ),
                     ] else if (isTrueEmpty) ...[
@@ -1124,48 +1142,40 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                       if (filteredSubs.any((s) => s.daysRemaining < 0))
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          sliver: SliverToBoxAdapter(
-                            child: _buildSubscriptionSection(
-                              title: 'Overdue',
-                              subs: filteredSubs.where((s) => s.daysRemaining < 0).toList(),
-                            ),
+                          sliver: _buildSubscriptionSection(
+                            title: 'Overdue',
+                            subs: filteredSubs.where((s) => s.daysRemaining < 0).toList(),
                           ),
                         ),
                       // Group: Due this week
                       if (filteredSubs.any((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7))
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          sliver: SliverToBoxAdapter(
-                            child: _buildSubscriptionSection(
-                              title: 'Due this week',
-                              subs: filteredSubs
-                                  .where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7)
-                                  .toList(),
-                            ),
+                          sliver: _buildSubscriptionSection(
+                            title: 'Due this week',
+                            subs: filteredSubs
+                                .where((s) => s.daysRemaining >= 0 && s.daysRemaining <= 7)
+                                .toList(),
                           ),
                         ),
                       // Group: Due this month
                       if (filteredSubs.any((s) => s.daysRemaining > 7 && s.daysRemaining <= 30))
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          sliver: SliverToBoxAdapter(
-                            child: _buildSubscriptionSection(
-                              title: 'Due this month',
-                              subs: filteredSubs
-                                  .where((s) => s.daysRemaining > 7 && s.daysRemaining <= 30)
-                                  .toList(),
-                            ),
+                          sliver: _buildSubscriptionSection(
+                            title: 'Due this month',
+                            subs: filteredSubs
+                                .where((s) => s.daysRemaining > 7 && s.daysRemaining <= 30)
+                                .toList(),
                           ),
                         ),
                       // Group: Later / Beyond 30 days
                       if (filteredSubs.any((s) => s.daysRemaining > 30))
                         SliverPadding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          sliver: SliverToBoxAdapter(
-                            child: _buildSubscriptionSection(
-                              title: 'Later renewals',
-                              subs: filteredSubs.where((s) => s.daysRemaining > 30).toList(),
-                            ),
+                          sliver: _buildSubscriptionSection(
+                            title: 'Later renewals',
+                            subs: filteredSubs.where((s) => s.daysRemaining > 30).toList(),
                           ),
                         ),
                       SliverToBoxAdapter(
@@ -1174,15 +1184,13 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                     ] else ...[
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        sliver: SliverToBoxAdapter(
-                          child: _buildSubscriptionSection(
-                            title: isCardFilter
-                                ? 'Linked subscriptions (${filteredSubs.length})'
-                                : (_filterCategory != null
-                                    ? '${_filterCategory!.label} (${filteredSubs.length})'
-                                    : 'All subscriptions (${filteredSubs.length})'),
-                            subs: filteredSubs,
-                          ),
+                        sliver: _buildSubscriptionSection(
+                          title: isCardFilter
+                              ? 'Linked subscriptions (${filteredSubs.length})'
+                              : (_filterCategory != null
+                                  ? '${_filterCategory!.label} (${filteredSubs.length})'
+                                  : 'All subscriptions (${filteredSubs.length})'),
+                          subs: filteredSubs,
                         ),
                       ),
                       SliverToBoxAdapter(

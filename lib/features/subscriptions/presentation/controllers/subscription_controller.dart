@@ -99,7 +99,15 @@ class SubscriptionController extends ChangeNotifier {
   Map<SubscriptionCategory, double>? _cachedCategorySpendMap;
   final Map<SpendingTrendHorizon, List<MonthlySpendPoint>> _cachedTrends = {};
 
+  int _revision = 0;
+
+  /// Changes whenever data that totals, schedules or lists derive from changes (not on
+  /// view-only changes like recent searches or a new sort order). Screens use it to
+  /// reuse what they computed from the previous revision.
+  int get revision => _revision;
+
   void _invalidateCache() {
+    _revision++;
     _cachedTotalMonthlySpend = null;
     _cachedTotalActiveCount = null;
     _cachedTotalPausedCount = null;
@@ -116,6 +124,10 @@ class SubscriptionController extends ChangeNotifier {
     _invalidateCache();
     super.notifyListeners();
   }
+
+  /// Notifies for a change no cached value depends on (search history, dismissed
+  /// insights, list grouping), so totals, trends and schedules aren't recomputed.
+  void _notifyViewOnly() => super.notifyListeners();
 
   /// Seeds the demo catalog and default cards into memory and storage (test fixture only).
   void resetForTesting() {
@@ -640,13 +652,14 @@ class SubscriptionController extends ChangeNotifier {
 
   void setSortOption(SubscriptionSortOption option) {
     _sortOption = option;
-    notifyListeners();
+    _cachedSortedSubscriptions = null; // the only value that depends on the order
+    _notifyViewOnly();
     _persist(() => settingsRepository.setSortOption(option));
   }
 
   void setGroupByDate(bool value) {
     _groupByDate = value;
-    notifyListeners();
+    _notifyViewOnly();
     _persist(() => settingsRepository.setGroupByDate(value));
   }
 
@@ -664,7 +677,7 @@ class SubscriptionController extends ChangeNotifier {
     if (_recentSearches.length > 10) {
       _recentSearches.removeRange(10, _recentSearches.length);
     }
-    notifyListeners();
+    _notifyViewOnly();
     _saveRecentSearches();
   }
 
@@ -673,7 +686,7 @@ class SubscriptionController extends ChangeNotifier {
     final beforeCount = _recentSearches.length;
     _recentSearches.removeWhere((q) => q.toLowerCase() == trimmed);
     if (_recentSearches.length != beforeCount) {
-      notifyListeners();
+      _notifyViewOnly();
       _saveRecentSearches();
     }
   }
@@ -681,7 +694,7 @@ class SubscriptionController extends ChangeNotifier {
   void clearRecentSearches() {
     if (_recentSearches.isEmpty) return;
     _recentSearches.clear();
-    notifyListeners();
+    _notifyViewOnly();
     _saveRecentSearches();
   }
 
@@ -830,20 +843,20 @@ class SubscriptionController extends ChangeNotifier {
     while (_dismissedInsights.length > _maxDismissedInsights) {
       _dismissedInsights.remove(_dismissedInsights.first);
     }
-    notifyListeners();
+    _notifyViewOnly();
     _saveDismissedInsights();
   }
 
   void undismissInsight(String key) {
     if (!_dismissedInsights.remove(key)) return;
-    notifyListeners();
+    _notifyViewOnly();
     _saveDismissedInsights();
   }
 
   void restoreDismissedInsights() {
     if (_dismissedInsights.isEmpty) return;
     _dismissedInsights.clear();
-    notifyListeners();
+    _notifyViewOnly();
     _saveDismissedInsights();
   }
 

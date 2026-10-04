@@ -9,8 +9,10 @@ void main() {
       SizedBox(key: ValueKey(key), width: width, height: 40, child: Text(key, key: innerKey));
 
   double opacityOf(WidgetTester tester, String text) {
-    final opacity = tester.widget<Opacity>(find.ancestor(of: find.text(text), matching: find.byType(Opacity)).first);
-    return opacity.opacity;
+    final fade = tester.widget<FadeTransition>(
+      find.ancestor(of: find.text(text), matching: find.byType(FadeTransition)).first,
+    );
+    return fade.opacity.value;
   }
 
   testWidgets('fade-through: old content is gone before the new one is mostly in', (tester) async {

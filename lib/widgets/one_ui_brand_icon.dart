@@ -92,7 +92,7 @@ class OneUIBrandIcon extends StatelessWidget {
       // One shared, disk-cached decode per URL (see LogoImageCache): resizing,
       // zooming or another screen showing the same logo never refetches it.
       final image = Image(
-        image: LogoImageCache.provider(effectiveLogoUrl),
+        image: LogoImageCache.provider(effectiveLogoUrl, size: size),
         fit: BoxFit.contain,
         gaplessPlayback: true,
         errorBuilder: (context, error, stackTrace) => _buildFallback(subName, preset, explicitIcon, foreground),

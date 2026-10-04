@@ -16,13 +16,24 @@ import 'package:path_provider/path_provider.dart';
 class LogoImageCache {
   const LogoImageCache._();
 
-  /// Decode width shared by every icon: sharp at the largest icon (the 200 dp
-  /// editor) zoomed in, without holding full-size originals in memory.
+  /// Decode width for large icons: sharp at the largest icon (the 200 dp editor)
+  /// zoomed in, without holding full-size originals in memory.
   static const int decodeWidth = 768;
 
-  /// The image provider for [url]. Same URL → same provider → same cached image.
-  static ImageProvider provider(String url) =>
-      ResizeImage(LogoImage(url), width: decodeWidth, policy: ResizeImagePolicy.fit, allowUpscaling: false);
+  /// Decode width for list-sized icons (up to [smallIconMaxSize] dp). The logo fills
+  /// about 68% of the icon, so a 48 dp icon at 3x density and the editor's 4x zoom
+  /// needs ~392 px; 384 keeps it sharp at a quarter of the 768 px decode's memory
+  /// (~0.6 MB instead of ~2.4 MB per logo).
+  static const int smallDecodeWidth = 384;
+  static const double smallIconMaxSize = 48;
+
+  /// The decode width for an icon [size] dp wide.
+  static int decodeWidthFor(double size) => size <= smallIconMaxSize ? smallDecodeWidth : decodeWidth;
+
+  /// The image provider for [url] shown in an icon [size] dp wide. Icons of the same
+  /// size class share one decode; the downloaded file is shared by all of them.
+  static ImageProvider provider(String url, {double size = double.infinity}) =>
+      ResizeImage(LogoImage(url), width: decodeWidthFor(size), policy: ResizeImagePolicy.fit, allowUpscaling: false);
 
   /// Overrides the cache folder (tests). Null uses the app support directory.
   @visibleForTesting

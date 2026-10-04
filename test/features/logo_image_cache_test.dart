@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/utils/logo_image_cache.dart';
 
@@ -67,7 +68,17 @@ void main() {
     expect(LogoImageCache.fileNameFor('https://a.com/x.png'), hasLength(16));
   });
 
-  test('one provider per URL, so every icon size and zoom shares one decode', () {
+  test('one provider per URL and size class, so icons of a size and zoom share one decode', () {
     expect(LogoImageCache.provider('https://a.com/x.png'), LogoImageCache.provider('https://a.com/x.png'));
+    expect(LogoImageCache.provider('https://a.com/x.png', size: 42), LogoImageCache.provider('https://a.com/x.png', size: 20));
+    expect(LogoImageCache.provider('https://a.com/x.png', size: 200), LogoImageCache.provider('https://a.com/x.png'));
+  });
+
+  test('list-sized icons decode at 384 px, larger ones at 768 px', () {
+    int widthOf(ImageProvider p) => (p as ResizeImage).width!;
+    expect(widthOf(LogoImageCache.provider('https://a.com/x.png', size: 42)), 384);
+    expect(widthOf(LogoImageCache.provider('https://a.com/x.png', size: 48)), 384);
+    expect(widthOf(LogoImageCache.provider('https://a.com/x.png', size: 64)), 768);
+    expect(widthOf(LogoImageCache.provider('https://a.com/x.png')), 768);
   });
 }
