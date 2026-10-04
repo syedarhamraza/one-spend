@@ -161,6 +161,17 @@ The script:
 
 Then upload the bundle and run `git push --follow-tags`. `./tool/release.ps1 -Help` lists everything. `./tool/release.ps1 -Debug` builds a debug APK of the current version without changing it.
 
+#### Obfuscation and crash symbols
+
+Release builds are built with `--obfuscate --split-debug-info`. The Dart symbols for each release go to `symbols/<version>/`. That folder is git-ignored, so keep it: you need it to read that release's crashes.
+
+- **Automatic upload:** the script uploads the symbols to Crashlytics with `npx firebase-tools crashlytics:symbols:upload`. Run `npx firebase-tools login` once beforehand.
+- **If the upload fails:** the script prints the command so you can rerun it.
+- **Decoding a trace by hand:** run `flutter symbolize -i trace.txt -d symbols/<version>/app.android-arm64.symbols`.
+- **Java/Kotlin:** R8 already shrinks and obfuscates it, and the Crashlytics Gradle plugin uploads its mapping.
+
+Judge app size only from release builds. A `flutter run` or debug APK is about 180 MB, because it includes the JIT VM and every ABI.
+
 **Upload key (one-time setup).** Play only accepts bundles signed with your upload key.
 
 1. Create the keystore, and keep it and its passwords somewhere safe outside the repo:

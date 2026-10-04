@@ -54,6 +54,9 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Ships native symbol tables in the .aab so Play can symbolize native crashes
+            // (not part of what users download).
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
         }
     }
 }
