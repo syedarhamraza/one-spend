@@ -132,6 +132,13 @@ Local notifications only, with no push server. They live in `lib/features/notifi
   - Globals: `notificationsEnabled` and `defaultReminderTimeMinutes` in `SettingsRepository`.
 - **Android setup:** `AndroidManifest.xml` has the POST_NOTIFICATIONS and boot permissions plus the plugin receivers. Core library desugaring is enabled in `android/app/build.gradle.kts`.
 
+## Website (`website/`)
+
+The marketing site is a separate Next.js 16 + Tailwind v4 project with its own `package.json`, so Flutter tooling ignores it. Commands: `npm --prefix website run dev` / `run build` (static export to `website/out`).
+- **Assets** come from the app repo through `website/scripts/assets.mjs` (store captures, icon, feature graphic). It runs before dev and build. Don't commit `public/screens` or `public/brand`.
+- **Style:** tokens in `website/app/globals.css` mirror `OneUITheme`. Dark-only, one accent (`accentBlue`), radii 34/26/20. Follow the taste-skill rules: no em/en dashes in visible copy, no div-built fake screenshots (use real captures or ports of real widgets), and the same `PLAY_LABEL` for every download button.
+- **Motion:** Motion for UI and reveals; GSAP ScrollTrigger only inside `CollapsingHeader` and `ScreensPan`, with `gsap.context`/`matchMedia` cleanup. Use `useReduced()` from `website/lib/useReduced.ts` (it's hydration-safe), not Motion's `useReducedMotion`, which mismatches during hydration.
+
 ## Testing
 
 Tests that touch the controller or DB must inject an in-memory database first:
