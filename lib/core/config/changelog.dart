@@ -23,6 +23,14 @@ class Changelog {
 
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
+      version: '1.0.0-alpha.3',
+      date: 'Oct 2026',
+      changes: [
+        'Read the privacy policy from Settings › About or Settings › Security & privacy',
+        'Security & privacy now explains what data One Spend collects and what it never sends',
+      ],
+    ),
+    ChangelogEntry(
       version: '1.0.0-alpha.2',
       date: 'Oct 2026',
       changes: [
@@ -36,16 +44,10 @@ class Changelog {
       version: '1.0.0-alpha.1',
       date: 'In development',
       changes: [
-        'Track subscriptions with renewal reminders, budgets and spending insights',
-        'Multiple currencies with exchange rates and main-currency totals',
         'Backup to a file and restore, with automatic restore points you can go back to',
-        'Custom categories, annual plan savings and a year-end projection',
         'Check for updates from Google Play in Settings › About',
         'Crash reports and anonymous usage statistics help fix bugs faster (never your subscription details)',
         'Send feedback and problem reports with your app version and phone filled in',
-        'One UI 8.5 glass with an optional 3D look',
-        'Selection mode that morphs the header and nav bar in place',
-        'Undo an accidental Renew',
       ],
     ),
   ];
