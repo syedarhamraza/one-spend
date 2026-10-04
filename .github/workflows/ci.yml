@@ -1,0 +1,150 @@
+# Verifies every pull request and push to main: analyzer, tests with a coverage
+# gate, Drift codegen freshness, and (when Android files change) a release build.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same PR/branch cancels the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.47.5' # matches the local toolchain; bump deliberately
+  MIN_COVERAGE: '77' # measured 79.8% (non-generated lines) when the gate was added
+
+jobs:
+  # Decides whether the Android build is worth running on a pull request.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # paths-filter lists the PR's changed files
+    outputs:
+      android: ${{ steps.filter.outputs.android }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            android:
+              - 'android/**'
+              - 'pubspec.yaml'
+              - 'pubspec.lock'
+              - 'assets/**'
+
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true # Flutter SDK only
+      - uses: actions/cache@v4 # pub packages are a separate cache layer
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+      - run: flutter pub get
+      # Enable once the codebase is formatted: the code uses ~120 columns, so first add
+      # `formatter: page_width: 120` to analysis_options.yaml and format once.
+      # - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+      - run: flutter pub get
+      # ~450 tests run in about a minute, so no sharding.
+      - run: flutter test --coverage --reporter github
+      - name: Coverage gate (generated *.g.dart excluded)
+        run: |
+          PCT=$(awk -F'[:,]' '
+            /^SF:/ { skip = ($2 ~ /\.g\.dart$/) }
+            /^DA:/ && !skip { total++; if ($3 > 0) hit++ }
+            END { printf "%.1f", (total ? 100 * hit / total : 0) }
+          ' coverage/lcov.info)
+          echo "Line coverage: ${PCT}% (minimum ${MIN_COVERAGE}%)" | tee -a "$GITHUB_STEP_SUMMARY"
+          awk -v p="$PCT" -v m="$MIN_COVERAGE" 'BEGIN { exit !(p >= m) }' \
+            || { echo "::error::Coverage ${PCT}% is below ${MIN_COVERAGE}%"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          retention-days: 14
+
+  # Fails when lib/core/database/app_database.g.dart is stale (tables changed without regenerating).
+  codegen-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: git diff --exit-code -- lib/
+
+  # Release bundle smoke build (signed with the debug key via the Gradle fallback; never uploaded).
+  build-android:
+    needs: [changes]
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4 # Java only where Gradle runs
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4 # Gradle dependency and build caches
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+      - run: flutter pub get
+      - run: flutter build appbundle --release --dart-define=GIT_SHA=${GITHUB_SHA::7}
