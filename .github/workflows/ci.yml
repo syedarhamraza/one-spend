@@ -23,6 +23,9 @@ jobs:
   # Decides whether the Android build is worth running on a pull request.
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # paths-filter lists the PR's changed files
     outputs:
       android: ${{ steps.filter.outputs.android }}
     steps:
