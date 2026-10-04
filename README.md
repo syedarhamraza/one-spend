@@ -360,29 +360,7 @@ All UI follows [`docs/design-language.md`](docs/design-language.md), which cover
 
 ## Website
 
-The landing page lives in [`website/`](website): Next.js 16 (static export), Tailwind CSS v4, Motion, and GSAP ScrollTrigger with Lenis for the pinned scroll scenes. It reuses the app's tokens and recreates real components rather than mock screens. The page runs in this order:
-- intro and sticky glass header
-- hero: the budget card lifts out of a real capture
-- collapsing title
-- screen pan
-- a three-step sticky stack: one-tap presets, notifications with the planner's wording, a budget that fills as you scroll
-- an 8-tile feature grid: category ring, time wheel, payment cards, calendar, restore points, export, insight tips, currencies
-- a live card customizer, whose 3D switch restyles the page's own nav
-- the Renew/Undo morph
-- privacy
-- FAQ
-- a closing wordmark
-
-It's dark-only, like the app.
-
-```bash
-cd website
-npm install
-npm run dev        # http://localhost:3000
-npm run build      # static site in website/out
-```
-
-`npm run dev` and `npm run build` first run `scripts/assets.mjs`. That script copies the real captures from `tool/store_graphics/captures/` and the icon and feature graphic from `store/play/` into `public/`, cropping the status bar and converting to WebP. Re-run it after regenerating the store captures. `/privacy` is rendered from `docs/privacy-policy.md` at build time. Set `NEXT_PUBLIC_SITE_URL` when building for a real domain so the Open Graph image resolves.
+The landing page lives in its own public repo, [syedarhamraza/syedarhamraza.github.io](https://github.com/syedarhamraza/syedarhamraza.github.io), and is served at https://syedarhamraza.github.io. It uses copies of this repo's store captures (`tool/store_graphics/captures/`), the icon and feature graphic (`store/play/`) and `docs/privacy-policy.md`. After changing any of them, run `npm run sync -- ../one-spend` in the site repo and push.
 
 ---
 
