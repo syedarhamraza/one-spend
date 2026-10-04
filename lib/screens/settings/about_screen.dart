@@ -6,16 +6,14 @@ import 'package:go_router/go_router.dart';
 import '../../core/config/app_info.dart';
 import '../../core/config/app_version.dart';
 import '../../core/config/changelog.dart';
-import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
 import '../../features/updates/data/update_service.dart';
 import '../../features/updates/presentation/update_controller.dart';
 import '../../theme/one_ui_theme.dart';
+import '../../utils/external_links.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
-import 'coming_soon_screen.dart';
-import 'planned_feature.dart';
 import 'whats_new_screen.dart';
 
 /// Settings › About, in the style of One UI's "About" pages: large app icon,
@@ -147,12 +145,15 @@ class AboutScreen extends StatelessWidget {
                 context.push(AppRoutes.settingsLicenses);
               },
             ),
-            if (FeatureFlags.showPlannedFeatures)
-              OneUIGroupItem(
-                title: PlannedFeature.privacyPolicy.title,
-                trailing: const OneUISoonChip(),
-                onTap: () => ComingSoonScreen.open(context, PlannedFeature.privacyPolicy),
-              ),
+            OneUIGroupItem(
+              title: 'Privacy policy',
+              subtitle: 'Opens in your browser',
+              subtitleColor: OneUITheme.textSecondary,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                openExternalLink(context, AppInfo.privacyPolicyUrl);
+              },
+            ),
           ],
         ),
         const SizedBox(height: 24),

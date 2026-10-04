@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_info.dart';
+import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
+import '../../utils/external_links.dart';
 import '../../widgets/one_ui_card.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
@@ -24,28 +27,33 @@ class SecuritySettingsScreen extends StatelessWidget {
     return OneUISubpage(
       title: 'Security & privacy',
       builder: (context) => [
-        OneUISection(
-          title: 'Security',
-          child: OneUIGroupCard(
-            margin: EdgeInsets.zero,
-            items: [
-              OneUIGroupItem(
-                title: PlannedFeature.appLock.title,
-                trailing: const OneUISoonChip(),
-                onTap: () => ComingSoonScreen.open(context, PlannedFeature.appLock),
-              ),
-            ],
+        if (FeatureFlags.showPlannedFeatures)
+          OneUISection(
+            title: 'Security',
+            child: OneUIGroupCard(
+              margin: EdgeInsets.zero,
+              items: [
+                OneUIGroupItem(
+                  title: PlannedFeature.appLock.title,
+                  trailing: const OneUISoonChip(),
+                  onTap: () => ComingSoonScreen.open(context, PlannedFeature.appLock),
+                ),
+              ],
+            ),
           ),
-        ),
         OneUISection(
           title: 'Privacy',
           child: OneUIGroupCard(
             margin: EdgeInsets.zero,
             items: [
               OneUIGroupItem(
-                title: PlannedFeature.privacyPolicy.title,
-                trailing: const OneUISoonChip(),
-                onTap: () => ComingSoonScreen.open(context, PlannedFeature.privacyPolicy),
+                title: 'Privacy policy',
+                subtitle: 'Opens in your browser',
+                subtitleColor: OneUITheme.textSecondary,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  openExternalLink(context, AppInfo.privacyPolicyUrl);
+                },
               ),
             ],
           ),

@@ -149,14 +149,13 @@ class SettingsCatalog {
         icon: Icons.shield_rounded,
         color: OneUITheme.accentBlue,
         open: SecuritySettingsScreen.open,
-        placeholderOnly: true,
         options: [
           (
             title: PlannedFeature.appLock.title,
             keywords: ['fingerprint', 'biometric', 'pin', 'password'],
             placeholder: true,
           ),
-          (title: PlannedFeature.privacyPolicy.title, keywords: ['data'], placeholder: true),
+          (title: 'Privacy policy', keywords: ['data', 'policy'], placeholder: false),
         ],
       ),
       SettingsDestination(

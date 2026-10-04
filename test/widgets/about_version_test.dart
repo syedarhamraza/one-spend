@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onespend/core/config/feature_flags.dart';
 import 'package:onespend/screens/settings/about_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -26,5 +27,21 @@ void main() {
     expect(find.text('Version 1.0.0'), findsOneWidget);
     expect(find.text('Beta 2'), findsOneWidget);
     expect(find.textContaining('Build 7'), findsOneWidget);
+  });
+
+  testWidgets('About links the privacy policy in release builds', (tester) async {
+    FeatureFlags.showPlannedFeatures = false;
+    addTearDown(() => FeatureFlags.showPlannedFeatures = true);
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(routedTestApp(const AboutScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Privacy policy'), 200);
+    expect(find.text('Privacy policy'), findsOneWidget);
+    expect(find.text('Opens in your browser'), findsOneWidget);
   });
 }
