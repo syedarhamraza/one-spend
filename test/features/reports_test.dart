@@ -15,6 +15,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized(); // rootBundle for the report fonts
   setUpAll(() => driftRuntimeOptions.dontWarnAboutMultipleDatabases = true);
 
   final now = DateTime(2026, 10, 15, 12);
@@ -98,6 +99,13 @@ void main() {
   group('PdfReportBuilder', () {
     bool isPdf(List<int> bytes) => utf8.decode(bytes.take(5).toList()) == '%PDF-';
 
+    // Two builds differ only in the random document /ID and the creation timestamp.
+    String normalized(List<int> bytes) => latin1
+        .decode(bytes)
+        .replaceAll(RegExp(r'/ID\[<[0-9a-f]+><[0-9a-f]+>\]'), '/ID[]')
+        .replaceAll(RegExp(r'/CreationDate\(D:\d+Z\)'), '/CreationDate()');
+    bool samePdf(List<int> a, List<int> b) => normalized(a) == normalized(b);
+
     test('builds the spending report', () async {
       final bytes = await PdfReportBuilder.spendingReport(SpendingReportData.fromStore(store, now: now), fonts);
       expect(isPdf(bytes), isTrue);
@@ -124,6 +132,29 @@ void main() {
       final s = store.getSubscription('Stream')!;
       final bytes = await PdfReportBuilder.subscriptionSheet(s, fonts, mainCurrency: 'USD', toMain: store.toMain, now: now);
       expect(isPdf(bytes), isTrue);
+    });
+
+    test('background rendering matches the UI-isolate build, custom categories included', () async {
+      final custom = store.addCustomCategory(name: 'Side gigs', iconCodePoint: 0xe0b0, colorValue: 0xFF00AA88);
+      store.addSubscription(sub('Freelance', price: 30, category: custom));
+      final data = SpendingReportData.fromStore(store, now: now);
+
+      final inBackground = await ReportSharer.spendingReportPdf(data);
+      final onMain = await PdfReportBuilder.spendingReport(data, fonts);
+      expect(samePdf(inBackground, onMain), isTrue);
+
+      final s = store.getSubscription('Freelance')!;
+      final sheet = await ReportSharer.subscriptionSheetPdf(store, s, now: now);
+      final sheetOnMain = await PdfReportBuilder.subscriptionSheet(s, fonts, mainCurrency: 'USD', toMain: store.toMain, now: now);
+      expect(samePdf(sheet, sheetOnMain), isTrue);
+    });
+
+    test('report conversion matches the store, without capturing it', () {
+      store.setCurrency('EUR');
+      final toMain = isolateSafeToMain(store);
+      for (final code in ['USD', 'EUR', 'INR', 'JPY']) {
+        expect(toMain(12.5, code), store.toMain(12.5, code));
+      }
     });
 
     test('an empty report still builds', () async {

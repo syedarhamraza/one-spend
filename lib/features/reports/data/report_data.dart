@@ -1,4 +1,5 @@
 import '../../../models/spending_trend.dart';
+import '../../currency/domain/exchange_rates.dart';
 import '../../currency/domain/money_format.dart';
 import '../../subscriptions/domain/entities/subscription.dart';
 import '../../subscriptions/domain/entities/subscription_enums.dart';
@@ -83,7 +84,9 @@ class SpendingReportData {
   }) {
     final at = now ?? DateTime.now();
     final today = DateTime(at.year, at.month, at.day);
-    final toMain = store.toMain;
+    // Not store.toMain: the report is rendered on a background isolate, so its
+    // converter must not capture the store.
+    final toMain = isolateSafeToMain(store);
     final subs = [
       for (final s in store.subscriptions)
         if ((category == null || s.category == category) && (onlyIds == null || onlyIds.contains(s.id))) s,
@@ -153,3 +156,12 @@ class SpendingReportData {
     );
   }
 }
+
+/// Converts into [store]'s main currency exactly like [SubscriptionController.toMain],
+/// but captures only the converter and the currency code, so the function can be sent
+/// to another isolate (see `ReportSharer`).
+double Function(double amount, String code) isolateSafeToMain(SubscriptionController store) =>
+    _toMainWith(store.converter, store.currency);
+
+double Function(double amount, String code) _toMainWith(CurrencyConverter converter, String main) =>
+    (amount, code) => converter.convert(amount, code, main) ?? 0;

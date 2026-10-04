@@ -107,6 +107,38 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
 
   static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+  // Charge schedules for this build, reused until the data or the day changes, so
+  // selection taps and appearance changes don't re-project every subscription.
+  final Map<(DateTime, DateTime, bool), List<UpcomingCharge>> _chargeMemo = {};
+  SubscriptionStore? _memoStore;
+  int _memoRevision = -1;
+  DateTime? _memoDay;
+
+  /// [ChargeSchedule.between] for [from]..[to], memoized per data revision and day.
+  List<UpcomingCharge> _charges(
+    SubscriptionStore store, {
+    required DateTime from,
+    required DateTime to,
+    required DateTime now,
+    bool includePaid = true,
+  }) {
+    final today = _dateOnly(now);
+    if (!identical(_memoStore, store) || _memoRevision != store.revision || _memoDay != today) {
+      _chargeMemo.clear();
+      _memoStore = store;
+      _memoRevision = store.revision;
+      _memoDay = today;
+    } else if (_chargeMemo.length > 24) {
+      _chargeMemo.clear(); // e.g. many calendar days tapped
+    }
+    return _chargeMemo.putIfAbsent(
+      (from, to, includePaid),
+      () => ChargeSchedule.between(store.subscriptions, from: from, to: to, now: now, includePaid: includePaid),
+    );
+  }
+
+  int _pruneRevision = -1;
+
   /// Totals (prices use [formatMoney] directly).
   String _money(String currency, double amount) => formatMoney(amount, currency, style: MoneyStyle.summary);
 
@@ -368,24 +400,27 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         final today = _dateOnly(now);
         final horizonEnd = today.add(Duration(days: _horizon.days));
 
-        final overdue = ChargeSchedule.between(
-          store.subscriptions,
+        final overdue = _charges(
+          store,
           from: DateTime(1970),
           to: today.subtract(const Duration(days: 1)),
           now: now,
           includePaid: false,
         ).where(_matchesCard).toList();
-        final unfilteredWindow = ChargeSchedule.between(store.subscriptions, from: today, to: horizonEnd, now: now);
+        final unfilteredWindow = _charges(store, from: today, to: horizonEnd, now: now);
         final window = unfilteredWindow.where(_matchesCard).toList();
         final dueTotal = overdue.dueTotal(store.toMain) + window.dueTotal(store.toMain);
 
-        // Drop selections whose subscriptions were deleted or paused elsewhere.
-        _selectedIds.removeWhere((id) => store.getSubscription(id) == null);
+        // Drop selections whose subscriptions were deleted or paused elsewhere (only
+        // needed when the data changed).
+        if (_pruneRevision != store.revision) {
+          _pruneRevision = store.revision;
+          _selectedIds.removeWhere((id) => store.getSubscription(id) == null);
+        }
         final selectedDay = _selectedDay ?? today;
         final visibleIds = <String>{
           for (final c in isCalendar
-              ? ChargeSchedule.between(store.subscriptions, from: selectedDay, to: selectedDay, now: now)
-                  .where(_matchesCard)
+              ? _charges(store, from: selectedDay, to: selectedDay, now: now).where(_matchesCard)
               : [...overdue, ...window])
             // Paid charges are settled history: "select all" never picks them.
             if (!c.isPaid) c.subscription.id,
@@ -738,8 +773,8 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   List<Widget> _calendarSlivers(SubscriptionStore store, DateTime now, DateTime today) {
     final firstMonth = DateTime(today.year, today.month - 6);
     final lastMonth = DateTime(today.year, today.month + 12);
-    final charges = ChargeSchedule.between(
-      store.subscriptions,
+    final charges = _charges(
+      store,
       from: firstMonth,
       to: DateTime(lastMonth.year, lastMonth.month + 1, 0),
       now: now,

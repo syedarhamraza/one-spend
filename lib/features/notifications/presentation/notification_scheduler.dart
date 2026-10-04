@@ -10,8 +10,11 @@ import '../../../core/telemetry/telemetry.dart';
 /// Keeps the OS's scheduled notifications equal to [NotificationPlanner]'s output.
 ///
 /// Re-plans (debounced) whenever [SubscriptionController] changes and whenever the app
-/// resumes, cancelling what it scheduled before. Developer test notifications use reserved
-/// ids and are never cancelled here.
+/// resumes. A data change only cancels and schedules the notifications that differ from
+/// the last plan (most changes, like a search or a sort, touch none); a resume or an
+/// explicit [syncNow] cancels everything this scheduler owns and schedules the plan
+/// afresh, which also repairs anything the OS dropped. Developer test notifications use
+/// reserved ids and are never cancelled here.
 class NotificationScheduler with WidgetsBindingObserver {
   final SubscriptionController controller;
   final NotificationService service;
@@ -29,6 +32,10 @@ class NotificationScheduler with WidgetsBindingObserver {
   Future<int> _syncQueue = Future.value(0);
   Set<int>? _scheduledIds;
   List<PlannedNotification> _lastPlan = const [];
+
+  /// Completes when the syncs queued so far have finished.
+  @visibleForTesting
+  Future<void> get lastSyncDone => _syncQueue;
 
   /// What the most recent sync scheduled (empty when notifications are off).
   List<PlannedNotification> get lastPlan => _lastPlan;
@@ -65,17 +72,53 @@ class NotificationScheduler with WidgetsBindingObserver {
 
   void _scheduleSync() {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(debounce, syncNow);
+    _debounceTimer = Timer(debounce, () => _enqueue(full: false));
   }
 
-  /// Re-plans immediately; returns how many notifications are now scheduled.
-  Future<int> syncNow() {
+  /// Re-plans immediately and reschedules everything; returns how many notifications
+  /// are now scheduled.
+  Future<int> syncNow() => _enqueue(full: true);
+
+  Future<int> _enqueue({required bool full}) {
     // Serialize syncs so a slow one never interleaves with the next.
-    return _syncQueue = _syncQueue.then((_) => _sync()).catchError((Object e, StackTrace stack) {
+    return _syncQueue = _syncQueue.then((_) => full ? _sync() : _syncChanges()).catchError((Object e, StackTrace stack) {
       AppLog.error(e, stack, reason: 'Failed to sync notifications');
       return 0;
     });
   }
+
+  /// Applies only the difference between the last plan and the current one.
+  Future<int> _syncChanges() async {
+    final previousIds = _scheduledIds;
+    // Nothing scheduled by this process yet: start from a clean slate.
+    if (previousIds == null) return _sync();
+
+    final plan = controller.notificationsEnabled ? _plan() : const <PlannedNotification>[];
+    final before = {for (final n in _lastPlan) n.id: n};
+    final ids = {for (final n in plan) n.id};
+
+    final removed = previousIds.difference(ids);
+    if (removed.isNotEmpty) await service.cancel(removed);
+    for (final notification in plan) {
+      // Scheduling an id again replaces it, so changed ones need no cancel first.
+      if (before[notification.id] != notification) {
+        await service.schedule(notification, route: routeFor(notification));
+      }
+    }
+    _scheduledIds = ids;
+    _lastPlan = plan;
+    return plan.length;
+  }
+
+  List<PlannedNotification> _plan() => NotificationPlanner.plan(
+        subscriptions: controller.subscriptions,
+        paymentMethods: controller.paymentMethods,
+        monthlyBudget: controller.monthlyBudget,
+        currency: controller.currency,
+        toMain: controller.toMain,
+        defaultReminderTimeMinutes: controller.defaultReminderTimeMinutes,
+        now: clock(),
+      );
 
   Future<int> _sync() async {
     // First run in this process: forget whatever a previous process scheduled.
@@ -92,15 +135,7 @@ class NotificationScheduler with WidgetsBindingObserver {
       return 0;
     }
 
-    final plan = NotificationPlanner.plan(
-      subscriptions: controller.subscriptions,
-      paymentMethods: controller.paymentMethods,
-      monthlyBudget: controller.monthlyBudget,
-      currency: controller.currency,
-      toMain: controller.toMain,
-      defaultReminderTimeMinutes: controller.defaultReminderTimeMinutes,
-      now: clock(),
-    );
+    final plan = _plan();
     for (final notification in plan) {
       await service.schedule(notification, route: routeFor(notification));
     }

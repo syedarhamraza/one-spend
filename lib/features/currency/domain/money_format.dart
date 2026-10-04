@@ -6,6 +6,8 @@ import 'currency.dart';
 
 final Map<int, NumberFormat> _formats = {};
 final NumberFormat _compact = NumberFormat.compact();
+final RegExp _nonZeroDigit = RegExp(r'[1-9]');
+final RegExp _endsWithLetter = RegExp(r'[A-Za-z]$');
 
 /// How much precision an amount needs.
 enum MoneyStyle {
@@ -39,12 +41,12 @@ String formatMoney(
     final digits = decimals ?? _digitsFor(abs, currency.decimals, style);
     number = (_formats[digits] ??= NumberFormat.decimalPatternDigits(decimalDigits: digits)).format(abs);
   }
-  final zero = number.replaceAll(RegExp(r'[^1-9]'), '').isEmpty;
+  final zero = !_nonZeroDigit.hasMatch(number);
   final sign = amount < 0 && !zero ? '-' : '';
   final symbol = currency.symbol;
   if (currency.symbolAfter) return '$sign$number $symbol';
   // Letter symbols (Rs, CHF, KSh) read better with a space: "Rs 1,500".
-  final spaced = RegExp(r'[A-Za-z]$').hasMatch(symbol);
+  final spaced = _endsWithLetter.hasMatch(symbol);
   return '$sign$symbol${spaced ? ' ' : ''}$number';
 }
 
@@ -64,5 +66,5 @@ int _digitsFor(double abs, int currencyDigits, MoneyStyle style) {
 /// The symbol users type after, for editor prefixes: `Rs `, `$`, `kr`.
 String currencyPrefix(String code) {
   final symbol = CurrencyCatalog.of(code).symbol;
-  return RegExp(r'[A-Za-z]$').hasMatch(symbol) ? '$symbol ' : symbol;
+  return _endsWithLetter.hasMatch(symbol) ? '$symbol ' : symbol;
 }

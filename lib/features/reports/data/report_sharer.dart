@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
@@ -27,15 +28,55 @@ enum ExportFormat { pdf, csv, text, backup }
 class ReportSharer {
   const ReportSharer._();
 
-  static ReportFonts? _fonts;
+  static ({ByteData regular, ByteData bold})? _fontBytes;
 
-  /// Noto Sans from assets, loaded once.
-  static Future<ReportFonts> loadFonts() async {
-    final cached = _fonts;
+  /// Noto Sans from assets, loaded once. Kept as bytes so they can be sent to the
+  /// isolate that renders the PDF.
+  static Future<({ByteData regular, ByteData bold})> _loadFontBytes() async {
+    final cached = _fontBytes;
     if (cached != null) return cached;
     final regular = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
     final bold = await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
-    return _fonts = (regular: pw.Font.ttf(regular), bold: pw.Font.ttf(bold));
+    return _fontBytes = (regular: regular, bold: bold);
+  }
+
+  static ReportFonts _fontsFrom(({ByteData regular, ByteData bold}) bytes) =>
+      (regular: pw.Font.ttf(bytes.regular), bold: pw.Font.ttf(bytes.bold));
+
+  // PDF layout, font embedding and compression take a few hundred milliseconds, so
+  // reports render on a background isolate to keep the UI responsive. Inputs are
+  // plain data; the closures below capture only their parameters (never the store).
+  // A new isolate starts with an empty CustomCategoryRegistry, so it is copied over.
+
+  /// The spending report PDF for [data], rendered off the UI isolate.
+  static Future<Uint8List> spendingReportPdf(SpendingReportData data) async {
+    final fonts = await _loadFontBytes();
+    final categories = CustomCategoryRegistry.categories;
+    return Isolate.run(() {
+      CustomCategoryRegistry.replaceAll(categories);
+      return PdfReportBuilder.spendingReport(data, _fontsFrom(fonts));
+    });
+  }
+
+  /// The one-page PDF for [sub], rendered off the UI isolate.
+  static Future<Uint8List> subscriptionSheetPdf(SubscriptionController store, Subscription sub, {DateTime? now}) async {
+    // Read everything from the store here: the closure below must not capture it.
+    final mainCurrency = store.currency;
+    final toMain = isolateSafeToMain(store);
+    final paymentMethodName = store.getPaymentMethod(sub.paymentMethodId)?.displayName;
+    final fonts = await _loadFontBytes();
+    final categories = CustomCategoryRegistry.categories;
+    return Isolate.run(() {
+      CustomCategoryRegistry.replaceAll(categories);
+      return PdfReportBuilder.subscriptionSheet(
+        sub,
+        _fontsFrom(fonts),
+        mainCurrency: mainCurrency,
+        toMain: toMain,
+        paymentMethodName: paymentMethodName,
+        now: now,
+      );
+    });
   }
 
   static String _day(DateTime d) =>
@@ -74,10 +115,7 @@ class ReportSharer {
     ];
     switch (format) {
       case ExportFormat.pdf:
-        final bytes = await PdfReportBuilder.spendingReport(
-          SpendingReportData.fromStore(store, category: category, now: at),
-          await loadFonts(),
-        );
+        final bytes = await spendingReportPdf(SpendingReportData.fromStore(store, category: category, now: at));
         await _shareFiles(
           [await _file('One-Spend-report$suffix-${_day(at)}.pdf', bytes, 'application/pdf')],
           'One Spend spending report',
@@ -115,10 +153,7 @@ class ReportSharer {
   static Future<void> shareSelectionPdf(SubscriptionController store, Set<String> ids, {DateTime? now}) async {
     AppLog.event(TelemetryEvent.exportShared(format: 'pdf', scope: 'selection'));
     final at = now ?? DateTime.now();
-    final bytes = await PdfReportBuilder.spendingReport(
-      SpendingReportData.fromStore(store, onlyIds: ids, now: at),
-      await loadFonts(),
-    );
+    final bytes = await spendingReportPdf(SpendingReportData.fromStore(store, onlyIds: ids, now: at));
     await _shareFiles(
       [await _file('One-Spend-${ids.length}-subscriptions-${_day(at)}.pdf', bytes, 'application/pdf')],
       'One Spend subscriptions (${ids.length})',
@@ -129,14 +164,7 @@ class ReportSharer {
   static Future<void> shareSubscriptionPdf(SubscriptionController store, Subscription sub, {DateTime? now}) async {
     AppLog.event(TelemetryEvent.exportShared(format: 'pdf', scope: 'single'));
     final at = now ?? DateTime.now();
-    final bytes = await PdfReportBuilder.subscriptionSheet(
-      sub,
-      await loadFonts(),
-      mainCurrency: store.currency,
-      toMain: store.toMain,
-      paymentMethodName: store.getPaymentMethod(sub.paymentMethodId)?.displayName,
-      now: at,
-    );
+    final bytes = await subscriptionSheetPdf(store, sub, now: at);
     await _shareFiles(
       [await _file('${safeFileName(sub.name)}-${_day(at)}.pdf', bytes, 'application/pdf')],
       '${sub.name} subscription',

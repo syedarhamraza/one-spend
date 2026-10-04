@@ -20,6 +20,8 @@ class NotificationPlanner {
 
   static final DateFormat _dayFormat = DateFormat('MMM d');
   static final DateFormat _monthFormat = DateFormat('MMMM');
+  static final DateFormat _dueKeyFormat = DateFormat('yyyy-MM-dd');
+  static final DateFormat _monthKeyFormat = DateFormat('yyyy-MM');
 
   static List<PlannedNotification> plan({
     required List<Subscription> subscriptions,
@@ -71,7 +73,7 @@ class NotificationPlanner {
       if (fireAt.isAfter(horizon)) return;
       if (!fireAt.isAfter(now)) continue;
 
-      final dueKey = DateFormat('yyyy-MM-dd').format(due);
+      final dueKey = _dueKeyFormat.format(due);
       yield PlannedNotification(
         id: PlannedNotification.stableId('renewal|${sub.id}|$dueKey'),
         kind: NotificationKind.renewal,
@@ -132,7 +134,7 @@ class NotificationPlanner {
         // Only alert about a crossing that is still ahead of us.
         final fireAt = _at(charge.date, minutes);
         if (fireAt.isAfter(now) && !fireAt.isAfter(horizon)) {
-          final monthKey = DateFormat('yyyy-MM').format(monthStart);
+          final monthKey = _monthKeyFormat.format(monthStart);
           yield PlannedNotification(
             id: PlannedNotification.stableId('budget|$monthKey'),
             kind: NotificationKind.budget,

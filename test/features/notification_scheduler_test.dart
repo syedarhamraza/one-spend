@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/router/app_router.dart';
@@ -15,15 +16,18 @@ import 'package:onespend/features/subscriptions/data/datasources/subscription_dr
 import 'package:onespend/features/subscriptions/data/fixtures/popular_catalog.dart';
 import 'package:onespend/features/subscriptions/data/repositories/subscription_repository_impl.dart';
 import 'package:onespend/features/subscriptions/domain/entities/subscription.dart';
+import 'package:onespend/features/subscriptions/domain/entities/subscription_enums.dart';
 import 'package:onespend/features/subscriptions/presentation/controllers/subscription_controller.dart';
 
 /// Records what the scheduler asks the platform to do.
 class FakeNotificationService extends NoopNotificationService {
   final Map<int, ({PlannedNotification notification, String route})> scheduled = {};
   final List<int> cancelled = [];
+  int scheduleCalls = 0;
 
   @override
   Future<void> schedule(PlannedNotification notification, {required String route}) async {
+    scheduleCalls++;
     scheduled[notification.id] = (notification: notification, route: route);
   }
 
@@ -130,6 +134,74 @@ void main() {
 
     final times = service.scheduled.values.map((s) => s.notification.fireAt);
     expect(times.every((t) => t.hour == 20 && t.minute == 0), isTrue);
+  });
+
+  group('a data change only touches what changed', () {
+    Future<void> settle() async {
+      await Future<void>.delayed(const Duration(milliseconds: 20)); // debounce (zero) + queued sync
+      await scheduler.lastSyncDone;
+    }
+
+    setUp(() async {
+      scheduler.start();
+      controller.addSubscription(dueSoon());
+      controller.addSubscription(popularCatalog[1].copyWith(
+        nextBillingDate: DateTime.now().add(const Duration(days: 12)),
+        reminderDays: 1,
+      ));
+      await settle();
+      expect(service.scheduled, isNotEmpty);
+      service.cancelled.clear();
+      service.scheduleCalls = 0;
+    });
+
+    test('changes that affect no reminder schedule and cancel nothing', () async {
+      controller.addRecentSearch('netflix');
+      controller.setSortOption(SubscriptionSortOption.nameAsc);
+      controller.dismissInsight('some-insight');
+      await settle();
+
+      expect(service.scheduleCalls, 0);
+      expect(service.cancelled, isEmpty);
+    });
+
+    test("editing one subscription reschedules only that subscription's reminders", () async {
+      final untouched = {
+        for (final e in service.scheduled.entries)
+          if (e.value.notification.subjectId == popularCatalog[1].id) e.key,
+      };
+      final sub = controller.getSubscription(popularCatalog[0].id)!;
+      controller.updateSubscription(sub.copyWith(reminderDays: 3));
+      await settle();
+
+      expect(service.scheduleCalls, greaterThan(0));
+      final rescheduledSubjects = service.scheduled.values
+          .where((s) => s.notification.subjectId == popularCatalog[0].id)
+          .map((s) => s.notification.fireAt);
+      expect(rescheduledSubjects, isNotEmpty);
+      expect(service.cancelled.toSet().intersection(untouched), isEmpty);
+      expect(service.scheduled.keys, containsAll(untouched));
+      // The fake mirrors the OS: what's scheduled now equals a full fresh plan.
+      expect(service.scheduled.keys.toSet(), scheduler.lastPlan.map((n) => n.id).toSet());
+    });
+
+    test('removing a subscription cancels its reminders', () async {
+      final ids = {
+        for (final e in service.scheduled.entries)
+          if (e.value.notification.subjectId == popularCatalog[0].id) e.key,
+      };
+      controller.removeSubscription(popularCatalog[0].id);
+      await settle();
+
+      expect(service.cancelled, containsAll(ids));
+      expect(service.scheduleCalls, 0);
+    });
+
+    test('a resume still reschedules everything', () async {
+      scheduler.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await scheduler.lastSyncDone;
+      expect(service.scheduleCalls, scheduler.lastPlan.length);
+    });
   });
 
   test('never cancels developer test notifications', () async {
