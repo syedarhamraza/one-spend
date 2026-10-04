@@ -110,6 +110,7 @@ The app is fully free; there is no paywall or entitlement. The earlier OneSpend 
 - `AppVersion` (`lib/core/config/app_version.dart`) parses and labels it ("1.0.0 Beta 2"). About and What's new use it.
 - `test/features/app_version_test.dart` fails when the pubspec name and `Changelog.entries.first.version` differ.
 - Release signing reads `android/key.properties` (git-ignored) and falls back to the debug key; `release.ps1` refuses to build a release without it, and runs `flutter analyze` and `flutter test` first.
+- Release builds are Dart-obfuscated (`--obfuscate --split-debug-info=symbols/<version>`, git-ignored). `release.ps1` uploads those symbols to Crashlytics, and only warns if the upload fails. Sideload APKs skip x86_64.
 - CI (`.github/workflows/ci.yml`) runs analyze, tests with a coverage floor, a Drift codegen freshness check, and an Android bundle build on every PR and push to `main`.
 
 ### Categories

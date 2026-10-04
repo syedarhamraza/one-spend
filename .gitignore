@@ -52,3 +52,6 @@ app.*.map.json
 
 # Local databases
 *.sqlite*
+
+# Dart symbols from obfuscated release builds (tool/release.ps1), one folder per version
+/symbols/

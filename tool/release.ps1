@@ -214,13 +214,29 @@ $sha = (git rev-parse --short HEAD).Trim()
 
 if (-not $SkipBuild) {
   if (-not $Target) { $Target = 'appbundle' }
+  # Dart code is obfuscated; its symbols go to symbols/<version> (git-ignored, kept per
+  # release) and are needed to read Crashlytics stack traces.
+  $symbolsDir = "symbols/$newVersion"
   # One universal APK, so its versionCode matches the bundle's (split APKs add 1000 * ABI).
-  $buildArgs = @($Target, '--release', "--dart-define=GIT_SHA=$sha")
+  $buildArgs = @($Target, '--release', '--obfuscate', "--split-debug-info=$symbolsDir", "--dart-define=GIT_SHA=$sha")
+  # x86_64 is only for emulators; the bundle keeps it since Play serves per-ABI splits anyway.
+  if ($Target -eq 'apk') { $buildArgs += '--target-platform=android-arm,android-arm64' }
   Write-Host "`nBuilding $Target for $newVersion ($sha)..."
   flutter build @buildArgs
   if ($LASTEXITCODE -ne 0) {
     git reset -q --soft HEAD~1
     Fail 'The build failed. The release commit was undone; your version changes are still staged.'
+  }
+
+  # Upload the Dart symbols so Crashlytics can deobfuscate. A failure only warns: the build
+  # is done and the symbols stay in $symbolsDir for a manual upload.
+  $appId = (Get-Content 'android/app/google-services.json' -Raw | ConvertFrom-Json).client[0].client_info.mobilesdk_app_id
+  $uploadCommand = "npx --yes firebase-tools crashlytics:symbols:upload --app=$appId $symbolsDir"
+  Write-Host "`nUploading Dart symbols to Crashlytics..."
+  try { Invoke-Expression $uploadCommand } catch { $global:LASTEXITCODE = 1 }
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host 'Symbol upload failed (run `npx firebase-tools login` once). Upload them later with:' -ForegroundColor Yellow
+    Write-Host "  $uploadCommand" -ForegroundColor Yellow
   }
 }
 
