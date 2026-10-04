@@ -31,15 +31,6 @@ enum PlannedFeature {
     OneUITheme.accentAmber,
     'Rating will open once One Spend is on the Play Store.',
     ['Leave a rating and review', 'Share One Spend with friends'],
-  ),
-  privacyPolicy(
-    'Privacy policy',
-    Icons.privacy_tip_rounded,
-    OneUITheme.accentTeal,
-    'Your subscriptions and cards stay on your device. One Spend sends crash reports and anonymous usage '
-        'statistics to Google Firebase to fix bugs, never your subscription details. A full policy will be '
-        'published with the Play Store release.',
-    ['Your data stays on your device', 'Anonymous crash reports and usage statistics', 'No ads, no account'],
   );
 
   final String title;

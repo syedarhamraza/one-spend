@@ -7,6 +7,9 @@ class AppInfo {
   static const String name = 'One Spend';
   static const String tagline = 'Track every subscription, in the style of One UI.';
   static const String logoAsset = 'assets/logos/app_logo.png';
+
+  /// Public policy page (source: docs/privacy-policy.md, published by the website repo).
+  static const String privacyPolicyUrl = 'https://syedarhamraza.github.io/privacy/';
 }
 
 class AuthorInfo {

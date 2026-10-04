@@ -1,6 +1,6 @@
 # One Spend Privacy Policy
 
-_Draft. Last updated: October 2026_
+_Last updated: October 2026_
 
 One Spend ("the app") is a subscription and spending tracker made by Syed Arham Raza. This policy explains what the app collects and why.
 

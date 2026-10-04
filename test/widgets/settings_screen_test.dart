@@ -176,13 +176,18 @@ void main() {
     await pumpSettings(tester);
 
     expect(find.text('Widgets'), findsNothing);
-    expect(find.text('Security & privacy'), findsNothing);
     expect(find.byType(OneUISoonChip), findsNothing);
     expect(SettingsCatalog.search('app lock', developerOptions: false), isEmpty);
+    expect(SettingsCatalog.search('privacy policy', developerOptions: false), isNotEmpty);
     expect(SettingsCatalog.search('drive', developerOptions: false), isEmpty);
     expect(SettingsCatalog.search('restore', developerOptions: false), isNotEmpty);
 
     // Subpages drop their placeholder rows too.
+    await tester.tap(find.text('Security & privacy'));
+    await tester.pumpAndSettle();
+    expect(find.text('App lock'), findsNothing);
+    expect(find.text('Privacy policy'), findsOneWidget);
+    await back(tester);
     await tester.tap(find.text('Budget & currency'));
     await tester.pumpAndSettle();
     expect(find.text('Multiple currencies'), findsNothing);
