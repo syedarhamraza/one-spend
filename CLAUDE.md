@@ -109,7 +109,8 @@ The app is fully free; there is no paywall or entitlement. The earlier OneSpend 
 - `tool/release.ps1` bumps it, adds or stamps the `Changelog` entry, builds the bundle, commits `chore(release): …` and tags `v<name>`. Don't hand-edit the version.
 - `AppVersion` (`lib/core/config/app_version.dart`) parses and labels it ("1.0.0 Beta 2"). About and What's new use it.
 - `test/features/app_version_test.dart` fails when the pubspec name and `Changelog.entries.first.version` differ.
-- Release signing reads `android/key.properties` (git-ignored) and falls back to the debug key.
+- Release signing reads `android/key.properties` (git-ignored) and falls back to the debug key; `release.ps1` refuses to build a release without it, and runs `flutter analyze` and `flutter test` first.
+- CI (`.github/workflows/ci.yml`) runs analyze, tests with a coverage floor, a Drift codegen freshness check, and an Android bundle build on every PR and push to `main`.
 
 ### Categories
 

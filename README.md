@@ -153,10 +153,11 @@ Don't edit the version by hand. When you're ready to upload, run one command fro
 Every one of these also raises the build number.
 
 The script:
-1. bumps `pubspec.yaml`;
-2. adds a What's new entry to `lib/core/config/changelog.dart`, then pauses so you can write the notes;
-3. builds `build/app/outputs/bundle/release/app-release.aab`;
-4. commits `chore(release): …` and tags `v<name>`.
+1. runs `flutter analyze` and `flutter test`, and stops before changing anything if either fails;
+2. bumps `pubspec.yaml`;
+3. adds a What's new entry to `lib/core/config/changelog.dart`, then pauses so you can write the notes;
+4. builds `build/app/outputs/bundle/release/app-release.aab`;
+5. commits `chore(release): …` and tags `v<name>`.
 
 Then upload the bundle and run `git push --follow-tags`. `./tool/release.ps1 -Help` lists everything. `./tool/release.ps1 -Debug` builds a debug APK of the current version without changing it.
 
@@ -177,7 +178,7 @@ Then upload the bundle and run `git push --follow-tags`. `./tool/release.ps1 -He
    keyPassword=…
    ```
 
-Without `key.properties`, release builds are signed with the debug key and the script warns you.
+Without `key.properties`, release builds are signed with the debug key. `flutter build` allows that for local testing, but the release script stops instead (unless you pass `-SkipBuild`).
 
 The application id is `com.syedarhamraza.onespend`. It can't change once the app is on Google Play.
 

@@ -153,9 +153,15 @@ if (git tag --list "v$newName") {
   if (-not $Rebuild) { Fail "Tag v$newName already exists." }
 }
 if (-not $SkipBuild -and -not (Test-Path 'android/key.properties')) {
-  Write-Host 'Warning: android/key.properties is missing, so this build is signed with the DEBUG key.' -ForegroundColor Yellow
-  Write-Host '         Google Play will reject it. See README "Releasing" to set up your upload key.' -ForegroundColor Yellow
+  # Without it Gradle falls back to the DEBUG key, which Google Play rejects after the
+  # version code and tag are already used up.
+  Fail 'android/key.properties is missing, so the release would be signed with the DEBUG key. See README "Releasing" to set up your upload key (or use -SkipBuild).'
 }
+
+# Nothing has changed yet, so a failure here leaves the tree untouched.
+Write-Host 'Checking the code (flutter analyze, flutter test)...'
+Invoke-Checked 'flutter analyze' { flutter analyze }
+Invoke-Checked 'flutter test' { flutter test --reporter failures-only }
 
 Write-Host "`n$oldName+$($current.Code)  ->  $newVersion`n" -ForegroundColor Cyan
 
