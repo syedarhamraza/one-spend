@@ -11,13 +11,27 @@ class ChangelogEntry {
   final String date;
   final List<String> changes;
 
-  const ChangelogEntry({required this.version, required this.date, required this.changes});
+  const ChangelogEntry({
+    required this.version,
+    required this.date,
+    required this.changes,
+  });
 }
 
 class Changelog {
   const Changelog._();
 
   static const List<ChangelogEntry> entries = [
+    ChangelogEntry(
+      version: '1.0.0-alpha.2',
+      date: 'Oct 2026',
+      changes: [
+        'New name and icon: OneSpend is now One Spend',
+        'Faster subscription list, and PDF reports no longer freeze the app while they are made',
+        'Improved performance and stability',
+        'Smaller download and install size',
+      ],
+    ),
     ChangelogEntry(
       version: '1.0.0-alpha.1',
       date: 'In development',
