@@ -1,15 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- Vivid: blue to indigo, with a warm-cyan light spot for the glass to catch. -->
-  <defs>
-    <linearGradient id="base" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2E8BFF"/>
-      <stop offset="1" stop-color="#3B2BD1"/>
-    </linearGradient>
-    <radialGradient id="spot" cx="620" cy="380" r="380" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#5EEAD4" stop-opacity="0.85"/>
-      <stop offset="1" stop-color="#5EEAD4" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect id="Base" width="1024" height="1024" fill="url(#base)"/>
-  <rect id="Light spot" width="1024" height="1024" fill="url(#spot)"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><defs><linearGradient id="base" x1="0" x2="1024" y1="0" y2="1024" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2E8BFF"/><stop offset="1" stop-color="#3B2BD1"/></linearGradient><radialGradient id="spot" cx="620" cy="380" r="380" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#5EEAD4" stop-opacity=".85"/><stop offset="1" stop-color="#5EEAD4" stop-opacity="0"/></radialGradient></defs><rect id="Base" width="1024" height="1024" fill="url(#base)"/><rect id="Light spot" width="1024" height="1024" fill="url(#spot)"/></svg>
