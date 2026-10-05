@@ -20,7 +20,7 @@ To find and fix bugs, the app uses two Google Firebase services:
   - the device model and Android version;
   - a short list of the screens and actions just before the error;
   - a few app settings: your main currency code, a rough size of your list (such as "6–20"), and whether reminders and 3D effects are on.
-- **Firebase Analytics** receives anonymous usage statistics: which screens are opened and which features are used (for example "a subscription was added in the Music category" or "a backup was saved").
+- **Firebase Analytics** receives anonymous usage statistics: which screens are opened and which features are used (for example "a subscription was added in the Music category" or "a backup was saved"). Analytics also works out an approximate location (country only) from your IP address; the IP address itself isn't stored.
 
 These reports and statistics **never include** subscription names, prices, notes, links, custom category names, payment card details, or anything else you type into the app. Custom categories are recorded only as "custom".
 
