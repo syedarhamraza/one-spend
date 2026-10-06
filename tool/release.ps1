@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Bumps the OneSpend version, adds its What's new entry, builds for Google Play, commits and tags.
+  Bumps the OneSpend version, adds its Changelog entry, builds for Google Play, commits and tags.
 
 .DESCRIPTION
   pubspec.yaml is the one place the version lives:
@@ -170,7 +170,7 @@ $pubspec = [System.IO.File]::ReadAllText((Resolve-Path $pubspecPath), $utf8)
 $pubspec = [regex]::Replace($pubspec, '(?m)^version:.*?(\r?)$', "version: $newVersion`$1")
 [System.IO.File]::WriteAllText((Resolve-Path $pubspecPath), $pubspec, $utf8)
 
-# --- What's new -------------------------------------------------------------------
+# --- Changelog ---------------------------------------------------------------------
 $month = (Get-Date).ToString('MMM yyyy', [Globalization.CultureInfo]::InvariantCulture)
 $changelog = [System.IO.File]::ReadAllText((Resolve-Path $changelogPath), $utf8)
 $nl = "`n"
@@ -204,7 +204,7 @@ if ((Get-Content $changelogPath -Raw).Contains("'TODO: what changed'")) {
   }
 }
 
-# The version tests check pubspec and What's new agree.
+# The version tests check pubspec and the Changelog agree.
 Invoke-Checked 'Version check' { flutter test test/features/app_version_test.dart --reporter failures-only }
 
 # --- Commit, build, tag -----------------------------------------------------------

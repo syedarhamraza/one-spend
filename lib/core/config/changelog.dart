@@ -45,7 +45,7 @@ class Changelog {
       date: 'In development',
       changes: [
         'Backup to a file and restore, with automatic restore points you can go back to',
-        'Check for updates from Google Play in Settings › About',
+        'Check for updates from Google Play',
         'Crash reports and anonymous usage statistics help fix bugs faster (never your subscription details)',
         'Send feedback and problem reports with your app version and phone filled in',
       ],

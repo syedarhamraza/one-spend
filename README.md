@@ -66,7 +66,8 @@ One Spend keeps track of your recurring payments: what you pay, when it renews, 
 - Automatic restore points before data is replaced or cleared, listed under Backup & data › Restore points.
 - Export a PDF report, CSV or text summary, or renewals to a calendar (`.ics`). Exports are for reading and can't be restored.
 - Restore the sample catalog, or clear all data.
-- Check for updates from Google Play (Settings › About), with a quiet check on launch.
+- Check for updates from Google Play in Settings › Software update, styled after One UI's own page. A quiet check runs on launch, which Auto download can limit to Wi-Fi or turn off.
+- Release notes for every version in Software update › Changelog.
 
 ### Appearance
 - Card studio: price format, cycle progress bar and metadata chips.
@@ -127,7 +128,7 @@ The version lives in **one place**, `pubspec.yaml`:
 version: 1.0.0-alpha.1+1   # MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE
 ```
 
-- **Name** (before `+`) is what users see in Settings › About.
+- **Name** (before `+`) is what users see in Settings › About and Settings › Software update.
   - `MAJOR`: big redesigns or breaking changes.
   - `MINOR`: new features.
   - `PATCH`: fixes only.
@@ -155,7 +156,7 @@ Every one of these also raises the build number.
 The script:
 1. runs `flutter analyze` and `flutter test`, and stops before changing anything if either fails;
 2. bumps `pubspec.yaml`;
-3. adds a What's new entry to `lib/core/config/changelog.dart`, then pauses so you can write the notes;
+3. adds a Changelog entry to `lib/core/config/changelog.dart`, then pauses so you can write the notes;
 4. builds `build/app/outputs/bundle/release/app-release.aab`;
 5. commits `chore(release): …` and tags `v<name>`.
 

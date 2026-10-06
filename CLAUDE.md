@@ -107,7 +107,7 @@ The app is fully free; there is no paywall or entitlement. The earlier OneSpend 
 
 - `version:` in `pubspec.yaml` is the only source: `MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE`. CODE is the Android versionCode, +1 per Play upload.
 - `tool/release.ps1` bumps it, adds or stamps the `Changelog` entry, builds the bundle, commits `chore(release): …` and tags `v<name>`. Don't hand-edit the version.
-- `AppVersion` (`lib/core/config/app_version.dart`) parses and labels it ("1.0.0 Beta 2"). About and What's new use it.
+- `AppVersion` (`lib/core/config/app_version.dart`) parses and labels it ("1.0.0 Beta 2"). About, Software update and Changelog use it.
 - `test/features/app_version_test.dart` fails when the pubspec name and `Changelog.entries.first.version` differ.
 - Release signing reads `android/key.properties` (git-ignored) and falls back to the debug key; `release.ps1` refuses to build a release without it, and runs `flutter analyze` and `flutter test` first.
 - Release builds are Dart-obfuscated (`--obfuscate --split-debug-info=symbols/<version>`, git-ignored). `release.ps1` uploads those symbols to Crashlytics, and only warns if the upload fails. Sideload APKs skip x86_64.
