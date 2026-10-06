@@ -28,18 +28,19 @@ import '../../screens/settings/author_screen.dart';
 import '../../screens/settings/backup_data_screen.dart';
 import '../../screens/settings/budget_currency_screen.dart';
 import '../../screens/settings/categories_screen.dart';
+import '../../screens/settings/changelog_screen.dart';
 import '../../screens/settings/coming_soon_screen.dart';
 import '../../screens/settings/currency_picker_screen.dart';
 import '../../screens/settings/exchange_rates_screen.dart';
 import '../../screens/settings/developer_options_screen.dart';
 import '../../screens/settings/help_feedback_screen.dart';
 import '../../screens/settings/licenses_screen.dart';
-import '../../screens/settings/whats_new_screen.dart';
 import '../../screens/settings/notification_settings_screen.dart';
 import '../../screens/settings/planned_feature.dart';
 import '../../screens/settings/restore_points_screen.dart';
 import '../../screens/settings/restore_preview_screen.dart';
 import '../../screens/settings/security_settings_screen.dart';
+import '../../screens/settings/software_update_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../screens/subscription_card_customizer_screen.dart';
 import '../../screens/subscription_detail_customizer_screen.dart';
@@ -102,7 +103,8 @@ class AppRoutes {
   static const settingsAbout = '/settings/about';
   static const settingsAuthor = '/settings/about/developer';
   static const settingsLicenses = '/settings/about/licenses';
-  static const settingsWhatsNew = '/settings/about/whats-new';
+  static const settingsSoftwareUpdate = '/settings/software-update';
+  static const settingsChangelog = '/settings/software-update/changelog';
 
   /// Export & share (PDF report, CSV, text, backup). `extra`: optional category.
   static const exportShare = '/export';
@@ -308,7 +310,8 @@ List<RouteBase> buildPageRoutes() {
     GoRoute(path: AppRoutes.settingsAbout, builder: (context, state) => const AboutScreen()),
     GoRoute(path: AppRoutes.settingsAuthor, builder: (context, state) => const AuthorScreen()),
     GoRoute(path: AppRoutes.settingsLicenses, builder: (context, state) => const LicensesScreen()),
-    GoRoute(path: AppRoutes.settingsWhatsNew, builder: (context, state) => const WhatsNewScreen()),
+    GoRoute(path: AppRoutes.settingsSoftwareUpdate, builder: (context, state) => const SoftwareUpdateScreen()),
+    GoRoute(path: AppRoutes.settingsChangelog, builder: (context, state) => const ChangelogScreen()),
     GoRoute(
       path: AppRoutes.settingsLicenseDetail,
       builder: (context, state) => LicenseDetailScreen(packageName: state.extra as String? ?? ''),

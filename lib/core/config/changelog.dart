@@ -1,7 +1,9 @@
-/// Release notes shown on Settings › About › What's new, newest first.
+/// Release notes shown on Settings › Software update › Changelog, newest first.
 ///
 /// `tool/release.ps1` adds an entry for each new version name in pubspec.yaml; fill in
-/// its changes before uploading. A test checks that the newest entry matches pubspec.
+/// its changes before uploading. Notes can also be written ahead as an
+/// [Changelog.inDevelopment] entry for the next version. A test checks that the newest
+/// released entry matches pubspec.
 /// Several uploads of the same name (`-Rebuild`) share one entry.
 class ChangelogEntry {
   /// The version name from pubspec.yaml, e.g. `1.0.0-beta.1` (see [AppVersion]).
@@ -21,7 +23,22 @@ class ChangelogEntry {
 class Changelog {
   const Changelog._();
 
+  /// Date of notes written ahead of their release. `tool/release.ps1` stamps the month
+  /// when it releases that version, so entries spell it out as a quoted string.
+  static const String inDevelopment = 'In development';
+
   static const List<ChangelogEntry> entries = [
+    ChangelogEntry(
+      version: '1.0.0-alpha.4',
+      date: 'In development', // tool/release.ps1 looks for a quoted date to stamp
+      changes: [
+        'New Software update page in Settings, in the style of One UI: check for updates and install them in one tap',
+        'Choose when One Spend checks for updates on its own: never, on Wi-Fi only, or on Wi-Fi or mobile data',
+        "What's new is now Changelog, under Software update: your installed version first, earlier versions tap to open",
+        'See your version, build and where One Spend was installed from in Software update › Software information',
+        'About is simpler: just the developer, open source licences and the privacy policy',
+      ],
+    ),
     ChangelogEntry(
       version: '1.0.0-alpha.3',
       date: 'Oct 2026',
@@ -45,7 +62,7 @@ class Changelog {
       date: 'In development',
       changes: [
         'Backup to a file and restore, with automatic restore points you can go back to',
-        'Check for updates from Google Play in Settings › About',
+        'Check for updates from Google Play',
         'Crash reports and anonymous usage statistics help fix bugs faster (never your subscription details)',
         'Send feedback and problem reports with your app version and phone filled in',
       ],

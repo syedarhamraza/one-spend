@@ -87,8 +87,9 @@ class _OneSpendAppState extends State<OneSpendApp> {
     if (launchRoute != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _openNotificationRoute(launchRoute));
     }
-    // Once per launch, quietly: Play needs the activity in the foreground, hence after the first frame.
-    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(UpdateController.instance.check()));
+    // Once per launch, quietly (unless turned off in Software update › Auto download):
+    // Play needs the activity in the foreground, hence after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(UpdateController.instance.autoCheck()));
   }
 
   /// Tabs switch in place; pages are pushed above the tabs so back returns to them.

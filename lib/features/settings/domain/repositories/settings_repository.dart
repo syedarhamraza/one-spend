@@ -47,6 +47,10 @@ abstract class SettingsRepository {
   Future<bool> getOnboardingDone();
   Future<void> setOnboardingDone(bool value);
 
+  /// When One Spend checks Google Play for updates at launch (an `AutoUpdateCheck` name), if set.
+  Future<String?> getAutoUpdateCheck();
+  Future<void> setAutoUpdateCheck(String value);
+
   /// Raw appearance (card studio / effects) values, keyed by setting name.
   Future<Map<String, String>> getAppearanceSettings();
   Future<void> setAppearanceSettings(Map<String, String> values);

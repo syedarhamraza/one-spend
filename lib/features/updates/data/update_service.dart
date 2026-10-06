@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_update/in_app_update.dart' as play;
@@ -26,6 +27,44 @@ enum UpdateCheckResult {
 
 /// How an install attempt ended.
 enum UpdateInstallResult { started, declined, failed }
+
+/// When One Spend checks Google Play for updates on its own, at launch
+/// (Software update › Auto download).
+enum AutoUpdateCheck {
+  never('Never'),
+  wifiOnly('Using Wi-Fi only'),
+  always('Using Wi-Fi or mobile data');
+
+  final String label;
+
+  const AutoUpdateCheck(this.label);
+}
+
+/// Whether the phone is on an unmetered network, for [AutoUpdateCheck.wifiOnly].
+abstract class NetworkStatus {
+  Future<bool> onUnmeteredNetwork();
+}
+
+/// Used in tests: always on Wi-Fi.
+class AnyNetworkStatus implements NetworkStatus {
+  const AnyNetworkStatus();
+
+  @override
+  Future<bool> onUnmeteredNetwork() async => true;
+}
+
+/// Wi-Fi or ethernet counts as unmetered. If the plugin fails, assume mobile data.
+class ConnectivityNetworkStatus implements NetworkStatus {
+  @override
+  Future<bool> onUnmeteredNetwork() async {
+    try {
+      final results = await Connectivity().checkConnectivity();
+      return results.any((r) => r == ConnectivityResult.wifi || r == ConnectivityResult.ethernet);
+    } catch (_) {
+      return false;
+    }
+  }
+}
 
 /// Platform boundary for Google Play in-app updates.
 abstract class UpdateService {

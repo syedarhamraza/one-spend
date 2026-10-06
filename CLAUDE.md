@@ -99,15 +99,15 @@ The app is fully free; there is no paywall or entitlement. The earlier OneSpend 
 - **Play In-App Updates, immediate flow** (`in_app_update`).
   - `PlayUpdateService` talks to Play. It reports `notFromPlay` for `flutter run` or sideloaded builds (Play error -10), and `failed` when Play can't be reached.
   - `setupDependencies()` registers `NoopUpdateService` unless `configureDependencies()` registered Play, so tests never touch the plugin.
-- **`UpdateController.instance`** holds the status shown by About › "Check for updates" and the orange `OneUIDot` on Settings › About One Spend.
-- **Launch check:** `OneSpendApp` calls `check()` once per launch after the first frame, because Play needs a foreground activity. It never shows a pop-up.
+- **`UpdateController.instance`** holds the status shown on Settings › Software update (`SoftwareUpdateScreen`, One UI style: version over a glow, one big button, ⋮ menu with Software information, Auto download and Changelog) and the orange `OneUIDot` on the Software update row.
+- **Launch check:** `OneSpendApp` calls `autoCheck()` once per launch after the first frame, because Play needs a foreground activity. It never shows a pop-up. Auto download (`AutoUpdateCheck`, stored as `onespend_auto_update_check`) can turn it off or limit it to Wi-Fi; `NetworkStatus` (connectivity_plus) answers that, and tests get `AnyNetworkStatus`.
 - **Testing a real update:** this only works on a Play-installed build. Use Internal app sharing or an internal-test track with a higher versionCode.
 
 ### Versioning and releases
 
 - `version:` in `pubspec.yaml` is the only source: `MAJOR.MINOR.PATCH[-alpha.N|-beta.N]+CODE`. CODE is the Android versionCode, +1 per Play upload.
 - `tool/release.ps1` bumps it, adds or stamps the `Changelog` entry, builds the bundle, commits `chore(release): …` and tags `v<name>`. Don't hand-edit the version.
-- `AppVersion` (`lib/core/config/app_version.dart`) parses and labels it ("1.0.0 Beta 2"). About and What's new use it.
+- `AppVersion` (`lib/core/config/app_version.dart`) parses and labels it ("1.0.0 Beta 2"). About, Software update and Changelog use it.
 - `test/features/app_version_test.dart` fails when the pubspec name and `Changelog.entries.first.version` differ.
 - Release signing reads `android/key.properties` (git-ignored) and falls back to the debug key; `release.ps1` refuses to build a release without it, and runs `flutter analyze` and `flutter test` first.
 - Release builds are Dart-obfuscated (`--obfuscate --split-debug-info=symbols/<version>`, git-ignored). `release.ps1` uploads those symbols to Crashlytics, and only warns if the upload fails. Sideload APKs skip x86_64.

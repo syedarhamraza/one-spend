@@ -79,6 +79,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> setLastBackupAt(DateTime value) => _dataSource.setLastBackupAt(value);
 
   @override
+  Future<String?> getAutoUpdateCheck() => _dataSource.getAutoUpdateCheck();
+
+  @override
+  Future<void> setAutoUpdateCheck(String value) => _dataSource.setAutoUpdateCheck(value);
+
+  @override
   Future<DateTime?> getTrackingSince() => _dataSource.getTrackingSince();
 
   @override

@@ -8,7 +8,11 @@ import 'package:onespend/core/di/injection.dart';
 import 'package:onespend/features/updates/data/update_service.dart';
 import 'package:onespend/features/updates/presentation/update_controller.dart';
 import 'package:onespend/models/subscription.dart';
-import 'package:onespend/screens/settings/about_screen.dart';
+import 'package:onespend/core/config/app_version.dart';
+import 'package:onespend/core/config/changelog.dart';
+import 'package:onespend/features/settings/domain/repositories/settings_repository.dart';
+import 'package:onespend/screens/settings/changelog_screen.dart';
+import 'package:onespend/screens/settings/software_update_screen.dart';
 import 'package:onespend/screens/settings_screen.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
 import 'package:onespend/widgets/one_ui_group_card.dart';
@@ -16,6 +20,13 @@ import 'package:onespend/widgets/one_ui_subpage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_app.dart';
+
+class _FakeNetwork implements NetworkStatus {
+  bool wifi = true;
+
+  @override
+  Future<bool> onUnmeteredNetwork() async => wifi;
+}
 
 class _FakeUpdateService implements UpdateService {
   UpdateCheckResult next = UpdateCheckResult.upToDate;
@@ -146,6 +157,51 @@ void main() {
     });
   });
 
+  group('Auto check', () {
+    late _FakeUpdateService service;
+    late _FakeNetwork network;
+
+    setUpAll(() => driftRuntimeOptions.dontWarnAboutMultipleDatabases = true);
+
+    setUp(() {
+      service = _FakeUpdateService();
+      network = _FakeNetwork();
+      setupDependencies(database: AppDatabase.forTesting(NativeDatabase.memory()));
+    });
+
+    UpdateController controllerFor() =>
+        UpdateController(service: service, settings: sl<SettingsRepository>(), network: network);
+
+    test('checks on any network by default, as before', () async {
+      final controller = controllerFor();
+      await controller.loadPreferences();
+      expect(controller.autoCheckMode, AutoUpdateCheck.always);
+      network.wifi = false;
+      expect(await controller.autoCheck(), isTrue);
+      expect(service.checks, 1);
+    });
+
+    test('Never skips the launch check; Wi-Fi only waits for Wi-Fi', () async {
+      final controller = controllerFor();
+      await controller.setAutoCheck(AutoUpdateCheck.never);
+      expect(await controller.autoCheck(), isFalse);
+
+      await controller.setAutoCheck(AutoUpdateCheck.wifiOnly);
+      network.wifi = false;
+      expect(await controller.autoCheck(), isFalse);
+      network.wifi = true;
+      expect(await controller.autoCheck(), isTrue);
+      expect(service.checks, 1);
+    });
+
+    test('the choice is saved', () async {
+      await controllerFor().setAutoCheck(AutoUpdateCheck.wifiOnly);
+      final reloaded = controllerFor();
+      await reloaded.loadPreferences();
+      expect(reloaded.autoCheckMode, AutoUpdateCheck.wifiOnly);
+    });
+  });
+
   group('UI', () {
     late _FakeUpdateService service;
 
@@ -158,7 +214,7 @@ void main() {
       SubscriptionStore.instance.resetForTesting();
       service = _FakeUpdateService();
       sl.unregister<UpdateController>();
-      sl.registerSingleton<UpdateController>(UpdateController(service: service));
+      sl.registerSingleton<UpdateController>(UpdateController(service: service, settings: sl<SettingsRepository>()));
     });
 
     Future<void> pump(WidgetTester tester, Widget screen) async {
@@ -172,43 +228,102 @@ void main() {
 
     Finder rowWith(String title) => find.ancestor(of: find.text(title), matching: find.byType(OneUIGroupItemTile));
 
-    testWidgets('About: checking, then installing an available update', (tester) async {
-      await pump(tester, const AboutScreen());
+    testWidgets('Software update: checking, then installing an available update', (tester) async {
+      await pump(tester, const SoftwareUpdateScreen());
       expect(find.text('Check for updates'), findsOneWidget);
 
       await tester.tap(find.text('Check for updates'));
       await tester.pumpAndSettle();
-      expect(find.text('One Spend is up to date'), findsOneWidget);
+      expect(find.text('One Spend is up to date.'), findsOneWidget);
+      expect(find.text('Check for updates'), findsNothing); // nothing left to do
       expect(service.installs, 0);
 
       service.next = UpdateCheckResult.available;
       await UpdateController.instance.check();
       await tester.pumpAndSettle();
-      expect(find.text('Update available'), findsOneWidget);
-      expect(find.descendant(of: rowWith('Update available'), matching: find.byType(OneUIDot)), findsOneWidget);
+      expect(find.text('A new version is available.'), findsOneWidget);
 
-      await tester.tap(find.text('Update available'));
+      await tester.tap(find.text('Download and install'));
       await tester.pumpAndSettle();
       expect(service.installs, 1);
     });
 
-    testWidgets('About: a copy not from Play says so', (tester) async {
+    testWidgets('Software update: a copy not from Play says so', (tester) async {
       service.next = UpdateCheckResult.notFromPlay;
-      await pump(tester, const AboutScreen());
+      await pump(tester, const SoftwareUpdateScreen());
       await tester.tap(find.text('Check for updates'));
       await tester.pumpAndSettle();
       expect(find.textContaining("wasn't installed from Play"), findsOneWidget);
     });
 
-    testWidgets('Settings: the About row gets a dot only when an update is available', (tester) async {
+    testWidgets('Software update: a failed check offers Try again', (tester) async {
+      service.next = UpdateCheckResult.failed;
+      await pump(tester, const SoftwareUpdateScreen());
+      await tester.tap(find.text('Check for updates'));
+      await tester.pumpAndSettle();
+      expect(find.text("Couldn't reach Google Play."), findsOneWidget);
+
+      service.next = UpdateCheckResult.upToDate;
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      expect(service.checks, 2);
+    });
+
+    Future<void> openMenuItem(WidgetTester tester, String label) async {
+      await tester.tap(find.byTooltip('More options'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Software update menu: Software information', (tester) async {
+      await pump(tester, const SoftwareUpdateScreen());
+      await openMenuItem(tester, 'Software information');
+      expect(find.textContaining('Version: '), findsOneWidget);
+      expect(find.textContaining('Installed from: '), findsOneWidget);
+
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(find.text('Software information'), findsNothing);
+    });
+
+    testWidgets('Software update menu: Auto download saves the choice', (tester) async {
+      await pump(tester, const SoftwareUpdateScreen());
+      await openMenuItem(tester, 'Auto download');
+      await tester.tap(find.text(AutoUpdateCheck.wifiOnly.label));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SoftwareUpdateScreen), findsOneWidget); // back on the page
+      expect(UpdateController.instance.autoCheckMode, AutoUpdateCheck.wifiOnly);
+    });
+
+    testWidgets('Software update menu: Changelog shows the installed version and folds the rest', (tester) async {
+      await pump(tester, const SoftwareUpdateScreen());
+      await openMenuItem(tester, 'Changelog');
+      expect(find.byType(ChangelogScreen), findsOneWidget);
+      expect(find.text('Installed'), findsOneWidget);
+      expect(find.text(Changelog.entries.first.changes.first), findsOneWidget);
+
+      final older = Changelog.entries[1];
+      final olderTitle = find.text(AppVersion.describe(older.version));
+      await tester.scrollUntilVisible(olderTitle, 200);
+      expect(find.text(older.changes.first), findsNothing);
+      await tester.tap(olderTitle);
+      await tester.pumpAndSettle();
+      expect(find.text(older.changes.first), findsOneWidget);
+    });
+
+    testWidgets('Settings: only the Software update row gets a dot, when an update is available', (tester) async {
       await pump(tester, const SettingsScreen());
       await tester.scrollUntilVisible(find.text('About One Spend'), 200);
-      expect(find.descendant(of: rowWith('About One Spend'), matching: find.byType(OneUIDot)), findsNothing);
+      expect(find.descendant(of: rowWith('Software update'), matching: find.byType(OneUIDot)), findsNothing);
 
       service.next = UpdateCheckResult.available;
       await UpdateController.instance.check();
       await tester.pumpAndSettle();
-      expect(find.descendant(of: rowWith('About One Spend'), matching: find.byType(OneUIDot)), findsOneWidget);
+      expect(find.descendant(of: rowWith('Software update'), matching: find.byType(OneUIDot)), findsOneWidget);
+      expect(find.descendant(of: rowWith('About One Spend'), matching: find.byType(OneUIDot)), findsNothing);
     });
   });
 }
