@@ -15,6 +15,7 @@ import 'help_feedback_screen.dart';
 import 'notification_settings_screen.dart';
 import 'planned_feature.dart';
 import 'security_settings_screen.dart';
+import 'software_update_screen.dart';
 
 /// An option inside a subpage, listed so Settings search can find it.
 typedef SettingsOption = ({String title, List<String> keywords, bool placeholder});
@@ -179,6 +180,24 @@ class SettingsCatalog {
     ],
     [
       SettingsDestination(
+        title: 'Software update',
+        icon: Icons.system_update_rounded,
+        color: OneUITheme.accentBlue,
+        open: SoftwareUpdateScreen.open,
+        keywords: ['update', 'upgrade', 'new version', 'play store'],
+        badge: () => UpdateController.instance.updateAvailable,
+        options: [
+          (title: 'Check for updates', keywords: ['software update', 'download', 'install'], placeholder: false),
+          (title: 'Auto download', keywords: ['auto check', 'automatic', 'wi-fi', 'wifi', 'mobile data'], placeholder: false),
+          (title: 'Software information', keywords: ['version', 'build', 'android'], placeholder: false),
+          (
+            title: 'Changelog',
+            keywords: ["what's new", 'whats new', 'release notes', 'last update'],
+            placeholder: false,
+          ),
+        ],
+      ),
+      SettingsDestination(
         title: 'Help & feedback',
         icon: Icons.help_rounded,
         color: OneUITheme.textTertiary,
@@ -195,15 +214,8 @@ class SettingsCatalog {
         icon: Icons.info_rounded,
         color: OneUITheme.textTertiary,
         open: AboutScreen.open,
-        keywords: ['version'],
-        badge: () => UpdateController.instance.updateAvailable,
+        keywords: ['app info'],
         options: [
-          (
-            title: 'Check for updates',
-            keywords: ['update', 'software update', 'upgrade', 'new version', 'play store'],
-            placeholder: false,
-          ),
-          (title: "What's new", keywords: ['changelog', 'release notes', 'updates'], placeholder: false),
           (title: 'Developer', keywords: ['author', 'made by'], placeholder: false),
           (title: 'Open source licences', keywords: ['licenses', 'legal'], placeholder: false),
         ],

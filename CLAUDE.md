@@ -99,8 +99,8 @@ The app is fully free; there is no paywall or entitlement. The earlier OneSpend 
 - **Play In-App Updates, immediate flow** (`in_app_update`).
   - `PlayUpdateService` talks to Play. It reports `notFromPlay` for `flutter run` or sideloaded builds (Play error -10), and `failed` when Play can't be reached.
   - `setupDependencies()` registers `NoopUpdateService` unless `configureDependencies()` registered Play, so tests never touch the plugin.
-- **`UpdateController.instance`** holds the status shown by About › "Check for updates" and the orange `OneUIDot` on Settings › About One Spend.
-- **Launch check:** `OneSpendApp` calls `check()` once per launch after the first frame, because Play needs a foreground activity. It never shows a pop-up.
+- **`UpdateController.instance`** holds the status shown on Settings › Software update (`SoftwareUpdateScreen`, One UI style: version over a glow, one big button, ⋮ menu with Software information, Auto download and Changelog) and the orange `OneUIDot` on the Software update row.
+- **Launch check:** `OneSpendApp` calls `autoCheck()` once per launch after the first frame, because Play needs a foreground activity. It never shows a pop-up. Auto download (`AutoUpdateCheck`, stored as `onespend_auto_update_check`) can turn it off or limit it to Wi-Fi; `NetworkStatus` (connectivity_plus) answers that, and tests get `AnyNetworkStatus`.
 - **Testing a real update:** this only works on a Play-installed build. Use Internal app sharing or an internal-test track with a higher versionCode.
 
 ### Versioning and releases

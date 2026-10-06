@@ -157,7 +157,13 @@ void setupDependencies({AppDatabase? database}) {
     sl.registerSingleton<UpdateService>(NoopUpdateService());
   }
   if (!sl.isRegistered<UpdateController>()) {
-    sl.registerLazySingleton<UpdateController>(() => UpdateController(service: sl<UpdateService>()));
+    sl.registerLazySingleton<UpdateController>(
+      () => UpdateController(
+        service: sl<UpdateService>(),
+        settings: sl<SettingsRepository>(),
+        network: sl.isRegistered<NetworkStatus>() ? sl<NetworkStatus>() : const AnyNetworkStatus(),
+      ),
+    );
   }
 
   // 6. Crash reports and analytics: console only unless configureDependencies() started Firebase
@@ -228,6 +234,9 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   if (!sl.isRegistered<UpdateService>()) {
     sl.registerSingleton<UpdateService>(PlayUpdateService());
   }
+  if (!sl.isRegistered<NetworkStatus>()) {
+    sl.registerSingleton<NetworkStatus>(ConnectivityNetworkStatus());
+  }
   setupDependencies();
 
   // 6. Load persisted state before the first frame so nothing renders stale data.
@@ -238,6 +247,7 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   AppLifecycleListener(onResume: () => unawaited(rates.refresh()));
   await sl<SubscriptionController>().load();
   await sl<OneUIEffectsController>().init();
+  await sl<UpdateController>().loadPreferences();
   unawaited(
     TelemetryContextSync(controller: sl<SubscriptionController>(), effects: sl<OneUIEffectsController>()).start(),
   );

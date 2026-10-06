@@ -70,6 +70,7 @@ void main() {
       'Widgets',
       'Security & privacy',
       'Backup & data',
+      'Software update',
       'Help & feedback',
       'About One Spend',
     ]) {
@@ -103,6 +104,7 @@ void main() {
       'Widgets': 'Coming soon',
       'Security & privacy': 'App lock',
       'Backup & data': 'Save backup to device',
+      'Software update': 'Check for updates',
       'Help & feedback': 'Send feedback',
       'About One Spend': 'Open source licences',
     };
@@ -220,6 +222,9 @@ void main() {
     expect(SettingsCatalog.search('   ', developerOptions: false), isEmpty);
     expect(SettingsCatalog.search('sample', developerOptions: false), isEmpty);
     expect(SettingsCatalog.search('sample', developerOptions: true), isNotEmpty);
+    expect(SettingsCatalog.search('update', developerOptions: false).first.title, 'Software update');
+    final changelog = SettingsCatalog.search('release notes', developerOptions: false).single;
+    expect((changelog.title, changelog.path), ('Changelog', 'Software update'));
   });
 
   testWidgets('About shows the app and opens licences and the developer page', (tester) async {
@@ -232,6 +237,9 @@ void main() {
     expect(find.text(AppInfo.tagline), findsOneWidget);
     expect(find.text('About'), findsWidgets); // page title (not "About One Spend")
     expect(find.text('Source code'), findsNothing);
+    // Updates and release notes live on Settings › Software update now.
+    expect(find.text('Check for updates'), findsNothing);
+    expect(find.text("What's new"), findsNothing);
 
     await tester.tap(find.text('Open source licences'));
     await tester.pumpAndSettle();

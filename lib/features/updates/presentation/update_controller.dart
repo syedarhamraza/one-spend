@@ -1,21 +1,25 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/di/injection.dart';
+import '../../settings/domain/repositories/settings_repository.dart';
 import '../data/update_service.dart';
 import '../../../core/telemetry/events.dart';
 import '../../../core/telemetry/telemetry.dart';
 
-/// State of "Check for updates", shared by Settings and About.
+/// State of "Check for updates", shown on Settings › Software update.
 enum UpdateStatus { notChecked, checking, upToDate, available, notFromPlay, failed }
 
 /// Checks Google Play for a newer OneSpend and installs it with Play's full-screen updater.
 ///
-/// The app also calls [check] once per launch, after the first frame. That result only
-/// shows as a dot on the About row and the "Check for updates" row, never as a pop-up.
+/// The app also calls [autoCheck] once per launch, after the first frame. That result only
+/// shows as a dot on the Software update row and on its page, never as a pop-up.
 class UpdateController extends ChangeNotifier {
   final UpdateService service;
+  final SettingsRepository? settings;
+  final NetworkStatus _network;
 
-  UpdateController({required this.service});
+  UpdateController({required this.service, this.settings, NetworkStatus? network})
+      : _network = network ?? const AnyNetworkStatus();
 
   static UpdateController get instance {
     if (!sl.isRegistered<UpdateController>()) setupDependencies();
@@ -23,6 +27,7 @@ class UpdateController extends ChangeNotifier {
   }
 
   UpdateStatus _status = UpdateStatus.notChecked;
+  AutoUpdateCheck _autoCheck = AutoUpdateCheck.always;
   DateTime? _lastChecked;
   bool _installing = false;
 
@@ -30,6 +35,37 @@ class UpdateController extends ChangeNotifier {
   DateTime? get lastChecked => _lastChecked;
   bool get updateAvailable => _status == UpdateStatus.available;
   bool get installing => _installing;
+
+  /// When the launch check runs (Software update › Auto download).
+  AutoUpdateCheck get autoCheckMode => _autoCheck;
+
+  /// Reads the saved [autoCheckMode]. Awaited in `configureDependencies()`.
+  Future<void> loadPreferences() async {
+    final saved = await settings?.getAutoUpdateCheck();
+    _autoCheck = AutoUpdateCheck.values.asNameMap()[saved] ?? AutoUpdateCheck.always;
+    notifyListeners();
+  }
+
+  Future<void> setAutoCheck(AutoUpdateCheck mode) async {
+    if (mode == _autoCheck) return;
+    _autoCheck = mode;
+    notifyListeners();
+    await settings?.setAutoUpdateCheck(mode.name);
+  }
+
+  /// The once-per-launch check, honouring [autoCheckMode]. Returns whether it asked Play.
+  Future<bool> autoCheck() async {
+    switch (_autoCheck) {
+      case AutoUpdateCheck.never:
+        return false;
+      case AutoUpdateCheck.wifiOnly:
+        if (!await _network.onUnmeteredNetwork()) return false;
+      case AutoUpdateCheck.always:
+        break;
+    }
+    await check();
+    return true;
+  }
 
   /// Asks Play for updates. Returns the new status.
   Future<UpdateStatus> check() async {

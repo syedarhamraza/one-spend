@@ -50,7 +50,7 @@ void main() {
       expect(int.parse(parts[1]), greaterThanOrEqualTo(1));
     });
 
-    test("What's new has notes for the current version", () {
+    test('Changelog has notes for the current version', () {
       expect(
         Changelog.entries.first.version,
         parts[0],

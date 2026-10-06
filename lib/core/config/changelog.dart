@@ -1,4 +1,4 @@
-/// Release notes shown on Settings › About › What's new, newest first.
+/// Release notes shown on Settings › Software update › Changelog, newest first.
 ///
 /// `tool/release.ps1` adds an entry for each new version name in pubspec.yaml; fill in
 /// its changes before uploading. A test checks that the newest entry matches pubspec.
