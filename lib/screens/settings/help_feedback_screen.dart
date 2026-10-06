@@ -3,17 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_info.dart';
-import '../../core/config/feature_flags.dart';
 import '../../core/router/app_router.dart';
 import '../../core/telemetry/device_summary.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../utils/external_links.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
-import 'coming_soon_screen.dart';
-import 'planned_feature.dart';
 
-/// Settings › Help & feedback.
+/// Settings › Help & feedback: email the developer, the public GitHub tracker, and rating.
 class HelpFeedbackScreen extends StatelessWidget {
   const HelpFeedbackScreen({super.key});
 
@@ -37,7 +34,6 @@ class HelpFeedbackScreen extends StatelessWidget {
       title: 'Help & feedback',
       builder: (context) => [
         OneUIGroupCard(
-          margin: EdgeInsets.zero,
           items: [
             OneUIGroupItem(
               leading: const OneUIIconBadge(Icons.mail_rounded, OneUITheme.accentBlue),
@@ -55,13 +51,33 @@ class HelpFeedbackScreen extends StatelessWidget {
                 prompt: 'What happened, and what were you doing just before?',
               ),
             ),
-            if (FeatureFlags.showPlannedFeatures)
-              OneUIGroupItem(
-                leading: const OneUIIconBadge(Icons.star_rounded, OneUITheme.accentAmber),
-                title: PlannedFeature.rateApp.title,
-                trailing: const OneUISoonChip(),
-                onTap: () => ComingSoonScreen.open(context, PlannedFeature.rateApp),
-              ),
+          ],
+        ),
+        OneUIGroupCard(
+          margin: EdgeInsets.zero,
+          items: [
+            OneUIGroupItem(
+              leading: const OneUIIconBadge(Icons.forum_rounded, OneUITheme.textTertiary),
+              title: 'Feedback on GitHub',
+              subtitle: 'See known issues and suggest features',
+              subtitleColor: OneUITheme.textSecondary,
+              trailing: openIcon,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                openExternalLink(context, AppInfo.feedbackRepoUrl);
+              },
+            ),
+            OneUIGroupItem(
+              leading: const OneUIIconBadge(Icons.star_rounded, OneUITheme.accentAmber),
+              title: 'Rate One Spend',
+              subtitle: 'On Google Play',
+              subtitleColor: OneUITheme.textSecondary,
+              trailing: openIcon,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                openExternalLinkOr(context, AppInfo.playStoreMarketUrl, AppInfo.playStoreUrl);
+              },
+            ),
           ],
         ),
       ],

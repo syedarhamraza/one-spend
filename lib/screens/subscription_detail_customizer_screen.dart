@@ -153,7 +153,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                                 const Padding(
                                   padding: EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 6),
                                   child: Text(
-                                    'When Blue selectable descriptions is enabled, values for Service name, Price, Billing cycle, Renewal date, Category, Payment method, and Plan notes display in accent blue matching One UI settings.',
+                                    'When Blue selectable descriptions is enabled, values for Service name, Price, Billing cycle, Renewal date, Category, Payment method, and Plan notes display in accent blue.',
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       color: OneUITheme.textSecondary,
@@ -531,7 +531,7 @@ class _DetailPaymentIconOptionScreen extends StatelessWidget {
                               ),
                               _buildPaymentRadioItem(
                                 label: 'Setting icon badge',
-                                description: 'Uniform One UI icon badge conforming to icon shape (squircle/circle)',
+                                description: 'A uniform badge that follows the icon shape (squircle or circle)',
                                 value: DetailPaymentIconStyle.iconBadge,
                                 selectedValue: ctrl.detailPaymentIconStyle,
                                 onSelect: () => ctrl.detailPaymentIconStyle = DetailPaymentIconStyle.iconBadge,

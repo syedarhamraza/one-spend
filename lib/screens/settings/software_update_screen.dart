@@ -15,6 +15,7 @@ import '../../features/updates/data/update_service.dart';
 import '../../features/updates/presentation/update_controller.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_ambient_glow.dart';
+import '../../widgets/one_ui_bare_top_bar.dart';
 import '../../widgets/one_ui_cancel_save_pill.dart';
 import '../../widgets/one_ui_collapsible_header.dart';
 import '../../widgets/one_ui_floating_menu.dart';
@@ -165,7 +166,16 @@ class _SoftwareUpdateScreenState extends State<SoftwareUpdateScreen> {
               SafeArea(
                 child: Column(
                   children: [
-                    _TopBar(moreKey: _moreKey, onMore: _showMenu),
+                    OneUIBareTopBar(
+                      trailing: OneUIHeaderAction(
+                        icon: Icons.more_vert_rounded,
+                        tooltip: 'More options',
+                        width: 44,
+                        height: 44,
+                        actionKey: _moreKey,
+                        onTap: _showMenu,
+                      ),
+                    ),
                     Expanded(
                       child: Center(
                         child: Padding(
@@ -208,46 +218,6 @@ class _SoftwareUpdateScreenState extends State<SoftwareUpdateScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-/// Back on the left, ⋮ on the right, no title (like One UI's page).
-class _TopBar extends StatelessWidget {
-  final GlobalKey moreKey;
-  final VoidCallback onMore;
-
-  const _TopBar({required this.moreKey, required this.onMore});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      child: Row(
-        children: [
-          Semantics(
-            button: true,
-            label: 'Back',
-            child: GestureDetector(
-              onTap: () => Navigator.maybePop(context),
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox.square(
-                dimension: 44,
-                child: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: OneUITheme.textPrimary),
-              ),
-            ),
-          ),
-          const Spacer(),
-          OneUIHeaderAction(
-            icon: Icons.more_vert_rounded,
-            tooltip: 'More options',
-            width: 44,
-            height: 44,
-            actionKey: moreKey,
-            onTap: onMore,
-          ),
-        ],
       ),
     );
   }

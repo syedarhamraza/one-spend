@@ -42,6 +42,26 @@ void main() {
 
     await tester.scrollUntilVisible(find.text('Privacy policy'), 200);
     expect(find.text('Privacy policy'), findsOneWidget);
-    expect(find.text('Opens in your browser'), findsOneWidget);
+    expect(find.text('Opens in your browser'), findsNothing); // it opens in the app now
+  });
+
+  testWidgets('About fits a small phone with large text', (tester) async {
+    tester.view.physicalSize = const Size(720, 1280); // 360 x 640 dp
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      routedTestApp(
+        const MediaQuery(
+          data: MediaQueryData(size: Size(360, 640), textScaler: TextScaler.linear(1.6)),
+          child: AboutScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull); // no overflow: it scrolls instead
+    await tester.scrollUntilVisible(find.text('Privacy policy'), 200);
+    expect(find.text('Privacy policy'), findsOneWidget);
   });
 }
