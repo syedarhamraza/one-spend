@@ -96,11 +96,13 @@ The app is fully free; there is no paywall or entitlement. The earlier OneSpend 
 
 ### App updates (`lib/features/updates/`)
 
-- **Play In-App Updates, immediate flow** (`in_app_update`).
+- **Play In-App Updates, flexible flow** (`in_app_update`).
   - `PlayUpdateService` talks to Play. It reports `notFromPlay` for `flutter run` or sideloaded builds (Play error -10), and `failed` when Play can't be reached.
+  - "Download and install" calls `startDownload()`: Play's small confirmation sheet, then a background download (`downloadStates`, no byte progress) while the app stays usable. "Install and restart" calls `installDownloaded()`. When Play allows only an immediate update, `startDownload()` falls back to the full-screen `installNow()`.
+  - `UpdateController.check()` asks `NetworkStatus.isConnected()` first; offline it reports `UpdateStatus.offline` without asking Play. A tapped check shows its dots for at least 900 ms (`minCheckDuration`, zero in tests).
   - `setupDependencies()` registers `NoopUpdateService` unless `configureDependencies()` registered Play, so tests never touch the plugin.
 - **`UpdateController.instance`** holds the status shown on Settings › Software update (`SoftwareUpdateScreen`, One UI style: version over a glow, one big button, ⋮ menu with Software information, Auto download and Changelog) and the orange `OneUIDot` on the Software update row.
-- **Launch check:** `OneSpendApp` calls `autoCheck()` once per launch after the first frame, because Play needs a foreground activity. It never shows a pop-up. Auto download (`AutoUpdateCheck`, stored as `onespend_auto_update_check`) can turn it off or limit it to Wi-Fi; `NetworkStatus` (connectivity_plus) answers that, and tests get `AnyNetworkStatus`.
+- **Launch check:** `OneSpendApp` calls `autoCheck()` once per launch after the first frame, because Play needs a foreground activity. It never shows a pop-up and stays quiet offline. Auto download (`AutoUpdateCheck`, stored as `onespend_auto_update_check`) is **Never by default**, and can be set to Wi-Fi only or any network; `NetworkStatus` (connectivity_plus) answers that, and tests get `AnyNetworkStatus`.
 - **Testing a real update:** this only works on a Play-installed build. Use Internal app sharing or an internal-test track with a higher versionCode.
 
 ### Versioning and releases

@@ -59,6 +59,9 @@ class TelemetryEvent {
 
   static const updateStarted = TelemetryEvent._('update_started');
 
+  /// A background update download finished and is ready to install.
+  static const updateDownloaded = TelemetryEvent._('update_downloaded');
+
   @override
   String toString() => params.isEmpty ? name : '$name $params';
 }

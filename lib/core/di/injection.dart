@@ -162,6 +162,9 @@ void setupDependencies({AppDatabase? database}) {
         service: sl<UpdateService>(),
         settings: sl<SettingsRepository>(),
         network: sl.isRegistered<NetworkStatus>() ? sl<NetworkStatus>() : const AnyNetworkStatus(),
+        // Only the real app (configureDependencies registers NetworkStatus) holds the dots;
+        // tests stay instant.
+        minCheckDuration: sl.isRegistered<NetworkStatus>() ? const Duration(milliseconds: 900) : Duration.zero,
       ),
     );
   }

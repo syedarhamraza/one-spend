@@ -27,7 +27,8 @@ import 'changelog_screen.dart';
 
 /// Settings › Software update, in the style of One UI's own Software update page:
 /// the version over a soft glow, the result of the last check, and one big button.
-/// Google Play in-app updates (immediate flow) do the actual work.
+/// Google Play in-app updates do the work: the update downloads in the background while
+/// the app stays usable, then "Install and restart" finishes it.
 class SoftwareUpdateScreen extends StatefulWidget {
   const SoftwareUpdateScreen({super.key});
 
@@ -43,23 +44,69 @@ class SoftwareUpdateScreen extends StatefulWidget {
 class _SoftwareUpdateScreenState extends State<SoftwareUpdateScreen> {
   final GlobalKey _moreKey = GlobalKey();
 
+  /// The transition shared by the button and the status text, so they change together.
+  static const transition = Duration(milliseconds: 220);
+
+  late final UpdateController _updates = UpdateController.instance;
+  late UpdateStatus _lastStatus = _updates.status;
+
+  /// Set while [_download] reports the end of a download itself (declined, failed).
+  bool _downloadEnding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _updates.addListener(_onStatusChanged);
+  }
+
+  @override
+  void dispose() {
+    _updates.removeListener(_onStatusChanged);
+    super.dispose();
+  }
+
+  /// A background download that Play gives up on goes back to "Download and install";
+  /// say why.
+  void _onStatusChanged() {
+    final previous = _lastStatus;
+    _lastStatus = _updates.status;
+    if (previous == UpdateStatus.downloading && _lastStatus == UpdateStatus.available && !_downloadEnding && mounted) {
+      OneUIToast.show(context, "The download stopped. Try again when you're connected.");
+    }
+  }
+
   Future<void> _onButtonTap() async {
     HapticFeedback.lightImpact();
-    final updates = UpdateController.instance;
-    if (!updates.updateAvailable) {
-      // The status line shows the result; a found update waits for "Download and install".
-      await updates.check();
-      return;
+    switch (_updates.status) {
+      case UpdateStatus.available:
+        await _download();
+      case UpdateStatus.readyToInstall:
+        if (!await _updates.installAndRestart() && mounted) {
+          OneUIToast.show(context, "Couldn't install the update. Try again.");
+        }
+      default:
+        // The status line shows the result; a found update waits for "Download and install".
+        await _updates.check();
     }
-    final result = await updates.install();
-    if (!mounted) return;
-    switch (result) {
-      case UpdateInstallResult.started:
-        break; // Play takes over and restarts One Spend
-      case UpdateInstallResult.declined:
-        OneUIToast.show(context, 'Update cancelled. You can install it any time from here.');
-      case UpdateInstallResult.failed:
-        OneUIToast.show(context, "Couldn't start the update. Try again from Google Play.");
+  }
+
+  Future<void> _download() async {
+    _downloadEnding = true;
+    try {
+      final result = await _updates.download();
+      if (!mounted) return;
+      switch (result) {
+        case UpdateDownloadResult.started:
+          break; // the page now says the update is ready to install
+        case UpdateDownloadResult.declined:
+          OneUIToast.show(context, 'Update cancelled. You can download it any time from here.');
+        case UpdateDownloadResult.offline:
+          OneUIToast.show(context, 'No internet connection. Connect and try again.');
+        case UpdateDownloadResult.failed:
+          OneUIToast.show(context, "Couldn't download the update. Try again.");
+      }
+    } finally {
+      _downloadEnding = false;
     }
   }
 
@@ -92,11 +139,12 @@ class _SoftwareUpdateScreenState extends State<SoftwareUpdateScreen> {
         builder: (context, _) {
           final updates = UpdateController.instance;
           final status = updates.status;
-          final busy = status == UpdateStatus.checking || updates.installing;
+          final busy = status == UpdateStatus.checking || status == UpdateStatus.downloading || updates.installing;
           final buttonLabel = switch (status) {
             UpdateStatus.notChecked || UpdateStatus.checking => 'Check for updates',
-            UpdateStatus.available => 'Download and install',
-            UpdateStatus.failed => 'Try again',
+            UpdateStatus.available || UpdateStatus.downloading => 'Download and install',
+            UpdateStatus.readyToInstall => 'Install and restart',
+            UpdateStatus.failed || UpdateStatus.offline => 'Try again',
             UpdateStatus.upToDate || UpdateStatus.notFromPlay => null,
           };
           return Stack(
@@ -130,15 +178,25 @@ class _SoftwareUpdateScreenState extends State<SoftwareUpdateScreen> {
                       height: 96,
                       child: Center(
                         child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 280),
+                          duration: transition,
                           switchInCurve: Curves.easeOutCubic,
                           switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (child, animation) => FadeTransition(
+                            opacity: animation,
+                            child: ScaleTransition(
+                              scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
+                              child: child,
+                            ),
+                          ),
                           child: buttonLabel == null && !busy
                               ? const SizedBox.shrink()
                               : _UpdateButton(
                                   key: const ValueKey('button'),
                                   label: buttonLabel ?? 'Check for updates',
                                   busy: busy,
+                                  busyLabel: status == UpdateStatus.downloading
+                                      ? 'Downloading the update'
+                                      : 'Checking for updates',
                                   onTap: busy ? null : _onButtonTap,
                                 ),
                         ),
@@ -207,6 +265,12 @@ class _Headline extends StatelessWidget {
       UpdateStatus.notChecked || UpdateStatus.checking => (null, OneUITheme.textSecondary),
       UpdateStatus.upToDate => ('One Spend is up to date.', OneUITheme.textSecondary),
       UpdateStatus.available => ('A new version is available.', OneUITheme.accentBlue),
+      UpdateStatus.downloading => ('Downloading the update… You can keep using One Spend.', OneUITheme.textSecondary),
+      UpdateStatus.readyToInstall => ('The update is ready to install.', OneUITheme.accentBlue),
+      UpdateStatus.offline => (
+        'No internet connection. Connect to Wi-Fi or mobile data and try again.',
+        OneUITheme.textSecondary,
+      ),
       UpdateStatus.notFromPlay => (
         "Updates come from Google Play. This copy wasn't installed from Play.",
         OneUITheme.textSecondary,
@@ -237,16 +301,27 @@ class _Headline extends StatelessWidget {
               const SizedBox(height: 2),
               Text(v.channelLabel, style: const TextStyle(fontSize: 16, color: OneUITheme.textSecondary)),
             ],
-            AnimatedSize(
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeInOutCubic,
+            // A fixed slot, so the title stays put when a message appears.
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 72, minWidth: double.infinity),
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 240),
+                duration: _SoftwareUpdateScreenState.transition,
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                layoutBuilder: (current, previous) =>
+                    Stack(alignment: Alignment.topCenter, children: [...previous, ?current]),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(animation),
+                    child: child,
+                  ),
+                ),
                 child: message == null
                     ? const SizedBox(key: ValueKey('none'), width: double.infinity)
                     : Padding(
                         key: ValueKey(message),
-                        padding: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.only(top: 8),
                         child: Text(
                           message,
                           textAlign: TextAlign.center,
@@ -266,15 +341,24 @@ class _Headline extends StatelessWidget {
 class _UpdateButton extends StatelessWidget {
   final String label;
   final bool busy;
+
+  /// What screen readers hear while [busy].
+  final String busyLabel;
   final VoidCallback? onTap;
 
-  const _UpdateButton({super.key, required this.label, required this.busy, required this.onTap});
+  const _UpdateButton({
+    super.key,
+    required this.label,
+    required this.busy,
+    required this.busyLabel,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: busy ? 'Checking for updates' : null,
+      label: busy ? busyLabel : null,
       child: Material(
         color: OneUITheme.accentBlue,
         shape: const StadiumBorder(),
@@ -286,7 +370,7 @@ class _UpdateButton extends StatelessWidget {
             height: 54,
             child: Center(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 180),
                 child: busy
                     ? const _LoadingDots(key: ValueKey('dots'))
                     : Text(
@@ -501,7 +585,11 @@ class _AutoDownloadScreenState extends State<_AutoDownloadScreen> {
               OneUIGroupItem(
                 leading: OneUIRadio(isSelected: mode == _mode),
                 title: mode.label,
-                subtitle: mode == AutoUpdateCheck.always ? 'Checking uses very little data.' : null,
+                subtitle: switch (mode) {
+                  AutoUpdateCheck.never => 'Only when you tap Check for updates',
+                  AutoUpdateCheck.wifiOnly => null,
+                  AutoUpdateCheck.always => 'Checking uses very little data.',
+                },
                 subtitleColor: OneUITheme.textSecondary,
                 onTap: () {
                   HapticFeedback.selectionClick();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -23,9 +25,13 @@ import '../helpers/test_app.dart';
 
 class _FakeNetwork implements NetworkStatus {
   bool wifi = true;
+  bool connected = true;
 
   @override
-  Future<bool> onUnmeteredNetwork() async => wifi;
+  Future<bool> isConnected() async => connected;
+
+  @override
+  Future<bool> onUnmeteredNetwork() async => connected && wifi;
 }
 
 class _FakeUpdateService implements UpdateService {
@@ -33,6 +39,12 @@ class _FakeUpdateService implements UpdateService {
   UpdateInstallResult installResult = UpdateInstallResult.started;
   int checks = 0;
   int installs = 0;
+  int downloads = 0;
+  int installedDownloads = 0;
+
+  /// When set, startDownload waits for it, like Play does until the download is done.
+  Completer<UpdateInstallResult>? download;
+  final states = StreamController<UpdateDownloadState>.broadcast();
 
   @override
   Future<UpdateCheckResult> check() async {
@@ -44,6 +56,21 @@ class _FakeUpdateService implements UpdateService {
   Future<UpdateInstallResult> installNow() async {
     installs++;
     return installResult;
+  }
+
+  @override
+  Future<UpdateInstallResult> startDownload() {
+    downloads++;
+    return download?.future ?? Future.value(installResult);
+  }
+
+  @override
+  Stream<UpdateDownloadState> get downloadStates => states.stream;
+
+  @override
+  Future<bool> installDownloaded() async {
+    installedDownloads++;
+    return true;
   }
 }
 
@@ -58,22 +85,32 @@ void main() {
     void respond(Object? Function(MethodCall call) handler) =>
         messenger.setMockMethodCallHandler(channel, (call) async => handler(call));
 
-    Map<String, Object?> info(int availability, {bool immediateAllowed = true}) => {
-          'updateAvailability': availability,
-          'immediateAllowed': immediateAllowed,
-          'flexibleAllowed': true,
-          'availableVersionCode': 7,
-          'installStatus': 0,
-          'packageName': 'com.syedarhamraza.onespend',
-          'clientVersionStalenessDays': null,
-          'updatePriority': 0,
-        };
+    Map<String, Object?> info(
+      int availability, {
+      bool immediateAllowed = true,
+      bool flexibleAllowed = true,
+      int installStatus = 0,
+    }) => {
+      'updateAvailability': availability,
+      'immediateAllowed': immediateAllowed,
+      'flexibleAllowed': flexibleAllowed,
+      'availableVersionCode': 7,
+      'installStatus': installStatus,
+      'packageName': 'com.syedarhamraza.onespend',
+      'clientVersionStalenessDays': null,
+      'updatePriority': 0,
+    };
 
     test('maps what Play reports', () async {
       final service = PlayUpdateService(isAndroid: true, installer: () async => PlayUpdateService.playStoreInstaller);
       respond((_) => info(2));
       expect(await service.check(), UpdateCheckResult.available);
+      // Either flow is enough; startDownload falls back to the full-screen one.
       respond((_) => info(2, immediateAllowed: false));
+      expect(await service.check(), UpdateCheckResult.available);
+      respond((_) => info(2, flexibleAllowed: false));
+      expect(await service.check(), UpdateCheckResult.available);
+      respond((_) => info(2, immediateAllowed: false, flexibleAllowed: false));
       expect(await service.check(), UpdateCheckResult.upToDate);
       respond((_) => info(1));
       expect(await service.check(), UpdateCheckResult.upToDate);
@@ -81,15 +118,41 @@ void main() {
       expect(await service.check(), UpdateCheckResult.inProgress);
     });
 
+    test('a background download shows up in the check', () async {
+      final service = PlayUpdateService(isAndroid: true, installer: () async => PlayUpdateService.playStoreInstaller);
+      respond((_) => info(3, installStatus: 2));
+      expect(await service.check(), UpdateCheckResult.downloading);
+      respond((_) => info(2, installStatus: 11));
+      expect(await service.check(), UpdateCheckResult.downloaded);
+    });
+
+    test('a background download is used when Play allows it, the full-screen one otherwise', () async {
+      final service = PlayUpdateService(isAndroid: true, installer: () async => PlayUpdateService.playStoreInstaller);
+      final calls = <String>[];
+      respond((call) {
+        calls.add(call.method);
+        return call.method == 'checkForUpdate' ? info(2, flexibleAllowed: calls.length > 2) : null;
+      });
+      await service.check(); // flexible not allowed
+      expect(await service.startDownload(), UpdateInstallResult.started);
+      await service.check(); // flexible allowed
+      expect(await service.startDownload(), UpdateInstallResult.started);
+      expect(calls, ['checkForUpdate', 'performImmediateUpdate', 'checkForUpdate', 'startFlexibleUpdate']);
+    });
+
     test('a build not installed from Play is told apart from a failure', () async {
       final service = PlayUpdateService(isAndroid: true, installer: () async => PlayUpdateService.playStoreInstaller);
-      respond((_) => throw PlatformException(
-            code: 'TASK_FAILURE',
-            message: '-10: Install Error(-10): The app is not owned by any user on this device.',
-          ));
+      respond(
+        (_) => throw PlatformException(
+          code: 'TASK_FAILURE',
+          message: '-10: Install Error(-10): The app is not owned by any user on this device.',
+        ),
+      );
       expect(await service.check(), UpdateCheckResult.notFromPlay);
 
-      respond((_) => throw PlatformException(code: 'TASK_FAILURE', message: '-100: Install Error(-100): Internal error.'));
+      respond(
+        (_) => throw PlatformException(code: 'TASK_FAILURE', message: '-100: Install Error(-100): Internal error.'),
+      );
       expect(await service.check(), UpdateCheckResult.failed);
     });
 
@@ -99,7 +162,10 @@ void main() {
         asked = true;
         return info(1);
       });
-      expect(await PlayUpdateService(isAndroid: true, installer: () async => null).check(), UpdateCheckResult.notFromPlay);
+      expect(
+        await PlayUpdateService(isAndroid: true, installer: () async => null).check(),
+        UpdateCheckResult.notFromPlay,
+      );
       expect(
         await PlayUpdateService(isAndroid: true, installer: () async => 'com.sec.android.app.samsungapps').check(),
         UpdateCheckResult.notFromPlay,
@@ -155,6 +221,75 @@ void main() {
       expect(await controller.install(), UpdateInstallResult.started);
       expect(service.installs, 1);
     });
+
+    test('a background download from an earlier session is picked up', () async {
+      service.next = UpdateCheckResult.downloaded;
+      expect(await controller.check(), UpdateStatus.readyToInstall);
+      expect(controller.updateAvailable, isTrue);
+      expect(await controller.installAndRestart(), isTrue);
+      expect(service.installedDownloads, 1);
+    });
+
+    test('downloading in the background, then ready to install', () async {
+      service.next = UpdateCheckResult.available;
+      await controller.check();
+      service.download = Completer();
+      final download = controller.download();
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.status, UpdateStatus.downloading);
+      expect(controller.updateAvailable, isTrue);
+      expect(await controller.check(), UpdateStatus.downloading); // no second check meanwhile
+      expect(service.checks, 1);
+
+      service.download!.complete(UpdateInstallResult.started);
+      expect(await download, UpdateDownloadResult.started);
+      expect(controller.status, UpdateStatus.readyToInstall);
+    });
+
+    test('a declined download goes back to available', () async {
+      service.next = UpdateCheckResult.available;
+      await controller.check();
+      service.installResult = UpdateInstallResult.declined;
+      expect(await controller.download(), UpdateDownloadResult.declined);
+      expect(controller.status, UpdateStatus.available);
+    });
+
+    test('a download Play gives up on goes back to available', () async {
+      service.next = UpdateCheckResult.available;
+      await controller.check();
+      service.download = Completer();
+      unawaited(controller.download());
+      await Future<void>.delayed(Duration.zero);
+      service.states.add(UpdateDownloadState.failed);
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.status, UpdateStatus.available);
+    });
+
+    test('offline: Play is not asked, and nothing downloads', () async {
+      final network = _FakeNetwork()..connected = false;
+      final offline = UpdateController(service: service, network: network);
+      expect(await offline.check(), UpdateStatus.offline);
+      expect(service.checks, 0);
+
+      network.connected = true;
+      service.next = UpdateCheckResult.available;
+      expect(await offline.check(), UpdateStatus.available);
+      network.connected = false;
+      expect(await offline.download(), UpdateDownloadResult.offline);
+      expect(service.downloads, 0);
+      expect(offline.status, UpdateStatus.available);
+    });
+
+    test('a tapped check shows the dots for a minimum time; the launch check does not wait', () async {
+      final slow = UpdateController(service: service, minCheckDuration: const Duration(milliseconds: 300));
+      final watch = Stopwatch()..start();
+      await slow.check();
+      expect(watch.elapsedMilliseconds, greaterThanOrEqualTo(290));
+
+      watch.reset();
+      await slow.check(quick: true);
+      expect(watch.elapsedMilliseconds, lessThan(200));
+    });
   });
 
   group('Auto check', () {
@@ -172,12 +307,27 @@ void main() {
     UpdateController controllerFor() =>
         UpdateController(service: service, settings: sl<SettingsRepository>(), network: network);
 
-    test('checks on any network by default, as before', () async {
+    test('is off by default', () async {
       final controller = controllerFor();
       await controller.loadPreferences();
-      expect(controller.autoCheckMode, AutoUpdateCheck.always);
+      expect(controller.autoCheckMode, AutoUpdateCheck.never);
+      expect(await controller.autoCheck(), isFalse);
+      expect(service.checks, 0);
+      expect(controller.status, UpdateStatus.notChecked);
+    });
+
+    test('any network checks on mobile data, but stays quiet offline', () async {
+      final controller = controllerFor();
+      await controller.setAutoCheck(AutoUpdateCheck.always);
       network.wifi = false;
       expect(await controller.autoCheck(), isTrue);
+      expect(service.checks, 1);
+
+      final offline = controllerFor();
+      await offline.setAutoCheck(AutoUpdateCheck.always);
+      network.connected = false;
+      expect(await offline.autoCheck(), isFalse);
+      expect(offline.status, UpdateStatus.notChecked); // no "failed", no dot
       expect(service.checks, 1);
     });
 
@@ -228,24 +378,70 @@ void main() {
 
     Finder rowWith(String title) => find.ancestor(of: find.text(title), matching: find.byType(OneUIGroupItemTile));
 
-    testWidgets('Software update: checking, then installing an available update', (tester) async {
+    testWidgets('Software update: with auto-check off, the page opens ready to check', (tester) async {
+      await UpdateController.instance.autoCheck(); // what the app does at launch
       await pump(tester, const SoftwareUpdateScreen());
+      expect(service.checks, 0);
       expect(find.text('Check for updates'), findsOneWidget);
+      expect(find.text('One Spend is up to date.'), findsNothing);
 
       await tester.tap(find.text('Check for updates'));
       await tester.pumpAndSettle();
       expect(find.text('One Spend is up to date.'), findsOneWidget);
-      expect(find.text('Check for updates'), findsNothing); // nothing left to do
-      expect(service.installs, 0);
+      expect(find.text('Check for updates'), findsNothing); // the button fades out
+    });
 
+    testWidgets('Software update: download in the background, then install and restart', (tester) async {
       service.next = UpdateCheckResult.available;
-      await UpdateController.instance.check();
+      await pump(tester, const SoftwareUpdateScreen());
+      await tester.tap(find.text('Check for updates'));
       await tester.pumpAndSettle();
       expect(find.text('A new version is available.'), findsOneWidget);
+      expect(service.downloads, 0); // waits for a second tap
 
+      service.download = Completer();
       await tester.tap(find.text('Download and install'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Downloading the update'), findsOneWidget);
+
+      service.download!.complete(UpdateInstallResult.started);
       await tester.pumpAndSettle();
-      expect(service.installs, 1);
+      expect(find.text('The update is ready to install.'), findsOneWidget);
+
+      await tester.tap(find.text('Install and restart'));
+      await tester.pumpAndSettle();
+      expect(service.installedDownloads, 1);
+      expect(service.installs, 0); // never Play's full-screen updater
+    });
+
+    testWidgets('Software update: a declined download says so and offers it again', (tester) async {
+      service.next = UpdateCheckResult.available;
+      service.installResult = UpdateInstallResult.declined;
+      await pump(tester, const SoftwareUpdateScreen());
+      await tester.tap(find.text('Check for updates'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Download and install'));
+      await tester.pump();
+      expect(find.textContaining('Update cancelled'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.text('Download and install'), findsOneWidget);
+    });
+
+    testWidgets('Software update: offline says so, and Try again checks once connected', (tester) async {
+      final network = _FakeNetwork()..connected = false;
+      sl.unregister<UpdateController>();
+      sl.registerSingleton<UpdateController>(UpdateController(service: service, network: network));
+      await pump(tester, const SoftwareUpdateScreen());
+      await tester.tap(find.text('Check for updates'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('No internet connection'), findsOneWidget);
+      expect(service.checks, 0);
+
+      network.connected = true;
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      expect(service.checks, 1);
+      expect(find.text('One Spend is up to date.'), findsOneWidget);
     });
 
     testWidgets('Software update: a copy not from Play says so', (tester) async {
