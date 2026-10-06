@@ -51,11 +51,19 @@ void main() {
     });
 
     test('Changelog has notes for the current version', () {
+      // Notes for the next version may be written ahead, "In development", above it.
+      final entries = Changelog.entries;
+      final ahead = entries.first.date == Changelog.inDevelopment && entries.first.version != parts[0];
       expect(
-        Changelog.entries.first.version,
+        entries[ahead ? 1 : 0].version,
         parts[0],
         reason: 'Add a ChangelogEntry for ${parts[0]} at the top of lib/core/config/changelog.dart',
       );
+    });
+
+    test('notes written ahead name a valid version', () {
+      final first = Changelog.entries.first;
+      expect(AppVersion.tryParse(first.version), isNotNull, reason: '"${first.version}" is not a valid version name');
     });
   });
 }
