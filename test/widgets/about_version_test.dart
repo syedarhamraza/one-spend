@@ -7,7 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../helpers/test_app.dart';
 
 void main() {
-  testWidgets('About shows the version, its pre-release channel and the build', (tester) async {
+  testWidgets('About shows the version and channel in one plain line', (tester) async {
     // AppVersion.current() caches the first answer, so this file sets it once.
     PackageInfo.setMockInitialValues(
       appName: 'One Spend',
@@ -24,9 +24,9 @@ void main() {
     await tester.pumpWidget(routedTestApp(const AboutScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Version 1.0.0'), findsOneWidget);
-    expect(find.text('Beta 2'), findsOneWidget);
-    expect(find.textContaining('Build 7'), findsOneWidget);
+    expect(find.text('Version 1.0.0 Beta 2'), findsOneWidget);
+    expect(find.text('Beta 2'), findsNothing); // no separate chip
+    expect(find.textContaining('Build'), findsNothing); // that's in Software information
   });
 
   testWidgets('About links the privacy policy in release builds', (tester) async {
@@ -42,6 +42,26 @@ void main() {
 
     await tester.scrollUntilVisible(find.text('Privacy policy'), 200);
     expect(find.text('Privacy policy'), findsOneWidget);
-    expect(find.text('Opens in your browser'), findsOneWidget);
+    expect(find.text('Opens in your browser'), findsNothing); // it opens in the app now
+  });
+
+  testWidgets('About fits a small phone with large text', (tester) async {
+    tester.view.physicalSize = const Size(720, 1280); // 360 x 640 dp
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      routedTestApp(
+        const MediaQuery(
+          data: MediaQueryData(size: Size(360, 640), textScaler: TextScaler.linear(1.6)),
+          child: AboutScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull); // no overflow: it scrolls instead
+    await tester.scrollUntilVisible(find.text('Privacy policy'), 200);
+    expect(find.text('Privacy policy'), findsOneWidget);
   });
 }

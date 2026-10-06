@@ -102,7 +102,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
   static final Map<int, String> swatchNames = {
     const Color(0xFFE50914).toARGB32(): 'Cinema Red',
     const Color(0xFF1DB954).toARGB32(): 'Fresh Green',
-    const Color(0xFF0066FF).toARGB32(): 'One UI Blue',
+    const Color(0xFF0066FF).toARGB32(): 'Bright Blue',
     const Color(0xFF8A2BE2).toARGB32(): 'Electric Purple',
     const Color(0xFFFF9500).toARGB32(): 'Sunset Orange',
     const Color(0xFF00C7BE).toARGB32(): 'Ocean Teal',

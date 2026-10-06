@@ -202,7 +202,16 @@ void main() {
     await tester.scrollUntilVisible(find.text('Help & feedback'), 200);
     await tester.tap(find.text('Help & feedback'));
     await tester.pumpAndSettle();
-    expect(find.text('Rate One Spend'), findsNothing);
+    // Rating and the GitHub tracker are real now, so release builds show them.
+    expect(find.text('Rate One Spend'), findsOneWidget);
+    expect(find.text('Feedback on GitHub'), findsOneWidget);
+    expect(find.byType(OneUISoonChip), findsNothing);
+    // Two titled groups whose rows all look alike.
+    expect(find.text('Contact the developer'), findsOneWidget);
+    expect(find.text('Community'), findsOneWidget);
+    final rows = tester.widgetList<OneUIGroupCard>(find.byType(OneUIGroupCard)).expand((c) => c.items).toList();
+    expect(rows, hasLength(4));
+    expect(rows.every((r) => r.leading != null && r.subtitle != null && r.trailing != null), isTrue);
   });
 
   testWidgets('debug builds show the Drive backup as Soon', (tester) async {
@@ -225,6 +234,8 @@ void main() {
     expect(SettingsCatalog.search('update', developerOptions: false).first.title, 'Software update');
     final changelog = SettingsCatalog.search('release notes', developerOptions: false).single;
     expect((changelog.title, changelog.path), ('Changelog', 'Software update'));
+    final rate = SettingsCatalog.search('rating', developerOptions: false).single;
+    expect((rate.title, rate.path), ('Rate One Spend', 'Help & feedback'));
   });
 
   testWidgets('About shows the app and opens licences and the developer page', (tester) async {
@@ -234,8 +245,11 @@ void main() {
     await tester.pumpWidget(routedTestApp(const AboutScreen()));
     await tester.pumpAndSettle();
     expect(find.text(AppInfo.name), findsOneWidget);
-    expect(find.text(AppInfo.tagline), findsOneWidget);
-    expect(find.text('About'), findsWidgets); // page title (not "About One Spend")
+    for (final link in ['Developer', 'Open source licences', 'Privacy policy']) {
+      expect(find.text(link), findsOneWidget, reason: link);
+    }
+    expect(find.textContaining('One UI'), findsNothing);
+    expect(find.textContaining('trademarks'), findsNothing);
     expect(find.text('Source code'), findsNothing);
     // Updates and release notes live on Settings › Software update now.
     expect(find.text('Check for updates'), findsNothing);
@@ -256,16 +270,20 @@ void main() {
     expect(find.byType(AuthorScreen), findsOneWidget);
   });
 
-  testWidgets('developer page shows filled details and hides empty ones', (tester) async {
+  testWidgets('developer page shows just the name, GitHub and email', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(routedTestApp(const AuthorScreen()));
     await tester.pumpAndSettle();
     expect(find.text(AuthorInfo.name), findsOneWidget);
-    expect(find.text('Email'), AuthorInfo.email.isEmpty ? findsNothing : findsOneWidget);
-    expect(find.text('LinkedIn'), AuthorInfo.linkedInUrl.isEmpty ? findsNothing : findsOneWidget);
-    expect(find.text('Website'), AuthorInfo.websiteUrl.isEmpty ? findsNothing : findsOneWidget);
-    expect(find.text('One Spend source code'), findsNothing); // closed source
+    expect(find.text('GitHub'), findsOneWidget);
+    expect(find.text('@${AuthorInfo.githubUsername}'), findsOneWidget);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text(AuthorInfo.email), findsOneWidget);
+    final rows = tester.widgetList<OneUIGroupCard>(find.byType(OneUIGroupCard)).expand((c) => c.items).toList();
+    expect(rows, hasLength(2));
+    expect(rows.every((r) => r.leading == null), isTrue); // no logos
+    expect(find.byType(Image), findsNothing); // no avatar
   });
 }

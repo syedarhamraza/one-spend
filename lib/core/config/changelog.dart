@@ -29,10 +29,22 @@ class Changelog {
 
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
-      version: '1.0.0-alpha.4',
-      date: 'Oct 2026', // tool/release.ps1 looks for a quoted date to stamp
+      version: '1.0.0-alpha.5',
+      date: 'In development',
       changes: [
-        'New Software update page in Settings, in the style of One UI: check for updates and install them in one tap',
+        'Updates now download in the background while you keep using One Spend, then install with one tap',
+        'Automatic update checks are now off by default; turn them on in Software update › Auto download',
+        'Checking for updates shows its result with a smoother animation, and says when you are offline',
+        'A cleaner About page, and a simpler Developer page',
+        'Rate One Spend and see known issues on GitHub from Help & feedback',
+        'The privacy policy opens inside the app',
+      ],
+    ),
+    ChangelogEntry(
+      version: '1.0.0-alpha.4',
+      date: 'Oct 2026',
+      changes: [
+        'New Software update page in Settings: check for updates and install them in one tap',
         'Choose when One Spend checks for updates on its own: never, on Wi-Fi only, or on Wi-Fi or mobile data',
         "What's new is now Changelog, under Software update: your installed version first, earlier versions tap to open",
         'See your version, build and where One Spend was installed from in Software update › Software information',

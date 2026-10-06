@@ -24,13 +24,6 @@ enum PlannedFeature {
     OneUITheme.accentTeal,
     'Automatic backups to a private folder in your Google Drive.',
     ['Daily or weekly automatic backups', 'Keeps several versions', 'Restore on a new phone in one tap'],
-  ),
-  rateApp(
-    'Rate One Spend',
-    Icons.star_rounded,
-    OneUITheme.accentAmber,
-    'Rating will open once One Spend is on the Play Store.',
-    ['Leave a rating and review', 'Share One Spend with friends'],
   );
 
   final String title;

@@ -206,7 +206,12 @@ class SettingsCatalog {
         options: [
           (title: 'Send feedback', keywords: ['email', 'contact'], placeholder: false),
           (title: 'Report a problem', keywords: ['bug', 'issue'], placeholder: false),
-          (title: PlannedFeature.rateApp.title, keywords: ['review', 'play store'], placeholder: true),
+          (
+            title: 'Feedback on GitHub',
+            keywords: ['github', 'issues', 'bug', 'feature request', 'suggest'],
+            placeholder: false,
+          ),
+          (title: 'Rate One Spend', keywords: ['rating', 'review', 'stars', 'play store'], placeholder: false),
         ],
       ),
       SettingsDestination(

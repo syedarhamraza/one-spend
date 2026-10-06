@@ -48,11 +48,9 @@ class SecuritySettingsScreen extends StatelessWidget {
             items: [
               OneUIGroupItem(
                 title: 'Privacy policy',
-                subtitle: 'Opens in your browser',
-                subtitleColor: OneUITheme.textSecondary,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  openExternalLink(context, AppInfo.privacyPolicyUrl);
+                  openInAppBrowser(context, AppInfo.privacyPolicyUrl);
                 },
               ),
             ],
