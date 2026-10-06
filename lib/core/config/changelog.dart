@@ -30,7 +30,7 @@ class Changelog {
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
       version: '1.0.0-alpha.4',
-      date: 'In development', // tool/release.ps1 looks for a quoted date to stamp
+      date: 'Oct 2026', // tool/release.ps1 looks for a quoted date to stamp
       changes: [
         'New Software update page in Settings, in the style of One UI: check for updates and install them in one tap',
         'Choose when One Spend checks for updates on its own: never, on Wi-Fi only, or on Wi-Fi or mobile data',
