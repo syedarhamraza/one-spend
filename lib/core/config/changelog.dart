@@ -30,7 +30,7 @@ class Changelog {
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
       version: '1.0.0-alpha.5',
-      date: 'In development',
+      date: 'Oct 2026',
       changes: [
         'Updates now download in the background while you keep using One Spend, then install with one tap',
         'Automatic update checks are now off by default; turn them on in Software update › Auto download',
