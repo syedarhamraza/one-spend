@@ -7,7 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../helpers/test_app.dart';
 
 void main() {
-  testWidgets('About shows the version, its pre-release channel and the build', (tester) async {
+  testWidgets('About shows the version and channel in one plain line', (tester) async {
     // AppVersion.current() caches the first answer, so this file sets it once.
     PackageInfo.setMockInitialValues(
       appName: 'One Spend',
@@ -24,9 +24,9 @@ void main() {
     await tester.pumpWidget(routedTestApp(const AboutScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Version 1.0.0'), findsOneWidget);
-    expect(find.text('Beta 2'), findsOneWidget);
-    expect(find.textContaining('Build 7'), findsOneWidget);
+    expect(find.text('Version 1.0.0 Beta 2'), findsOneWidget);
+    expect(find.text('Beta 2'), findsNothing); // no separate chip
+    expect(find.textContaining('Build'), findsNothing); // that's in Software information
   });
 
   testWidgets('About links the privacy policy in release builds', (tester) async {

@@ -206,6 +206,12 @@ void main() {
     expect(find.text('Rate One Spend'), findsOneWidget);
     expect(find.text('Feedback on GitHub'), findsOneWidget);
     expect(find.byType(OneUISoonChip), findsNothing);
+    // Two titled groups whose rows all look alike.
+    expect(find.text('Contact the developer'), findsOneWidget);
+    expect(find.text('Community'), findsOneWidget);
+    final rows = tester.widgetList<OneUIGroupCard>(find.byType(OneUIGroupCard)).expand((c) => c.items).toList();
+    expect(rows, hasLength(4));
+    expect(rows.every((r) => r.leading != null && r.subtitle != null && r.trailing != null), isTrue);
   });
 
   testWidgets('debug builds show the Drive backup as Soon', (tester) async {

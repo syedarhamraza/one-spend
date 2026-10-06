@@ -1,11 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_info.dart';
 import '../../core/config/app_version.dart';
-import '../../core/config/changelog.dart';
 import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../utils/external_links.dart';
@@ -152,7 +150,8 @@ class _AboutButton extends StatelessWidget {
   }
 }
 
-/// "Version 1.0.0 [Beta 1]" with "Build 5" underneath (plus the commit in debug builds).
+/// "Version 1.0.0 Alpha 4" in one grey line. The build number is in Software update ›
+/// Software information.
 class _VersionLine extends StatelessWidget {
   final AppVersion? version;
 
@@ -160,51 +159,10 @@ class _VersionLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final v = version;
-    if (v == null) {
-      return const Text('Version', style: TextStyle(fontSize: 14.5, color: OneUITheme.textSecondary));
-    }
-    final build = [
-      if (v.code != null) 'Build ${v.code}',
-      // Builds made with tool/release.ps1 carry the commit; only debug builds show it.
-      if (kDebugMode && BuildInfo.commit.isNotEmpty) BuildInfo.commit,
-    ].join(' · ');
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Version ${v.number}', style: const TextStyle(fontSize: 14.5, color: OneUITheme.textSecondary)),
-            if (v.isPreRelease) ...[const SizedBox(width: 8), _ChannelChip(v.channelLabel)],
-          ],
-        ),
-        if (build.isNotEmpty) ...[
-          const SizedBox(height: 3),
-          Text(build, style: const TextStyle(fontSize: 12.5, color: OneUITheme.textTertiary)),
-        ],
-      ],
-    );
-  }
-}
-
-/// Amber capsule naming the pre-release, e.g. "Beta 1".
-class _ChannelChip extends StatelessWidget {
-  final String label;
-
-  const _ChannelChip(this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-      decoration: BoxDecoration(
-        color: OneUITheme.accentAmber.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(OneUITheme.radiusBadge),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: OneUITheme.accentAmber),
-      ),
+    return Text(
+      version == null ? 'Version' : 'Version ${version!.label}',
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 15, color: OneUITheme.textSecondary),
     );
   }
 }
