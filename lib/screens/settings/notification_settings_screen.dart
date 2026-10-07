@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/injection.dart';
@@ -14,13 +13,14 @@ import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_switch.dart';
 import '../reminder_picker_screen.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Notifications: master switch, default reminder, and the Android permission state.
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsNotifications);
   }
 
@@ -58,7 +58,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   Future<void> _setEnabled(SubscriptionStore store, bool enabled) async {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     store.setNotificationsEnabled(enabled);
     if (enabled) {
       await ensureNotificationPermission();

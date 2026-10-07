@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
+import '../haptics/haptics.dart';
 import '../telemetry/firebase_telemetry.dart';
 import '../telemetry/telemetry.dart';
 import '../telemetry/telemetry_context_sync.dart';
@@ -251,6 +252,7 @@ Future<void> configureDependencies({AppDatabase? database}) async {
   await sl<SubscriptionController>().load();
   await sl<OneUIEffectsController>().init();
   await sl<UpdateController>().loadPreferences();
+  await Haptics.load(sl<SettingsRepository>());
   unawaited(
     TelemetryContextSync(controller: sl<SubscriptionController>(), effects: sl<OneUIEffectsController>()).start(),
   );

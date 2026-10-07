@@ -40,8 +40,43 @@ class LocalNotificationService implements NotificationService {
     ),
   };
 
+  /// Kinds that follow Settings › Vibration. Developer tests always use their own channel.
+  static const _userKinds = [NotificationKind.renewal, NotificationKind.card, NotificationKind.budget];
+
+  /// The no-vibration twin of [channel]. Android fixes a channel's vibration when it's
+  /// created (and a deleted id comes back with its old settings), so "Vibrate for
+  /// notifications" off moves the reminders to these channels instead.
+  static AndroidNotificationChannel _quiet(AndroidNotificationChannel channel) => AndroidNotificationChannel(
+        '${channel.id}_quiet',
+        channel.name,
+        description: channel.description,
+        importance: channel.importance,
+        enableVibration: false,
+      );
+
+  bool _vibrate = true;
+
+  AndroidNotificationChannel _channelFor(NotificationKind kind) {
+    final channel = _channels[kind]!;
+    return _vibrate || !_userKinds.contains(kind) ? channel : _quiet(channel);
+  }
+
   AndroidFlutterLocalNotificationsPlugin? get _android =>
       _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+  @override
+  Future<void> setVibration(bool enabled) async {
+    _vibrate = enabled;
+    final android = _android;
+    if (android == null) return;
+    for (final kind in _userKinds) {
+      final channel = _channels[kind]!;
+      final (active, unused) = enabled ? (channel, _quiet(channel)) : (_quiet(channel), channel);
+      await android.createNotificationChannel(active);
+      // Only one set shows in the system's notification settings.
+      await android.deleteNotificationChannel(channelId: unused.id);
+    }
+  }
 
   @override
   Future<void> init() async {
@@ -63,21 +98,21 @@ class LocalNotificationService implements NotificationService {
 
     final android = _android;
     if (android != null) {
-      for (final channel in _channels.values) {
-        await android.createNotificationChannel(channel);
-      }
+      // The reminder channels are created by setVibration, once the setting is known.
+      await android.createNotificationChannel(_channels[NotificationKind.developer]!);
       // Clean up the unused "Free trials" channel created by earlier pre-release builds.
       await android.deleteNotificationChannel(channelId: 'trials');
     }
   }
 
   NotificationDetails _details(NotificationKind kind) {
-    final channel = _channels[kind]!;
+    final channel = _channelFor(kind);
     return NotificationDetails(
       android: AndroidNotificationDetails(
         channel.id,
         channel.name,
         channelDescription: channel.description,
+        enableVibration: channel.enableVibration,
         icon: _icon,
         importance: channel.importance,
         priority: channel.importance == Importance.high ? Priority.high : Priority.defaultPriority,

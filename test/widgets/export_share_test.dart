@@ -73,7 +73,7 @@ void main() {
     expect(tester.getBottomLeft(find.text('Share as text')).dy, lessThan(tester.getTopLeft(find.text('Share')).dy));
   });
 
-  testWidgets('Share in selection mode opens the same menu', (tester) async {
+  testWidgets('Share in selection mode offers PDF, CSV and text', (tester) async {
     await pump(tester, const SubscriptionsScreen());
     await tester.longPress(find.text('Netflix').first);
     await tester.pumpAndSettle();
@@ -81,6 +81,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(OneUIFloatingMenu.isOpen.value, isTrue);
     expect(find.text('Share as PDF'), findsOneWidget);
+    expect(find.text('Share as CSV'), findsOneWidget);
     expect(find.text('Share as text'), findsOneWidget);
   });
 }

@@ -1,13 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../../theme/one_ui_theme.dart';
 import '../../../../utils/one_ui_brand_catalog.dart';
 import '../../../../widgets/one_ui_brand_icon.dart';
 import '../../domain/entities/subscription_enums.dart';
 import '../utils/subscription_ui_adapters.dart';
+import '../../../../core/haptics/haptics.dart';
 
 /// The Subscriptions tab before anything has been added: the first screen a new
 /// user sees. A hero of category tiles that pop in over a soft glow, a
@@ -122,7 +122,7 @@ class _FirstRunEmptyStateState extends State<FirstRunEmptyState> with SingleTick
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () {
-                HapticFeedback.lightImpact();
+                Haptics.tap();
                 widget.onRestore();
               },
               child: const Padding(
@@ -231,7 +231,7 @@ class _FirstRunEmptyStateState extends State<FirstRunEmptyState> with SingleTick
         child: InkWell(
           borderRadius: OneUITheme.pillBorderRadius,
           onTap: () {
-            HapticFeedback.lightImpact();
+            Haptics.tap();
             widget.onAdd();
           },
           child: const Padding(
@@ -292,7 +292,7 @@ class _FirstRunEmptyStateState extends State<FirstRunEmptyState> with SingleTick
                   child: InkWell(
                     borderRadius: OneUITheme.pillBorderRadius,
                     onTap: () {
-                      HapticFeedback.selectionClick();
+                      Haptics.select();
                       widget.onQuickAdd(preset.id);
                     },
                     child: Padding(

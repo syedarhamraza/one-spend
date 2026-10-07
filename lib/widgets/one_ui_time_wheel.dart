@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../theme/one_ui_theme.dart';
 import 'one_ui_wheel_column.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI style scroll-wheel time picker (hour : minute  AM/PM), modelled on the
 /// One UI Clock alarm editor: flat wheels on the black surface, the selected value large
@@ -66,7 +66,7 @@ class OneUITimeWheelState extends State<OneUITimeWheel> {
   bool _animating = false;
 
   void _emit() {
-    if (!_animating) HapticFeedback.selectionClick();
+    if (!_animating) Haptics.select();
     widget.onChanged(_currentMinutes);
   }
 

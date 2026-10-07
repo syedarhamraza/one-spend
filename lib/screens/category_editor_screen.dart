@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/router/app_router.dart';
@@ -14,6 +13,7 @@ import '../widgets/one_ui_toast.dart';
 import 'category_picker_screen.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
+import '../core/haptics/haptics.dart';
 
 /// Create or edit a custom category: name, icon and colour, with a live preview.
 /// Pops with the saved [SubscriptionCategory], or nothing when cancelled or deleted.
@@ -24,7 +24,7 @@ class CategoryEditorScreen extends StatefulWidget {
   const CategoryEditorScreen({super.key, this.categoryId});
 
   static Future<SubscriptionCategory?> open(BuildContext context, {String? categoryId}) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<SubscriptionCategory>(AppRoutes.categoryEditor, extra: categoryId);
   }
 
@@ -72,7 +72,7 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
 
   void _save() {
     if (!_canSave) return;
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     final editing = _editing;
     final SubscriptionCategory saved;
     if (editing == null) {
@@ -113,7 +113,7 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
       confirmTextColor: OneUITheme.accentRed,
     );
     if (confirmed != true || !mounted) return;
-    HapticFeedback.mediumImpact();
+    Haptics.warn();
     _store.deleteCustomCategory(editing.id, moveTo: moveTo);
     OneUIToast.show(context, '${editing.name} deleted');
     Navigator.pop(context);
@@ -223,7 +223,7 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
               label: label(item),
               child: GestureDetector(
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() => onTap(item));
                 },
                 child: build(item, selected(item)),

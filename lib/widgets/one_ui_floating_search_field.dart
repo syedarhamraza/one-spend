@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'one_ui_glass_surface.dart';
+import '../core/haptics/haptics.dart';
 
 /// Floating glass search capsule that sits above the keyboard (Subscriptions, Settings).
 /// Shows a clear button while [controller] has text.
@@ -62,7 +62,7 @@ class OneUIFloatingSearchField extends StatelessWidget {
                           label: 'Clear search',
                           child: GestureDetector(
                             onTap: () {
-                              HapticFeedback.lightImpact();
+                              Haptics.tap();
                               controller.clear();
                               onChanged?.call('');
                               onCleared?.call();

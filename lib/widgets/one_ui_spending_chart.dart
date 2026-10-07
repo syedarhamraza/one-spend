@@ -2,12 +2,12 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_brand_icon.dart';
 import 'one_ui_card.dart';
 import 'one_ui_segmented_pills.dart';
+import '../core/haptics/haptics.dart';
 
 /// "$1.2k" / "Rs 42k" / "Rp 2.4M" style labels for chart axes.
 String compactMoney(String currency, double value) {
@@ -98,7 +98,7 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
 
   void _onPointSelected(int? index) {
     if (_selectedIndex != index) {
-      if (index != null) HapticFeedback.selectionClick();
+      if (index != null) Haptics.select();
       setState(() => _selectedIndex = index);
     }
   }
@@ -342,7 +342,7 @@ class _OneUISpendingTrendsCardState extends State<OneUISpendingTrendsCard> with 
                 onTap: widget.onOpenSubscription == null
                     ? null
                     : () {
-                        HapticFeedback.lightImpact();
+                        Haptics.tap();
                         widget.onOpenSubscription!(c.subscription);
                       },
                 child: Row(

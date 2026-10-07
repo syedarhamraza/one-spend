@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
@@ -34,6 +33,7 @@ import '../widgets/one_ui_upcoming_hero_card.dart';
 import 'home_screen.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
+import '../core/haptics/haptics.dart';
 
 /// How far ahead the Upcoming timeline looks.
 enum UpcomingHorizon {
@@ -192,7 +192,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
 
   /// ✓ on a row: confirm, then log the payment and move to the next cycle.
   void _confirmMarkPaid(SubscriptionStore store, Subscription sub) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final next = BillingSchedule.nextDueDate(sub);
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
@@ -203,7 +203,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       confirmLabel: 'Mark paid',
       confirmTextColor: OneUITheme.accentGreen,
       onConfirm: () {
-        HapticFeedback.mediumImpact();
+        Haptics.confirm();
         final paid = store.markSubscriptionPaid(sub.id);
         OneUIToast.show(context, paid ? '${sub.name} marked as paid' : '${sub.name} was already marked paid today');
       },
@@ -218,7 +218,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   }
 
   void _enterSelectionMode(String subscriptionId) {
-    HapticFeedback.mediumImpact();
+    Haptics.longPress();
     setState(() {
       _setSelectionMode(true);
       _selectedIds
@@ -236,7 +236,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   }
 
   void _toggleSelected(String subscriptionId) {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() {
       if (!_selectedIds.remove(subscriptionId)) _selectedIds.add(subscriptionId);
     });
@@ -271,7 +271,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       confirmLabel: 'Mark paid',
       confirmTextColor: OneUITheme.accentGreen,
       onConfirm: () {
-        HapticFeedback.mediumImpact();
+        Haptics.confirm();
         // Subscriptions already paid today are skipped rather than paid twice.
         var paid = 0;
         for (final sub in subs) {
@@ -300,7 +300,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       confirmLabel: 'Skip',
       confirmTextColor: OneUITheme.accentAmber,
       onConfirm: () {
-        HapticFeedback.mediumImpact();
+        Haptics.confirm();
         for (final sub in subs) {
           store.skipSubscriptionCycle(sub.id);
         }
@@ -313,7 +313,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   void _pauseSelected(SubscriptionStore store) {
     final count = _selectedIds.length;
     if (count == 0) return;
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     store.batchTogglePause(Set.of(_selectedIds));
     _exitSelectionMode();
   }
@@ -321,7 +321,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
   void _deleteSelected(SubscriptionStore store) {
     final ids = Set.of(_selectedIds);
     if (ids.isEmpty) return;
-    HapticFeedback.mediumImpact();
+    Haptics.warn();
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
       title: 'Delete ${_plural(ids.length, 'subscription')}?',
@@ -329,7 +329,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       cancelLabel: 'Cancel',
       confirmLabel: 'Delete',
       onConfirm: () {
-        HapticFeedback.mediumImpact();
+        Haptics.warn();
         store.batchDelete(ids);
         _exitSelectionMode();
         OneUIToast.show(context, 'Deleted ${_plural(ids.length, 'subscription')}');
@@ -475,7 +475,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                           icon: isCalendar ? Icons.view_agenda_outlined : Icons.calendar_month_outlined,
                           tooltip: isCalendar ? 'Timeline view' : 'Calendar view',
                           onTap: () {
-                            HapticFeedback.lightImpact();
+                            Haptics.tap();
                             _exitSelectionMode();
                             effects.upcomingViewMode = isCalendar ? UpcomingViewMode.timeline : UpcomingViewMode.calendar;
                           },
@@ -642,7 +642,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         child: InkWell(
           borderRadius: OneUITheme.pillBorderRadius,
           onTap: () {
-            HapticFeedback.selectionClick();
+            Haptics.select();
             _exitSelectionMode();
             setState(() => _cardFilter = null);
           },
@@ -729,7 +729,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                 style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, color: OneUITheme.textPrimary),
               ),
               onTap: () {
-                HapticFeedback.selectionClick();
+                Haptics.select();
                 _exitSelectionMode();
                 setState(() => _cardFilter = entry.key ?? _noCardFilter);
               },
@@ -952,7 +952,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
           if (!charge.isPaid) _toggleSelected(sub.id);
           return;
         }
-        HapticFeedback.lightImpact();
+        Haptics.tap();
         context.push(AppRoutes.subscriptionDetail(sub.id));
       },
       // Paid charges ignore long-press (no selection, and no accidental tap-through).
@@ -1063,7 +1063,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(100),
         onTap: () {
-          HapticFeedback.lightImpact();
+          Haptics.tap();
           onTap();
         },
         child: Padding(

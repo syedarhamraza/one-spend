@@ -121,21 +121,7 @@ class ReportSharer {
           'One Spend spending report',
         );
       case ExportFormat.csv:
-        await _shareFiles(
-          [
-            await _file(
-              'One-Spend-subscriptions$suffix-${_day(at)}.csv',
-              Uint8List.fromList(utf8.encode(SubscriptionExporter.toCsv(subs))),
-              'text/csv',
-            ),
-            await _file(
-              'One-Spend-payments$suffix-${_day(at)}.csv',
-              Uint8List.fromList(utf8.encode(SubscriptionExporter.paymentsCsv(subs))),
-              'text/csv',
-            ),
-          ],
-          'One Spend subscriptions',
-        );
+        await _shareFiles(await _csvFiles(subs, suffix, at), 'One Spend subscriptions');
       case ExportFormat.text:
         await SharePlus.instance.share(
           ShareParams(text: TextReport.build(store, category: category, now: at), subject: 'One Spend spending report'),
@@ -147,6 +133,28 @@ class ReportSharer {
           'One Spend backup',
         );
     }
+  }
+
+  /// The subscriptions and payments spreadsheets for [subs].
+  static Future<List<XFile>> _csvFiles(List<Subscription> subs, String suffix, DateTime at) async => [
+        await _file(
+          'One-Spend-subscriptions$suffix-${_day(at)}.csv',
+          Uint8List.fromList(utf8.encode(SubscriptionExporter.toCsv(subs))),
+          'text/csv',
+        ),
+        await _file(
+          'One-Spend-payments$suffix-${_day(at)}.csv',
+          Uint8List.fromList(utf8.encode(SubscriptionExporter.paymentsCsv(subs))),
+          'text/csv',
+        ),
+      ];
+
+  /// Shares the subscriptions in [ids] (a selection) as CSV spreadsheets.
+  static Future<void> shareSelectionCsv(SubscriptionController store, Set<String> ids, {DateTime? now}) async {
+    AppLog.event(TelemetryEvent.exportShared(format: 'csv', scope: 'selection'));
+    final at = now ?? DateTime.now();
+    final subs = [for (final s in store.subscriptions) if (ids.contains(s.id)) s];
+    await _shareFiles(await _csvFiles(subs, '-${ids.length}-selected', at), 'One Spend subscriptions (${ids.length})');
   }
 
   /// Shares the subscriptions in [ids] (a selection) as a PDF report.

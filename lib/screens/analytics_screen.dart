@@ -26,6 +26,7 @@ import '../widgets/one_ui_subpage.dart';
 import '../widgets/one_ui_toast.dart';
 import '../features/reports/data/text_report.dart';
 import '../features/reports/presentation/export_share_screen.dart';
+import '../core/haptics/haptics.dart';
 
 /// Analytics tab: answers "what am I spending, where is it going, and what's next?".
 ///
@@ -93,7 +94,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   void _openSubscription(Subscription sub) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     context.push(AppRoutes.subscriptionDetail(sub.id));
   }
 
@@ -336,7 +337,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   /// Dismissed tips come back via the ⋮ menu's "Show dismissed tips".
   void _dismissInsight(SubscriptionStore store, InsightCardData card) {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     store.dismissInsight(card.key);
   }
 
@@ -417,7 +418,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           child: InkWell(
             borderRadius: OneUITheme.pillBorderRadius,
             onTap: () {
-              HapticFeedback.selectionClick();
+              Haptics.select();
               _setCategory(null);
             },
             child: Padding(
@@ -479,7 +480,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 color: OneUITheme.textSecondary,
               ),
               onTap: () {
-                HapticFeedback.selectionClick();
+                Haptics.select();
                 setState(() => _showAllTop = !_showAllTop);
               },
             ),
@@ -576,7 +577,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     subtitle: (p.date.year == now.year ? _monthDay : _monthDayYear).format(p.date),
                     trailing: _rowValue(formatMoney(p.subscription.price, p.subscription.currency)),
                     onTap: () {
-                      HapticFeedback.lightImpact();
+                      Haptics.tap();
                       context.push(AppRoutes.paymentHistory(p.subscription.id));
                     },
                   ),
@@ -595,7 +596,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         message: 'Add subscriptions to see your spending trend, categories and insights',
         actionLabel: 'Add subscription',
         onAction: () {
-          HapticFeedback.lightImpact();
+          Haptics.tap();
           context.push(AppRoutes.addSubscription);
         },
       ),

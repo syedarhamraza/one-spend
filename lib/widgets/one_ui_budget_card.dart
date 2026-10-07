@@ -1,10 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_ambient_glow.dart';
 import '../utils/one_ui_date_formats.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Monthly Budget Card
 ///
@@ -165,7 +165,7 @@ class OneUIBudgetCard extends StatelessWidget {
                 color: const Color(0xFF1B1C20).withValues(alpha: 0.68), // Understated dark glass
                 child: InkWell(
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    Haptics.tap();
                     onTap();
                   },
                   child: Container(

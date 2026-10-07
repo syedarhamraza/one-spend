@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_glass_surface.dart';
 import 'one_ui_morph_switcher.dart';
 import 'one_ui_floating_menu.dart';
 import 'one_ui_status_bar_scrim.dart';
+import '../core/haptics/haptics.dart';
 
 /// Reusable action item for One UI top header bar
 class OneUIHeaderAction extends StatelessWidget {
@@ -271,7 +271,7 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            HapticFeedback.lightImpact();
+            Haptics.tap();
             widget.onSelectionCancel!();
           },
           child: const Padding(

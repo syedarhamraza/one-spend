@@ -33,6 +33,9 @@ class NotificationScheduler with WidgetsBindingObserver {
   Set<int>? _scheduledIds;
   List<PlannedNotification> _lastPlan = const [];
 
+  /// The vibration setting the scheduled notifications were made with.
+  bool? _vibration;
+
   /// Completes when the syncs queued so far have finished.
   @visibleForTesting
   Future<void> get lastSyncDone => _syncQueue;
@@ -90,8 +93,9 @@ class NotificationScheduler with WidgetsBindingObserver {
   /// Applies only the difference between the last plan and the current one.
   Future<int> _syncChanges() async {
     final previousIds = _scheduledIds;
-    // Nothing scheduled by this process yet: start from a clean slate.
-    if (previousIds == null) return _sync();
+    // Nothing scheduled by this process yet: start from a clean slate. A new vibration
+    // setting moves everything to other channels, so it reschedules everything too.
+    if (previousIds == null || _vibration != controller.notificationVibration) return _sync();
 
     final plan = controller.notificationsEnabled ? _plan() : const <PlannedNotification>[];
     final before = {for (final n in _lastPlan) n.id: n};
@@ -128,6 +132,8 @@ class NotificationScheduler with WidgetsBindingObserver {
             if (p.id > PlannedNotification.maxReservedId) p.id,
         };
     await service.cancel(previous);
+    _vibration = controller.notificationVibration;
+    await service.setVibration(_vibration!);
 
     if (!controller.notificationsEnabled) {
       _scheduledIds = {};

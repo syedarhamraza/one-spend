@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_router.dart';
@@ -10,6 +9,7 @@ import '../../../widgets/one_ui_toast.dart';
 import '../../subscriptions/domain/entities/subscription_enums.dart';
 import '../../subscriptions/presentation/controllers/subscription_controller.dart';
 import '../data/report_sharer.dart';
+import '../../../core/haptics/haptics.dart';
 
 /// Export & share: pick a format for the whole list (or one category) and hand
 /// it to the share sheet.
@@ -20,7 +20,7 @@ class ExportShareScreen extends StatefulWidget {
   const ExportShareScreen({super.key, this.category});
 
   static Future<void> open(BuildContext context, {SubscriptionCategory? category}) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.exportShare, extra: category);
   }
 
@@ -39,7 +39,7 @@ class _ExportShareScreenState extends State<ExportShareScreen> {
       OneUIToast.show(context, 'Add a subscription first');
       return;
     }
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     setState(() => _busy = format);
     try {
       await ReportSharer.share(store, format, category: widget.category);

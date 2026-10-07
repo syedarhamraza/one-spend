@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
@@ -9,13 +8,14 @@ import '../../widgets/one_ui_card.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../category_editor_screen.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Categories: the built-in categories and the user's own.
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsCategories);
   }
 

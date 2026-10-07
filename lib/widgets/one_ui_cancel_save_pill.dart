@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_glass_surface.dart';
+import '../core/haptics/haptics.dart';
 
 /// Standardized Samsung One UI 9 Floating Stadium "Cancel | Save" Pill
 /// Matches reference screenshots with translucent smoked glass backdrop,
@@ -55,7 +55,7 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
           // Cancel Button
           InkWell(
             onTap: () {
-              HapticFeedback.lightImpact();
+              Haptics.tap();
               onCancel();
             },
             borderRadius: const BorderRadius.horizontal(left: Radius.circular(30)),
@@ -88,7 +88,7 @@ class OneUIFloatingCancelSavePill extends StatelessWidget {
           InkWell(
             onTap: canSave
                 ? () {
-                    HapticFeedback.mediumImpact();
+                    Haptics.confirm();
                     onSave?.call();
                   }
                 : null,

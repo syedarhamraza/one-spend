@@ -17,6 +17,7 @@ import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_subpage.dart';
 import '../widgets/one_ui_logo_framer.dart';
 import '../features/subscriptions/domain/entities/logo_transform.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Subscription Icon Picker Subpage.
 /// Redesigned to match One UI customization subpages (e.g. Subscription Detail Styling):
@@ -54,7 +55,7 @@ class IconPickerScreen extends StatefulWidget {
     String subscriptionName = '',
     LogoTransform? currentLogoTransform,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<IconPickerResult>(
       AppRoutes.iconPicker,
       extra: (
@@ -190,7 +191,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
   }
 
   void _save() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     Navigator.pop(
       context,
       IconPickerResult(
@@ -226,7 +227,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
 
   /// Switches to the initials tile (the default style).
   void _useInitials() {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() {
       _selectedLogoUrl = null;
       _selectedLogoTransform = null;
@@ -236,7 +237,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
   }
 
   void _openSystemIconSubpage() async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final result = await Navigator.push<IconData>(
       context,
       MaterialPageRoute(
@@ -260,7 +261,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
   }
 
   void _openCustomUrlSubpage() async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final result = await Navigator.push<_CustomUrlResult>(
       context,
       MaterialPageRoute(
@@ -287,7 +288,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
   }
 
   void _openBackgroundColorSubpage() async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final result = await Navigator.push<Color>(
       context,
       MaterialPageRoute(
@@ -337,7 +338,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
                   hasBigHeader: false,
                   showBackButton: true,
                   onBack: () {
-                    HapticFeedback.lightImpact();
+                    Haptics.tap();
                     Navigator.pop(context);
                   },
                 ),
@@ -665,7 +666,7 @@ class _SystemIconPickerSubpageState extends State<_SystemIconPickerSubpage> {
                   hasBigHeader: false,
                   showBackButton: true,
                   onBack: () {
-                    HapticFeedback.lightImpact();
+                    Haptics.tap();
                     Navigator.pop(context);
                   },
                 ),
@@ -707,7 +708,7 @@ class _SystemIconPickerSubpageState extends State<_SystemIconPickerSubpage> {
                               title: name,
                               trailing: OneUIRadio(isSelected: isSelected),
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 Navigator.pop(context, icon);
                               },
                             );
@@ -797,7 +798,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
   }
 
   void _save() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     Navigator.pop(
       context,
       _CustomUrlResult(_url.isEmpty ? null : _url, _transform.isIdentity ? null : _transform),
@@ -808,7 +809,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
     final data = await Clipboard.getData('text/plain');
     final pasted = data?.text?.trim() ?? '';
     if (pasted.isEmpty || !mounted) return;
-    HapticFeedback.selectionClick();
+    Haptics.select();
     _previewDebounce?.cancel();
     setState(() {
       _controller.text = pasted;
@@ -884,7 +885,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                     icon: const Icon(Icons.clear_rounded, size: 20, color: OneUITheme.textSecondary),
                     tooltip: 'Clear',
                     onPressed: () {
-                      HapticFeedback.selectionClick();
+                      Haptics.select();
                       _previewDebounce?.cancel();
                       setState(() {
                         _controller.clear();
@@ -925,7 +926,7 @@ class _CustomUrlPickerSubpageState extends State<_CustomUrlPickerSubpage> {
                 leading: const Icon(Icons.delete_outline_rounded, color: OneUITheme.accentRed, size: 22),
                 title: 'Remove custom image',
                 onTap: () {
-                  HapticFeedback.mediumImpact();
+                  Haptics.warn();
                   Navigator.pop(context, const _CustomUrlResult(null));
                 },
               ),
@@ -986,7 +987,7 @@ class _BackgroundColorPickerSubpageState extends State<_BackgroundColorPickerSub
                   hasBigHeader: false,
                   showBackButton: true,
                   onBack: () {
-                    HapticFeedback.lightImpact();
+                    Haptics.tap();
                     Navigator.pop(context, _selectedColor);
                   },
                 ),
@@ -1034,7 +1035,7 @@ class _BackgroundColorPickerSubpageState extends State<_BackgroundColorPickerSub
                               subtitle: hex,
                               trailing: OneUIRadio(isSelected: isSelected),
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 Navigator.pop(context, color);
                               },
                             );

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_floating_nav_bar.dart';
 import '../widgets/one_ui_status_bar_scrim.dart';
+import '../core/haptics/haptics.dart';
 
 /// Tab-level UI state that hides the floating nav bar (e.g. while the
 /// Subscriptions tab is in multi-select or search mode).
@@ -144,7 +144,7 @@ class HomeScreen extends StatelessWidget {
                           currentIndex: currentIndex,
                           dockedContent: docked != null && docked.tab == currentIndex ? docked.content : null,
                           onTap: (index) {
-                            HapticFeedback.lightImpact();
+                            Haptics.tap();
                             navigationShell.goBranch(index);
                           },
                           items: const [

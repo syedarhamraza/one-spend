@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_info.dart';
@@ -8,15 +7,32 @@ import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../utils/external_links.dart';
 import '../../widgets/one_ui_bare_top_bar.dart';
+import 'licenses_screen.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › About One Spend: the app icon, name and version in the middle of the page,
 /// and the links as capsule buttons at the bottom (same layout as Software update).
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsAbout);
+  }
+
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  bool _prefetched = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_prefetched) return;
+    _prefetched = true;
+    prefetchLicenses(context);
   }
 
   @override
@@ -126,7 +142,7 @@ class _AboutButton extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
-            HapticFeedback.lightImpact();
+            Haptics.tap();
             onTap();
           },
           child: SizedBox(

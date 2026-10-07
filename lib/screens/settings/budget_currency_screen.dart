@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
@@ -12,13 +11,14 @@ import '../../widgets/one_ui_toast.dart';
 import '../one_ui_field_editor_screen.dart';
 import 'currency_picker_screen.dart';
 import 'exchange_rates_screen.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Budget & currency.
 class BudgetCurrencyScreen extends StatelessWidget {
   const BudgetCurrencyScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsBudget);
   }
 

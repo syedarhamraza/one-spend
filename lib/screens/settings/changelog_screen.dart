@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -10,6 +9,7 @@ import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_card.dart';
 import '../../widgets/one_ui_subpage.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Software update › Changelog: the installed version's notes in a card,
 /// then earlier versions collapsed to one row each.
@@ -17,7 +17,7 @@ class ChangelogScreen extends StatefulWidget {
   const ChangelogScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsChangelog);
   }
 
@@ -43,7 +43,7 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   }
 
   void _toggle(String version) {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() => _expanded.contains(version) ? _expanded.remove(version) : _expanded.add(version));
   }
 

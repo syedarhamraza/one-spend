@@ -146,6 +146,19 @@ class UpdateController extends ChangeNotifier {
     return _status;
   }
 
+  /// Forgets a finished check that found nothing to act on (up to date, offline, failed,
+  /// not from Play), so Software update offers "Check for updates" again when reopened.
+  /// A found, downloading or downloaded update is kept. Doesn't notify: it's called while
+  /// the page is being built, and nothing else shows these statuses.
+  void resetSettledResult() {
+    switch (_status) {
+      case UpdateStatus.upToDate || UpdateStatus.offline || UpdateStatus.failed || UpdateStatus.notFromPlay:
+        _status = UpdateStatus.notChecked;
+      default:
+        break;
+    }
+  }
+
   /// Downloads the available update in the background; Play first shows its small
   /// confirmation sheet. While it runs the status is [UpdateStatus.downloading], then
   /// [UpdateStatus.readyToInstall].

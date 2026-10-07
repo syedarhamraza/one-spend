@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
@@ -12,18 +11,19 @@ import '../../widgets/one_ui_switch.dart';
 import '../../widgets/one_ui_toast.dart';
 import '../../core/telemetry/events.dart';
 import '../../core/telemetry/telemetry.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Appearance: the 3D effect for floating controls, and the two customisation studios.
 class AppearanceSettingsScreen extends StatelessWidget {
   const AppearanceSettingsScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsAppearance);
   }
 
   void _toggle3d(OneUIEffectsController effects) {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     effects.floating3dEffect = !effects.floating3dEffect;
   }
 
@@ -36,7 +36,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
       confirmLabel: 'Reset',
       confirmTextColor: OneUITheme.accentOrange,
       onConfirm: () {
-        HapticFeedback.mediumImpact();
+        Haptics.confirm();
         effects
           ..floating3dEffect = false
           ..resetCardStyle()
@@ -76,7 +76,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                 title: 'Subscription cards',
                 subtitle: 'Price, renewal badge and details shown on each card',
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  Haptics.tap();
                   AppLog.event(TelemetryEvent.studioOpened('cards'));
                   context.push(AppRoutes.cardStudio);
                 },
@@ -85,7 +85,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
                 title: 'Subscription details',
                 subtitle: 'Icons and highlights on the subscription page',
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  Haptics.tap();
                   AppLog.event(TelemetryEvent.studioOpened('details'));
                   context.push(AppRoutes.detailStudio);
                 },

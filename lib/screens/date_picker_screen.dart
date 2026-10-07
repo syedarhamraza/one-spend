@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -12,6 +11,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_date_wheel.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_radio.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI date picker subpage: month / day / year scroll wheels, a live summary,
 /// quick picks, and the floating Cancel | Save pill. Returns the chosen date (no time part),
@@ -40,7 +40,7 @@ class DatePickerScreen extends StatefulWidget {
     String title = 'Select date',
     String? subtitle,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final DatePickerArgs args = (
       initialDate: initialDate,
       firstDate: firstDate,
@@ -94,7 +94,7 @@ class _DatePickerScreenState extends State<DatePickerScreen> {
   }
 
   void _save() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     Navigator.pop(context, _date);
   }
 
@@ -168,7 +168,7 @@ class _DatePickerScreenState extends State<DatePickerScreen> {
                                   subtitleColor: OneUITheme.textSecondary,
                                   trailing: OneUIRadio(isSelected: _date == pick.date),
                                   onTap: () {
-                                    HapticFeedback.selectionClick();
+                                    Haptics.select();
                                     setState(() => _date = pick.date);
                                     _wheelKey.currentState?.animateTo(pick.date);
                                   },

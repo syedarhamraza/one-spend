@@ -34,6 +34,7 @@ import '../features/reports/data/report_sharer.dart';
 import '../widgets/one_ui_floating_menu.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
+import '../core/haptics/haptics.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -83,7 +84,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   }
 
   Future<void> _openUrl(String rawUrl) async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     var target = rawUrl.trim();
     if (!RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*://').hasMatch(target)) {
       target = 'https://$target';
@@ -183,7 +184,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   }
 
   void _markRenewed() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     if (!SubscriptionStore.instance.renewSubscription(_sub.id)) {
       OneUIToast.show(context, 'Already marked paid today');
       return;
@@ -200,7 +201,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   }
 
   void _undoRenew() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     _undoRenewTimer?.cancel();
     _undoRenewTimer = null;
     if (SubscriptionStore.instance.undoRenew(_sub.id)) {
@@ -213,7 +214,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
   }
 
   void _togglePause() {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     SubscriptionStore.instance.togglePauseSubscription(_sub.id);
     _syncFromStore();
   }
@@ -222,7 +223,7 @@ class _SubscriptionDetailScreenState extends State<SubscriptionDetailScreen> {
 
   /// Share → the same floating menu as More: Share as PDF / Share as text.
   void _shareSubscription() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     OneUIFloatingMenu.show(
       context: context,
       anchorKey: _shareButtonKey,
@@ -275,7 +276,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
   }
 
   void _deleteSubscription() {
-    HapticFeedback.mediumImpact();
+    Haptics.warn();
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
       title: 'Delete ${_sub.name}?',
@@ -283,7 +284,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
       cancelLabel: 'Cancel',
       confirmLabel: 'Delete',
       onConfirm: () {
-        HapticFeedback.mediumImpact();
+        Haptics.warn();
         final name = _sub.name;
         SubscriptionStore.instance.removeSubscription(_sub.id);
         AppLog.event(TelemetryEvent.subscriptionsDeleted(1));
@@ -371,7 +372,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {
-                        HapticFeedback.lightImpact();
+                        Haptics.tap();
                         Navigator.pop(context);
                       },
                     ),
@@ -716,7 +717,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       Expanded(
                                         child: OutlinedButton(
                                           onPressed: () {
-                                            HapticFeedback.lightImpact();
+                                            Haptics.tap();
                                             SubscriptionStore.instance.skipSubscriptionCycle(_sub.id);
                                             _syncFromStore();
                                             OneUIToast.show(context, 'Cycle skipped');
@@ -746,7 +747,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       Expanded(
                                         child: ElevatedButton(
                                           onPressed: () {
-                                            HapticFeedback.mediumImpact();
+                                            Haptics.confirm();
                                             if (!SubscriptionStore.instance.markSubscriptionPaid(_sub.id)) {
                                               OneUIToast.show(context, 'Already marked paid today');
                                               return;
@@ -1211,7 +1212,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
                                       subtitleColor: OneUITheme.textSecondary,
                                       trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: OneUITheme.textSecondary),
                                       onTap: () {
-                                        HapticFeedback.lightImpact();
+                                        Haptics.tap();
                                         context.push(AppRoutes.upcomingSchedule(_sub.id));
                                       },
                                     ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../theme/one_ui_theme.dart';
+import '../core/haptics/haptics.dart';
 
 /// What to draw on one calendar day.
 class CalendarDayMarker {
@@ -77,7 +77,7 @@ class _OneUIMonthCalendarState extends State<OneUIMonthCalendar> {
   }
 
   void _goTo(int page) {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     _pageController.animateToPage(page, duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
   }
 
@@ -136,7 +136,7 @@ class _OneUIMonthCalendarState extends State<OneUIMonthCalendar> {
             controller: _pageController,
             itemCount: _pageCount,
             onPageChanged: (page) {
-              HapticFeedback.selectionClick();
+              Haptics.select();
               setState(() => _page = page);
               widget.onMonthChanged?.call(_monthAt(page));
             },
@@ -256,7 +256,7 @@ class _DayCell extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          HapticFeedback.selectionClick();
+          Haptics.select();
           onTap();
         },
         child: Column(

@@ -26,6 +26,7 @@ import 'restore_preview_screen.dart';
 import '../../features/reports/presentation/export_share_screen.dart';
 import '../../core/telemetry/events.dart';
 import '../../core/telemetry/telemetry.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Backup & data.
 ///
@@ -41,20 +42,20 @@ class BackupDataScreen extends StatelessWidget {
   static final DateFormat _savedFormat = DateFormat('MMM d, y');
 
   static Future<void> open(BuildContext context) async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     await context.push(AppRoutes.settingsData);
     // The Undo row only makes sense right after the change; later edits would be lost.
     if (sl.isRegistered<BackupService>()) sl<BackupService>().undoableAction.value = null;
   }
 
   Future<void> _undoLast(BuildContext context) async {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     final undone = await sl<BackupService>().undoLast();
     if (context.mounted) OneUIToast.show(context, undone ? 'Change undone' : 'Nothing to undo');
   }
 
   Future<void> _saveBackup(BuildContext context) async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final now = DateTime.now();
     try {
       final contents = await sl<BackupService>().exportBackup(now: now);
@@ -73,7 +74,7 @@ class BackupDataScreen extends StatelessWidget {
   }
 
   Future<void> _restoreBackup(BuildContext context) async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final BackupSnapshot backup;
     try {
       final files = await FilePicker.pickFiles();
@@ -108,7 +109,7 @@ class BackupDataScreen extends StatelessWidget {
       cancelLabel: 'Cancel',
       confirmLabel: 'Clear all',
       onConfirm: () async {
-        HapticFeedback.mediumImpact();
+        Haptics.warn();
         await sl<BackupService>().clearAll();
         if (!context.mounted) return;
         OneUIToast.show(context, 'All subscriptions cleared');

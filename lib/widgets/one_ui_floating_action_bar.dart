@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_glass_surface.dart';
 import 'one_ui_morph_switcher.dart';
+import '../core/haptics/haptics.dart';
 
 class OneUIFloatingActionBarItem {
   final IconData icon;
@@ -84,7 +84,7 @@ class OneUIFloatingActionBar extends StatelessWidget {
             key: item.key,
             onTap: item.isEnabled
                 ? () {
-                    HapticFeedback.lightImpact();
+                    Haptics.tap();
                     item.onTap();
                   }
                 : null,

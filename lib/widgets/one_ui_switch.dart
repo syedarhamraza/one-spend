@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
+import '../core/haptics/haptics.dart';
 
 /// Authentic Samsung One UI toggle switch matching One UI specifications.
 ///
@@ -31,7 +31,7 @@ class OneUISwitch extends StatelessWidget {
       toggled: value,
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.lightImpact();
+          Haptics.select();
           onChanged(!value);
         },
         behavior: HitTestBehavior.opaque,

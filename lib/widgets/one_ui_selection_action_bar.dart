@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_glass_surface.dart';
+import '../core/haptics/haptics.dart';
 
 /// Bottom multi-selection floating action bar.
 /// Streamlined according to user instructions:
@@ -124,7 +124,7 @@ class OneUISelectionActionBar extends StatelessWidget {
       key: key,
       onTap: isEnabled
           ? () {
-              HapticFeedback.lightImpact();
+              Haptics.tap();
               onTap();
             }
           : null,

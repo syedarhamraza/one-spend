@@ -105,7 +105,15 @@ class OneUIGroupItemTile extends StatelessWidget {
         Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: item.onTap,
+            // Flutter's own long-press buzz would play on top of the row's Haptics.longPress,
+            // so it's off; the tap click sound is played by hand instead.
+            enableFeedback: item.onLongPress == null,
+            onTap: item.onTap == null || item.onLongPress == null
+                ? item.onTap
+                : () {
+                    Feedback.forTap(context);
+                    item.onTap!();
+                  },
             onLongPress: item.onLongPress,
             borderRadius: BorderRadius.vertical(
               top: isFirst ? const Radius.circular(26) : Radius.zero,

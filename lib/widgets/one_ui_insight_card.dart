@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../features/subscriptions/domain/services/insight_cards.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_ambient_glow.dart';
+import '../core/haptics/haptics.dart';
 
 extension InsightToneColor on InsightTone {
   /// Red = bad, amber = heads-up, green = good, blue = information.
@@ -158,7 +158,7 @@ class _OneUIInsightCardState extends State<OneUIInsightCard> with SingleTickerPr
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
                         onTap: () {
-                          HapticFeedback.lightImpact();
+                          Haptics.tap();
                           widget.onAction();
                         },
                         child: Center(

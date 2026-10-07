@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI segmented control: a capsule in the card surface colour (matching the
 /// cards around it) with an animated `surfacePillActive` thumb behind the selected segment
@@ -65,7 +65,7 @@ class OneUISegmentedPills<T> extends StatelessWidget {
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
                             if (i == selectedIndex) return;
-                            HapticFeedback.selectionClick();
+                            Haptics.select();
                             onChanged(segments[i].value);
                           },
                           child: Center(

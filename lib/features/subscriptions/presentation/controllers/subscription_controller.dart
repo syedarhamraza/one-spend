@@ -81,6 +81,7 @@ class SubscriptionController extends ChangeNotifier {
   int _defaultReminderDays = _defaultReminder;
   int _defaultReminderTimeMinutes = _defaultReminderTime;
   bool _notificationsEnabled = true;
+  bool _notificationVibration = true;
   SubscriptionSortOption _sortOption = SubscriptionSortOption.renewalAsc;
   bool _groupByDate = false;
   DateTime? _lastBackupAt;
@@ -144,6 +145,7 @@ class SubscriptionController extends ChangeNotifier {
     _defaultReminderDays = _defaultReminder;
     _defaultReminderTimeMinutes = _defaultReminderTime;
     _notificationsEnabled = true;
+    _notificationVibration = true;
     _sortOption = SubscriptionSortOption.renewalAsc;
     _groupByDate = false;
     _recentSearches.clear();
@@ -179,6 +181,9 @@ class SubscriptionController extends ChangeNotifier {
   /// Default reminder time of day, in minutes after midnight.
   int get defaultReminderTimeMinutes => _defaultReminderTimeMinutes;
   bool get notificationsEnabled => _notificationsEnabled;
+
+  /// Whether reminders vibrate (Settings › Vibration). A device preference, not backed up.
+  bool get notificationVibration => _notificationVibration;
   SubscriptionSortOption get sortOption => _sortOption;
   bool get groupByDate => _groupByDate;
 
@@ -308,6 +313,7 @@ class SubscriptionController extends ChangeNotifier {
       _defaultReminderDays = await settingsRepository.getDefaultReminderDays();
       _defaultReminderTimeMinutes = await settingsRepository.getDefaultReminderTimeMinutes();
       _notificationsEnabled = await settingsRepository.getNotificationsEnabled();
+      _notificationVibration = await settingsRepository.getNotificationVibration();
       _sortOption = await settingsRepository.getSortOption();
       _groupByDate = await settingsRepository.getGroupByDate();
       _recentSearches
@@ -648,6 +654,13 @@ class SubscriptionController extends ChangeNotifier {
     _notificationsEnabled = value;
     notifyListeners();
     _persist(() => settingsRepository.setNotificationsEnabled(value));
+  }
+
+  void setNotificationVibration(bool value) {
+    if (value == _notificationVibration) return;
+    _notificationVibration = value;
+    notifyListeners(); // the scheduler re-plans onto the matching channels
+    _persist(() => settingsRepository.setNotificationVibration(value));
   }
 
   void setSortOption(SubscriptionSortOption option) {

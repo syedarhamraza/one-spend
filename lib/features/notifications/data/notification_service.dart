@@ -14,6 +14,9 @@ abstract class NotificationService {
   /// Whether the OS currently allows this app to post notifications.
   Future<bool> areEnabled();
 
+  /// Whether notifications scheduled from now on vibrate (Settings › Vibration).
+  Future<void> setVibration(bool enabled);
+
   Future<void> schedule(PlannedNotification notification, {required String route});
 
   /// Shows [notification] immediately, ignoring its fire time.
@@ -41,6 +44,9 @@ class NoopNotificationService implements NotificationService {
 
   @override
   Future<bool> areEnabled() async => true;
+
+  @override
+  Future<void> setVibration(bool enabled) async {}
 
   @override
   Future<void> schedule(PlannedNotification notification, {required String route}) async {}

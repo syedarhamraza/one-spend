@@ -16,6 +16,7 @@ import 'notification_settings_screen.dart';
 import 'planned_feature.dart';
 import 'security_settings_screen.dart';
 import 'software_update_screen.dart';
+import 'vibration_settings_screen.dart';
 
 /// An option inside a subpage, listed so Settings search can find it.
 typedef SettingsOption = ({String title, List<String> keywords, bool placeholder});
@@ -101,6 +102,21 @@ class SettingsCatalog {
           (
             title: 'Default reminder',
             keywords: ['reminder time', 'days before', 'alert', 'renewal'],
+            placeholder: false,
+          ),
+        ],
+      ),
+      SettingsDestination(
+        title: 'Vibration',
+        icon: Icons.vibration_rounded,
+        color: OneUITheme.accentTeal,
+        open: VibrationSettingsScreen.open,
+        keywords: ['vibrate', 'haptic', 'haptics', 'touch feedback'],
+        options: [
+          (title: 'Haptic feedback', keywords: ['vibrate', 'touch', 'tap', 'buzz'], placeholder: false),
+          (
+            title: 'Vibrate for notifications',
+            keywords: ['notification', 'reminder', 'silent', 'vibration'],
             placeholder: false,
           ),
         ],
