@@ -21,7 +21,12 @@ class CustomCategory {
 
   static bool isCustomId(String id) => id.startsWith(idPrefix);
 
-  static String newId() => '$idPrefix${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
+  static int _idSequence = 0;
+
+  /// A new unique id. The counter keeps two made in the same clock tick apart (Windows and
+  /// some phones tick far slower than a microsecond).
+  static String newId() =>
+      '$idPrefix${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}${(_idSequence++ % 1296).toRadixString(36)}';
 
   CustomCategory copyWith({String? name, int? iconCodePoint, int? colorValue, int? sortOrder}) => CustomCategory(
         id: id,

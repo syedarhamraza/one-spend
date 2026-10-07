@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../utils/one_ui_brand_catalog.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_floating_modal.dart';
@@ -119,49 +120,41 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
     Navigator.pop(context);
   }
 
-  Widget _preview() {
-    final name = _trimmedName.isEmpty ? 'New category' : _trimmedName;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.cardBorderRadius),
-      child: Row(
+  /// The category as it'll look: a big icon circle in its colour, with the name under it
+  /// (like the photo on a Samsung contact).
+  Widget _hero() {
+    final empty = _trimmedName.isEmpty;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      child: Column(
         children: [
-          Container(
-            width: 46,
-            height: 46,
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            width: 96,
+            height: 96,
             decoration: BoxDecoration(
-              color: _color.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(14),
+              color: _color,
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: _color.withValues(alpha: 0.35), blurRadius: 28, spreadRadius: 2)],
             ),
             alignment: Alignment.center,
-            child: Icon(_icon, color: _color, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: OneUITheme.textPrimary,
-                letterSpacing: -0.2,
-              ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 160),
+              child: Icon(_icon, key: ValueKey(_icon), color: OneUIBrandCatalog.foregroundOn(_color), size: 46),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _color.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(OneUITheme.radiusBadge),
-            ),
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _color),
+          const SizedBox(height: 14),
+          Text(
+            empty ? 'New category' : _trimmedName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+              color: empty ? OneUITheme.textTertiary : OneUITheme.textPrimary,
             ),
           ),
         ],
@@ -200,13 +193,117 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
     );
   }
 
-  Widget _grid<T>({
-    required List<T> items,
-    required bool Function(T item) selected,
-    required void Function(T item) onTap,
-    required Widget Function(T item, bool isSelected) build,
-    required String Function(T item) label,
-  }) {
+  /// How many colours the row shows before "More colours", like Samsung Calendar.
+  static const int _rowColors = 6;
+  bool _allColors = false;
+
+  bool _isColor(Color c) => c.toARGB32() == _color.toARGB32();
+
+  Widget _colorDot(Color color, {double size = 40}) {
+    final selected = _isColor(color);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Colour',
+      child: GestureDetector(
+        onTap: () {
+          Haptics.select();
+          setState(() => _color = color);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: selected ? OneUITheme.textPrimary : Colors.transparent, width: 2.5),
+          ),
+          child: selected ? Icon(Icons.check_rounded, color: OneUIBrandCatalog.foregroundOn(color), size: 20) : null,
+        ),
+      ),
+    );
+  }
+
+  /// One row of colours and a "more" circle that opens the full palette.
+  Widget _colors() {
+    final swatches = OneUITheme.categorySwatches;
+    final row = swatches.take(_rowColors).toList();
+    // A colour picked from the full palette takes the row's last place, so it stays visible.
+    if (!row.any(_isColor)) row[_rowColors - 1] = _color;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.cardBorderRadius),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (final c in row) _colorDot(c),
+              Semantics(
+                button: true,
+                label: _allColors ? 'Fewer colours' : 'More colours',
+                child: GestureDetector(
+                  onTap: () {
+                    Haptics.tap();
+                    setState(() => _allColors = !_allColors);
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        colors: [
+                          Color(0xFFF07167),
+                          Color(0xFFFFD166),
+                          Color(0xFF00C05A),
+                          Color(0xFF34AADC),
+                          Color(0xFF7E57C2),
+                          Color(0xFFF07167),
+                        ],
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(color: OneUITheme.cardColor, shape: BoxShape.circle),
+                      child: AnimatedRotation(
+                        turns: _allColors ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: const Icon(Icons.expand_more_rounded, size: 20, color: OneUITheme.textPrimary),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeInOutCubic,
+            alignment: Alignment.topCenter,
+            child: _allColors
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.center,
+                      children: [for (final c in swatches) _colorDot(c, size: 36)],
+                    ),
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The icons, the chosen one filled with the category colour.
+  Widget _icons() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -216,60 +313,37 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
         runSpacing: 10,
         alignment: WrapAlignment.center,
         children: [
-          for (final item in items)
+          for (final icon in supportedSubscriptionIcons)
             Semantics(
               button: true,
-              selected: selected(item),
-              label: label(item),
+              selected: icon == _icon,
+              label: 'Icon',
               child: GestureDetector(
                 onTap: () {
                   Haptics.select();
-                  setState(() => onTap(item));
+                  setState(() => _icon = icon);
                 },
-                child: build(item, selected(item)),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: icon == _icon ? _color : OneUITheme.surfaceCardHighlight,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: icon == _icon ? OneUIBrandCatalog.foregroundOn(_color) : OneUITheme.textSecondary,
+                  ),
+                ),
               ),
             ),
         ],
       ),
     );
   }
-
-  Widget _iconGrid() => _grid<IconData>(
-        items: supportedSubscriptionIcons,
-        selected: (icon) => icon == _icon,
-        onTap: (icon) => _icon = icon,
-        label: (icon) => 'Icon',
-        build: (icon, isSelected) => AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: isSelected ? _color.withValues(alpha: 0.22) : OneUITheme.surfaceCardHighlight,
-            shape: BoxShape.circle,
-            border: Border.all(color: isSelected ? _color : Colors.transparent, width: 2),
-          ),
-          alignment: Alignment.center,
-          child: Icon(icon, size: 22, color: isSelected ? _color : OneUITheme.textSecondary),
-        ),
-      );
-
-  Widget _colorGrid() => _grid<Color>(
-        items: OneUITheme.categorySwatches,
-        selected: (color) => color.toARGB32() == _color.toARGB32(),
-        onTap: (color) => _color = color,
-        label: (color) => 'Colour',
-        build: (color, isSelected) => AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: isSelected ? OneUITheme.textPrimary : Colors.transparent, width: 3),
-          ),
-          child: isSelected ? const Icon(Icons.check_rounded, color: Colors.white, size: 22) : null,
-        ),
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -282,10 +356,10 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
         canSave: _canSave,
       ),
       builder: (context) => [
-        _preview(),
+        _hero(),
         OneUISection(title: 'Name', child: _nameField()),
-        OneUISection(title: 'Icon', child: _iconGrid()),
-        OneUISection(title: 'Colour', child: _colorGrid()),
+        OneUISection(title: 'Colour', child: _colors()),
+        OneUISection(title: 'Icon', child: _icons()),
         if (editing != null) ...[
           const SizedBox(height: 14),
           OneUIGroupCard(

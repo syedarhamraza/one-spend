@@ -127,7 +127,8 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIWheelColumn` | `one_ui_wheel_column.dart` | The single flat scroll-wheel column both pickers are built from. Reuse it for any new wheel picker |
 | `OneUIUpcomingHeroCard` | `one_ui_upcoming_hero_card.dart` | Upcoming tab hero: the budget card's glass + glow recipe, hero amount, 12dp track split by payment method, Device Care key-value rows |
 | `OneUIAnalyticsHeroCard` | `one_ui_analytics_hero_card.dart` | Analytics tab hero (the page's only glass card): same glass + glow recipe, yearly amount, 12dp track split by category colour, key-value rows (per month, budget, paused, and the Pro year-end projection: "On track for 2026", or "Oct – Dec 2026" when tracking began mid-year; free users see it locked with a Pro chip). A row can take a `trailing` widget and `onTap` |
-| `CategoryEditorScreen` | `screens/category_editor_screen.dart` | Create or edit a custom category: live preview, pill name field, inline icon grid (`supportedSubscriptionIcons`) and colour swatches (`categorySwatches`), Cancel \| Save. Editing adds Delete, which first asks where to move the category's subscriptions |
+| `CategoriesScreen` | `screens/settings/categories_screen.dart` | Settings › Categories: your categories (in your order) above the built-in ones; + in the header, long-press to select (Edit, Delete), ⋮ › Reorder (drag handles, Cancel \| Save) |
+| `CategoryEditorScreen` | `screens/category_editor_screen.dart` | Create or edit a custom category: a 96 dp icon hero in the category colour with the name under it, pill name field, a Samsung Calendar style colour row (6 colours + a "More colours" circle that opens all of `categorySwatches`), and the icon grid (`supportedSubscriptionIcons`, the chosen one filled), Cancel \| Save. Editing adds Delete, which first asks where to move the category's subscriptions |
 | `OneUIKeyValueRow` | `one_ui_key_value_row.dart` | The key-value rows inside both hero cards' panels: grey label left, bold value over a grey caption right. When they don't fit side by side (big amounts, long currency codes or names, large text) the value moves under the label rather than being cut off. Never truncate an amount |
 | `OneUISpendingTrendsCard` + `OneUILineChart` | `one_ui_spending_chart.dart` | Spending trend (titled by its `OneUISection`): month amount beside the 6M · 1Y · 2Y pills, then month · chip · change; 6M · 1Y · 2Y of past months (solid) and forecast (dashed, from `ChargeSchedule`), budget guide, scrubbing with a tooltip, and the charges behind the highlighted month |
 | `OneUIAmbientGlow` | `one_ui_ambient_glow.dart` | The radial glow behind glass hero cards (first child of the card's `Stack`); cross-fades when its `color` changes |
@@ -178,16 +179,16 @@ Use [`billing_cycle_picker_screen.dart`](../lib/screens/billing_cycle_picker_scr
    - a padded `SliverToBoxAdapter` (§3) with `OneUISection` / `OneUIGroupCard` content
    - a `Positioned` `OneUIBottomVignette`
    - a `Positioned` + `SafeArea` + `Padding(bottom: 8)` + `Center` → `OneUIFloatingCancelSavePill(onCancel: () => Navigator.pop(context), onSave: _save)`
-2. **Save:** `HapticFeedback.mediumImpact(); Navigator.pop(context, value);`. Cancel and back pop with no value, so the caller gets `null`.
+2. **Save:** `Haptics.confirm(); Navigator.pop(context, value);`. Cancel and back pop with no value, so the caller gets `null`.
 3. **Route:** add a path to `AppRoutes`, plus a typedef record for its arguments if needed, in [`app_router.dart`](../lib/core/router/app_router.dart), and a `GoRoute` in `buildPageRoutes()` that reads `state.extra`.
-4. **Entry point:** add `static Future<T?> open(BuildContext context, {…})` on the screen. It calls `HapticFeedback.lightImpact()`, then `context.push<T>(AppRoutes.x, extra: …)`. Callers use only `open()`.
+4. **Entry point:** add `static Future<T?> open(BuildContext context, {…})` on the screen. It calls `Haptics.tap()`, then `context.push<T>(AppRoutes.x, extra: …)`. Callers use only `open()`.
 5. **Test:** host the caller with `routedTestApp(...)` from `test/helpers/test_app.dart`.
 
 ### 5.2 Add a setting
-Settings follows Samsung Settings: the **main page is titles only**. Each row is a solid circular badge and a short title: no subtitle, no switch, no chevron, and it never opens a dialog. Every option lives on the **subpage** that row opens (`lib/screens/settings/`).
+Settings follows Samsung Settings. Each **main page** row is a solid circular badge, a short title and a grey **description** of what's inside, separated by " • " (`SettingsDestination.description`, e.g. "Monthly budget • Main currency • Exchange rates"): no switch, no chevron, and it never opens a dialog. Badges there are `compact` (32 dp) on low-density or narrow screens (`OneUIIconBadge.compactFor`). Every option lives on the **subpage** that row opens (`lib/screens/settings/`).
 
 - **New option in an existing area:** add a row to that subpage (built on `OneUISubpage`). Subpage rows show the **current value** as their subtitle, and a `OneUISwitch` is fine here. Also add it to that destination's `options` in `settings_catalog.dart` so search finds it (results show the path, e.g. "Settings › Notifications").
-- **New area:** add a `SettingsDestination` to a group in `SettingsCatalog.groups` (icon, colour, `open`, keywords, options), plus a subpage with a route and an `open()` helper (§5.1).
+- **New area:** add a `SettingsDestination` to a group in `SettingsCatalog.groups` (icon, colour, description, `open`, keywords, options), plus a subpage with a route and an `open()` helper (§5.1).
 - **First-run intro** (`onboarding_screen.dart`, illustrations in `screens/onboarding/onboarding_heroes.dart`):
   - One UI app-intro style: a glass `OneUIGlassSurface` **Skip** capsule (top right), one `OneUIAmbientGlow` that cross-fades per page, an illustration built from real components, a 34 pt left-aligned title, info rows in an `OneUIGroupCard`, page dots and an accent pill with an arrow.
   - Page content fades out above the dots when it doesn't fit.
@@ -216,12 +217,17 @@ Use `OneUIFloatingModal.showConfirmationDialog(title, message, confirmLabel: 'De
 ---
 
 ## 6. Motion & haptics
+Always vibrate through `Haptics` (`lib/core/haptics/haptics.dart`), never `HapticFeedback`. It plays one buzz per touch (the strongest asked for), and follows Settings › Vibration (on/off and intensity).
+
 | Interaction | Haptic |
 |---|---|
-| Opening a subpage / tapping a row | `HapticFeedback.lightImpact()` |
-| Picking an option, toggling, each wheel tick | `HapticFeedback.selectionClick()` |
-| Saving / confirming | `HapticFeedback.mediumImpact()` |
-| Long-press into selection mode | `HapticFeedback.mediumImpact()` |
+| Opening a subpage / tapping a row or button | `Haptics.tap()` |
+| Picking an option, toggling, each wheel tick | `Haptics.select()` |
+| Saving / confirming | `Haptics.confirm()` |
+| Long-press into selection mode, starting a drag | `Haptics.longPress()` |
+| Delete, Clear all, an error | `Haptics.warn()` |
+
+An `InkWell` with `onLongPress` sets `enableFeedback: false` (Flutter's own long-press buzz would double ours); `OneUIGroupItemTile` already does.
 
 - **Durations:** 200–380 ms.
 - **Curves:** `Curves.easeInOutCubic` for show/hide (e.g. the nav bar sliding away), and `Curves.easeOutCubic` for settling (e.g. wheels animating to a quick pick).
