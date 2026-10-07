@@ -29,8 +29,8 @@ class Changelog {
 
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
-      version: '1.0.0-beta.1',
-      date: Changelog.inDevelopment,
+      version: '1.0.0-beta.2',
+      date: 'In development',
       changes: [
         'Vibration feels the same everywhere: one buzz per touch, a little stronger for Save and for Delete',
         'New Settings › Vibration: turn off haptic feedback, or stop reminders from vibrating',
