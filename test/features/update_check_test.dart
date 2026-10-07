@@ -280,6 +280,26 @@ void main() {
       expect(offline.status, UpdateStatus.available);
     });
 
+    test('reopening the page forgets a settled check but keeps a found update', () async {
+      for (final result in [UpdateCheckResult.upToDate, UpdateCheckResult.failed, UpdateCheckResult.notFromPlay]) {
+        service.next = result;
+        await controller.check();
+        controller.resetSettledResult();
+        expect(controller.status, UpdateStatus.notChecked, reason: result.name);
+      }
+
+      service.next = UpdateCheckResult.available;
+      await controller.check();
+      controller.resetSettledResult();
+      expect(controller.status, UpdateStatus.available);
+
+      service.next = UpdateCheckResult.downloaded;
+      final fresh = UpdateController(service: service);
+      await fresh.check();
+      fresh.resetSettledResult();
+      expect(fresh.status, UpdateStatus.readyToInstall);
+    });
+
     test('a tapped check shows the dots for a minimum time; the launch check does not wait', () async {
       final slow = UpdateController(service: service, minCheckDuration: const Duration(milliseconds: 300));
       final watch = Stopwatch()..start();
@@ -389,6 +409,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('One Spend is up to date.'), findsOneWidget);
       expect(find.text('Check for updates'), findsNothing); // the button fades out
+    });
+
+    testWidgets('Software update: leaving and coming back offers Check for updates again', (tester) async {
+      await pump(tester, const SoftwareUpdateScreen());
+      await tester.tap(find.text('Check for updates'));
+      await tester.pumpAndSettle();
+      expect(find.text('One Spend is up to date.'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await pump(tester, const SoftwareUpdateScreen());
+      expect(find.text('Check for updates'), findsOneWidget);
+      expect(find.text('One Spend is up to date.'), findsNothing);
     });
 
     testWidgets('Software update: download in the background, then install and restart', (tester) async {

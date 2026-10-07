@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'payment_method_picker_screen.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Payment Methods Screen.
 /// Forwards to the unified PaymentMethodPickerScreen which contains all card management,
@@ -17,12 +17,12 @@ class PaymentMethodsScreen extends StatelessWidget {
   });
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return PaymentMethodPickerScreen.open(context, isManageOnly: true);
   }
 
   static Future<PaymentMethod?> select(BuildContext context, {String? currentMethodId}) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return PaymentMethodPickerScreen.open(context, currentMethodId: currentMethodId);
   }
 

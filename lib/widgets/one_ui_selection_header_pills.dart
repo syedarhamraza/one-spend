@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_glass_surface.dart';
+import '../core/haptics/haptics.dart';
 
 /// Frosted floating capsule shared by the selection header pills.
 class _SelectionHeaderCapsule extends StatelessWidget {
@@ -45,7 +45,7 @@ class OneUISelectionCountPill extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          HapticFeedback.selectionClick();
+          Haptics.select();
           onToggleSelectAll();
         },
         child: _SelectionHeaderCapsule(
@@ -99,7 +99,7 @@ class OneUISelectionCancelPill extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        HapticFeedback.lightImpact();
+        Haptics.tap();
         onCancel();
       },
       child: const _SelectionHeaderCapsule(

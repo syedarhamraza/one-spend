@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
@@ -8,6 +7,7 @@ import '../../widgets/one_ui_card.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import 'planned_feature.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Placeholder subpage for a [PlannedFeature]: what it will do, in One UI style.
 class ComingSoonScreen extends StatelessWidget {
@@ -16,7 +16,7 @@ class ComingSoonScreen extends StatelessWidget {
   const ComingSoonScreen({super.key, required this.feature});
 
   static Future<void> open(BuildContext context, PlannedFeature feature) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.comingSoon, extra: feature);
   }
 

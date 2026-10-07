@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../features/subscriptions/domain/entities/logo_transform.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_brand_catalog.dart';
 import 'one_ui_brand_icon.dart';
+import '../core/haptics/haptics.dart';
 
 /// Image editor for a custom logo: shows the real icon large, and lets you pinch
 /// to zoom and drag to reposition the image inside it (or use the zoom slider).
@@ -61,7 +61,7 @@ class _OneUILogoFramerState extends State<OneUILogoFramer> {
             onScaleStart: _onScaleStart,
             onScaleUpdate: _onScaleUpdate,
             onDoubleTap: () {
-              HapticFeedback.selectionClick();
+              Haptics.select();
               widget.onChanged(LogoTransform.identity);
             },
             child: SizedBox.square(
@@ -130,7 +130,7 @@ class _OneUILogoFramerState extends State<OneUILogoFramer> {
               onPressed: t.isIdentity
                   ? null
                   : () {
-                      HapticFeedback.selectionClick();
+                      Haptics.select();
                       widget.onChanged(LogoTransform.identity);
                     },
               child: const Text('Reset'),

@@ -11,6 +11,7 @@ import '../widgets/one_ui_bottom_vignette.dart';
 import '../utils/reminder_format.dart';
 import 'time_picker_screen.dart';
 import '../widgets/one_ui_radio.dart';
+import '../core/haptics/haptics.dart';
 
 /// Dedicated Samsung One UI Renewal Reminder Subpage.
 /// Replaces the bottom modal sheet with a full One UI subpage for selecting
@@ -32,7 +33,7 @@ class ReminderPickerScreen extends StatefulWidget {
     required int initialDays,
     required int initialTimeMinutes,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final ReminderSetting initial = (days: initialDays, timeMinutes: initialTimeMinutes);
     return context.push<ReminderSetting>(AppRoutes.reminderPicker, extra: initial);
   }
@@ -75,14 +76,14 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
   }
 
   void _save() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     final days = _isCustom ? (int.tryParse(_customController.text.trim()) ?? _selectedDays).clamp(0, 60) : _selectedDays;
     final ReminderSetting result = (days: days, timeMinutes: _timeMinutes);
     Navigator.pop(context, result);
   }
 
   Future<void> _pickTime() async {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     final picked = await TimePickerScreen.open(
       context,
       initialMinutes: _timeMinutes,
@@ -220,7 +221,7 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
                               subtitleColor: OneUITheme.textSecondary,
                               trailing: OneUIRadio(isSelected: isSelected),
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 setState(() {
                                   _isCustom = false;
                                   _selectedDays = days;
@@ -245,7 +246,7 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
                               subtitleColor: OneUITheme.textSecondary,
                               trailing: OneUIRadio(isSelected: _isCustom),
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 setState(() {
                                   _isCustom = true;
                                   if (_customController.text.isEmpty) {

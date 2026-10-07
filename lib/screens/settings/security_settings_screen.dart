@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_info.dart';
@@ -12,13 +11,14 @@ import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import 'coming_soon_screen.dart';
 import 'planned_feature.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Security & privacy.
 class SecuritySettingsScreen extends StatelessWidget {
   const SecuritySettingsScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsSecurity);
   }
 
@@ -49,7 +49,7 @@ class SecuritySettingsScreen extends StatelessWidget {
               OneUIGroupItem(
                 title: 'Privacy policy',
                 onTap: () {
-                  HapticFeedback.lightImpact();
+                  Haptics.tap();
                   openInAppBrowser(context, AppInfo.privacyPolicyUrl);
                 },
               ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
@@ -9,6 +8,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_subscription_card.dart';
 import '../widgets/one_ui_switch.dart';
 import '../widgets/one_ui_toast.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Subscription Card Display & Data Indicators Screen
 class SubscriptionCardCustomizerScreen extends StatelessWidget {
@@ -50,7 +50,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {
-                        HapticFeedback.lightImpact();
+                        Haptics.tap();
                         Navigator.pop(context);
                       },
                     ),
@@ -103,7 +103,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                     color: OneUITheme.textSecondary,
                                   ),
                                   onTap: () {
-                                    HapticFeedback.lightImpact();
+                                    Haptics.tap();
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -131,7 +131,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                     color: OneUITheme.textSecondary,
                                   ),
                                   onTap: () {
-                                    HapticFeedback.lightImpact();
+                                    Haptics.tap();
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -246,7 +246,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
                                   title: 'Reset to defaults',
                                   trailing: const SizedBox.shrink(),
                                   onTap: () {
-                                    HapticFeedback.mediumImpact();
+                                    Haptics.confirm();
                                     ctrl.resetCardStyle();
                                     OneUIToast.show(context, 'Reset to defaults');
                                   },
@@ -370,7 +370,7 @@ class _SubscriptionCardOptionScreenState<T> extends State<SubscriptionCardOption
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {
-                        HapticFeedback.lightImpact();
+                        Haptics.tap();
                         Navigator.pop(context);
                       },
                     ),
@@ -436,7 +436,7 @@ class _SubscriptionCardOptionScreenState<T> extends State<SubscriptionCardOption
                                 title: opt.label,
                                 trailing: const SizedBox.shrink(),
                                 onTap: () {
-                                  HapticFeedback.selectionClick();
+                                  Haptics.select();
                                   setState(() {
                                     _selectedValue = opt.value;
                                   });

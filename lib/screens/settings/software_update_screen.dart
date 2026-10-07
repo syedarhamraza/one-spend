@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -25,6 +24,7 @@ import '../../widgets/one_ui_radio.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
 import 'changelog_screen.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Software update, in the style of One UI's own Software update page:
 /// the version over a soft glow, the result of the last check, and one big button.
@@ -34,7 +34,7 @@ class SoftwareUpdateScreen extends StatefulWidget {
   const SoftwareUpdateScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsSoftwareUpdate);
   }
 
@@ -48,7 +48,7 @@ class _SoftwareUpdateScreenState extends State<SoftwareUpdateScreen> {
   /// The transition shared by the button and the status text, so they change together.
   static const transition = Duration(milliseconds: 220);
 
-  late final UpdateController _updates = UpdateController.instance;
+  late final UpdateController _updates = UpdateController.instance..resetSettledResult();
   late UpdateStatus _lastStatus = _updates.status;
 
   /// Set while [_download] reports the end of a download itself (declined, failed).
@@ -77,7 +77,7 @@ class _SoftwareUpdateScreenState extends State<SoftwareUpdateScreen> {
   }
 
   Future<void> _onButtonTap() async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     switch (_updates.status) {
       case UpdateStatus.available:
         await _download();
@@ -122,7 +122,7 @@ class _SoftwareUpdateScreenState extends State<SoftwareUpdateScreen> {
         OneUIFloatingMenuItem(
           label: 'Auto download',
           onTap: () {
-            HapticFeedback.lightImpact();
+            Haptics.tap();
             Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _AutoDownloadScreen()));
           },
         ),
@@ -423,7 +423,7 @@ class _SoftwareInformation extends StatefulWidget {
   const _SoftwareInformation();
 
   static Future<void> show(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return OneUIFloatingModal.show<void>(context: context, builder: (_) => const _SoftwareInformation());
   }
 
@@ -529,7 +529,7 @@ class _AutoDownloadScreenState extends State<_AutoDownloadScreen> {
   AutoUpdateCheck _mode = UpdateController.instance.autoCheckMode;
 
   void _save() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     unawaited(UpdateController.instance.setAutoCheck(_mode)); // saved in the background
     Navigator.pop(context);
   }
@@ -562,7 +562,7 @@ class _AutoDownloadScreenState extends State<_AutoDownloadScreen> {
                 },
                 subtitleColor: OneUITheme.textSecondary,
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() => _mode = mode);
                 },
               ),

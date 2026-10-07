@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -13,6 +12,7 @@ import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
 import 'restore_preview_screen.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Backup & data › Restore points: the copies OneSpend saved automatically
 /// before replacing or clearing data. Tapping one previews it like a backup file.
@@ -20,7 +20,7 @@ class RestorePointsScreen extends StatefulWidget {
   const RestorePointsScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsRestorePoints);
   }
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/router/app_router.dart';
@@ -12,6 +11,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_time_wheel.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI time-of-day picker subpage: scroll wheels (hour : minute AM/PM),
 /// a live summary, quick picks, and the floating Cancel | Save pill.
@@ -29,7 +29,7 @@ class TimePickerScreen extends StatefulWidget {
     String title = 'Reminder time',
     String? subtitle,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final TimePickerArgs args = (initialMinutes: initialMinutes, title: title, subtitle: subtitle);
     return context.push<int>(AppRoutes.timePicker, extra: args);
   }
@@ -56,7 +56,7 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
   }
 
   void _save() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     Navigator.pop(context, _minutes);
   }
 
@@ -129,7 +129,7 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
                                 subtitleColor: OneUITheme.textSecondary,
                                 trailing: OneUIRadio(isSelected: _minutes == pick.minutes),
                                 onTap: () {
-                                  HapticFeedback.selectionClick();
+                                  Haptics.select();
                                   setState(() => _minutes = pick.minutes);
                                   _wheelKey.currentState?.animateTo(pick.minutes);
                                 },

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
@@ -7,6 +6,7 @@ import 'one_ui_brand_icon.dart';
 import 'one_ui_card.dart';
 import 'one_ui_fit_amount.dart';
 import 'one_ui_group_card.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Upcoming Renewals Section
 /// Supports 3 presentation styles:
@@ -104,9 +104,12 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
                 return Material(
                   color: Colors.transparent,
                   child: InkWell(
+                    // Long-press plays Haptics.longPress; Flutter's own buzz would double it.
+                    enableFeedback: false,
                     onTap: () {
+                      Feedback.forTap(context);
                       if (isSelectionMode) {
-                        HapticFeedback.selectionClick();
+                        Haptics.select();
                         onToggleSelect?.call(sub.id);
                       } else {
                         onTapSubscription(sub);
@@ -114,7 +117,7 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
                     },
                     onLongPress: () {
                       if (!isSelectionMode) {
-                        HapticFeedback.mediumImpact();
+                        Haptics.longPress();
                         onLongPressSubscription?.call(sub);
                       }
                     },
@@ -197,7 +200,7 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
                                   if (onMarkPaid != null && !isSelectionMode)
                                     GestureDetector(
                                       onTap: () {
-                                        HapticFeedback.mediumImpact();
+                                        Haptics.confirm();
                                         onMarkPaid!(sub);
                                       },
                                       child: Container(
@@ -335,7 +338,7 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
                 if (onMarkPaid != null && !isSelectionMode)
                   ElevatedButton(
                     onPressed: () {
-                      HapticFeedback.mediumImpact();
+                      Haptics.confirm();
                       onMarkPaid!(nextSub);
                     },
                     style: ElevatedButton.styleFrom(
@@ -406,7 +409,7 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
               ),
               onTap: () {
                 if (isSelectionMode) {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   onToggleSelect?.call(sub.id);
                 } else {
                   onTapSubscription(sub);
@@ -414,7 +417,7 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
               },
               onLongPress: () {
                 if (!isSelectionMode) {
-                  HapticFeedback.mediumImpact();
+                  Haptics.longPress();
                   onLongPressSubscription?.call(sub);
                 }
               },

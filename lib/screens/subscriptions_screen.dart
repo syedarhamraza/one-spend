@@ -30,6 +30,7 @@ import '../features/reports/presentation/export_share_screen.dart';
 import '../features/reports/data/report_sharer.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
+import '../core/haptics/haptics.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -86,7 +87,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _enterSearchMode() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     setState(() {
       _showSearch = true;
     });
@@ -122,7 +123,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _exitSearchMode() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     _searchFocusNode.unfocus();
     setState(() {
       _showSearch = false;
@@ -174,7 +175,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _enterSelectionMode([String? initialSelectedId]) {
-    HapticFeedback.mediumImpact();
+    Haptics.longPress();
     setState(() {
       _isSelectionMode = true;
       _selectedIds.clear();
@@ -186,7 +187,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _exitSelectionMode() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     setState(() {
       _isSelectionMode = false;
       _selectedIds.clear();
@@ -195,7 +196,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _toggleSelectAll(List<Subscription> currentList) {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() {
       if (_selectedIds.length == currentList.length) {
         _selectedIds.clear();
@@ -207,7 +208,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   void _toggleSelectItem(String id) {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
@@ -313,7 +314,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   /// Share → the same floating menu as More: Share as PDF / Share as text.
   void _handleShareSelected() {
     if (_selectedIds.isEmpty) return;
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     OneUIFloatingMenu.show(
       context: context,
       anchorKey: _selectionShareButtonKey,
@@ -321,6 +322,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       fallbackRight: 20.0,
       items: [
         OneUIFloatingMenuItem(label: 'Share as PDF', onTap: _shareSelectedPdf),
+        OneUIFloatingMenuItem(label: 'Share as CSV', onTap: _shareSelectedCsv),
         OneUIFloatingMenuItem(label: 'Share as text', onTap: _shareSelectedText),
       ],
     );
@@ -331,6 +333,14 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       await ReportSharer.shareSelectionPdf(SubscriptionStore.instance, Set.of(_selectedIds));
     } catch (_) {
       if (mounted) OneUIToast.show(context, 'Couldn\'t prepare the PDF');
+    }
+  }
+
+  Future<void> _shareSelectedCsv() async {
+    try {
+      await ReportSharer.shareSelectionCsv(SubscriptionStore.instance, Set.of(_selectedIds));
+    } catch (_) {
+      if (mounted) OneUIToast.show(context, 'Couldn\'t prepare the CSV');
     }
   }
 
@@ -360,7 +370,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
   void _handleDeleteSelected() {
     if (_selectedIds.isEmpty) return;
-    HapticFeedback.mediumImpact();
+    Haptics.warn();
     final count = _selectedIds.length;
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
@@ -369,7 +379,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       cancelLabel: 'Cancel',
       confirmLabel: 'Delete',
       onConfirm: () {
-        HapticFeedback.mediumImpact();
+        Haptics.warn();
         SubscriptionStore.instance.batchDelete(_selectedIds);
         AppLog.event(TelemetryEvent.subscriptionsDeleted(count));
         _exitSelectionMode();
@@ -380,7 +390,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
   void _handleDuplicateSelected() {
     if (_selectedIds.isEmpty) return;
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     final subs = SubscriptionStore.instance.subscriptions
         .where((s) => _selectedIds.contains(s.id))
         .toList();
@@ -394,26 +404,9 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     OneUIToast.show(context, 'Duplicated $count subscriptions');
   }
 
-  void _handleExportSelected() {
-    if (_selectedIds.isEmpty) return;
-    HapticFeedback.lightImpact();
-    final subs = SubscriptionStore.instance.subscriptions
-        .where((s) => _selectedIds.contains(s.id))
-        .toList();
-    final buffer = StringBuffer(
-        'id,name,price,currency,category,billingCycle,nextBillingDate,reminderDays,description,status\n');
-    for (var s in subs) {
-      buffer.writeln(
-          '${s.id},"${s.name.replaceAll('"', '""')}",${s.price},"${s.currency}","${s.category.label.replaceAll('"', '""')}","${s.billingCycle.name}","${s.nextBillingDate.toIso8601String()}",${s.reminderDays},"${s.description.replaceAll('"', '""')}","${s.status.name}"');
-    }
-    Clipboard.setData(ClipboardData(text: buffer.toString()));
-    _exitSelectionMode();
-    OneUIToast.copied(context, 'Selected subscriptions CSV copied');
-  }
-
   void _handleMoreSelected() {
     if (_selectedIds.isEmpty) return;
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final selectedSubs = SubscriptionStore.instance.subscriptions
         .where((s) => _selectedIds.contains(s.id));
     final anyActive = selectedSubs.any((s) => s.status != SubscriptionStatus.paused);
@@ -436,10 +429,6 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         OneUIFloatingMenuItem(
           label: 'Duplicate selected',
           onTap: _handleDuplicateSelected,
-        ),
-        OneUIFloatingMenuItem(
-          label: 'Export selected (CSV)',
-          onTap: _handleExportSelected,
         ),
       ],
     );
@@ -476,7 +465,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        Haptics.select();
         onToggleSelectAll();
       },
       behavior: HitTestBehavior.opaque,
@@ -569,19 +558,19 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           hasNoCard: hasNoCard,
           onTap: () {
             if (_isSelectionMode) {
-              HapticFeedback.selectionClick();
+              Haptics.select();
               _toggleSelectItem(sub.id);
             } else {
               if (_showSearch && _searchQuery.trim().isNotEmpty) {
                 SubscriptionStore.instance.addRecentSearch(_searchQuery.trim());
               }
-              HapticFeedback.lightImpact();
+              Haptics.tap();
               context.push(AppRoutes.subscriptionDetail(sub.id));
             }
           },
           onLongPress: () {
             if (!_isSelectionMode) {
-              HapticFeedback.mediumImpact();
+              Haptics.longPress();
               _enterSelectionMode(sub.id);
             }
           },
@@ -729,7 +718,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                   size: 26,
                                   tooltip: 'Add subscription',
                                   onTap: () {
-                                    HapticFeedback.lightImpact();
+                                    Haptics.tap();
                                     context.push(AppRoutes.addSubscription, extra: widget.filterPaymentMethodId);
                                   },
                                 ),
@@ -801,7 +790,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                         ),
                                         GestureDetector(
                                           onTap: () {
-                                            HapticFeedback.lightImpact();
+                                            Haptics.tap();
                                             store.clearRecentSearches();
                                           },
                                           behavior: HitTestBehavior.opaque,
@@ -838,7 +827,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                           child: InkWell(
                                             borderRadius: BorderRadius.circular(20),
                                             onTap: () {
-                                              HapticFeedback.selectionClick();
+                                              Haptics.select();
                                               _searchController.text = query;
                                               setState(() {
                                                 _searchQuery = query;
@@ -866,7 +855,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                                   const SizedBox(width: 6),
                                                   GestureDetector(
                                                     onTap: () {
-                                                      HapticFeedback.lightImpact();
+                                                      Haptics.tap();
                                                       store.removeRecentSearch(query);
                                                     },
                                                     behavior: HitTestBehavior.opaque,
@@ -966,11 +955,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                           child: OneUIUpcomingRenewalsSection(
                             upcomingSubscriptions: upcomingSubs,
                             onTapSubscription: (sub) {
-                              HapticFeedback.lightImpact();
+                              Haptics.tap();
                               context.push(AppRoutes.subscriptionDetail(sub.id));
                             },
                             onLongPressSubscription: (sub) {
-                              HapticFeedback.mediumImpact();
+                              Haptics.longPress();
                               _enterSelectionMode(sub.id);
                             },
                             onMarkPaid: (sub) {
@@ -1038,7 +1027,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                     color: Colors.transparent,
                                     child: InkWell(
                                       onTap: () {
-                                        HapticFeedback.lightImpact();
+                                        Haptics.tap();
                                         context.push(AppRoutes.addSubscription, extra: widget.filterPaymentMethodId);
                                       },
                                       borderRadius: BorderRadius.circular(100),

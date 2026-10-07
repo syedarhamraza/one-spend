@@ -51,6 +51,15 @@ abstract class SettingsRepository {
   Future<String?> getAutoUpdateCheck();
   Future<void> setAutoUpdateCheck(String value);
 
+  /// Settings › Vibration › Haptic feedback: taps vibrate (following the phone's own
+  /// touch feedback setting). On by default.
+  Future<bool> getHapticsEnabled();
+  Future<void> setHapticsEnabled(bool value);
+
+  /// Settings › Vibration › Vibrate for notifications. On by default.
+  Future<bool> getNotificationVibration();
+  Future<void> setNotificationVibration(bool value);
+
   /// Raw appearance (card studio / effects) values, keyed by setting name.
   Future<Map<String, String>> getAppearanceSettings();
   Future<void> setAppearanceSettings(Map<String, String> values);

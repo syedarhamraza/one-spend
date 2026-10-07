@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_info.dart';
@@ -10,13 +9,14 @@ import '../../utils/external_links.dart';
 import '../../widgets/one_ui_card.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Help & feedback: email the developer, the public GitHub tracker, and rating.
 class HelpFeedbackScreen extends StatelessWidget {
   const HelpFeedbackScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsHelp);
   }
 
@@ -39,7 +39,7 @@ class HelpFeedbackScreen extends StatelessWidget {
           subtitleColor: OneUITheme.textSecondary,
           trailing: const Icon(Icons.open_in_new_rounded, size: 18, color: OneUITheme.textSecondary),
           onTap: () {
-            HapticFeedback.lightImpact();
+            Haptics.tap();
             onTap();
           },
         );

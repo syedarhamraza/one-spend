@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../core/di/injection.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
@@ -8,6 +7,7 @@ import '../utils/one_ui_date_formats.dart';
 import 'one_ui_brand_icon.dart';
 import 'one_ui_group_card.dart';
 import 'one_ui_payment_brand_icon.dart';
+import '../core/haptics/haptics.dart';
 
 /// Unified Samsung One UI Subscription Card Widget
 /// Adapts dynamically to layout archetypes (One UI Fluent Grouped, Bento Elevated, Compact),
@@ -176,9 +176,12 @@ class OneUISubscriptionCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          // Long-press plays Haptics.longPress; Flutter's own buzz would double it.
+          enableFeedback: false,
           onTap: () {
+            Feedback.forTap(context);
             if (isSelectionMode) {
-              HapticFeedback.selectionClick();
+              Haptics.select();
               onToggleSelect?.call(sub.id);
             } else {
               onTap?.call();
@@ -186,7 +189,7 @@ class OneUISubscriptionCard extends StatelessWidget {
           },
           onLongPress: () {
             if (!isSelectionMode) {
-              HapticFeedback.mediumImpact();
+              Haptics.longPress();
               onLongPress?.call();
             }
           },
@@ -324,9 +327,12 @@ class OneUISubscriptionCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        // Long-press plays Haptics.longPress; Flutter's own buzz would double it.
+        enableFeedback: false,
         onTap: () {
+          Feedback.forTap(context);
           if (isSelectionMode) {
-            HapticFeedback.selectionClick();
+            Haptics.select();
             onToggleSelect?.call(sub.id);
           } else {
             onTap?.call();
@@ -334,7 +340,7 @@ class OneUISubscriptionCard extends StatelessWidget {
         },
         onLongPress: () {
           if (!isSelectionMode) {
-            HapticFeedback.mediumImpact();
+            Haptics.longPress();
             onLongPress?.call();
           }
         },
@@ -580,7 +586,7 @@ class OneUISubscriptionCard extends StatelessWidget {
       ),
       onTap: () {
         if (isSelectionMode) {
-          HapticFeedback.selectionClick();
+          Haptics.select();
           onToggleSelect?.call(sub.id);
         } else {
           onTap?.call();
@@ -588,7 +594,7 @@ class OneUISubscriptionCard extends StatelessWidget {
       },
       onLongPress: () {
         if (!isSelectionMode) {
-          HapticFeedback.mediumImpact();
+          Haptics.longPress();
           onLongPress?.call();
         }
       },

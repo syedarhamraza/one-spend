@@ -1,12 +1,42 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
+import '../../core/haptics/haptics.dart';
+
+Future<Map<String, List<LicenseEntry>>>? _licensesByPackage;
+
+/// [loadLicensesByPackage], read once per app run and shared by the list and detail pages.
+/// About starts it shortly after it opens, so the list is usually ready before it's tapped.
+Future<Map<String, List<LicenseEntry>>> licensesByPackage() => _licensesByPackage ??= loadLicensesByPackage();
+
+/// Starts [licensesByPackage] once [context]'s page has finished sliding in.
+void prefetchLicenses(BuildContext context) {
+  if (_licensesByPackage != null) return;
+  unawaited(_afterTransition(context).then((_) => licensesByPackage()));
+}
+
+/// Waits for [context]'s page to finish sliding in, so loading doesn't stutter the transition.
+Future<void> _afterTransition(BuildContext context) {
+  final animation = ModalRoute.of(context)?.animation;
+  if (animation == null || animation.isCompleted) return Future.value();
+  final done = Completer<void>();
+  void listener(AnimationStatus status) {
+    if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
+      animation.removeStatusListener(listener);
+      if (!done.isCompleted) done.complete();
+    }
+  }
+
+  animation.addStatusListener(listener);
+  return done.future;
+}
 
 /// Every licence registered with Flutter's [LicenseRegistry], grouped by package name.
 Future<Map<String, List<LicenseEntry>>> loadLicensesByPackage() async {
@@ -25,7 +55,7 @@ class LicensesScreen extends StatefulWidget {
   const LicensesScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsLicenses);
   }
 
@@ -34,7 +64,13 @@ class LicensesScreen extends StatefulWidget {
 }
 
 class _LicensesScreenState extends State<LicensesScreen> {
-  late final Future<Map<String, List<LicenseEntry>>> _licenses = loadLicensesByPackage();
+  Future<Map<String, List<LicenseEntry>>>? _licenses;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _licenses ??= _afterTransition(context).then((_) => licensesByPackage());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +100,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
                       subtitle: '${e.value.length} licence${e.value.length == 1 ? '' : 's'}',
                       subtitleColor: OneUITheme.textSecondary,
                       onTap: () {
-                        HapticFeedback.lightImpact();
+                        Haptics.tap();
                         context.push(AppRoutes.settingsLicenseDetail, extra: e.key);
                       },
                     ),
@@ -88,18 +124,27 @@ class LicenseDetailScreen extends StatefulWidget {
 }
 
 class _LicenseDetailScreenState extends State<LicenseDetailScreen> {
-  late final Future<Map<String, List<LicenseEntry>>> _licenses = loadLicensesByPackage();
+  /// Each licence's paragraphs, parsed once (parsing the text is the slow part).
+  Future<List<List<LicenseParagraph>>>? _licenses;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _licenses ??= _afterTransition(context).then((_) => licensesByPackage()).then(
+          (byPackage) => [for (final entry in byPackage[widget.packageName] ?? const <LicenseEntry>[]) entry.paragraphs.toList()],
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, List<LicenseEntry>>>(
+    return FutureBuilder<List<List<LicenseParagraph>>>(
       future: _licenses,
       builder: (context, snapshot) {
-        final entries = snapshot.data?[widget.packageName] ?? const <LicenseEntry>[];
+        final entries = snapshot.data ?? const <List<LicenseParagraph>>[];
         return OneUISubpage(
           title: widget.packageName,
           builder: (context) => [
-            for (final (i, entry) in entries.indexed) ...[
+            for (final (i, paragraphs) in entries.indexed) ...[
               if (i > 0) const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -108,7 +153,7 @@ class _LicenseDetailScreenState extends State<LicenseDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final paragraph in entry.paragraphs)
+                    for (final paragraph in paragraphs)
                       Padding(
                         padding: EdgeInsets.only(
                           left: paragraph.indent == LicenseParagraph.centeredIndent ? 0 : paragraph.indent * 12.0,

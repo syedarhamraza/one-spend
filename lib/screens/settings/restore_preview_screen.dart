@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -18,6 +17,7 @@ import '../../widgets/one_ui_floating_modal.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_radio.dart';
 import '../../widgets/one_ui_subpage.dart';
+import '../../core/haptics/haptics.dart';
 
 /// What a restore did, returned to the caller so it can show the toast (with Undo for replace).
 typedef RestoreOutcome = ({RestoreMode mode, int addedSubscriptions, int addedPaymentMethods, int addedCategories});
@@ -43,13 +43,13 @@ class RestorePreviewScreen extends StatefulWidget {
 
   /// Previews a backup file.
   static Future<RestoreOutcome?> open(BuildContext context, BackupSnapshot backup) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<RestoreOutcome>(AppRoutes.settingsRestore, extra: backup);
   }
 
   /// Previews a restore point.
   static Future<RestoreOutcome?> openPoint(BuildContext context, RestorePoint point) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<RestoreOutcome>(AppRoutes.settingsRestore, extra: point);
   }
 
@@ -92,7 +92,7 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
 
   Future<void> _apply(RestorePlan plan) async {
     setState(() => _busy = true);
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     await sl<BackupService>().restore(
       widget.backup,
       _mode,
@@ -172,7 +172,7 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
                 subtitleColor: OneUITheme.textSecondary,
                 trailing: OneUIRadio(isSelected: _mode == RestoreMode.addMissing),
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() => _mode = RestoreMode.addMissing);
                 },
               ),
@@ -185,7 +185,7 @@ class _RestorePreviewScreenState extends State<RestorePreviewScreen> {
                 subtitleColor: OneUITheme.textSecondary,
                 trailing: OneUIRadio(isSelected: _mode == RestoreMode.replace),
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() => _mode = RestoreMode.replace);
                 },
               ),

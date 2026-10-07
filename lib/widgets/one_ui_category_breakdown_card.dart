@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../features/subscriptions/domain/services/spending_insights.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_category_ring.dart';
+import '../core/haptics/haptics.dart';
 
 /// Digital Wellbeing style card: a donut with the monthly total (or the selected category's)
 /// in its centre, then a legend of icon · name · share · amount. Tapping a row selects that
@@ -89,7 +89,7 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () {
-          HapticFeedback.selectionClick();
+          Haptics.select();
           widget.onSelect(isSelected ? null : c.category);
         },
         child: Opacity(
@@ -139,7 +139,7 @@ class _OneUICategoryBreakdownCardState extends State<OneUICategoryBreakdownCard>
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () {
-        HapticFeedback.selectionClick();
+        Haptics.select();
         setState(() => _expanded = !_expanded);
       },
       child: Padding(

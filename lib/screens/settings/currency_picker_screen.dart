@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
@@ -10,6 +9,7 @@ import '../../widgets/one_ui_card.dart';
 import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_radio.dart';
 import '../../widgets/one_ui_subpage.dart';
+import '../../core/haptics/haptics.dart';
 
 /// "PKR · Pakistani rupee" for a currency code.
 String currencyLabel(String code) {
@@ -34,7 +34,7 @@ class CurrencyPickerScreen extends StatefulWidget {
     String title = 'Currency',
     String? footnote,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<String>(
       AppRoutes.settingsCurrency,
       extra: (initialCode: initialCode, title: title, footnote: footnote),
@@ -87,7 +87,7 @@ class _CurrencyPickerScreenState extends State<CurrencyPickerScreen> {
       subtitle: c.code,
       trailing: OneUIRadio(isSelected: c.code == _selected),
       onTap: () {
-        HapticFeedback.selectionClick();
+        Haptics.select();
         setState(() => _selected = c.code);
       },
     );
@@ -105,7 +105,7 @@ class _CurrencyPickerScreenState extends State<CurrencyPickerScreen> {
       bottomPill: OneUIFloatingCancelSavePill(
         onCancel: () => Navigator.pop(context),
         onSave: () {
-          HapticFeedback.mediumImpact();
+          Haptics.confirm();
           Navigator.pop(context, _selected);
         },
       ),

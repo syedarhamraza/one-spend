@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
@@ -11,6 +10,7 @@ import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_subpage.dart';
 import 'category_editor_screen.dart';
+import '../core/haptics/haptics.dart';
 
 /// Dedicated Samsung One UI Category Picker Subpage.
 /// Matches the design language of ReminderPickerScreen with hero status banner,
@@ -27,7 +27,7 @@ class CategoryPickerScreen extends StatefulWidget {
     BuildContext context, {
     required SubscriptionCategory initialCategory,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<SubscriptionCategory>(AppRoutes.categoryPicker, extra: initialCategory);
   }
 
@@ -98,7 +98,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
   }
 
   void _save() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     Navigator.pop(context, _selectedCategory);
   }
 
@@ -328,7 +328,7 @@ class _CategoryPickerScreenState extends State<CategoryPickerScreen> {
       subtitleColor: OneUITheme.textSecondary,
       trailing: OneUIRadio(isSelected: isSelected),
       onTap: () {
-        HapticFeedback.selectionClick();
+        Haptics.select();
         setState(() {
           _selectedCategory = cat;
         });

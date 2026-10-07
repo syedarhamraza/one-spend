@@ -24,6 +24,10 @@ class FakeNotificationService extends NoopNotificationService {
   final Map<int, ({PlannedNotification notification, String route})> scheduled = {};
   final List<int> cancelled = [];
   int scheduleCalls = 0;
+  final List<bool> vibration = [];
+
+  @override
+  Future<void> setVibration(bool enabled) async => vibration.add(enabled);
 
   @override
   Future<void> schedule(PlannedNotification notification, {required String route}) async {
@@ -96,6 +100,27 @@ void main() {
     final first = service.scheduled.values.first;
     expect(first.notification.kind, NotificationKind.renewal);
     expect(first.route, AppRoutes.subscriptionDetail(popularCatalog[0].id));
+  });
+
+  test('turning notification vibration off moves everything to the quiet channels', () async {
+    scheduler.start();
+    controller.addSubscription(dueSoon());
+    await scheduler.syncNow();
+    expect(service.vibration.last, isTrue);
+    final callsBefore = service.scheduleCalls;
+
+    controller.setNotificationVibration(false);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await scheduler.lastSyncDone;
+    expect(service.vibration.last, isFalse);
+    // Every reminder is scheduled again, on the new channel.
+    expect(service.scheduleCalls - callsBefore, service.scheduled.length);
+
+    // The setting survives a restart.
+    await controller.pendingWrites;
+    final reloaded = _controllerFor(db);
+    await reloaded.load();
+    expect(reloaded.notificationVibration, isFalse);
   });
 
   test('a data change triggers a resync that replaces the old plan', () async {

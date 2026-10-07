@@ -21,6 +21,8 @@ class SettingsDriftDataSource {
   static const String keyNotificationsEnabled = 'onespend_notifications_enabled';
   static const String keyAutoUpdateCheck = 'onespend_auto_update_check';
   static const String keyReminderTime = 'onespend_reminder_time_minutes';
+  static const String keyHapticsEnabled = 'onespend_haptics_enabled';
+  static const String keyNotificationVibration = 'onespend_notification_vibration';
   static const int defaultReminderTimeMinutes = 9 * 60;
   static const String appearancePrefix = 'appearance.';
 
@@ -159,6 +161,18 @@ class SettingsDriftDataSource {
 
   Future<void> setOnboardingDone(bool value) async {
     await db.setSetting(keyOnboardingDone, value.toString());
+  }
+
+  Future<bool> getHapticsEnabled() async => (await db.getSetting(keyHapticsEnabled)) != 'false';
+
+  Future<void> setHapticsEnabled(bool value) async {
+    await db.setSetting(keyHapticsEnabled, value.toString());
+  }
+
+  Future<bool> getNotificationVibration() async => (await db.getSetting(keyNotificationVibration)) != 'false';
+
+  Future<void> setNotificationVibration(bool value) async {
+    await db.setSetting(keyNotificationVibration, value.toString());
   }
 
   Future<Map<String, String>> getAppearanceSettings() {

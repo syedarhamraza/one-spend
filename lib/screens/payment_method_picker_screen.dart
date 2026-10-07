@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
@@ -17,6 +16,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_toast.dart';
 import 'payment_method_editor_screen.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Unified Payment Card Picker & Management Subpage.
 /// Combines in-place card management and single-subscription card selection:
@@ -46,7 +46,7 @@ class PaymentMethodPickerScreen extends StatefulWidget {
     String? currentMethodId,
     bool isManageOnly = false,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<PaymentMethod>(
       AppRoutes.paymentMethods,
       extra: (currentMethodId: currentMethodId, isManageOnly: isManageOnly),
@@ -80,7 +80,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
   }
 
   void _save(List<PaymentMethod> methods) {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     if (_selectedMethodId == null || _selectedMethodId == '__none__') {
       Navigator.pop(context, PaymentMethod.none);
     } else {
@@ -239,7 +239,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                               InkWell(
                                 borderRadius: BorderRadius.circular(18),
                                 onTap: () {
-                                  HapticFeedback.selectionClick();
+                                  Haptics.select();
                                   setModalState(() => selectedReplacementId = m.id);
                                 },
                                 child: Padding(
@@ -486,7 +486,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        Haptics.select();
         onToggleSelectAll();
       },
       behavior: HitTestBehavior.opaque,
@@ -769,7 +769,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                             const SizedBox(height: 10),
                                             InkWell(
                                               onTap: () {
-                                                HapticFeedback.lightImpact();
+                                                Haptics.tap();
                                                 context.push(AppRoutes.methodSubscriptions(heroMethod!.id));
                                               },
                                               borderRadius: BorderRadius.circular(8),
@@ -943,7 +943,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
                                         )
                                       : const SizedBox.shrink(),
                                   onTap: () {
-                                    HapticFeedback.selectionClick();
+                                    Haptics.select();
                                     setState(() {
                                       _selectedMethodId = '__none__';
                                     });
@@ -1224,7 +1224,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
       ),
       onTap: () {
         if (_isSelectionMode) {
-          HapticFeedback.selectionClick();
+          Haptics.select();
           setState(() {
             if (isSelectedInSelection) {
               _selectedIds.remove(m.id);
@@ -1233,14 +1233,14 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
             }
           });
         } else {
-          HapticFeedback.selectionClick();
+          Haptics.select();
           setState(() {
             _selectedMethodId = m.id;
           });
         }
       },
       onLongPress: () {
-        HapticFeedback.heavyImpact();
+        Haptics.longPress();
         setState(() {
           if (!_isSelectionMode) {
             _isSelectionMode = true;

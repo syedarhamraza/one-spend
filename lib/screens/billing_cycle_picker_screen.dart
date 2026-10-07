@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
@@ -10,6 +9,7 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_radio.dart';
+import '../core/haptics/haptics.dart';
 
 /// Dedicated Samsung One UI Billing Cycle Picker Subpage.
 /// Matches the design language of ReminderPickerScreen with One UI grouped card,
@@ -27,7 +27,7 @@ class BillingCyclePickerScreen extends StatefulWidget {
     BuildContext context, {
     required BillingCycle initialCycle,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<BillingCycle>(AppRoutes.billingCyclePicker, extra: initialCycle);
   }
 
@@ -52,7 +52,7 @@ class _BillingCyclePickerScreenState extends State<BillingCyclePickerScreen> {
   }
 
   void _save() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     Navigator.pop(context, _selectedCycle);
   }
 
@@ -95,7 +95,7 @@ class _BillingCyclePickerScreenState extends State<BillingCyclePickerScreen> {
                               subtitleColor: OneUITheme.textSecondary,
                               trailing: OneUIRadio(isSelected: isSelected),
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 setState(() {
                                   _selectedCycle = cycle;
                                 });

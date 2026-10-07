@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/config/app_info.dart';
@@ -20,6 +19,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_subpage.dart';
 import 'onboarding/onboarding_heroes.dart';
 import 'settings/currency_picker_screen.dart';
+import '../core/haptics/haptics.dart';
 
 /// Whether to open the first-run welcome. A fresh install sees it once; installs
 /// that already have data (from before onboarding existed) are marked done
@@ -78,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 320);
 
   void _next() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     if (_page < _pageCount - 1) {
       _pages.nextPage(duration: _pageDuration, curve: Curves.easeOutCubic);
     } else {
@@ -116,7 +116,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _allowReminders() async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final store = SubscriptionStore.instance;
     store.setNotificationsEnabled(true);
     var allowed = true;
@@ -248,7 +248,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
-          HapticFeedback.lightImpact();
+          Haptics.tap();
           _finish();
         },
         child: const OneUIGlassSurface(

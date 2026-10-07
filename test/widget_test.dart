@@ -584,7 +584,8 @@ void main() {
     expect(find.text('Move to category'), findsOneWidget);
     expect(find.text('Pause'), findsOneWidget);
     expect(find.text('Duplicate selected'), findsOneWidget);
-    expect(find.text('Export selected (CSV)'), findsOneWidget);
+    // CSV lives in the Share menu, not here.
+    expect(find.text('Export selected (CSV)'), findsNothing);
 
     // Tap Pause to pause Spotify
     await tester.tap(find.text('Pause'));

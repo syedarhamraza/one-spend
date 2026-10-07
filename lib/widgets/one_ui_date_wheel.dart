@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/one_ui_theme.dart';
 import 'one_ui_wheel_column.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI style scroll-wheel date picker (month  day  year), the date counterpart
 /// of [OneUITimeWheel]. Keeps the selection inside [firstDate]..[lastDate] by springing
@@ -87,7 +87,7 @@ class OneUIDateWheelState extends State<OneUIDateWheel> {
 
   void _onWheelChanged() {
     if (_animating) return;
-    HapticFeedback.selectionClick();
+    Haptics.select();
 
     // Keep the day valid for the selected month (e.g. Mar 31 -> Feb 28).
     final maxDay = daysInMonth(_year, _month);

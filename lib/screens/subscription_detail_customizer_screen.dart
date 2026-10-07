@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/payment_method.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
@@ -9,6 +8,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_switch.dart';
 import '../widgets/one_ui_toast.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Subscription Detail Screen Appearance & Styling Customizer Screen
 class SubscriptionDetailCustomizerScreen extends StatelessWidget {
@@ -36,7 +36,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {
-                        HapticFeedback.lightImpact();
+                        Haptics.tap();
                         Navigator.pop(context);
                       },
                     ),
@@ -78,7 +78,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                                     color: OneUITheme.textSecondary,
                                   ),
                                   onTap: () {
-                                    HapticFeedback.lightImpact();
+                                    Haptics.tap();
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -99,7 +99,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                                     color: OneUITheme.textSecondary,
                                   ),
                                   onTap: () {
-                                    HapticFeedback.lightImpact();
+                                    Haptics.tap();
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -174,7 +174,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
                                   title: 'Reset to defaults',
                                   trailing: const SizedBox.shrink(),
                                   onTap: () {
-                                    HapticFeedback.mediumImpact();
+                                    Haptics.confirm();
                                     ctrl.resetDetailStyle();
                                     OneUIToast.show(context, 'Reset detail styling to defaults');
                                   },
@@ -370,7 +370,7 @@ class _DetailIconShapeOptionScreen extends StatelessWidget {
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {
-                        HapticFeedback.lightImpact();
+                        Haptics.tap();
                         Navigator.pop(context);
                       },
                     ),
@@ -464,7 +464,7 @@ class _DetailIconShapeOptionScreen extends StatelessWidget {
       title: label,
       trailing: const SizedBox.shrink(),
       onTap: () {
-        HapticFeedback.selectionClick();
+        Haptics.select();
         onSelect();
       },
     );
@@ -496,7 +496,7 @@ class _DetailPaymentIconOptionScreen extends StatelessWidget {
                       hasBigHeader: false,
                       showBackButton: true,
                       onBack: () {
-                        HapticFeedback.lightImpact();
+                        Haptics.tap();
                         Navigator.pop(context);
                       },
                     ),
@@ -613,7 +613,7 @@ class _DetailPaymentIconOptionScreen extends StatelessWidget {
       subtitle: description,
       trailing: const SizedBox.shrink(),
       onTap: () {
-        HapticFeedback.selectionClick();
+        Haptics.select();
         onSelect();
       },
     );

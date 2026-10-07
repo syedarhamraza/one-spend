@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
@@ -12,6 +11,7 @@ import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Popular Services & Presets Subpage.
 /// Replaces the horizontal scroll in AddSubscriptionScreen with a clean,
@@ -20,7 +20,7 @@ class PopularPresetsScreen extends StatefulWidget {
   const PopularPresetsScreen({super.key});
 
   static Future<BrandPreset?> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<BrandPreset>(AppRoutes.popularPresets);
   }
 
@@ -42,7 +42,7 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
   }
 
   void _enterSearchMode() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     setState(() {
       _showSearch = true;
     });
@@ -54,7 +54,7 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
   }
 
   void _exitSearchMode() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     _searchFocusNode.unfocus();
     setState(() {
       _showSearch = false;
@@ -105,7 +105,7 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
                 if (_searchQuery.isNotEmpty)
                   GestureDetector(
                     onTap: () {
-                      HapticFeedback.lightImpact();
+                      Haptics.tap();
                       setState(() {
                         _searchQuery = '';
                         _searchController.clear();
@@ -245,7 +245,7 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
                               color: OneUITheme.textSecondary,
                             ),
                             onTap: () {
-                              HapticFeedback.lightImpact();
+                              Haptics.tap();
                               Navigator.pop(context, preset);
                             },
                           );

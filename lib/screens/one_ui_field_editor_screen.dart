@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import '../utils/one_ui_date_formats.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
+import '../core/haptics/haptics.dart';
 
 enum FieldEditorType {
   text,
@@ -54,7 +54,7 @@ class OneUIFieldEditorScreen<T> extends StatefulWidget {
     String? hintText,
     String currency = 'USD',
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return Navigator.push<T>(
       context,
       MaterialPageRoute(
@@ -112,7 +112,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
   }
 
   void _onSave() {
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     dynamic result;
     switch (widget.type) {
       case FieldEditorType.text:
@@ -135,7 +135,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
   }
 
   void _onCancel() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     Navigator.pop(context);
   }
 
@@ -343,7 +343,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
               final isSelected = _currentValue == cycle;
               return InkWell(
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() {
                     _currentValue = cycle;
                   });
@@ -416,7 +416,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
               final isSelected = _currentValue == cat;
               return InkWell(
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() {
                     _currentValue = cat;
                   });
@@ -488,7 +488,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
               final isSelected = _currentValue == days;
               return InkWell(
                 onTap: () {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() {
                     _currentValue = days;
                   });
@@ -560,7 +560,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
                 firstDate: DateTime.now().subtract(const Duration(days: 365)),
                 lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
                 onDateChanged: (newDate) {
-                  HapticFeedback.selectionClick();
+                  Haptics.select();
                   setState(() {
                     _currentValue = newDate;
                   });

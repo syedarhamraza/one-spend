@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'settings/currency_picker_screen.dart';
 import '../theme/one_ui_theme.dart';
@@ -23,6 +22,7 @@ import '../features/notifications/presentation/notification_permission.dart';
 import '../utils/reminder_format.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
+import '../core/haptics/haptics.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
@@ -115,7 +115,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
   }
 
   void _applyPreset(BrandPreset preset) {
-    HapticFeedback.selectionClick();
+    Haptics.select();
     setState(() => _applyPresetFields(preset));
     OneUIToast.show(context, 'Applied ${preset.name} preset');
   }

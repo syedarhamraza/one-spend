@@ -36,6 +36,7 @@ import '../../screens/settings/developer_options_screen.dart';
 import '../../screens/settings/help_feedback_screen.dart';
 import '../../screens/settings/licenses_screen.dart';
 import '../../screens/settings/notification_settings_screen.dart';
+import '../../screens/settings/vibration_settings_screen.dart';
 import '../../screens/settings/planned_feature.dart';
 import '../../screens/settings/restore_points_screen.dart';
 import '../../screens/settings/restore_preview_screen.dart';
@@ -94,6 +95,7 @@ class AppRoutes {
   static const settingsCurrency = '/settings/budget/currency';
   static const settingsExchangeRates = '/settings/budget/rates';
   static const settingsNotifications = '/settings/notifications';
+  static const settingsVibration = '/settings/vibration';
   static const settingsAppearance = '/settings/appearance';
   static const settingsSecurity = '/settings/security';
   static const settingsData = '/settings/data';
@@ -295,6 +297,7 @@ List<RouteBase> buildPageRoutes() {
     ),
     GoRoute(path: AppRoutes.settingsExchangeRates, builder: (context, state) => const ExchangeRatesScreen()),
     GoRoute(path: AppRoutes.settingsNotifications, builder: (context, state) => const NotificationSettingsScreen()),
+    GoRoute(path: AppRoutes.settingsVibration, builder: (context, state) => const VibrationSettingsScreen()),
     GoRoute(path: AppRoutes.settingsAppearance, builder: (context, state) => const AppearanceSettingsScreen()),
     GoRoute(path: AppRoutes.settingsSecurity, builder: (context, state) => const SecuritySettingsScreen()),
     GoRoute(path: AppRoutes.settingsData, builder: (context, state) => const BackupDataScreen()),

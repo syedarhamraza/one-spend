@@ -13,6 +13,7 @@ import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_switch.dart';
 import '../widgets/one_ui_toast.dart';
+import '../core/haptics/haptics.dart';
 
 /// Dedicated Samsung One UI Payment Method Editor Screen.
 /// Follows One UI design principles with clean group cards, functional form fields,
@@ -29,7 +30,7 @@ class PaymentMethodEditorScreen extends StatefulWidget {
     BuildContext context, {
     PaymentMethod? method,
   }) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push<PaymentMethod>(AppRoutes.paymentMethodEditor, extra: method);
   }
 
@@ -94,7 +95,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
       return;
     }
 
-    HapticFeedback.mediumImpact();
+    Haptics.confirm();
     final result = PaymentMethod(
       id: _id,
       nickname: trimmedNickname.isNotEmpty ? trimmedNickname : '${_brand.label} Card',
@@ -138,7 +139,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                   hasBigHeader: false,
                   showBackButton: true,
                   onBack: () {
-                    HapticFeedback.lightImpact();
+                    Haptics.tap();
                     Navigator.pop(context);
                   },
                 ),
@@ -170,7 +171,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 color: OneUITheme.textSecondary,
                               ),
                               onTap: () async {
-                                HapticFeedback.lightImpact();
+                                Haptics.tap();
                                 final newNickname = await Navigator.push<String>(
                                   context,
                                   MaterialPageRoute(
@@ -196,7 +197,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 color: OneUITheme.textSecondary,
                               ),
                               onTap: () async {
-                                HapticFeedback.lightImpact();
+                                Haptics.tap();
                                 final newBrand = await Navigator.push<CardBrand>(
                                   context,
                                   MaterialPageRoute(
@@ -238,7 +239,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 color: OneUITheme.textSecondary,
                               ),
                               onTap: () async {
-                                HapticFeedback.lightImpact();
+                                Haptics.tap();
                                 final newLast4 = await Navigator.push<String>(
                                   context,
                                   MaterialPageRoute(
@@ -268,7 +269,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 color: OneUITheme.textSecondary,
                               ),
                               onTap: () async {
-                                HapticFeedback.lightImpact();
+                                Haptics.tap();
                                 final newExpiry = await Navigator.push<String>(
                                   context,
                                   MaterialPageRoute(
@@ -294,7 +295,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 color: OneUITheme.textSecondary,
                               ),
                               onTap: () async {
-                                HapticFeedback.lightImpact();
+                                Haptics.tap();
                                 final newType = await Navigator.push<PaymentMethodType>(
                                   context,
                                   MaterialPageRoute(
@@ -324,7 +325,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 color: OneUITheme.textSecondary,
                               ),
                               onTap: () async {
-                                HapticFeedback.lightImpact();
+                                Haptics.tap();
                                 final newDay = await Navigator.push<int?>(
                                   context,
                                   MaterialPageRoute(
@@ -358,7 +359,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
                                 },
                               ),
                               onTap: () {
-                                HapticFeedback.lightImpact();
+                                Haptics.tap();
                                 setState(() => _isDefault = !_isDefault);
                               },
                             ),
@@ -470,7 +471,7 @@ class _CardBrandPickerSubpageState extends State<_CardBrandPickerSubpage> {
                               title: brand.label,
                               trailing: OneUIRadio(isSelected: isSelected),
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 setState(() => _selectedBrand = brand);
                               },
                             );
@@ -643,7 +644,7 @@ class _CardNicknameEditorSubpageState extends State<_CardNicknameEditorSubpage> 
                           children: _suggestions.map((suggestion) {
                             return GestureDetector(
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 _controller.text = suggestion;
                                 setState(() {});
                               },
@@ -1008,7 +1009,7 @@ class _CardExpiryEditorSubpageState extends State<_CardExpiryEditorSubpage> {
                             for (final years in [1, 2, 3, 5])
                               GestureDetector(
                                 onTap: () {
-                                  HapticFeedback.selectionClick();
+                                  Haptics.select();
                                   _applyYearPreset(years);
                                 },
                                 child: Container(
@@ -1130,7 +1131,7 @@ class _CardTypePickerSubpageState extends State<_CardTypePickerSubpage> {
                               title: type.label,
                               trailing: const SizedBox.shrink(),
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 setState(() => _selectedType = type);
                               },
                             );
@@ -1307,7 +1308,7 @@ class _CardStatementDayPickerSubpageState extends State<_CardStatementDayPickerS
                           children: _commonDays.map((day) {
                             return GestureDetector(
                               onTap: () {
-                                HapticFeedback.selectionClick();
+                                Haptics.select();
                                 _controller.text = day.toString();
                                 setState(() {});
                               },

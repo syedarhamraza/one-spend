@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../features/currency/domain/exchange_rates.dart';
 import '../features/currency/domain/money_format.dart';
@@ -10,6 +9,7 @@ import '../theme/one_ui_theme.dart';
 import 'one_ui_ambient_glow.dart';
 import 'one_ui_brand_icon.dart';
 import 'one_ui_key_value_row.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI hero card for the Upcoming tab, the sibling of [OneUIBudgetCard]:
 /// the same soft blue glow under a frosted glass body, a 32pt hero amount, a 12dp
@@ -228,7 +228,7 @@ class OneUIUpcomingHeroCard extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        HapticFeedback.lightImpact();
+        Haptics.tap();
         onTap();
       },
       child: content,

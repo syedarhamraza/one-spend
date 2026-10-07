@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/subscription.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
@@ -12,6 +11,7 @@ import '../widgets/one_ui_toast.dart';
 import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import 'date_picker_screen.dart';
+import '../core/haptics/haptics.dart';
 
 /// Samsung One UI Payment History Screen.
 /// Displays reverse-chronological ledger of past subscription charges,
@@ -25,7 +25,7 @@ class PaymentHistoryScreen extends StatefulWidget {
   });
 
   static Future<void> open(BuildContext context, String subscriptionId) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.paymentHistory(subscriptionId));
   }
 
@@ -58,7 +58,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   void _confirmDeleteRecord(Subscription sub, int index, DateTime date) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     OneUIFloatingModal.showConfirmationDialog(
       context: context,
       title: 'Delete record',
@@ -113,7 +113,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                   hasBigHeader: false,
                   showBackButton: true,
                   onBack: () {
-                    HapticFeedback.lightImpact();
+                    Haptics.tap();
                     Navigator.pop(context);
                   },
                   actions: [

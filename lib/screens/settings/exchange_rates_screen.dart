@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -11,6 +10,7 @@ import '../../widgets/one_ui_group_card.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
 import '../one_ui_field_editor_screen.dart';
+import '../../core/haptics/haptics.dart';
 
 /// Settings › Budget & currency › Exchange rates: rate status, "Update now", and a row per
 /// currency in use where the user can pin their own rate.
@@ -18,7 +18,7 @@ class ExchangeRatesScreen extends StatelessWidget {
   const ExchangeRatesScreen({super.key});
 
   static Future<void> open(BuildContext context) {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     return context.push(AppRoutes.settingsExchangeRates);
   }
 
@@ -68,7 +68,7 @@ class ExchangeRatesScreen extends StatelessWidget {
       };
 
   Future<void> _refresh(BuildContext context, SubscriptionStore store) async {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     final ok = await store.rates.refresh(force: true);
     if (!context.mounted) return;
     OneUIToast.show(context, ok && !store.rates.lastRefreshFailed ? 'Exchange rates updated' : 'Couldn\'t update rates. Check your connection.');

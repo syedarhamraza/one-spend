@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../features/updates/presentation/update_controller.dart';
 import '../theme/one_ui_theme.dart';
@@ -13,6 +12,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_subpage.dart';
 import 'home_screen.dart';
 import 'settings/settings_catalog.dart';
+import '../core/haptics/haptics.dart';
 
 /// Settings tab, laid out like Samsung Settings: grouped rows with just an icon and a title.
 /// Every row opens a subpage; options, switches and dialogs live there, never here.
@@ -50,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _openSearch() {
-    HapticFeedback.lightImpact();
+    Haptics.tap();
     setState(() => _searching = true);
     HomeChrome.settingsSearchActive.value = true;
     WidgetsBinding.instance.addPostFrameCallback((_) => _searchFocus.requestFocus());
