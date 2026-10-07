@@ -17,5 +17,6 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        HapticsChannel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
     }
 }

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onespend/core/database/app_database.dart';
 import 'package:onespend/core/di/injection.dart';
@@ -63,6 +64,53 @@ void main() {
       Haptics.enabled.value = true;
       await Haptics.load(sl<SettingsRepository>());
       expect(Haptics.enabled.value, isFalse);
+    });
+  });
+
+  group('Intensity', () {
+    late List<Map<Object?, Object?>> nativePlays;
+
+    setUp(() {
+      nativePlays = [];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('onespend/haptics'),
+        (call) async {
+          if (call.method == 'info') return {'canAdjust': true, 'rich': true};
+          nativePlays.add(call.arguments as Map<Object?, Object?>);
+          return null;
+        },
+      );
+      Haptics.debugSink = null; // play for real, through the mocked channel
+    });
+
+    tearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('onespend/haptics'), null));
+
+    test('left alone, the phone plays its own haptics', () async {
+      await Haptics.load(sl<SettingsRepository>());
+      expect(Haptics.canAdjust, isTrue);
+      expect(Haptics.intensity.value, isNull);
+      Haptics.tap();
+      await Future<void>.delayed(Duration.zero);
+      expect(nativePlays, isEmpty);
+    });
+
+    test('a chosen strength plays through the channel, scaled, and is saved', () async {
+      await Haptics.load(sl<SettingsRepository>());
+      await Haptics.setIntensity(5);
+      expect(nativePlays.single, {'kind': 'confirm', 'strength': 1.0}); // the sample
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Haptics.setIntensity(1);
+      expect(nativePlays.last['strength'], lessThan(0.5));
+
+      Haptics.intensity.value = null;
+      await Haptics.load(sl<SettingsRepository>());
+      expect(Haptics.intensity.value, 1);
+
+      await Haptics.setIntensity(null);
+      await Haptics.load(sl<SettingsRepository>());
+      expect(Haptics.intensity.value, isNull);
     });
   });
 

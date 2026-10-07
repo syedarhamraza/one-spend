@@ -14,8 +14,9 @@ import 'home_screen.dart';
 import 'settings/settings_catalog.dart';
 import '../core/haptics/haptics.dart';
 
-/// Settings tab, laid out like Samsung Settings: grouped rows with just an icon and a title.
-/// Every row opens a subpage; options, switches and dialogs live there, never here.
+/// Settings tab, laid out like Samsung Settings: grouped rows with an icon, a title and a
+/// grey line saying what's inside. Every row opens a subpage; options, switches and
+/// dialogs live there, never here.
 class SettingsScreen extends StatefulWidget {
   /// Shows "Developer options". Debug builds only by default.
   final bool showDeveloperOptions;
@@ -145,6 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _groups(List<List<SettingsDestination>> groups) {
+    final compact = OneUIIconBadge.compactFor(context);
     return ListenableBuilder(
       listenable: UpdateController.instance,
       builder: (context, _) => Column(
@@ -154,8 +156,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               items: [
                 for (final d in group)
                   OneUIGroupItem(
-                    leading: OneUIIconBadge(d.icon, d.color),
+                    leading: OneUIIconBadge(d.icon, d.color, compact: compact),
                     title: d.title,
+                    subtitle: d.description,
+                    subtitleColor: OneUITheme.textSecondary,
                     trailing: _trailing(d),
                     onTap: () => _open(d),
                   ),
@@ -188,7 +192,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       items: [
         for (final r in results)
           OneUIGroupItem(
-            leading: OneUIIconBadge(r.destination.icon, r.destination.color),
+            leading: OneUIIconBadge(
+              r.destination.icon,
+              r.destination.color,
+              compact: OneUIIconBadge.compactFor(context),
+            ),
             title: r.title,
             subtitle: r.path == null ? null : 'Settings › ${r.path}',
             subtitleColor: OneUITheme.textSecondary,

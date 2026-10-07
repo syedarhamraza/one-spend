@@ -60,7 +60,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('main page is titles only: no switches, subtitles or profile card', (tester) async {
+  testWidgets('main page rows are a title and a description: no switches or profile card', (tester) async {
     await pumpSettings(tester);
     for (final title in [
       'Budget & currency',
@@ -83,13 +83,16 @@ void main() {
     final items = tester
         .widgetList<OneUIGroupCard>(find.byType(OneUIGroupCard))
         .expand((card) => card.items);
-    expect(items.every((i) => i.subtitle == null && i.customSubtitle == null), isTrue);
+    expect(items.every((i) => (i.subtitle?.isNotEmpty ?? false) && i.customSubtitle == null), isTrue);
+    expect(find.text('Monthly budget • Main currency • Exchange rates'), findsOneWidget);
     expect(find.text('Developer options'), findsNothing);
   });
 
   testWidgets('developer options appear only when enabled', (tester) async {
     await pumpSettings(tester, developer: true);
     await tester.scrollUntilVisible(find.text('Developer options'), 200);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -300)); // clear of the bottom edge
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Developer options'));
     await tester.pumpAndSettle();
     expect(find.text('Load sample subscriptions'), findsOneWidget);
@@ -285,5 +288,21 @@ void main() {
     expect(rows, hasLength(2));
     expect(rows.every((r) => r.leading == null), isTrue); // no logos
     expect(find.byType(Image), findsNothing); // no avatar
+  });
+
+  testWidgets('badges shrink on low-density screens', (tester) async {
+    Future<double> badgeWidth(double dpr) async {
+      tester.view.devicePixelRatio = dpr;
+      tester.view.physicalSize = Size(412 * dpr, 900 * dpr);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(routedTestApp(const SettingsScreen(showDeveloperOptions: false)));
+      await tester.pumpAndSettle();
+      return tester.getSize(find.byType(OneUIIconBadge).first).width;
+    }
+
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    expect(await badgeWidth(3.0), 36);
+    expect(await badgeWidth(2.0), 32);
   });
 }
