@@ -1458,7 +1458,8 @@ void main() {
     await tester.tap(find.text('Open Category Picker'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ALL CATEGORIES'), findsOneWidget);
+    expect(find.text('Built in'), findsOneWidget);
+    expect(find.text('Your categories'), findsOneWidget);
     expect(find.text('Productivity & AI'), findsOneWidget);
     expect(find.text('Music & Audio'), findsOneWidget);
 

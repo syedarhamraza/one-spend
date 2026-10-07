@@ -3,27 +3,42 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/haptics/haptics.dart';
 import '../../core/router/app_router.dart';
+import '../../features/subscriptions/presentation/utils/category_descriptions.dart';
 import '../../models/subscription.dart';
 import '../../theme/one_ui_theme.dart';
 import '../../widgets/one_ui_bottom_vignette.dart';
 import '../../widgets/one_ui_cancel_save_pill.dart';
 import '../../widgets/one_ui_card.dart';
+import '../../widgets/one_ui_category_hero.dart';
 import '../../widgets/one_ui_collapsible_header.dart';
 import '../../widgets/one_ui_floating_action_bar.dart';
 import '../../widgets/one_ui_floating_menu.dart';
 import '../../widgets/one_ui_floating_modal.dart';
 import '../../widgets/one_ui_group_card.dart';
+import '../../widgets/one_ui_radio.dart';
 import '../../widgets/one_ui_selection_header_pills.dart';
 import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
 import '../category_editor_screen.dart';
 import '../category_picker_screen.dart';
 
-/// Settings › Categories, laid out like Samsung's category lists: your own categories (in
-/// your order) above the built-in ones, + in the header to make one, long-press to select
-/// several, and ⋮ › Reorder.
+/// The one categories page, laid out like Samsung's category lists: a hero card, your own
+/// categories (in your order), then the built-in ones. Rows are a name and a description;
+/// only the hero shows an icon.
+///
+/// * **Settings › Categories** ([pickInitial] null): the hero sums up your categories;
+///   + in the header makes one, long-press selects several (Edit, Delete), ⋮ › Reorder.
+/// * **Picking a subscription's category** (via `CategoryPickerScreen.open`): rows have
+///   radios, the hero shows the chosen one, and Cancel | Save pops it. [exclude] leaves
+///   categories out (e.g. the ones being deleted).
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({super.key});
+  /// The category selected when picking; null shows Settings › Categories.
+  final SubscriptionCategory? pickInitial;
+  final Set<SubscriptionCategory> exclude;
+
+  const CategoriesScreen({super.key, this.pickInitial, this.exclude = const {}});
+
+  bool get picking => pickInitial != null;
 
   static Future<void> open(BuildContext context) {
     Haptics.tap();
@@ -37,15 +52,24 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   final _store = SubscriptionStore.instance;
   final GlobalKey _moreKey = GlobalKey();
+  late SubscriptionCategory? _picked = widget.pickInitial;
   bool _selecting = false;
   final Set<String> _selectedIds = {};
 
   List<CustomCategory> get _custom => _store.customCategories;
 
-  String _usage(SubscriptionCategory category) {
-    final count = _store.subscriptionCountIn(category);
-    return count == 0 ? 'Not used yet' : '$count ${count == 1 ? 'subscription' : 'subscriptions'}';
-  }
+  List<SubscriptionCategory> get _customCategories => [
+        for (final c in _custom)
+          if (!widget.exclude.contains(SubscriptionCategory.custom(c.id))) SubscriptionCategory.custom(c.id),
+      ];
+
+  List<SubscriptionCategory> get _builtInCategories => [
+        for (final c in SubscriptionCategory.values)
+          if (!widget.exclude.contains(c)) c,
+      ];
+
+  String _describe(SubscriptionCategory category, {bool long = false}) =>
+      categoryDescription(category, usage: _store.subscriptionCountIn(category), long: long);
 
   void _enterSelection([String? id]) {
     Haptics.longPress();
@@ -73,6 +97,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         }
       });
 
+  void _pick(SubscriptionCategory category) {
+    Haptics.select();
+    setState(() => _picked = category);
+  }
+
+  Future<void> _create() async {
+    final created = await CategoryEditorScreen.open(context);
+    if (created != null && mounted && widget.picking) setState(() => _picked = created);
+  }
+
+  void _save() {
+    Haptics.confirm();
+    Navigator.pop(context, _picked);
+  }
+
   void _showMenu() {
     Haptics.tap();
     OneUIFloatingMenu.show(
@@ -89,7 +128,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const _ReorderCategoriesScreen()));
             },
           ),
-        OneUIFloatingMenuItem(label: 'New category', onTap: () => CategoryEditorScreen.open(context)),
+        OneUIFloatingMenuItem(label: 'New category', onTap: _create),
       ],
     );
   }
@@ -98,14 +137,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final ids = Set.of(_selectedIds);
     if (ids.isEmpty) return;
     final categories = [for (final c in _custom) if (ids.contains(c.id)) c];
-    final count = [
-      for (final c in categories) _store.subscriptionCountIn(SubscriptionCategory.custom(c.id)),
-    ].fold(0, (a, b) => a + b);
+    final deleting = {for (final id in ids) SubscriptionCategory.custom(id)};
+    final count = deleting.fold(0, (sum, c) => sum + _store.subscriptionCountIn(c));
     var moveTo = SubscriptionCategory.utilities;
     if (count > 0) {
-      final picked = await CategoryPickerScreen.open(context, initialCategory: moveTo);
+      final picked = await CategoryPickerScreen.open(context, initialCategory: moveTo, exclude: deleting);
       if (picked == null || !mounted) return;
-      moveTo = picked.isCustom && ids.contains(picked.name) ? SubscriptionCategory.utilities : picked;
+      moveTo = picked;
     }
     if (!mounted) return;
     final name = categories.length == 1 ? categories.single.name : '${categories.length} categories';
@@ -125,11 +163,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     OneUIToast.show(context, '$name deleted');
   }
 
+  /// Picking: the chosen category. Settings: a summary, with the most-used category's icon.
+  Widget _hero() {
+    final picked = _picked;
+    if (picked != null) {
+      return OneUICategoryHero(
+        icon: picked.icon,
+        color: picked.color,
+        title: picked.label,
+        subtitle: _describe(picked, long: true),
+      );
+    }
+    SubscriptionCategory? mostUsed;
+    var most = 0;
+    for (final c in SubscriptionCategory.all) {
+      final n = _store.subscriptionCountIn(c);
+      if (n > most) (most, mostUsed) = (n, c);
+    }
+    final own = _custom.length;
+    return OneUICategoryHero(
+      icon: mostUsed?.icon ?? Icons.label_rounded,
+      color: mostUsed?.color ?? OneUITheme.accentBlue,
+      title: 'Categories',
+      subtitle: '${SubscriptionCategory.values.length} built in · '
+          '${own == 0 ? 'none' : own} of your own',
+    );
+  }
+
   Widget _selectionCircle(bool selected) => AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         width: 22,
         height: 22,
-        margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: selected ? OneUITheme.accentBlue : Colors.transparent,
@@ -141,42 +205,56 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         child: selected ? const Icon(Icons.check_rounded, size: 14, color: Colors.white) : null,
       );
 
+  OneUIGroupItem _row(SubscriptionCategory category) {
+    final custom = category.isCustom;
+    final id = category.name;
+    if (widget.picking) {
+      return OneUIGroupItem(
+        title: category.label,
+        subtitle: _describe(category),
+        subtitleColor: OneUITheme.textSecondary,
+        trailing: OneUIRadio(isSelected: category == _picked),
+        onTap: () => _pick(category),
+      );
+    }
+    return OneUIGroupItem(
+      leading: _selecting && custom ? _selectionCircle(_selectedIds.contains(id)) : null,
+      title: category.label,
+      subtitle: _describe(category),
+      subtitleColor: OneUITheme.textSecondary,
+      // Your categories open to edit (chevron); built-in ones can't be changed.
+      trailing: custom && !_selecting ? null : const SizedBox.shrink(),
+      onTap: !custom
+          ? null
+          : _selecting
+              ? () => _toggle(id)
+              : () => CategoryEditorScreen.open(context, categoryId: id),
+      onLongPress: !custom ? null : (_selecting ? () => _toggle(id) : () => _enterSelection(id)),
+    );
+  }
+
   Widget _yourCategories() {
-    final custom = _custom;
-    if (custom.isEmpty) {
+    final custom = _customCategories;
+    if (custom.isEmpty && !widget.picking) {
       return OneUIEmptyCard(
         icon: Icons.label_outline_rounded,
         title: 'No categories of your own',
         message: 'Make one for anything the built-in ones miss, with your own name, icon and colour.',
         actionLabel: 'New category',
-        onAction: () => CategoryEditorScreen.open(context),
+        onAction: _create,
       );
     }
     return OneUIGroupCard(
       margin: EdgeInsets.zero,
       items: [
-        for (final c in custom)
+        for (final c in custom) _row(c),
+        if (custom.isEmpty)
           OneUIGroupItem(
-            leading: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeOutCubic,
-                  child: _selecting ? _selectionCircle(_selectedIds.contains(c.id)) : const SizedBox.shrink(),
-                ),
-                OneUIIconBadge(
-                  SubscriptionCategory.custom(c.id).icon,
-                  SubscriptionCategory.custom(c.id).color,
-                ),
-              ],
-            ),
-            title: c.name,
-            subtitle: _usage(SubscriptionCategory.custom(c.id)),
+            title: 'New category',
+            subtitle: 'Your own name, icon and colour',
             subtitleColor: OneUITheme.textSecondary,
-            trailing: _selecting ? const SizedBox.shrink() : null,
-            onTap: _selecting ? () => _toggle(c.id) : () => CategoryEditorScreen.open(context, categoryId: c.id),
-            onLongPress: _selecting ? () => _toggle(c.id) : () => _enterSelection(c.id),
+            trailing: const Icon(Icons.add_rounded, color: OneUITheme.accentBlue, size: 22),
+            onTap: _create,
           ),
       ],
     );
@@ -192,20 +270,66 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             title: 'Built in',
             child: OneUIGroupCard(
               margin: EdgeInsets.zero,
-              items: [
-                for (final category in SubscriptionCategory.values)
-                  OneUIGroupItem(
-                    leading: OneUIIconBadge(category.icon, category.color),
-                    title: category.label,
-                    subtitle: _usage(category),
-                    subtitleColor: OneUITheme.textSecondary,
-                    trailing: const SizedBox.shrink(),
-                  ),
-              ],
+              items: [for (final c in _builtInCategories) _row(c)],
             ),
           ),
         ),
       );
+
+  Widget _bottomBar() {
+    if (widget.picking) {
+      return Positioned(
+        left: 0,
+        right: 0,
+        bottom: 0,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Center(
+              child: OneUIFloatingCancelSavePill(onCancel: () => Navigator.pop(context), onSave: _save),
+            ),
+          ),
+        ),
+      );
+    }
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOutCubic,
+      left: 0,
+      right: 0,
+      bottom: _selecting ? 0 : -120,
+      child: IgnorePointer(
+        ignoring: !_selecting,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: _selecting ? 1 : 0,
+          child: Center(
+            child: OneUIFloatingActionBar(
+              items: [
+                OneUIFloatingActionBarItem(
+                  label: 'Edit',
+                  icon: Icons.edit_rounded,
+                  isEnabled: _selectedIds.length == 1,
+                  onTap: () {
+                    final id = _selectedIds.single;
+                    _exitSelection();
+                    CategoryEditorScreen.open(context, categoryId: id);
+                  },
+                ),
+                OneUIFloatingActionBarItem(
+                  label: 'Delete',
+                  icon: Icons.delete_outline_rounded,
+                  isEnabled: _selectedIds.isNotEmpty,
+                  onTap: _deleteSelected,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -218,8 +342,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       child: ListenableBuilder(
         listenable: _store,
         builder: (context, _) {
-          // A category deleted elsewhere drops out of the selection.
+          // A category deleted elsewhere drops out of the selection (or the pick).
           _selectedIds.removeWhere((id) => !_custom.any((c) => c.id == id));
+          final picked = _picked;
+          if (picked != null && picked.isCustom && picked.custom == null) _picked = SubscriptionCategory.utilities;
           return Scaffold(
             backgroundColor: OneUITheme.surfacePitch,
             body: Stack(
@@ -230,7 +356,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: OneUICollapsibleHeaderDelegate(
-                        title: _selecting ? '' : 'Categories',
+                        title: _selecting ? '' : (widget.picking ? 'Category' : 'Categories'),
                         hasBigHeader: false,
                         showBackButton: !_selecting,
                         onBack: () => Navigator.pop(context),
@@ -242,27 +368,24 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         ),
                         onSelectionCancel: _exitSelection,
                         actions: [
-                          OneUIHeaderAction(
-                            icon: Icons.add,
-                            size: 26,
-                            tooltip: 'New category',
-                            onTap: () => CategoryEditorScreen.open(context),
-                          ),
-                          OneUIHeaderAction(
-                            icon: Icons.more_vert_rounded,
-                            tooltip: 'More options',
-                            actionKey: _moreKey,
-                            onTap: _showMenu,
-                          ),
+                          OneUIHeaderAction(icon: Icons.add, size: 26, tooltip: 'New category', onTap: _create),
+                          if (!widget.picking)
+                            OneUIHeaderAction(
+                              icon: Icons.more_vert_rounded,
+                              tooltip: 'More options',
+                              actionKey: _moreKey,
+                              onTap: _showMenu,
+                            ),
                         ],
                       ),
                     ),
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 140),
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 140),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            _hero(),
                             OneUISection(title: 'Your categories', child: _yourCategories()),
                             _builtIn(),
                           ],
@@ -272,42 +395,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   ],
                 ),
                 const Positioned(left: 0, right: 0, bottom: 0, child: OneUIBottomVignette()),
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOutCubic,
-                  left: 0,
-                  right: 0,
-                  bottom: _selecting ? 0 : -120,
-                  child: IgnorePointer(
-                    ignoring: !_selecting,
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: _selecting ? 1 : 0,
-                      child: Center(
-                        child: OneUIFloatingActionBar(
-                          items: [
-                            OneUIFloatingActionBarItem(
-                              label: 'Edit',
-                              icon: Icons.edit_rounded,
-                              isEnabled: _selectedIds.length == 1,
-                              onTap: () {
-                                final id = _selectedIds.single;
-                                _exitSelection();
-                                CategoryEditorScreen.open(context, categoryId: id);
-                              },
-                            ),
-                            OneUIFloatingActionBarItem(
-                              label: 'Delete',
-                              icon: Icons.delete_outline_rounded,
-                              isEnabled: _selectedIds.isNotEmpty,
-                              onTap: _deleteSelected,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                _bottomBar(),
               ],
             ),
           );
@@ -337,7 +425,6 @@ class _ReorderCategoriesScreenState extends State<_ReorderCategoriesScreen> {
 
   Widget _row(int index) {
     final c = _order[index];
-    final category = SubscriptionCategory.custom(c.id);
     final first = index == 0, last = index == _order.length - 1;
     return Container(
       key: ValueKey(c.id),
@@ -348,11 +435,9 @@ class _ReorderCategoriesScreenState extends State<_ReorderCategoriesScreen> {
           bottom: last ? const Radius.circular(26) : Radius.zero,
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
       child: Row(
         children: [
-          OneUIIconBadge(category.icon, category.color),
-          const SizedBox(width: 16),
           Expanded(
             child: Text(
               c.name,

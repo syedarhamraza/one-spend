@@ -57,6 +57,64 @@ const List<IconData> supportedSubscriptionIcons = [
   Icons.apps_rounded,
 ];
 
+/// The name of each of [supportedSubscriptionIcons], in the same order (for pickers and
+/// screen readers).
+const List<String> subscriptionIconNames = [
+  'Film',
+  'Movie',
+  'TV',
+  'Play',
+  'Music',
+  'Album',
+  'Headphones',
+  'AI sparkle',
+  'Brain',
+  'Terminal',
+  'Code',
+  'Cloud',
+  'Storage',
+  'Controller',
+  'Game',
+  'Brush',
+  'Palette',
+  'Fitness',
+  'Shopping bag',
+  'Cart',
+  'News',
+  'School',
+  'Wi-Fi',
+  'Shield',
+  'Money',
+  'Subscriptions',
+  'Star',
+  'Tools',
+  'Wallet',
+  'Work',
+  'Card',
+  'Payment',
+  'Phone',
+  'Laptop',
+  'Book',
+  'Pets',
+  'Home',
+  'Café',
+  'Restaurant',
+  'Car',
+  'Flight',
+  'Lock',
+  'Security',
+  'Email',
+  'Chat',
+  'Web',
+  'Apps',
+];
+
+/// The name of [icon] if it's one of [supportedSubscriptionIcons], else "Icon".
+String subscriptionIconName(IconData icon) {
+  final i = supportedSubscriptionIcons.indexOf(icon);
+  return i < 0 ? 'Icon' : subscriptionIconNames[i];
+}
+
 final Map<int, IconData> _knownSubscriptionIcons = {
   for (final icon in supportedSubscriptionIcons) icon.codePoint: icon,
 };
