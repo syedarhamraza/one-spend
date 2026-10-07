@@ -29,6 +29,15 @@ class Changelog {
 
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
+      version: '1.0.0-beta.1',
+      date: 'Oct 2026',
+      changes: [
+        'One Spend is now in closed beta. Thank you for testing!',
+        'Everything from 1.0.0 Alpha 5, now on the beta track',
+        'Send feedback or report a problem from Settings › Help & feedback',
+      ],
+    ),
+    ChangelogEntry(
       version: '1.0.0-alpha.5',
       date: 'Oct 2026',
       changes: [
