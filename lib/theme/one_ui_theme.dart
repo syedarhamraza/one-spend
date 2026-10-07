@@ -48,6 +48,28 @@ class OneUITheme {
     Color(0xFFA1887F), // Mocha
   ];
 
+  /// The name of each of [categorySwatches], in the same order.
+  static const List<String> categorySwatchNames = [
+    'Coral',
+    'Orange',
+    'Amber',
+    'Yellow',
+    'Green',
+    'Teal',
+    'Sky',
+    'Blue',
+    'Purple',
+    'Lavender',
+    'Pink',
+    'Mocha',
+  ];
+
+  /// The name of [color] if it's one of [categorySwatches], else "Custom".
+  static String swatchName(Color color) {
+    final i = categorySwatches.indexWhere((c) => c.toARGB32() == color.toARGB32());
+    return i < 0 ? 'Custom' : categorySwatchNames[i];
+  }
+
   // --- Ambient Glow (hero cards) ---
   static const Color glowDefault = Color(0xFF0381FE); // Samsung Signature Blue
 

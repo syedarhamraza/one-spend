@@ -113,19 +113,26 @@ class OneUIDot extends StatelessWidget {
 }
 
 /// 36dp solid circle list badge with a white icon (design doc §4, "Leading icon badges").
+/// [compact] is the smaller 32dp badge Settings uses on low-density or narrow screens.
 class OneUIIconBadge extends StatelessWidget {
   final IconData icon;
   final Color color;
+  final bool compact;
 
-  const OneUIIconBadge(this.icon, this.color, {super.key});
+  const OneUIIconBadge(this.icon, this.color, {super.key, this.compact = false});
+
+  /// Whether badges should be [compact] here: a low-density screen, or a narrow one.
+  static bool compactFor(BuildContext context) =>
+      MediaQuery.devicePixelRatioOf(context) < 2.5 || MediaQuery.sizeOf(context).width < 380;
 
   @override
   Widget build(BuildContext context) {
+    final size = compact ? 32.0 : 36.0;
     return Container(
-      width: 36,
-      height: 36,
+      width: size,
+      height: size,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: Icon(icon, color: Colors.white, size: 20),
+      child: Icon(icon, color: Colors.white, size: compact ? 18 : 20),
     );
   }
 }

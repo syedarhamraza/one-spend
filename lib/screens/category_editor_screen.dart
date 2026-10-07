@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../core/router/app_router.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
+import '../widgets/one_ui_category_hero.dart';
+import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_card.dart';
 import '../widgets/one_ui_floating_modal.dart';
@@ -99,9 +101,9 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
     final count = _store.subscriptionCountIn(category);
     var moveTo = SubscriptionCategory.utilities;
     if (count > 0) {
-      final picked = await CategoryPickerScreen.open(context, initialCategory: moveTo);
+      final picked = await CategoryPickerScreen.open(context, initialCategory: moveTo, exclude: {category});
       if (picked == null || !mounted) return;
-      moveTo = picked == category ? SubscriptionCategory.utilities : picked;
+      moveTo = picked;
     }
     final confirmed = await OneUIFloatingModal.showConfirmationDialog(
       context: context,
@@ -119,53 +121,16 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
     Navigator.pop(context);
   }
 
-  Widget _preview() {
-    final name = _trimmedName.isEmpty ? 'New category' : _trimmedName;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.cardBorderRadius),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: _color.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            alignment: Alignment.center,
-            child: Icon(_icon, color: _color, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: OneUITheme.textPrimary,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _color.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(OneUITheme.radiusBadge),
-            ),
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _color),
-            ),
-          ),
-        ],
-      ),
+  /// The category as it'll look, in the same hero card as the Categories page.
+  Widget _hero() {
+    final editing = _editing;
+    final usage = editing == null ? 0 : _store.subscriptionCountIn(SubscriptionCategory.custom(editing.id));
+    return OneUICategoryHero(
+      icon: _icon,
+      color: _color,
+      title: _trimmedName.isEmpty ? 'New category' : _trimmedName,
+      placeholderTitle: _trimmedName.isEmpty,
+      subtitle: usage == 0 ? 'Your category' : '$usage ${usage == 1 ? 'subscription' : 'subscriptions'}',
     );
   }
 
@@ -200,75 +165,62 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
     );
   }
 
-  Widget _grid<T>({
-    required List<T> items,
-    required bool Function(T item) selected,
-    required void Function(T item) onTap,
-    required Widget Function(T item, bool isSelected) build,
-    required String Function(T item) label,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: OneUITheme.cardColor, borderRadius: OneUITheme.cardBorderRadius),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        alignment: WrapAlignment.center,
-        children: [
-          for (final item in items)
-            Semantics(
-              button: true,
-              selected: selected(item),
-              label: label(item),
-              child: GestureDetector(
-                onTap: () {
-                  Haptics.select();
-                  setState(() => onTap(item));
-                },
-                child: build(item, selected(item)),
-              ),
-            ),
-        ],
+  Future<void> _pickColour() async {
+    Haptics.tap();
+    final picked = await Navigator.push<Color>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _OptionListScreen<Color>(
+          title: 'Colour',
+          options: OneUITheme.categorySwatches,
+          initial: _color,
+          same: (a, b) => a.toARGB32() == b.toARGB32(),
+          label: OneUITheme.swatchName,
+          leading: (c) => _Swatch(c),
+        ),
       ),
     );
+    if (picked != null && mounted) setState(() => _color = picked);
   }
 
-  Widget _iconGrid() => _grid<IconData>(
-        items: supportedSubscriptionIcons,
-        selected: (icon) => icon == _icon,
-        onTap: (icon) => _icon = icon,
-        label: (icon) => 'Icon',
-        build: (icon, isSelected) => AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: isSelected ? _color.withValues(alpha: 0.22) : OneUITheme.surfaceCardHighlight,
-            shape: BoxShape.circle,
-            border: Border.all(color: isSelected ? _color : Colors.transparent, width: 2),
-          ),
-          alignment: Alignment.center,
-          child: Icon(icon, size: 22, color: isSelected ? _color : OneUITheme.textSecondary),
+  Future<void> _pickIcon() async {
+    Haptics.tap();
+    final color = _color;
+    final picked = await Navigator.push<IconData>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _OptionListScreen<IconData>(
+          title: 'Icon',
+          options: supportedSubscriptionIcons,
+          initial: _icon,
+          same: (a, b) => a == b,
+          label: subscriptionIconName,
+          leading: (icon) => Icon(icon, color: color, size: 24),
         ),
-      );
+      ),
+    );
+    if (picked != null && mounted) setState(() => _icon = picked);
+  }
 
-  Widget _colorGrid() => _grid<Color>(
-        items: OneUITheme.categorySwatches,
-        selected: (color) => color.toARGB32() == _color.toARGB32(),
-        onTap: (color) => _color = color,
-        label: (color) => 'Colour',
-        build: (color, isSelected) => AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: isSelected ? OneUITheme.textPrimary : Colors.transparent, width: 3),
+  /// Colour and Icon: each row shows the current choice and opens its list.
+  Widget _looks() => OneUIGroupCard(
+        margin: EdgeInsets.zero,
+        items: [
+          OneUIGroupItem(
+            leading: _Swatch(_color),
+            title: 'Colour',
+            subtitle: OneUITheme.swatchName(_color),
+            subtitleColor: OneUITheme.accentBlue,
+            onTap: _pickColour,
           ),
-          child: isSelected ? const Icon(Icons.check_rounded, color: Colors.white, size: 22) : null,
-        ),
+          OneUIGroupItem(
+            leading: SizedBox(width: 24, child: Icon(_icon, color: _color, size: 24)),
+            title: 'Icon',
+            subtitle: subscriptionIconName(_icon),
+            subtitleColor: OneUITheme.accentBlue,
+            onTap: _pickIcon,
+          ),
+        ],
       );
 
   @override
@@ -282,10 +234,9 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
         canSave: _canSave,
       ),
       builder: (context) => [
-        _preview(),
+        _hero(),
         OneUISection(title: 'Name', child: _nameField()),
-        OneUISection(title: 'Icon', child: _iconGrid()),
-        OneUISection(title: 'Colour', child: _colorGrid()),
+        OneUISection(title: 'Colour & icon', child: _looks()),
         if (editing != null) ...[
           const SizedBox(height: 14),
           OneUIGroupCard(
@@ -299,6 +250,80 @@ class _CategoryEditorScreenState extends State<CategoryEditorScreen> {
             ],
           ),
         ],
+      ],
+    );
+  }
+}
+
+/// A colour as a 24 dp dot, for the Colour row and list.
+class _Swatch extends StatelessWidget {
+  final Color color;
+
+  const _Swatch(this.color);
+
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      );
+}
+
+/// A list of options with radios and a Cancel | Save pill, like the app's other pickers.
+/// Pops the chosen option, or nothing when cancelled.
+class _OptionListScreen<T> extends StatefulWidget {
+  final String title;
+  final List<T> options;
+  final T initial;
+  final bool Function(T a, T b) same;
+  final String Function(T option) label;
+  final Widget Function(T option) leading;
+
+  const _OptionListScreen({
+    super.key,
+    required this.title,
+    required this.options,
+    required this.initial,
+    required this.same,
+    required this.label,
+    required this.leading,
+  });
+
+  @override
+  State<_OptionListScreen<T>> createState() => _OptionListScreenState<T>();
+}
+
+class _OptionListScreenState<T> extends State<_OptionListScreen<T>> {
+  late T _selected = widget.initial;
+
+  @override
+  Widget build(BuildContext context) {
+    return OneUISubpage(
+      title: widget.title,
+      bottomPill: OneUIFloatingCancelSavePill(
+        onCancel: () => Navigator.pop(context),
+        onSave: () {
+          Haptics.confirm();
+          Navigator.pop(context, _selected);
+        },
+      ),
+      builder: (context) => [
+        OneUIGroupCard(
+          margin: EdgeInsets.zero,
+          items: [
+            for (final option in widget.options)
+              OneUIGroupItem(
+                leading: SizedBox(width: 24, child: Center(child: widget.leading(option))),
+                title: widget.label(option),
+                trailing: OneUIRadio(isSelected: widget.same(option, _selected)),
+                onTap: () {
+                  Haptics.select();
+                  setState(() => _selected = option);
+                },
+              ),
+          ],
+        ),
       ],
     );
   }

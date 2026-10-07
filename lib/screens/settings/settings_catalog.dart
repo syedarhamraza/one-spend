@@ -24,6 +24,10 @@ typedef SettingsOption = ({String title, List<String> keywords, bool placeholder
 /// One row on the main Settings page and the subpage it opens.
 class SettingsDestination {
   final String title;
+
+  /// The grey line under the title on the main page, Samsung style: what's inside,
+  /// separated by " • ".
+  final String description;
   final IconData icon;
   final Color color;
   final void Function(BuildContext context) open;
@@ -41,6 +45,7 @@ class SettingsDestination {
 
   const SettingsDestination({
     required this.title,
+    required this.description,
     required this.icon,
     required this.color,
     required this.open,
@@ -72,6 +77,7 @@ class SettingsCatalog {
     [
       SettingsDestination(
         title: 'Budget & currency',
+        description: 'Monthly budget • Main currency • Exchange rates',
         icon: Icons.account_balance_wallet_rounded,
         color: OneUITheme.accentGreen,
         open: BudgetCurrencyScreen.open,
@@ -84,6 +90,7 @@ class SettingsCatalog {
       ),
       SettingsDestination(
         title: 'Categories',
+        description: 'Built-in categories • Your own categories',
         icon: Icons.label_rounded,
         color: OneUITheme.accentOrange,
         open: CategoriesScreen.open,
@@ -94,6 +101,7 @@ class SettingsCatalog {
       ),
       SettingsDestination(
         title: 'Notifications',
+        description: 'Renewal reminders • Default reminder time',
         icon: Icons.notifications_rounded,
         color: OneUITheme.accentOrange,
         open: NotificationSettingsScreen.open,
@@ -108,12 +116,14 @@ class SettingsCatalog {
       ),
       SettingsDestination(
         title: 'Vibration',
+        description: 'Haptic feedback • Intensity • Notifications',
         icon: Icons.vibration_rounded,
         color: OneUITheme.accentTeal,
         open: VibrationSettingsScreen.open,
         keywords: ['vibrate', 'haptic', 'haptics', 'touch feedback'],
         options: [
           (title: 'Haptic feedback', keywords: ['vibrate', 'touch', 'tap', 'buzz'], placeholder: false),
+          (title: 'Intensity', keywords: ['vibration strength', 'stronger', 'weaker', 'haptic strength'], placeholder: false),
           (
             title: 'Vibrate for notifications',
             keywords: ['notification', 'reminder', 'silent', 'vibration'],
@@ -123,6 +133,7 @@ class SettingsCatalog {
       ),
       SettingsDestination(
         title: 'Payment methods',
+        description: 'Cards • Wallets • Card expiry',
         icon: Icons.credit_card_rounded,
         color: OneUITheme.accentBlue,
         open: PaymentMethodsScreen.open,
@@ -132,6 +143,7 @@ class SettingsCatalog {
     [
       SettingsDestination(
         title: 'Appearance',
+        description: '3D effects • Subscription cards • Details',
         icon: Icons.palette_rounded,
         color: OneUITheme.accentPurple,
         open: AppearanceSettingsScreen.open,
@@ -153,6 +165,7 @@ class SettingsCatalog {
       ),
       SettingsDestination(
         title: PlannedFeature.widgets.title,
+        description: 'Home screen widgets',
         icon: PlannedFeature.widgets.icon,
         color: OneUITheme.accentAmber,
         open: (context) => ComingSoonScreen.open(context, PlannedFeature.widgets),
@@ -163,6 +176,7 @@ class SettingsCatalog {
     [
       SettingsDestination(
         title: 'Security & privacy',
+        description: "Privacy policy • What's collected",
         icon: Icons.shield_rounded,
         color: OneUITheme.accentBlue,
         open: SecuritySettingsScreen.open,
@@ -177,6 +191,7 @@ class SettingsCatalog {
       ),
       SettingsDestination(
         title: 'Backup & data',
+        description: 'Backup • Restore • Export',
         icon: Icons.cloud_rounded,
         color: OneUITheme.accentTeal,
         open: BackupDataScreen.open,
@@ -197,6 +212,7 @@ class SettingsCatalog {
     [
       SettingsDestination(
         title: 'Software update',
+        description: 'Check for updates • Changelog',
         icon: Icons.system_update_rounded,
         color: OneUITheme.accentBlue,
         open: SoftwareUpdateScreen.open,
@@ -215,6 +231,7 @@ class SettingsCatalog {
       ),
       SettingsDestination(
         title: 'Help & feedback',
+        description: 'Send feedback • Report a problem • Rate',
         icon: Icons.help_rounded,
         color: OneUITheme.textTertiary,
         open: HelpFeedbackScreen.open,
@@ -232,6 +249,7 @@ class SettingsCatalog {
       ),
       SettingsDestination(
         title: 'About One Spend',
+        description: 'Version • Licences • Developer',
         icon: Icons.info_rounded,
         color: OneUITheme.textTertiary,
         open: AboutScreen.open,
@@ -246,6 +264,7 @@ class SettingsCatalog {
       [
         SettingsDestination(
           title: 'Developer options',
+          description: 'Test notifications • Sample data',
           icon: Icons.code_rounded,
           color: OneUITheme.textTertiary,
           open: DeveloperOptionsScreen.open,

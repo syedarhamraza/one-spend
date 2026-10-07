@@ -22,6 +22,7 @@ class SettingsDriftDataSource {
   static const String keyAutoUpdateCheck = 'onespend_auto_update_check';
   static const String keyReminderTime = 'onespend_reminder_time_minutes';
   static const String keyHapticsEnabled = 'onespend_haptics_enabled';
+  static const String keyHapticIntensity = 'onespend_haptic_intensity';
   static const String keyNotificationVibration = 'onespend_notification_vibration';
   static const int defaultReminderTimeMinutes = 9 * 60;
   static const String appearancePrefix = 'appearance.';
@@ -167,6 +168,13 @@ class SettingsDriftDataSource {
 
   Future<void> setHapticsEnabled(bool value) async {
     await db.setSetting(keyHapticsEnabled, value.toString());
+  }
+
+  Future<int?> getHapticIntensity() async => int.tryParse(await db.getSetting(keyHapticIntensity) ?? '');
+
+  /// Null goes back to the phone's own haptics.
+  Future<void> setHapticIntensity(int? level) async {
+    await db.setSetting(keyHapticIntensity, level?.toString() ?? '');
   }
 
   Future<bool> getNotificationVibration() async => (await db.getSetting(keyNotificationVibration)) != 'false';

@@ -103,6 +103,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> setHapticsEnabled(bool value) => _dataSource.setHapticsEnabled(value);
 
   @override
+  Future<int?> getHapticIntensity() => _dataSource.getHapticIntensity();
+
+  @override
+  Future<void> setHapticIntensity(int? level) => _dataSource.setHapticIntensity(level);
+
+  @override
   Future<bool> getNotificationVibration() => _dataSource.getNotificationVibration();
 
   @override

@@ -825,22 +825,46 @@ class SubscriptionController extends ChangeNotifier {
   }
 
   /// Deletes a custom category and moves its subscriptions to [moveTo].
-  void deleteCustomCategory(String id, {required SubscriptionCategory moveTo}) {
-    final from = SubscriptionCategory.custom(id);
-    final target = moveTo == from ? SubscriptionCategory.utilities : moveTo;
+  void deleteCustomCategory(String id, {required SubscriptionCategory moveTo}) =>
+      deleteCustomCategories({id}, moveTo: moveTo);
+
+  /// Deletes custom categories and moves their subscriptions to [moveTo] (Utilities if
+  /// [moveTo] is one of those being deleted).
+  void deleteCustomCategories(Set<String> ids, {required SubscriptionCategory moveTo}) {
+    if (ids.isEmpty) return;
+    final from = {for (final id in ids) SubscriptionCategory.custom(id)};
+    final target = from.contains(moveTo) ? SubscriptionCategory.utilities : moveTo;
     final moved = <Subscription>[];
     for (int i = 0; i < _subscriptions.length; i++) {
-      if (_subscriptions[i].category != from) continue;
+      if (!from.contains(_subscriptions[i].category)) continue;
       _subscriptions[i] = _subscriptions[i].copyWith(category: target);
       moved.add(_subscriptions[i]);
     }
     CustomCategoryRegistry.replaceAll([
       for (final c in CustomCategoryRegistry.categories)
-        if (c.id != id) c,
+        if (!ids.contains(c.id)) c,
     ]);
     notifyListeners();
     _persistSubscriptions(moved);
-    _persist(() async => customCategoryRepository?.delete([id]));
+    final deleted = List.of(ids);
+    _persist(() async => customCategoryRepository?.delete(deleted));
+  }
+
+  /// Puts the custom categories in the order of [orderedIds] (pickers and lists follow it).
+  /// Categories missing from [orderedIds] keep their place after the ones given.
+  void reorderCustomCategories(List<String> orderedIds) {
+    final current = CustomCategoryRegistry.categories;
+    final byId = {for (final c in current) c.id: c};
+    final ordered = [
+      for (final id in orderedIds)
+        if (byId[id] != null) byId[id]!,
+      for (final c in current)
+        if (!orderedIds.contains(c.id)) c,
+    ];
+    final updated = [for (final (i, c) in ordered.indexed) c.copyWith(sortOrder: i)];
+    CustomCategoryRegistry.replaceAll(updated);
+    notifyListeners();
+    _persist(() async => customCategoryRepository?.upsert(updated));
   }
 
   // --- Dismissed insights ---
