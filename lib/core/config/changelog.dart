@@ -30,7 +30,7 @@ class Changelog {
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
       version: '1.0.0-beta.3',
-      date: 'In development',
+      date: 'Oct 2026',
       changes: [
         'Choose how strong vibration feels in Settings › Vibration › Intensity',
         'Settings rows now say what is inside them, and their icons are a little smaller on small or low-resolution screens',
