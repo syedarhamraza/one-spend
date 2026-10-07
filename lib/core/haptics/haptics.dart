@@ -32,8 +32,11 @@ enum HapticKind {
 ///   [_minGap] of the last one is dropped.
 /// * **Settings › Vibration › Haptic feedback** turns it off. When on, Android still
 ///   follows the phone's own touch feedback setting.
-/// * Android maps each kind to the effect that suits the phone's motor; on phones with
-///   only a basic vibration motor, [HapticKind.select] may be silent.
+/// * **Settings › Vibration › Intensity.** Left alone ([intensity] is null) Android picks
+///   each effect for the phone's motor. Once set, phones that can vary their vibration
+///   ([canAdjust]) play clicks at that strength through the `onespend/haptics` channel
+///   (`HapticsChannel.kt`); phones with a basic motor can't, and keep the system haptics,
+///   where [HapticKind.select] may be silent.
 ///
 /// Widgets with a long-press should set `enableFeedback: false` on their `InkWell`
 /// (or use a `GestureDetector`) and call [longPress], so Flutter's built-in long-press
@@ -45,6 +48,23 @@ class Haptics {
 
   /// Whether Settings › Vibration › Haptic feedback is on.
   static final ValueNotifier<bool> enabled = ValueNotifier(true);
+
+  /// The strongest [intensity].
+  static const int maxIntensity = 5;
+
+  /// Settings › Vibration › Intensity, 1 to [maxIntensity]; null is the phone's own haptics.
+  static final ValueNotifier<int?> intensity = ValueNotifier(null);
+
+  /// The level the slider shows while [intensity] is the phone's own.
+  static const int defaultIntensity = 3;
+
+  /// Whether this phone can play vibrations at a chosen strength.
+  static bool canAdjust = false;
+
+  static const MethodChannel _channel = MethodChannel('onespend/haptics');
+
+  /// The vibration strength (0–1) for each [intensity] level.
+  static const List<double> _strengths = [0.3, 0.5, 0.68, 0.85, 1.0];
 
   static HapticKind? _pending;
   static DateTime? _lastPlayed;
@@ -59,9 +79,27 @@ class Haptics {
   static void longPress() => _request(HapticKind.longPress);
   static void warn() => _request(HapticKind.warn);
 
-  /// Reads the saved setting. Awaited in `configureDependencies()`.
+  /// Reads the saved settings and what the phone's motor can do. Awaited in
+  /// `configureDependencies()`.
   static Future<void> load(SettingsRepository settings) async {
     enabled.value = await settings.getHapticsEnabled();
+    intensity.value = await settings.getHapticIntensity();
+    try {
+      final info = await _channel.invokeMapMethod<String, Object?>('info');
+      canAdjust = info?['canAdjust'] == true;
+    } on MissingPluginException {
+      canAdjust = false; // tests and other platforms
+    } on PlatformException {
+      canAdjust = false;
+    }
+  }
+
+  /// Sets [intensity] (null goes back to the phone's own) and plays a sample of it.
+  static Future<void> setIntensity(int? level) async {
+    intensity.value = level?.clamp(1, maxIntensity);
+    _lastPlayed = null; // a sample always plays
+    confirm();
+    if (sl.isRegistered<SettingsRepository>()) await sl<SettingsRepository>().setHapticIntensity(intensity.value);
   }
 
   static Future<void> setEnabled(bool value) async {
@@ -87,6 +125,15 @@ class Haptics {
 
     final sink = debugSink;
     if (sink != null) return sink(kind);
+    final level = intensity.value;
+    if (level != null && canAdjust) {
+      unawaited(
+        _channel
+            .invokeMethod<void>('play', {'kind': kind.name, 'strength': _strengths[level - 1]})
+            .catchError((Object _) {}),
+      );
+      return;
+    }
     unawaited(switch (kind) {
       HapticKind.select => HapticFeedback.selectionClick(),
       HapticKind.tap => HapticFeedback.lightImpact(),
@@ -99,6 +146,8 @@ class Haptics {
   @visibleForTesting
   static void resetForTesting() {
     enabled.value = true;
+    intensity.value = null;
+    canAdjust = false;
     _pending = null;
     _lastPlayed = null;
     debugSink = null;

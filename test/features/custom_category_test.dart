@@ -125,6 +125,43 @@ void main() {
       expect(reloaded.customCategories, isEmpty);
       expect(reloaded.subscriptions.single.category, same(SubscriptionCategory.health));
     });
+
+    test('several delete at once; moving into one of them falls back to Utilities', () async {
+      final controller = _controllerFor(db);
+      await controller.load();
+      final a = controller.addCustomCategory(name: 'A', iconCodePoint: Icons.pets_rounded.codePoint, colorValue: 1);
+      final b = controller.addCustomCategory(name: 'B', iconCodePoint: Icons.pets_rounded.codePoint, colorValue: 2);
+      controller.addCustomCategory(name: 'C', iconCodePoint: Icons.pets_rounded.codePoint, colorValue: 3);
+      controller.addSubscription(_sub('x', a));
+      controller.addSubscription(_sub('y', b));
+      controller.deleteCustomCategories({a.name, b.name}, moveTo: b);
+      await controller.pendingWrites;
+
+      expect(controller.customCategories.map((c) => c.name), ['C']);
+      expect(controller.subscriptions.map((s) => s.category).toSet(), {SubscriptionCategory.utilities});
+
+      final reloaded = _controllerFor(db);
+      await reloaded.load();
+      expect(reloaded.customCategories.map((c) => c.name), ['C']);
+    });
+
+    test('reorder sets the order pickers use, and it survives a reload', () async {
+      final controller = _controllerFor(db);
+      await controller.load();
+      for (final name in ['A', 'B', 'C']) {
+        controller.addCustomCategory(name: name, iconCodePoint: Icons.pets_rounded.codePoint, colorValue: 1);
+      }
+      final ids = {for (final c in controller.customCategories) c.name: c.id};
+      controller.reorderCustomCategories([ids['C']!, ids['A']!, ids['B']!]);
+      expect(controller.customCategories.map((c) => c.name), ['C', 'A', 'B']);
+      expect(SubscriptionCategory.all.skip(SubscriptionCategory.values.length).map((c) => c.label), ['C', 'A', 'B']);
+      await controller.pendingWrites;
+
+      CustomCategoryRegistry.replaceAll(const []);
+      final reloaded = _controllerFor(db);
+      await reloaded.load();
+      expect(reloaded.customCategories.map((c) => c.name), ['C', 'A', 'B']);
+    });
   });
 
   group('Backups', () {

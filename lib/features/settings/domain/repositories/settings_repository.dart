@@ -56,6 +56,11 @@ abstract class SettingsRepository {
   Future<bool> getHapticsEnabled();
   Future<void> setHapticsEnabled(bool value);
 
+  /// Settings › Vibration › Intensity, 1 (lightest) to 5 (strongest); null means the
+  /// phone's own haptics (the default).
+  Future<int?> getHapticIntensity();
+  Future<void> setHapticIntensity(int? level);
+
   /// Settings › Vibration › Vibrate for notifications. On by default.
   Future<bool> getNotificationVibration();
   Future<void> setNotificationVibration(bool value);

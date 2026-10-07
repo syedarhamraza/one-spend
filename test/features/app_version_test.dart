@@ -51,11 +51,11 @@ void main() {
     });
 
     test('Changelog has notes for the current version', () {
-      // Notes for the next version may be written ahead, "In development", above it.
+      // Notes for the next versions may be written ahead, "In development", above it.
       final entries = Changelog.entries;
-      final ahead = entries.first.date == Changelog.inDevelopment && entries.first.version != parts[0];
+      final ahead = entries.takeWhile((e) => e.date == Changelog.inDevelopment && e.version != parts[0]).length;
       expect(
-        entries[ahead ? 1 : 0].version,
+        entries[ahead].version,
         parts[0],
         reason: 'Add a ChangelogEntry for ${parts[0]} at the top of lib/core/config/changelog.dart',
       );

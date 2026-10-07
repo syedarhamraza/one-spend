@@ -29,6 +29,18 @@ class Changelog {
 
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
+      version: '1.0.0-beta.3',
+      date: 'In development',
+      changes: [
+        'Choose how strong vibration feels in Settings › Vibration › Intensity',
+        'Settings rows now say what is inside them, and their icons are a little smaller on small or low-resolution screens',
+        'Categories: add one from the + button, long-press to select and delete several, and reorder them from ⋮ › Reorder',
+        "One categories page for Settings and for choosing a subscription's category, with the chosen one shown at the top",
+        "Pick a new category's colour and icon from lists, like the other options in the app",
+        'Fixed two categories made quickly one after another replacing each other',
+      ],
+    ),
+    ChangelogEntry(
       version: '1.0.0-beta.2',
       date: 'Oct 2026',
       changes: [
