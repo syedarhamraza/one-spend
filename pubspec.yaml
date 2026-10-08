@@ -8,7 +8,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 #   name (before +): what users see; MAJOR = big changes, MINOR = features, PATCH = fixes,
 #                    -alpha.N / -beta.N = pre-releases for Play's testing tracks.
 #   CODE (after +):  Android versionCode; +1 for every Play upload, never reused.
-# Don't edit by hand: run ./tool/release.ps1 (see README "Releasing").
+# Don't edit by hand: run ./tool/release.ps1 (see docs/releasing.md).
 version: 1.0.0-beta.3+8
 
 environment:

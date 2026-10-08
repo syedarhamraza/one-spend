@@ -155,7 +155,7 @@ if (git tag --list "v$newName") {
 if (-not $SkipBuild -and -not (Test-Path 'android/key.properties')) {
   # Without it Gradle falls back to the DEBUG key, which Google Play rejects after the
   # version code and tag are already used up.
-  Fail 'android/key.properties is missing, so the release would be signed with the DEBUG key. See README "Releasing" to set up your upload key (or use -SkipBuild).'
+  Fail 'android/key.properties is missing, so the release would be signed with the DEBUG key. See docs/releasing.md to set up your upload key (or use -SkipBuild).'
 }
 
 # Nothing has changed yet, so a failure here leaves the tree untouched.
