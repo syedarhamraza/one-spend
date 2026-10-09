@@ -85,6 +85,28 @@ void main() {
     }
   });
 
+  testWidgets('a swipe back up from the list stops at the small top bar', (tester) async {
+    final position = await pumpPage(tester);
+    position.jumpTo(900);
+    await tester.pump();
+    await tester.fling(find.text('Row 16'), const Offset(0, 600), 3000);
+    await tester.pumpAndSettle();
+    expect(position.pixels, closeTo(collapse, 0.5));
+
+    // From there, a pull from the top (a drag, not a fling) opens the big header.
+    await slowDrag(tester, 300);
+    expect(position.pixels, 0);
+  });
+
+  testWidgets('inside the header, a flick goes the way it was flicked', (tester) async {
+    final position = await pumpPage(tester);
+    position.jumpTo(140); // nearer to closed
+    await tester.pump();
+    await tester.fling(find.text('Row 2'), const Offset(0, 50), 600); // a short flick towards open
+    await tester.pumpAndSettle();
+    expect(position.pixels, 0);
+  });
+
   testWidgets('the default physics has no snap (pages without a big header)', (tester) async {
     expect(const OneUIScrollPhysics().headerSnap, isNull);
     expect(OneUIScrollPhysics.bigHeader.headerSnap, collapse);
@@ -105,5 +127,31 @@ void main() {
     final after = tester.getRect(find.text('Spend').first);
     expect(after.height, lessThan(before.height));
     expect(after.top, lessThan(before.top));
+  });
+
+  testWidgets("big-header pages don't stretch at the top, only at the bottom", (tester) async {
+    final shown = <bool, bool>{}; // leading edge? -> stretch allowed?
+    await tester.pumpWidget(MaterialApp(
+      scrollBehavior: const OneUIScrollBehavior(),
+      home: NotificationListener<OverscrollIndicatorNotification>(
+        onNotification: (n) {
+          shown[n.leading] = n.accepted;
+          return false;
+        },
+        child: OneUINoTopStretch(
+          child: ListView(children: [for (var i = 0; i < 30; i++) SizedBox(height: 60, child: Text('Row $i'))]),
+        ),
+      ),
+    ));
+    await tester.drag(find.text('Row 1'), const Offset(0, 200)); // pull down at the top
+    await tester.pumpAndSettle();
+    expect(shown[true], isFalse);
+
+    final position = tester.state<ScrollableState>(find.byType(Scrollable)).position;
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pump();
+    await tester.drag(find.text('Row 28'), const Offset(0, -200)); // push up at the bottom
+    await tester.pumpAndSettle();
+    expect(shown[false], isTrue);
   });
 }
