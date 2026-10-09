@@ -6,6 +6,7 @@ import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 enum FieldEditorType {
   text,
@@ -149,7 +150,7 @@ class _OneUIFieldEditorScreenState<T> extends State<OneUIFieldEditorScreen<T>> {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,

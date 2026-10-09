@@ -114,15 +114,19 @@ class NotificationScheduler with WidgetsBindingObserver {
     return plan.length;
   }
 
-  List<PlannedNotification> _plan() => NotificationPlanner.plan(
-        subscriptions: controller.subscriptions,
-        paymentMethods: controller.paymentMethods,
-        monthlyBudget: controller.monthlyBudget,
-        currency: controller.currency,
-        toMain: controller.toMain,
-        defaultReminderTimeMinutes: controller.defaultReminderTimeMinutes,
-        now: clock(),
-      );
+  /// The plan, without the kinds switched off in Settings › Notifications.
+  List<PlannedNotification> _plan() => [
+        for (final n in NotificationPlanner.plan(
+          subscriptions: controller.subscriptions,
+          paymentMethods: controller.paymentMethods,
+          monthlyBudget: controller.monthlyBudget,
+          currency: controller.currency,
+          toMain: controller.toMain,
+          defaultReminderTimeMinutes: controller.defaultReminderTimeMinutes,
+          now: clock(),
+        ))
+          if (controller.isNotificationKindEnabled(n.kind)) n,
+      ];
 
   Future<int> _sync() async {
     // First run in this process: forget whatever a previous process scheduled.

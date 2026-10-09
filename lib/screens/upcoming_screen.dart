@@ -34,6 +34,7 @@ import 'home_screen.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// How far ahead the Upcoming timeline looks.
 enum UpcomingHorizon {
@@ -447,7 +448,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: OneUIScrollPhysics.bigHeader,
                 slivers: [
                   SliverPersistentHeader(
                     pinned: true,

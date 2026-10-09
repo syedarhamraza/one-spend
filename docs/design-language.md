@@ -107,7 +107,8 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 - **Scrims:**
   - `OneUIStatusBarScrim` at the top of tab screens.
   - `OneUIBottomVignette` at the bottom of any screen with floating elements. Pass `hasFloatingElements: false` when there's no pill.
-- **Scrolling:** `CustomScrollView` with `BouncingScrollPhysics`.
+- **Scrolling:** `CustomScrollView` with `OneUIScrollPhysics` (`lib/theme/one_ui_scroll.dart`), which is also the app-wide default through `OneUIScrollBehavior`. Lists stop at their ends and stretch when pulled past them (Android's overscroll), and a fling glides a little further and slows gently. Never use `BouncingScrollPhysics`.
+- **Big headers snap:** if scrolling stops with a big header part-way collapsed, it settles fully open or fully closed, and the big title shrinks and rises into the top bar as it fades. `OneUICollapsibleHeaderDelegate` does both; nothing to add per screen.
 
 ---
 
@@ -147,7 +148,8 @@ The font is Roboto (set in `OneUITheme.darkTheme`). Use tight letter spacing on 
 | `OneUIGlassSurface` | `one_ui_glass_surface.dart` | The only way to draw floating chrome (see §2.1): flat vs 3D glass, rim light, shadow per elevation |
 | `OneUIFloatingNavBar` | `one_ui_floating_nav_bar.dart` | The 4-tab bottom capsule (owned by `HomeScreen`) with a sliding active capsule |
 | `OneUIFloatingSearchPill` | `one_ui_floating_search_pill.dart` | In-screen search |
-| `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open. `hintText` is required and says what is searched ("Search subscriptions", "Search currencies"), never a generic prompt |
+| `OneUIFloatingSearchField` | `one_ui_floating_search_field.dart` | The glass search capsule that floats above the keyboard (Subscriptions, Settings); hide the nav bar with a `HomeChrome` flag while it's open. `hintText` is required and says what is searched ("Search subscriptions", "Search currencies"), never a generic prompt. Pass `onVoiceResult` to show a mic while the field is empty: it opens the phone's own voice typing screen (`VoiceInput`, no microphone permission) and fills the field |
+| `MoveSubscriptionsScreen` | `screens/move_subscriptions_screen.dart` | "Move to": a radio list of the other payment methods (plus "No card" with `allowNone`) and Cancel \| Save. Used by Payment methods' Move action and before deleting cards that subscriptions still use. Moving a subscription's category uses `CategoryPickerScreen.open(title: 'Move to')` |
 | `OneUISubpage` | `one_ui_subpage.dart` | Scaffold for every subpage: small header + back, padded content, vignette, optional bottom pill. `builder` + `listenable` for live values. Same file: `OneUIIconBadge` (36dp list badge), `OneUISoonChip`, `OneUIDot` (orange "new" dot, e.g. an available update on the Software update row; Settings rows get it via `SettingsDestination.badge`) |
 | `OneUISelectionPills`, `OneUISelectionActionBar`, `OneUIFloatingActionBar` | `one_ui_selection_*.dart`, `one_ui_floating_action_bar.dart` | Multi-select mode: top capsules + bottom action bar. Pass `docked: true` to get just the action row for the nav bar to host (§5.3) |
 | `OneUISortBottomSheet`, `OneUIFilterBottomSheet`, `OneUIFloatingMenu` | respective files | Sort / filter sheets and overflow menus |
@@ -196,6 +198,8 @@ Settings follows Samsung Settings. Each **main page** row is a solid circular ba
   - It runs before Settings exists, so design it in the default flat look.
 - **Not built yet:** add a `PlannedFeature` and point the row at `ComingSoonScreen.open`; show `OneUISoonChip` as the trailing widget. Wrap the row in `if (FeatureFlags.showPlannedFeatures)` and mark catalog options `placeholder: true`: placeholders appear in **debug builds only**, so release users never see features that don't work yet.
 - **Debug-only tools** go in Developer options, which only exists in debug builds.
+- **Notifications:** each `NotificationKind` (renewals, card expiry, budget) has its own switch under Settings › Notifications › Notify me about (`SubscriptionController.isNotificationKindEnabled`). A new kind gets a row there too.
+- **Recent searches** are an `OneUIGroupCard` of rows (clock icon, the search, ✕) under a "Recent searches · Clear all" line, never chips.
 
 ### 5.3 Quick actions, confirmation, and long-press
 - **Money-moving actions** (mark paid, skip a cycle) use a **confirmation**: `OneUIFloatingModal.showConfirmationDialog`. The title is a question ("Mark Netflix as paid?"), the message says what will happen ("Logs a $15.49 payment and moves the next renewal to Nov 5"), and `confirmTextColor` uses the action's accent. Follow it with a plain `OneUIToast`.

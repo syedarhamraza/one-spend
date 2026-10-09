@@ -7,6 +7,7 @@ import 'one_ui_card.dart';
 import 'one_ui_fit_amount.dart';
 import 'one_ui_group_card.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI Upcoming Renewals Section
 /// Supports 3 presentation styles:
@@ -92,7 +93,7 @@ class OneUIUpcomingRenewalsSection extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              physics: const BouncingScrollPhysics(),
+              physics: const OneUIScrollPhysics(),
               itemCount: upcomingSubscriptions.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {

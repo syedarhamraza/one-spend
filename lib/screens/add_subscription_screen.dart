@@ -23,6 +23,7 @@ import '../utils/reminder_format.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 class AddSubscriptionScreen extends StatefulWidget {
   final Subscription? subscriptionToEdit;
@@ -304,7 +305,7 @@ class _AddSubscriptionScreenState extends State<AddSubscriptionScreen> {
         children: [
           CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               // One UI Signature Collapsible Header with Back Button
               SliverPersistentHeader(

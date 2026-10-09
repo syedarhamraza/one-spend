@@ -12,6 +12,7 @@ import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import 'date_picker_screen.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI Payment History Screen.
 /// Displays reverse-chronological ledger of past subscription charges,
@@ -103,7 +104,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const OneUIScrollPhysics(),
                 slivers: [
               // One UI Collapsible Header with Add Action
               SliverPersistentHeader(

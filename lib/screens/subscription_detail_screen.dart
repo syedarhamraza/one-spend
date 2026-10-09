@@ -35,6 +35,7 @@ import '../widgets/one_ui_floating_menu.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 class SubscriptionDetailScreen extends StatefulWidget {
   final Subscription subscription;
@@ -362,7 +363,7 @@ ${_sub.accountUrl.isNotEmpty ? '• Account URL: ${_sub.accountUrl}\n' : ''}${_s
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const OneUIScrollPhysics(),
                 slivers: [
                   // One UI Signature Collapsible Header
                   SliverPersistentHeader(

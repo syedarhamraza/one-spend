@@ -10,6 +10,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_radio.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Dedicated Samsung One UI Billing Cycle Picker Subpage.
 /// Matches the design language of ReminderPickerScreen with One UI grouped card,
@@ -63,7 +64,7 @@ class _BillingCyclePickerScreenState extends State<BillingCyclePickerScreen> {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,

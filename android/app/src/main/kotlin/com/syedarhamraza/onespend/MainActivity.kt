@@ -1,11 +1,14 @@
 package com.syedarhamraza.onespend
 
+import android.content.Intent
 import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    private var speech: SpeechChannel? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
@@ -18,5 +21,13 @@ class MainActivity : FlutterActivity() {
             }
         }
         HapticsChannel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
+        speech = SpeechChannel(this, flutterEngine.dartExecutor.binaryMessenger)
+    }
+
+    @Deprecated("Flutter's FlutterActivity still delivers results here")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (speech?.onActivityResult(requestCode, resultCode, data) == true) return
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, data)
     }
 }

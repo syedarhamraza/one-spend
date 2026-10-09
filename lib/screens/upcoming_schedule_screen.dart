@@ -7,6 +7,7 @@ import '../widgets/one_ui_brand_icon.dart';
 import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
+import '../theme/one_ui_scroll.dart';
 
 class UpcomingScheduleScreen extends StatelessWidget {
   final Subscription subscription;
@@ -31,7 +32,7 @@ class UpcomingScheduleScreen extends StatelessWidget {
           SafeArea(
             top: false,
             child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const OneUIScrollPhysics(),
               slivers: [
                 SliverPersistentHeader(
                   pinned: true,

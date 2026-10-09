@@ -27,6 +27,7 @@ import '../widgets/one_ui_toast.dart';
 import '../features/reports/data/text_report.dart';
 import '../features/reports/presentation/export_share_screen.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Analytics tab: answers "what am I spending, where is it going, and what's next?".
 ///
@@ -152,7 +153,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               CustomScrollView(
                 controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
+                physics: OneUIScrollPhysics.bigHeader,
                 slivers: [
                   SliverPersistentHeader(
                     pinned: true,

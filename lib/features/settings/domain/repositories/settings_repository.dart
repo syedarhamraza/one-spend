@@ -23,6 +23,10 @@ abstract class SettingsRepository {
   Future<bool> getNotificationsEnabled();
   Future<void> setNotificationsEnabled(bool value);
 
+  /// Notification kinds (`NotificationKind` names) turned off in Settings › Notifications.
+  Future<Set<String>> getNotificationKindsOff();
+  Future<void> setNotificationKindsOff(Set<String> kinds);
+
   /// Default reminder time of day, in minutes after midnight.
   Future<int> getDefaultReminderTimeMinutes();
   Future<void> setDefaultReminderTimeMinutes(int minutes);

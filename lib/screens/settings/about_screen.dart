@@ -9,6 +9,7 @@ import '../../utils/external_links.dart';
 import '../../widgets/one_ui_bare_top_bar.dart';
 import 'licenses_screen.dart';
 import '../../core/haptics/haptics.dart';
+import '../../theme/one_ui_scroll.dart';
 
 /// Settings › About One Spend: the app icon, name and version in the middle of the page,
 /// and the links as capsule buttons at the bottom (same layout as Software update).
@@ -47,7 +48,7 @@ class _AboutScreenState extends State<AboutScreen> {
               // Scrolls only when it doesn't fit (large text, short screens).
               child: LayoutBuilder(
                 builder: (context, constraints) => SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: const OneUIScrollPhysics(),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: constraints.maxHeight),
                     child: IntrinsicHeight(

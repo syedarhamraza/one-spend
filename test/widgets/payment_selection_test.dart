@@ -9,6 +9,7 @@ import 'package:onespend/screens/payment_method_picker_screen.dart';
 import 'package:onespend/theme/one_ui_theme.dart';
 import 'package:onespend/widgets/one_ui_floating_modal.dart';
 import 'package:onespend/widgets/one_ui_glass_surface.dart';
+import 'package:onespend/screens/move_subscriptions_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_app.dart';
@@ -84,11 +85,16 @@ void main() {
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
 
-    expect(find.text('MOVE SUBSCRIPTIONS TO'), findsOneWidget);
+    // A "Move to" page lists the other cards (and No card), then a confirmation.
+    expect(find.byType(MoveSubscriptionsScreen), findsOneWidget);
     expect(find.byType(DropdownButtonFormField<String>), findsNothing);
-    await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text(target.displayName)));
+    expect(find.text('No card'), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byType(MoveSubscriptionsScreen), matching: find.text(target.displayName)));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Move & delete'));
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('to ${target.displayName}'), findsOneWidget);
+    await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();
 
     expect(store.paymentMethods.any((m) => m.id == linked.id), isFalse);

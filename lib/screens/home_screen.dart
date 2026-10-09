@@ -6,6 +6,7 @@ import '../widgets/one_ui_floating_modal.dart';
 import '../widgets/one_ui_floating_nav_bar.dart';
 import '../widgets/one_ui_status_bar_scrim.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Tab-level UI state that hides the floating nav bar (e.g. while the
 /// Subscriptions tab is in multi-select or search mode).
@@ -120,7 +121,8 @@ class HomeScreen extends StatelessWidget {
             body: Stack(
               children: [
                 // Current tab (each branch keeps its own state via the indexed stack shell)
-                HomeShellScope(child: navigationShell),
+                // The tabs are the big-header pages: no stretch at their top (see OneUINoTopStretch).
+                OneUINoTopStretch(child: HomeShellScope(child: navigationShell)),
 
                 // Edge-to-Edge Progressive Status Bar Scrim (Strictly 80% of status bar)
                 const Positioned(top: 0, left: 0, right: 0, child: OneUIStatusBarScrim()),

@@ -12,6 +12,7 @@ import '../widgets/one_ui_date_wheel.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_radio.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI date picker subpage: month / day / year scroll wheels, a live summary,
 /// quick picks, and the floating Cancel | Save pill. Returns the chosen date (no time part),
@@ -107,7 +108,7 @@ class _DatePickerScreenState extends State<DatePickerScreen> {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,

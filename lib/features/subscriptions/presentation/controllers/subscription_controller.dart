@@ -9,6 +9,7 @@ import '../../../currency/domain/money_format.dart';
 import '../../../payment_methods/data/fixtures/default_payment_methods.dart';
 import '../../../payment_methods/domain/entities/payment_method.dart';
 import '../../../payment_methods/domain/repositories/payment_method_repository.dart';
+import '../../../notifications/domain/planned_notification.dart';
 import '../../../settings/domain/repositories/settings_repository.dart';
 import '../../data/fixtures/popular_catalog.dart';
 import '../../data/subscription_exporter.dart';
@@ -82,6 +83,9 @@ class SubscriptionController extends ChangeNotifier {
   int _defaultReminderTimeMinutes = _defaultReminderTime;
   bool _notificationsEnabled = true;
   bool _notificationVibration = true;
+
+  /// [NotificationKind] names switched off in Settings › Notifications.
+  final Set<String> _notificationKindsOff = {};
   SubscriptionSortOption _sortOption = SubscriptionSortOption.renewalAsc;
   bool _groupByDate = false;
   DateTime? _lastBackupAt;
@@ -146,6 +150,7 @@ class SubscriptionController extends ChangeNotifier {
     _defaultReminderTimeMinutes = _defaultReminderTime;
     _notificationsEnabled = true;
     _notificationVibration = true;
+    _notificationKindsOff.clear();
     _sortOption = SubscriptionSortOption.renewalAsc;
     _groupByDate = false;
     _recentSearches.clear();
@@ -184,6 +189,11 @@ class SubscriptionController extends ChangeNotifier {
 
   /// Whether reminders vibrate (Settings › Vibration). A device preference, not backed up.
   bool get notificationVibration => _notificationVibration;
+
+  /// Whether notifications of [kind] are on (Settings › Notifications › Notify me about).
+  /// A device preference, not backed up. Developer tests are always on.
+  bool isNotificationKindEnabled(NotificationKind kind) =>
+      kind == NotificationKind.developer || !_notificationKindsOff.contains(kind.name);
   SubscriptionSortOption get sortOption => _sortOption;
   bool get groupByDate => _groupByDate;
 
@@ -314,6 +324,9 @@ class SubscriptionController extends ChangeNotifier {
       _defaultReminderTimeMinutes = await settingsRepository.getDefaultReminderTimeMinutes();
       _notificationsEnabled = await settingsRepository.getNotificationsEnabled();
       _notificationVibration = await settingsRepository.getNotificationVibration();
+      _notificationKindsOff
+        ..clear()
+        ..addAll(await settingsRepository.getNotificationKindsOff());
       _sortOption = await settingsRepository.getSortOption();
       _groupByDate = await settingsRepository.getGroupByDate();
       _recentSearches
@@ -654,6 +667,14 @@ class SubscriptionController extends ChangeNotifier {
     _notificationsEnabled = value;
     notifyListeners();
     _persist(() => settingsRepository.setNotificationsEnabled(value));
+  }
+
+  void setNotificationKindEnabled(NotificationKind kind, bool enabled) {
+    if (kind == NotificationKind.developer || isNotificationKindEnabled(kind) == enabled) return;
+    enabled ? _notificationKindsOff.remove(kind.name) : _notificationKindsOff.add(kind.name);
+    notifyListeners(); // the scheduler re-plans without (or with) that kind
+    final off = Set.of(_notificationKindsOff);
+    _persist(() => settingsRepository.setNotificationKindsOff(off));
   }
 
   void setNotificationVibration(bool value) {

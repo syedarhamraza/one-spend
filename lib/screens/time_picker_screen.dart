@@ -12,6 +12,7 @@ import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_time_wheel.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI time-of-day picker subpage: scroll wheels (hour : minute AM/PM),
 /// a live summary, quick picks, and the floating Cancel | Save pill.
@@ -67,7 +68,7 @@ class _TimePickerScreenState extends State<TimePickerScreen> {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,

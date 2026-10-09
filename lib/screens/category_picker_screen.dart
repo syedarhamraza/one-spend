@@ -14,21 +14,25 @@ class CategoryPickerScreen extends StatelessWidget {
   /// Categories left out of the list, e.g. the ones being deleted.
   final Set<SubscriptionCategory> exclude;
 
-  const CategoryPickerScreen({super.key, required this.initialCategory, this.exclude = const {}});
+  /// The header, e.g. "Move to"; "Category" when null.
+  final String? title;
+
+  const CategoryPickerScreen({super.key, required this.initialCategory, this.exclude = const {}, this.title});
 
   static Future<SubscriptionCategory?> open(
     BuildContext context, {
     required SubscriptionCategory initialCategory,
     Set<SubscriptionCategory> exclude = const {},
+    String? title,
   }) {
     Haptics.tap();
     final initial = exclude.contains(initialCategory) ? SubscriptionCategory.utilities : initialCategory;
     return context.push<SubscriptionCategory>(
       AppRoutes.categoryPicker,
-      extra: (initial: initial, exclude: exclude),
+      extra: (initial: initial, exclude: exclude, title: title),
     );
   }
 
   @override
-  Widget build(BuildContext context) => CategoriesScreen(pickInitial: initialCategory, exclude: exclude);
+  Widget build(BuildContext context) => CategoriesScreen(pickInitial: initialCategory, exclude: exclude, pickTitle: title);
 }

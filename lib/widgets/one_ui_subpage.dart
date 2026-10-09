@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_bottom_vignette.dart';
 import 'one_ui_collapsible_header.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Standard One UI subpage (design doc §5.1): pinned small header with a back button,
 /// padded scrolling content, the bottom vignette and an optional floating pill.
@@ -37,7 +38,7 @@ class OneUISubpage extends StatelessWidget {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,

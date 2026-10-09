@@ -19,6 +19,7 @@ class SettingsDriftDataSource {
   static const String keyTrackingSince = 'onespend_tracking_since';
   static const String keyOnboardingDone = 'onespend_onboarding_done';
   static const String keyNotificationsEnabled = 'onespend_notifications_enabled';
+  static const String keyNotificationKindsOff = 'onespend_notifications_off_kinds';
   static const String keyAutoUpdateCheck = 'onespend_auto_update_check';
   static const String keyReminderTime = 'onespend_reminder_time_minutes';
   static const String keyHapticsEnabled = 'onespend_haptics_enabled';
@@ -93,6 +94,20 @@ class SettingsDriftDataSource {
 
   Future<void> setNotificationsEnabled(bool value) async {
     await db.setSetting(keyNotificationsEnabled, value.toString());
+  }
+
+  Future<Set<String>> getNotificationKindsOff() async {
+    final val = await db.getSetting(keyNotificationKindsOff);
+    if (val == null || val.isEmpty) return {};
+    try {
+      return {for (final e in jsonDecode(val) as List<dynamic>) e.toString()};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> setNotificationKindsOff(Set<String> kinds) async {
+    await db.setSetting(keyNotificationKindsOff, jsonEncode(kinds.toList()..sort()));
   }
 
   Future<int> getDefaultReminderTimeMinutes() async {
