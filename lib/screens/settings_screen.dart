@@ -93,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         body: Stack(
           children: [
             CustomScrollView(
-              physics: const OneUIScrollPhysics(),
+              physics: OneUIScrollPhysics.bigHeader,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               slivers: [
                 SliverPersistentHeader(

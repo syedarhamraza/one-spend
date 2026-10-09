@@ -607,7 +607,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 CustomScrollView(
                   controller: _scrollController,
                   keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  physics: const OneUIScrollPhysics(),
+                  // The big header snaps open or closed; search and card views have none.
+                  physics: _showSearch || widget.filterPaymentMethodId != null
+                      ? const OneUIScrollPhysics()
+                      : OneUIScrollPhysics.bigHeader,
                   slivers: [
                     // One UI Signature Collapsible Header
                     SliverPersistentHeader(

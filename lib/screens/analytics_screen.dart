@@ -153,7 +153,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             children: [
               CustomScrollView(
                 controller: _scrollController,
-                physics: const OneUIScrollPhysics(),
+                physics: OneUIScrollPhysics.bigHeader,
                 slivers: [
                   SliverPersistentHeader(
                     pinned: true,

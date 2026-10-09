@@ -193,44 +193,15 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     final newPosition = Scrollable.maybeOf(context)?.position;
     if (_position != newPosition) {
       _position?.removeListener(_onScroll);
-      _position?.isScrollingNotifier.removeListener(_onScrollingChanged);
       _position = newPosition;
       _position?.addListener(_onScroll);
-      _position?.isScrollingNotifier.addListener(_onScrollingChanged);
     }
   }
 
   @override
   void dispose() {
     _position?.removeListener(_onScroll);
-    _position?.isScrollingNotifier.removeListener(_onScrollingChanged);
     super.dispose();
-  }
-
-  /// How far the big header collapses before the top bar is pinned.
-  double get _collapseRange => widget.expandedHeight - widget.collapsedHeight;
-
-  /// One UI never leaves the big header half collapsed: when scrolling stops part-way,
-  /// it settles fully open or fully closed, whichever is nearer.
-  void _onScrollingChanged() {
-    final position = _position;
-    if (!mounted || !widget.hasBigHeader || position == null || !position.hasPixels) return;
-    if (position.isScrollingNotifier.value) return;
-    final range = _collapseRange;
-    final pixels = position.pixels;
-    if (pixels <= 0.5 || pixels >= range - 0.5) return;
-    final target = (pixels < range / 2 ? 0.0 : range).clamp(position.minScrollExtent, position.maxScrollExtent);
-    if ((target - pixels).abs() < 0.5) return;
-    final instant = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
-    // After the current scroll activity has fully ended.
-    Future.microtask(() {
-      if (!mounted || _position != position || position.isScrollingNotifier.value) return;
-      if (instant) {
-        position.jumpTo(target);
-      } else {
-        position.animateTo(target, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
-      }
-    });
   }
 
   void _onScroll() {

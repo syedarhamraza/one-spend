@@ -448,7 +448,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const OneUIScrollPhysics(),
+                physics: OneUIScrollPhysics.bigHeader,
                 slivers: [
                   SliverPersistentHeader(
                     pinned: true,

@@ -13,6 +13,7 @@ void main() {
       scrollBehavior: const OneUIScrollBehavior(),
       home: Scaffold(
         body: CustomScrollView(
+          physics: OneUIScrollPhysics.bigHeader,
           slivers: [
             SliverPersistentHeader(
               pinned: true,
@@ -66,6 +67,27 @@ void main() {
     final position = await pumpPage(tester);
     await slowDrag(tester, -140);
     expect(position.pixels, closeTo(collapse, 0.5));
+  });
+
+  testWidgets('a fling that would stop halfway carries on to closed without pausing', (tester) async {
+    final position = await pumpPage(tester);
+    // A short flick: on its own it would come to rest inside the header's range.
+    await tester.fling(find.text('Row 2'), const Offset(0, -60), 400);
+    final seen = <double>[];
+    for (var i = 0; i < 120 && (seen.isEmpty || (seen.last - collapse).abs() > 0.5); i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      seen.add(position.pixels);
+    }
+    expect(seen.last, closeTo(collapse, 0.5));
+    // Every frame moves on towards the end: no stop-then-snap.
+    for (var i = 1; i < seen.length; i++) {
+      expect(seen[i], greaterThan(seen[i - 1]), reason: 'frame $i stalled at ${seen[i]}');
+    }
+  });
+
+  testWidgets('the default physics has no snap (pages without a big header)', (tester) async {
+    expect(const OneUIScrollPhysics().headerSnap, isNull);
+    expect(OneUIScrollPhysics.bigHeader.headerSnap, collapse);
   });
 
   testWidgets('scrolled past the header, nothing snaps', (tester) async {
