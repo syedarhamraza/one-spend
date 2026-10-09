@@ -193,15 +193,44 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     final newPosition = Scrollable.maybeOf(context)?.position;
     if (_position != newPosition) {
       _position?.removeListener(_onScroll);
+      _position?.isScrollingNotifier.removeListener(_onScrollingChanged);
       _position = newPosition;
       _position?.addListener(_onScroll);
+      _position?.isScrollingNotifier.addListener(_onScrollingChanged);
     }
   }
 
   @override
   void dispose() {
     _position?.removeListener(_onScroll);
+    _position?.isScrollingNotifier.removeListener(_onScrollingChanged);
     super.dispose();
+  }
+
+  /// How far the big header collapses before the top bar is pinned.
+  double get _collapseRange => widget.expandedHeight - widget.collapsedHeight;
+
+  /// One UI never leaves the big header half collapsed: when scrolling stops part-way,
+  /// it settles fully open or fully closed, whichever is nearer.
+  void _onScrollingChanged() {
+    final position = _position;
+    if (!mounted || !widget.hasBigHeader || position == null || !position.hasPixels) return;
+    if (position.isScrollingNotifier.value) return;
+    final range = _collapseRange;
+    final pixels = position.pixels;
+    if (pixels <= 0.5 || pixels >= range - 0.5) return;
+    final target = (pixels < range / 2 ? 0.0 : range).clamp(position.minScrollExtent, position.maxScrollExtent);
+    if ((target - pixels).abs() < 0.5) return;
+    final instant = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    // After the current scroll activity has fully ended.
+    Future.microtask(() {
+      if (!mounted || _position != position || position.isScrollingNotifier.value) return;
+      if (instant) {
+        position.jumpTo(target);
+      } else {
+        position.animateTo(target, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
+      }
+    });
   }
 
   void _onScroll() {
@@ -366,49 +395,61 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
     );
   }
 
-  /// Big centered viewing header with generous space and fixed height to prevent overflow
-  Widget _buildBigHeader(double bigHeaderOpacity) {
+  /// Big centered viewing header with generous space and fixed height to prevent overflow.
+  /// As the page scrolls ([glide] 0 → 1) the title shrinks towards the top bar's size and
+  /// drifts up while it fades, so it reads as gliding into the small title.
+  Widget _buildBigHeader(double bigHeaderOpacity, double glide) {
     if (!widget.hasBigHeader || bigHeaderOpacity <= 0.01) {
       return const SizedBox.shrink();
     }
 
     return Opacity(
       opacity: bigHeaderOpacity,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                widget.title,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 34.0,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.6,
-                  color: OneUITheme.textPrimary,
-                ),
-              ),
-              if (widget.subtitle != null) ...[
-                const SizedBox(height: 5),
-                Text(
-                  widget.subtitle!,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w400,
-                    color: OneUITheme.textSecondary,
+      child: Transform.translate(
+        offset: Offset(0, -44 * glide),
+        child: Transform.scale(
+          scale: 1 - 0.35 * glide,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 34.0,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.6,
+                      color: OneUITheme.textPrimary,
+                    ),
                   ),
-                ),
-              ],
-            ],
+                  if (widget.subtitle != null) ...[
+                    const SizedBox(height: 5),
+                    // The subtitle has no place in the top bar, so it fades first.
+                    Opacity(
+                      opacity: (1 - 2 * glide).clamp(0.0, 1.0),
+                      child: Text(
+                        widget.subtitle!,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w400,
+                          color: OneUITheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -488,7 +529,7 @@ class _OneUIHeaderContentState extends State<_OneUIHeaderContent> {
               left: 0,
               right: 0,
               height: bigHeaderHeight,
-              child: _buildBigHeader(bigHeaderOpacity),
+              child: _buildBigHeader(bigHeaderOpacity, (currentOffset / 115.0).clamp(0.0, 1.0)),
             ),
 
           // 2. Action Bar Row (Buttons & Small Title OR Selection Controls)

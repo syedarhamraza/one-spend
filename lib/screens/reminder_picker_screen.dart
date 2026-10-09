@@ -12,6 +12,7 @@ import '../utils/reminder_format.dart';
 import 'time_picker_screen.dart';
 import '../widgets/one_ui_radio.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Dedicated Samsung One UI Renewal Reminder Subpage.
 /// Replaces the bottom modal sheet with a full One UI subpage for selecting
@@ -107,7 +108,7 @@ class _ReminderPickerScreenState extends State<ReminderPickerScreen> {
         children: [
           CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,

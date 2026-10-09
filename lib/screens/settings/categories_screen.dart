@@ -21,6 +21,7 @@ import '../../widgets/one_ui_subpage.dart';
 import '../../widgets/one_ui_toast.dart';
 import '../category_editor_screen.dart';
 import '../category_picker_screen.dart';
+import '../../theme/one_ui_scroll.dart';
 
 /// The one categories page, laid out like Samsung's category lists: a hero card, your own
 /// categories (in your order), then the built-in ones. Rows are a name and a description;
@@ -351,7 +352,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             body: Stack(
               children: [
                 CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: const OneUIScrollPhysics(),
                   slivers: [
                     SliverPersistentHeader(
                       pinned: true,

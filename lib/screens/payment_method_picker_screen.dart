@@ -17,6 +17,7 @@ import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_toast.dart';
 import 'payment_method_editor_screen.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI Unified Payment Card Picker & Management Subpage.
 /// Combines in-place card management and single-subscription card selection:
@@ -583,7 +584,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const OneUIScrollPhysics(),
                 slivers: [
                   SliverPersistentHeader(
                     pinned: true,

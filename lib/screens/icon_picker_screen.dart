@@ -18,6 +18,7 @@ import '../widgets/one_ui_subpage.dart';
 import '../widgets/one_ui_logo_framer.dart';
 import '../features/subscriptions/domain/entities/logo_transform.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI Subscription Icon Picker Subpage.
 /// Redesigned to match One UI customization subpages (e.g. Subscription Detail Styling):
@@ -329,7 +330,7 @@ class _IconPickerScreenState extends State<IconPickerScreen> {
         children: [
           CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,
@@ -657,7 +658,7 @@ class _SystemIconPickerSubpageState extends State<_SystemIconPickerSubpage> {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,
@@ -978,7 +979,7 @@ class _BackgroundColorPickerSubpageState extends State<_BackgroundColorPickerSub
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,

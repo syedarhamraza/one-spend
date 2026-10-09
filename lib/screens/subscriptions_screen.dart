@@ -31,6 +31,7 @@ import '../features/reports/data/report_sharer.dart';
 import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -241,7 +242,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
               maxHeight: MediaQuery.of(context).size.height * 0.40,
             ),
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const OneUIScrollPhysics(),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -667,7 +668,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                 CustomScrollView(
                   controller: _scrollController,
                   keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const OneUIScrollPhysics(),
                   slivers: [
                     // One UI Signature Collapsible Header
                     SliverPersistentHeader(

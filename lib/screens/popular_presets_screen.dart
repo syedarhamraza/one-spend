@@ -12,6 +12,7 @@ import '../widgets/one_ui_collapsible_header.dart';
 import '../widgets/one_ui_group_card.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI Popular Services & Presets Subpage.
 /// Replaces the horizontal scroll in AddSubscriptionScreen with a clean,
@@ -164,7 +165,7 @@ class _PopularPresetsScreenState extends State<PopularPresetsScreen> {
           children: [
             CustomScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              physics: const BouncingScrollPhysics(),
+              physics: const OneUIScrollPhysics(),
               slivers: [
                 // Header with back button & search action
                 SliverPersistentHeader(

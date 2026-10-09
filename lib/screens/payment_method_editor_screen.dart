@@ -14,6 +14,7 @@ import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_switch.dart';
 import '../widgets/one_ui_toast.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Dedicated Samsung One UI Payment Method Editor Screen.
 /// Follows One UI design principles with clean group cards, functional form fields,
@@ -129,7 +130,7 @@ class _PaymentMethodEditorScreenState extends State<PaymentMethodEditorScreen> {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               // Collapsible Header
               SliverPersistentHeader(
@@ -439,7 +440,7 @@ class _CardBrandPickerSubpageState extends State<_CardBrandPickerSubpage> {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,
@@ -567,7 +568,7 @@ class _CardNicknameEditorSubpageState extends State<_CardNicknameEditorSubpage> 
         children: [
           CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,
@@ -748,7 +749,7 @@ class _CardLast4EditorSubpageState extends State<_CardLast4EditorSubpage> {
         children: [
           CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,
@@ -920,7 +921,7 @@ class _CardExpiryEditorSubpageState extends State<_CardExpiryEditorSubpage> {
         children: [
           CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,
@@ -1103,7 +1104,7 @@ class _CardTypePickerSubpageState extends State<_CardTypePickerSubpage> {
       body: Stack(
         children: [
           CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,
@@ -1227,7 +1228,7 @@ class _CardStatementDayPickerSubpageState extends State<_CardStatementDayPickerS
         children: [
           CustomScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            physics: const BouncingScrollPhysics(),
+            physics: const OneUIScrollPhysics(),
             slivers: [
               SliverPersistentHeader(
                 pinned: true,

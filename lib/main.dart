@@ -15,6 +15,7 @@ import 'features/updates/presentation/update_controller.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/home_screen.dart';
 import 'theme/one_ui_theme.dart';
+import 'theme/one_ui_scroll.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +24,9 @@ Future<void> main() async {
   final launchRoute = await sl<NotificationService>().launchRoute();
   final showOnboarding = launchRoute == null && await needsOnboarding();
 
-  // Set system UI to immersive One UI pitch-black dark mode
+  // Draw behind the system bars on every Android version (it's the default from Android
+  // 15), with transparent bars over the pitch-black One UI background.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -130,6 +133,7 @@ class _OneSpendAppState extends State<OneSpendApp> {
       title: 'One Spend',
       debugShowCheckedModeBanner: false,
       theme: OneUITheme.darkTheme,
+      scrollBehavior: const OneUIScrollBehavior(),
       routerConfig: _router,
     );
   }

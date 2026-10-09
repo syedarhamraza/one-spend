@@ -13,6 +13,7 @@ import '../widgets/one_ui_subpage.dart';
 import 'home_screen.dart';
 import 'settings/settings_catalog.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Settings tab, laid out like Samsung Settings: grouped rows with an icon, a title and a
 /// grey line saying what's inside. Every row opens a subpage; options, switches and
@@ -92,7 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         body: Stack(
           children: [
             CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const OneUIScrollPhysics(),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               slivers: [
                 SliverPersistentHeader(

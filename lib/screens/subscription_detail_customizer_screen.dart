@@ -9,6 +9,7 @@ import '../widgets/one_ui_payment_brand_icon.dart';
 import '../widgets/one_ui_switch.dart';
 import '../widgets/one_ui_toast.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI Subscription Detail Screen Appearance & Styling Customizer Screen
 class SubscriptionDetailCustomizerScreen extends StatelessWidget {
@@ -26,7 +27,7 @@ class SubscriptionDetailCustomizerScreen extends StatelessWidget {
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const OneUIScrollPhysics(),
                 slivers: [
                   // One UI Signature Collapsible Header
                   SliverPersistentHeader(
@@ -361,7 +362,7 @@ class _DetailIconShapeOptionScreen extends StatelessWidget {
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const OneUIScrollPhysics(),
                 slivers: [
                   SliverPersistentHeader(
                     pinned: true,
@@ -487,7 +488,7 @@ class _DetailPaymentIconOptionScreen extends StatelessWidget {
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const OneUIScrollPhysics(),
                 slivers: [
                   SliverPersistentHeader(
                     pinned: true,

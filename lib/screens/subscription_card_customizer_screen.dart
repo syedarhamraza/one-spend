@@ -9,6 +9,7 @@ import '../widgets/one_ui_subscription_card.dart';
 import '../widgets/one_ui_switch.dart';
 import '../widgets/one_ui_toast.dart';
 import '../core/haptics/haptics.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI Subscription Card Display & Data Indicators Screen
 class SubscriptionCardCustomizerScreen extends StatelessWidget {
@@ -40,7 +41,7 @@ class SubscriptionCardCustomizerScreen extends StatelessWidget {
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const OneUIScrollPhysics(),
                 slivers: [
                   // One UI Signature Collapsible Header
                   SliverPersistentHeader(
@@ -361,7 +362,7 @@ class _SubscriptionCardOptionScreenState<T> extends State<SubscriptionCardOption
           body: Stack(
             children: [
               CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const OneUIScrollPhysics(),
                 slivers: [
                   SliverPersistentHeader(
                     pinned: true,

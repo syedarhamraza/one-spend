@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/subscription.dart';
 import '../theme/one_ui_theme.dart';
 import 'one_ui_glass_surface.dart';
+import '../theme/one_ui_scroll.dart';
 
 /// Samsung One UI 9 "Filter by category" Modal Bottom Sheet matching Samsung One UI Reference 1:1.
 class OneUIFilterBottomSheet extends StatefulWidget {
@@ -84,7 +85,7 @@ class _OneUIFilterBottomSheetState extends State<OneUIFilterBottomSheet> {
                     maxHeight: MediaQuery.of(context).size.height * 0.46,
                   ),
                   child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    physics: const OneUIScrollPhysics(),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
