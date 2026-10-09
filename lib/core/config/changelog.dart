@@ -30,7 +30,7 @@ class Changelog {
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
       version: '1.0.0-beta.4',
-      date: 'In development',
+      date: 'Oct 2026',
       changes: [
         'Scrolling feels like One UI: lists stretch at the edges, flings glide further, and big titles snap open or closed',
         'Turn renewal reminders, card expiry and budget alerts on or off one by one in Settings › Notifications',
