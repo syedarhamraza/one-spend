@@ -29,6 +29,18 @@ class Changelog {
 
   static const List<ChangelogEntry> entries = [
     ChangelogEntry(
+      version: '1.0.0-beta.4',
+      date: 'In development',
+      changes: [
+        'Scrolling feels like One UI: lists stretch at the edges, flings glide further, and big titles snap open or closed',
+        'Turn renewal reminders, card expiry and budget alerts on or off one by one in Settings › Notifications',
+        'Moving subscriptions to another category or card now uses the same pickers as the rest of the app',
+        'Deleting a card that subscriptions use asks where they should go first, or lets you leave them without a card',
+        'Recent searches are a simple list, and the mic in search lets you search by voice',
+        'The status and navigation bars are see-through on older Android versions too',
+      ],
+    ),
+    ChangelogEntry(
       version: '1.0.0-beta.3',
       date: 'Oct 2026',
       changes: [

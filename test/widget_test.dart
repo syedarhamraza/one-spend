@@ -1004,7 +1004,8 @@ void main() {
     await tester.enterText(find.byType(TextField), 'reminder');
     await tester.pumpAndSettle();
     expect(find.text('Default reminder'), findsOneWidget);
-    expect(find.text('Settings › Notifications'), findsOneWidget);
+    expect(find.text('Renewal reminders'), findsOneWidget);
+    expect(find.text('Settings › Notifications'), findsNWidgets(2));
     expect(find.text('Appearance'), findsNothing);
 
     // No results
@@ -2217,7 +2218,7 @@ void main() {
     expect(store.recentSearches, isEmpty);
   });
 
-  testWidgets('SubscriptionsScreen displays Samsung One UI Recent Searches chips, handles search tap, delete, and clear all', (WidgetTester tester) async {
+  testWidgets('SubscriptionsScreen shows One UI recent search rows, handles search tap, delete, and clear all', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -2239,8 +2240,9 @@ void main() {
     SubscriptionStore.instance.addRecentSearch('Spotify');
     await tester.pumpAndSettle();
 
-    // Verify "Recent searches" header, chips, and "Clear all" button appear
+    // Verify "Recent searches" header, the list rows, and "Clear all" button appear
     expect(find.text('Recent searches'), findsOneWidget);
+    expect(find.byIcon(Icons.history_rounded), findsNWidgets(2));
     expect(find.text('Clear all'), findsOneWidget);
     expect(find.text('Netflix'), findsOneWidget);
     expect(find.text('Spotify'), findsOneWidget);

@@ -131,6 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   hintText: 'Search settings',
                   onChanged: (value) => setState(() => _query = value),
                   onSubmitted: (_) => _searchFocus.unfocus(),
+                  onVoiceResult: (_) => _searchFocus.unfocus(),
                 ),
               ),
           ],

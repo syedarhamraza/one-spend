@@ -33,6 +33,7 @@ import '../core/telemetry/telemetry.dart';
 import '../core/haptics/haptics.dart';
 import '../theme/one_ui_scroll.dart';
 import 'category_picker_screen.dart';
+import '../widgets/one_ui_group_card.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -462,6 +463,11 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
         }
       },
       onChanged: (val) => setState(() => _searchQuery = val),
+      // A spoken search counts as a finished one, like pressing Search.
+      onVoiceResult: (heard) {
+        _searchFocusNode.unfocus();
+        SubscriptionStore.instance.addRecentSearch(heard);
+      },
     );
   }
 
@@ -743,72 +749,40 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
                                       ],
                                     ),
                                   ),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: store.recentSearches.map((query) {
-                                      return Container(
-                                        decoration: BoxDecoration(
-                                          color: OneUITheme.surfacePill,
-                                          borderRadius: BorderRadius.circular(20),
-                                          border: Border.all(
-                                            color: Colors.white.withValues(alpha: 0.08),
-                                            width: 1,
+                                  // One UI recent searches: a list card of rows (clock, search, ✕).
+                                  OneUIGroupCard(
+                                    margin: EdgeInsets.zero,
+                                    items: [
+                                      for (final query in store.recentSearches)
+                                        OneUIGroupItem(
+                                          leading: Icon(
+                                            Icons.history_rounded,
+                                            size: 22,
+                                            color: OneUITheme.textSecondary.withValues(alpha: 0.8),
                                           ),
-                                        ),
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                            borderRadius: BorderRadius.circular(20),
-                                            onTap: () {
-                                              Haptics.select();
-                                              _searchController.text = query;
-                                              setState(() {
-                                                _searchQuery = query;
-                                              });
-                                            },
-                                            child: Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.history_rounded,
-                                                    size: 15,
-                                                    color: OneUITheme.textSecondary.withValues(alpha: 0.8),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    query,
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      Haptics.tap();
-                                                      store.removeRecentSearch(query);
-                                                    },
-                                                    behavior: HitTestBehavior.opaque,
-                                                    child: Padding(
-                                                      padding: const EdgeInsets.all(2),
-                                                      child: Icon(
-                                                        Icons.close_rounded,
-                                                        size: 15,
-                                                        color: OneUITheme.textSecondary.withValues(alpha: 0.7),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
+                                          title: query,
+                                          trailing: Semantics(
+                                            label: 'Remove $query',
+                                            button: true,
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                Haptics.tap();
+                                                store.removeRecentSearch(query);
+                                              },
+                                              behavior: HitTestBehavior.opaque,
+                                              child: const Padding(
+                                                padding: EdgeInsets.all(4),
+                                                child: Icon(Icons.close_rounded, size: 20, color: OneUITheme.textSecondary),
                                               ),
                                             ),
                                           ),
+                                          onTap: () {
+                                            Haptics.select();
+                                            _searchController.text = query;
+                                            setState(() => _searchQuery = query);
+                                          },
                                         ),
-                                      );
-                                    }).toList(),
+                                    ],
                                   ),
                                 ],
                               ),
