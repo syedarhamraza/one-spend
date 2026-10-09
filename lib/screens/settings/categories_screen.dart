@@ -37,7 +37,10 @@ class CategoriesScreen extends StatefulWidget {
   final SubscriptionCategory? pickInitial;
   final Set<SubscriptionCategory> exclude;
 
-  const CategoriesScreen({super.key, this.pickInitial, this.exclude = const {}});
+  /// The header while picking; "Category" when null.
+  final String? pickTitle;
+
+  const CategoriesScreen({super.key, this.pickInitial, this.exclude = const {}, this.pickTitle});
 
   bool get picking => pickInitial != null;
 
@@ -357,7 +360,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     SliverPersistentHeader(
                       pinned: true,
                       delegate: OneUICollapsibleHeaderDelegate(
-                        title: _selecting ? '' : (widget.picking ? 'Category' : 'Categories'),
+                        title: _selecting ? '' : (widget.picking ? (widget.pickTitle ?? 'Category') : 'Categories'),
                         hasBigHeader: false,
                         showBackButton: !_selecting,
                         onBack: () => Navigator.pop(context),

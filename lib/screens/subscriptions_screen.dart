@@ -32,6 +32,7 @@ import '../core/telemetry/events.dart';
 import '../core/telemetry/telemetry.dart';
 import '../core/haptics/haptics.dart';
 import '../theme/one_ui_scroll.dart';
+import 'category_picker_screen.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   final ValueChanged<bool>? onSelectionModeChanged;
@@ -219,92 +220,24 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     });
   }
 
-  void _handleMoveSelected() {
+  Future<void> _handleMoveSelected() async {
     if (_selectedIds.isEmpty) return;
-    OneUIFloatingModal.show(
-      context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Move to category',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: OneUITheme.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.40,
-            ),
-            child: SingleChildScrollView(
-              physics: const OneUIScrollPhysics(),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ...SubscriptionCategory.all.map(
-                    (cat) => InkWell(
-                      onTap: () {
-                        final count = _selectedIds.length;
-                        SubscriptionStore.instance.batchChangeCategory(_selectedIds, cat);
-                        _exitSelectionMode();
-                        Navigator.pop(ctx);
-                        OneUIToast.show(context, 'Moved $count subscriptions to ${cat.label}');
-                      },
-                      borderRadius: BorderRadius.circular(14),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-                        child: Row(
-                          children: [
-                            Icon(cat.icon, size: 20, color: OneUITheme.textSecondary),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                cat.label,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: OneUITheme.textPrimary,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: OneUITheme.textPrimary,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    final store = SubscriptionStore.instance;
+    final selected = [for (final s in store.subscriptions) if (_selectedIds.contains(s.id)) s];
+    if (selected.isEmpty) return;
+    // Starts on the first one's category (the shared one when they all match).
+    final picked = await CategoryPickerScreen.open(
+      context,
+      initialCategory: selected.first.category,
+      title: 'Move to',
     );
+    if (picked == null || !mounted) return;
+    final count = _selectedIds.length;
+    store.batchChangeCategory(Set.of(_selectedIds), picked);
+    _exitSelectionMode();
+    OneUIToast.show(context, 'Moved $count ${count == 1 ? 'subscription' : 'subscriptions'} to ${picked.label}');
   }
+
 
   void _handleLockSelected() {
     if (_selectedIds.isEmpty) return;

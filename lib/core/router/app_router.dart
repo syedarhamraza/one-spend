@@ -119,7 +119,7 @@ class AppRoutes {
 typedef PaymentMethodPickerArgs = ({String? currentMethodId, bool isManageOnly});
 
 /// Arguments for [AppRoutes.categoryPicker]: the selected category, and any to leave out.
-typedef CategoryPickerArgs = ({SubscriptionCategory initial, Set<SubscriptionCategory> exclude});
+typedef CategoryPickerArgs = ({SubscriptionCategory initial, Set<SubscriptionCategory> exclude, String? title});
 
 /// `extra` for [AppRoutes.addSubscription]: start the new subscription from a
 /// brand preset (e.g. a quick-add chip) and/or with a card pre-selected.
@@ -228,6 +228,7 @@ List<RouteBase> buildPageRoutes() {
         return CategoryPickerScreen(
           initialCategory: args?.initial ?? SubscriptionCategory.utilities,
           exclude: args?.exclude ?? const {},
+          title: args?.title,
         );
       },
     ),

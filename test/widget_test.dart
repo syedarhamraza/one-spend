@@ -1155,13 +1155,14 @@ void main() {
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
 
-    // Verify Non-Forceful deletion dialog opens with options
-    expect(find.text('Card In Use'), findsOneWidget);
-    expect(find.text('Move & delete'), findsOneWidget);
-    expect(find.text('Delete without moving'), findsOneWidget);
-
-    // Delete without moving the subscriptions (non-forceful deletion)
-    await tester.tap(find.text('Delete without moving'));
+    // The card is in use: pick where its subscriptions go (here, nowhere), then confirm.
+    expect(find.text('Move to'), findsOneWidget);
+    await tester.tap(find.text('No card'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('will have no payment method'), findsOneWidget);
+    await tester.tap(find.text('Delete').last);
     await tester.pumpAndSettle();
 
     // Verify card is removed

@@ -6,7 +6,6 @@ import '../core/router/app_router.dart';
 import '../theme/one_ui_theme.dart';
 import '../widgets/one_ui_glass_surface.dart';
 import '../widgets/one_ui_morph_switcher.dart';
-import '../widgets/one_ui_radio.dart';
 import '../widgets/one_ui_bottom_vignette.dart';
 import '../widgets/one_ui_cancel_save_pill.dart';
 import '../widgets/one_ui_collapsible_header.dart';
@@ -18,6 +17,7 @@ import '../widgets/one_ui_toast.dart';
 import 'payment_method_editor_screen.dart';
 import '../core/haptics/haptics.dart';
 import '../theme/one_ui_scroll.dart';
+import 'move_subscriptions_screen.dart';
 
 /// Samsung One UI Unified Payment Card Picker & Management Subpage.
 /// Combines in-place card management and single-subscription card selection:
@@ -118,365 +118,81 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
     });
   }
 
-  void _deleteSelectedCards(List<PaymentMethod> methods) {
+  /// Deletes the selected cards. If subscriptions use them, first asks which card those
+  /// move to (or "No card"), then confirms.
+  Future<void> _deleteSelectedCards(List<PaymentMethod> methods) async {
     final selected = methods.where((m) => _selectedIds.contains(m.id)).toList();
     if (selected.isEmpty) return;
 
     final store = SubscriptionStore.instance;
-    final hasLinked = selected.any((m) => store.getSubscriptionsForMethod(m.id).isNotEmpty);
-
-    if (selected.length == 1 && hasLinked) {
-      final card = selected.first;
-      final linkedSubs = store.getSubscriptionsForMethod(card.id);
-      final count = linkedSubs.length;
-      final otherMethods = store.paymentMethods.where((m) => m.id != card.id).toList();
-      String? selectedReplacementId = otherMethods.isNotEmpty ? otherMethods.first.id : null;
-
-      // Deletes [card], first moving its subscriptions to the chosen card when [move].
-      void finishDelete(BuildContext modalCtx, {required bool move}) {
-        final replacementId = move ? selectedReplacementId : null;
-        if (replacementId != null) {
-          store.reassignSubscriptions(fromMethodId: card.id, toMethodId: replacementId);
-        }
-        store.deletePaymentMethod(card.id);
-        Navigator.pop(modalCtx);
-        setState(() {
-          if (_selectedMethodId == card.id) _selectedMethodId = replacementId;
-          _isSelectionMode = false;
-          _selectedIds.clear();
-        });
-        OneUIToast.show(context, replacementId != null ? 'Subscriptions moved & card removed' : 'Removed ${card.nickname}');
-      }
-
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (modalCtx) {
-          return StatefulBuilder(
-            builder: (context, setModalState) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                child: OneUIGlassSurface(
-                  elevation: OneUIGlassElevation.modal,
-                  borderRadius: const BorderRadius.all(Radius.circular(28)),
-                  padding: const EdgeInsets.all(22),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: OneUITheme.accentAmber.withValues(alpha: 0.16),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.warning_amber_rounded,
-                            color: OneUITheme.accentAmber,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Card In Use',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: OneUITheme.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Linked to $count subscription${count > 1 ? "s" : ""}',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: OneUITheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Removing "${card.nickname}" will leave linked subscriptions without a payment card. You can move them to another card or delete anyway.',
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        color: OneUITheme.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                    if (otherMethods.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      const Padding(
-                        padding: EdgeInsets.only(left: 4, bottom: 6),
-                        child: Text(
-                          'MOVE SUBSCRIPTIONS TO',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: OneUITheme.textSecondary,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ),
-                      // Inline radio list instead of a Material dropdown.
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Column(
-                          children: [
-                            for (final m in otherMethods)
-                              InkWell(
-                                borderRadius: BorderRadius.circular(18),
-                                onTap: () {
-                                  Haptics.select();
-                                  setModalState(() => selectedReplacementId = m.id);
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          m.displayName,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(fontSize: 15, color: OneUITheme.textPrimary),
-                                        ),
-                                      ),
-                                      OneUIRadio(isSelected: selectedReplacementId == m.id),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    // Footer: Cancel | primary (like OneUIFloatingModal's confirmation).
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => Navigator.pop(modalCtx),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: -0.2),
-                            ),
-                          ),
-                        ),
-                        Container(width: 1, height: 18, color: Colors.white.withValues(alpha: 0.10)),
-                        Expanded(
-                          child: TextButton(
-                            onPressed: () => finishDelete(modalCtx, move: otherMethods.isNotEmpty),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            ),
-                            child: Text(
-                              otherMethods.isNotEmpty ? 'Move & delete' : 'Delete anyway',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: otherMethods.isNotEmpty ? OneUITheme.accentBlue : OneUITheme.accentRed,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (otherMethods.isNotEmpty)
-                      Center(
-                        child: TextButton(
-                          onPressed: () => finishDelete(modalCtx, move: false),
-                          child: const Text(
-                            'Delete without moving',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: OneUITheme.accentRed),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            );
-            },
-          );
-        },
-      );
-      return;
+    final ids = {for (final m in selected) m.id};
+    final linked = [for (final m in selected) ...store.getSubscriptionsForMethod(m.id)].length;
+    PaymentMethod? moveTo;
+    if (linked > 0) {
+      moveTo = await MoveSubscriptionsScreen.open(context, fromIds: ids, allowNone: true, saveLabel: 'Next');
+      if (moveTo == null || !mounted) return;
     }
+    final target = moveTo != null && moveTo.id != PaymentMethod.none.id ? moveTo : null;
+    final subs = '$linked ${linked == 1 ? 'subscription' : 'subscriptions'}';
 
-    OneUIFloatingModal.showConfirmationDialog(
+    final confirmed = await OneUIFloatingModal.showConfirmationDialog(
       context: context,
-      title: selected.length == 1 ? 'Delete card' : 'Delete payment methods',
-      message: hasLinked
-          ? 'Some selected methods are linked to active subscriptions. Deleting them will leave those subscriptions unlinked.'
-          : (selected.length == 1
+      title: selected.length == 1 ? 'Delete ${selected.first.displayName}?' : 'Delete ${selected.length} payment methods?',
+      message: linked == 0
+          ? (selected.length == 1
               ? 'Are you sure you want to remove "${selected.first.displayName}"?'
-              : 'Are you sure you want to remove the ${selected.length} selected payment methods?'),
+              : 'Are you sure you want to remove the ${selected.length} selected payment methods?')
+          : target != null
+              ? '$subs ${linked == 1 ? 'moves' : 'move'} to ${target.displayName}.'
+              : '$subs will have no payment method.',
       confirmLabel: 'Delete',
       cancelLabel: 'Cancel',
       confirmTextColor: OneUITheme.accentRed,
-    ).then((confirmed) {
-      if (confirmed == true && mounted) {
-        for (final m in selected) {
-          store.deletePaymentMethod(m.id);
-          if (_selectedMethodId == m.id) {
-            _selectedMethodId = null;
-          }
-        }
-        setState(() {
-          _isSelectionMode = false;
-          _selectedIds.clear();
-        });
-        OneUIToast.show(
-          context,
-          selected.length == 1 ? 'Removed ${selected.first.nickname}' : 'Removed ${selected.length} payment methods',
-        );
-      }
-    });
-  }
+    );
+    if (confirmed != true || !mounted) return;
 
-  void _showBatchReassignModal(List<PaymentMethod> selected) {
-    if (selected.isEmpty) return;
-    final store = SubscriptionStore.instance;
-    final selectedIdsSet = selected.map((m) => m.id).toSet();
-    final otherMethods = store.paymentMethods.where((m) => !selectedIdsSet.contains(m.id)).toList();
-
-    if (otherMethods.isEmpty) {
-      OneUIToast.show(context, 'No alternative payment method available');
-      return;
+    Haptics.warn();
+    for (final m in selected) {
+      if (target != null) store.reassignSubscriptions(fromMethodId: m.id, toMethodId: target.id);
+      store.deletePaymentMethod(m.id);
+      if (_selectedMethodId == m.id) _selectedMethodId = target?.id;
     }
-
-    String selectedReplacementId = otherMethods.first.id;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (modalCtx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-              child: OneUIGlassSurface(
-                elevation: OneUIGlassElevation.modal,
-                borderRadius: const BorderRadius.all(Radius.circular(28)),
-                padding: const EdgeInsets.all(22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Move Subscriptions',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: OneUITheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Transfer subscriptions linked to selected cards to another payment card.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: OneUITheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedReplacementId,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.06),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                      labelText: 'Select destination card',
-                      labelStyle: const TextStyle(color: OneUITheme.textSecondary),
-                    ),
-                    dropdownColor: OneUITheme.cardColor,
-                    items: otherMethods.map((m) {
-                      return DropdownMenuItem(
-                        value: m.id,
-                        child: Text(
-                          m.displayName,
-                          style: const TextStyle(color: OneUITheme.textPrimary),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() => selectedReplacementId = val);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 22),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(modalCtx),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          child: const Text('Cancel', style: TextStyle(color: OneUITheme.textSecondary)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            for (final m in selected) {
-                              store.reassignSubscriptions(fromMethodId: m.id, toMethodId: selectedReplacementId);
-                            }
-                            Navigator.pop(modalCtx);
-                            setState(() {
-                              _isSelectionMode = false;
-                              _selectedIds.clear();
-                            });
-                            OneUIToast.show(context, 'Moved subscriptions successfully');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: OneUITheme.accentBlue,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          child: const Text('Move subscriptions', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-          },
-        );
-      },
+    setState(() {
+      _isSelectionMode = false;
+      _selectedIds.clear();
+    });
+    OneUIToast.show(
+      context,
+      selected.length == 1 ? 'Removed ${selected.first.nickname}' : 'Removed ${selected.length} payment methods',
     );
   }
+
+  /// Moves the subscriptions of the selected cards to a card picked from a list.
+  Future<void> _moveSelectedSubscriptions(List<PaymentMethod> selected) async {
+    if (selected.isEmpty) return;
+    final store = SubscriptionStore.instance;
+    final ids = {for (final m in selected) m.id};
+    if (store.paymentMethods.every((m) => ids.contains(m.id))) {
+      OneUIToast.show(context, 'Add another payment method to move them to');
+      return;
+    }
+    final linked = [for (final m in selected) ...store.getSubscriptionsForMethod(m.id)].length;
+    if (linked == 0) {
+      OneUIToast.show(context, selected.length == 1 ? 'No subscriptions use this card' : 'No subscriptions use these cards');
+      return;
+    }
+    final target = await MoveSubscriptionsScreen.open(context, fromIds: ids);
+    if (target == null || !mounted) return;
+    for (final m in selected) {
+      store.reassignSubscriptions(fromMethodId: m.id, toMethodId: target.id);
+    }
+    setState(() {
+      _isSelectionMode = false;
+      _selectedIds.clear();
+    });
+    OneUIToast.show(context, 'Moved $linked ${linked == 1 ? 'subscription' : 'subscriptions'} to ${target.displayName}');
+  }
+
 
   Widget _buildSelectionCountPill({
     required int selectedCount,
@@ -1082,7 +798,7 @@ class _PaymentMethodPickerScreenState extends State<PaymentMethodPickerScreen> {
       label: 'Move subs',
       icon: Icons.swap_horiz_rounded,
       isEnabled: _selectedIds.isNotEmpty,
-      onTap: () => _showBatchReassignModal(
+      onTap: () => _moveSelectedSubscriptions(
         methods.where((m) => _selectedIds.contains(m.id)).toList(),
       ),
     ),
