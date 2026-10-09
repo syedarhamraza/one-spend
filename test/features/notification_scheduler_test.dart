@@ -102,6 +102,25 @@ void main() {
     expect(first.route, AppRoutes.subscriptionDetail(popularCatalog[0].id));
   });
 
+  test('a notification type switched off is left out, and the choice survives a restart', () async {
+    scheduler.start();
+    controller.addSubscription(dueSoon());
+    await scheduler.syncNow();
+    expect(service.scheduled.values.any((e) => e.notification.kind == NotificationKind.renewal), isTrue);
+
+    controller.setNotificationKindEnabled(NotificationKind.renewal, false);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await scheduler.lastSyncDone;
+    expect(service.scheduled.values.any((e) => e.notification.kind == NotificationKind.renewal), isFalse);
+
+    await controller.pendingWrites;
+    final reloaded = _controllerFor(db);
+    await reloaded.load();
+    expect(reloaded.isNotificationKindEnabled(NotificationKind.renewal), isFalse);
+    expect(reloaded.isNotificationKindEnabled(NotificationKind.card), isTrue);
+    expect(reloaded.isNotificationKindEnabled(NotificationKind.developer), isTrue);
+  });
+
   test('turning notification vibration off moves everything to the quiet channels', () async {
     scheduler.start();
     controller.addSubscription(dueSoon());

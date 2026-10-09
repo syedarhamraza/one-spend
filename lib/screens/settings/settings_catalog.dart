@@ -112,6 +112,9 @@ class SettingsCatalog {
             keywords: ['reminder time', 'days before', 'alert', 'renewal'],
             placeholder: false,
           ),
+          (title: 'Renewal reminders', keywords: ['renewal', 'notify', 'notification type'], placeholder: false),
+          (title: 'Card expiry', keywords: ['expire', 'expiring card', 'notification type'], placeholder: false),
+          (title: 'Budget alerts', keywords: ['over budget', 'limit', 'notification type'], placeholder: false),
         ],
       ),
       SettingsDestination(

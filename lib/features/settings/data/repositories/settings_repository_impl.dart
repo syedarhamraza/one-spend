@@ -55,6 +55,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<void> setNotificationsEnabled(bool value) => _dataSource.setNotificationsEnabled(value);
 
   @override
+  Future<Set<String>> getNotificationKindsOff() => _dataSource.getNotificationKindsOff();
+
+  @override
+  Future<void> setNotificationKindsOff(Set<String> kinds) => _dataSource.setNotificationKindsOff(kinds);
+
+  @override
   Future<int> getDefaultReminderTimeMinutes() => _dataSource.getDefaultReminderTimeMinutes();
 
   @override

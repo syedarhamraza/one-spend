@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/di/injection.dart';
 import '../../core/router/app_router.dart';
 import '../../features/notifications/data/notification_service.dart';
+import '../../features/notifications/domain/planned_notification.dart';
 import '../../features/notifications/presentation/notification_permission.dart';
 import '../../models/subscription.dart';
 import '../../theme/one_ui_theme.dart';
@@ -64,6 +65,18 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       await ensureNotificationPermission();
       await _refreshSystemState();
     }
+  }
+
+  /// The notification types you can switch off, with what each one is for.
+  static const _kinds = [
+    (NotificationKind.renewal, 'Renewal reminders', 'Before each subscription renews'),
+    (NotificationKind.card, 'Card expiry', 'When a saved card is about to expire'),
+    (NotificationKind.budget, 'Budget alerts', 'When upcoming charges go over your budget'),
+  ];
+
+  void _setKind(SubscriptionStore store, NotificationKind kind, bool enabled) {
+    Haptics.select();
+    store.setNotificationKindEnabled(kind, enabled);
   }
 
   Future<void> _pickReminder(SubscriptionStore store) async {
@@ -132,6 +145,32 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             child: Text(
               'Used for new subscriptions, card expiry and budget alerts. Each subscription can override it.',
               style: TextStyle(fontSize: 13, height: 1.35, color: OneUITheme.textSecondary),
+            ),
+          ),
+          IgnorePointer(
+            ignoring: !enabled,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: enabled ? 1 : 0.4,
+              child: OneUISection(
+                title: 'Notify me about',
+                child: OneUIGroupCard(
+                  margin: EdgeInsets.zero,
+                  items: [
+                    for (final (kind, title, subtitle) in _kinds)
+                      OneUIGroupItem(
+                        title: title,
+                        subtitle: subtitle,
+                        subtitleColor: OneUITheme.textSecondary,
+                        trailing: OneUISwitch(
+                          value: store.isNotificationKindEnabled(kind),
+                          onChanged: (v) => _setKind(store, kind, v),
+                        ),
+                        onTap: () => _setKind(store, kind, !store.isNotificationKindEnabled(kind)),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
         ];
