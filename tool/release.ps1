@@ -217,8 +217,13 @@ if (-not $SkipBuild) {
   # Dart code is obfuscated; its symbols go to symbols/<version> (git-ignored, kept per
   # release) and are needed to read Crashlytics stack traces.
   $symbolsDir = "symbols/$newVersion"
+  # Crashlytics never deobfuscates exception messages ("Field '_Dgb@...' has not been
+  # initialized"), so keep the rename map to decode them. It sits beside the symbols folder,
+  # not in it, so the upload below never sees it; gen_snapshot needs an absolute path.
+  $obfuscationMap = Join-Path (Get-Location) "symbols/$newVersion.obfuscation-map.json"
   # One universal APK, so its versionCode matches the bundle's (split APKs add 1000 * ABI).
-  $buildArgs = @($Target, '--release', '--obfuscate', "--split-debug-info=$symbolsDir", "--dart-define=GIT_SHA=$sha")
+  $buildArgs = @($Target, '--release', '--obfuscate', "--split-debug-info=$symbolsDir",
+    "--extra-gen-snapshot-options=--save-obfuscation-map=$obfuscationMap", "--dart-define=GIT_SHA=$sha")
   # x86_64 is only for emulators; the bundle keeps it since Play serves per-ABI splits anyway.
   if ($Target -eq 'apk') { $buildArgs += '--target-platform=android-arm,android-arm64' }
   Write-Host "`nBuilding $Target for $newVersion ($sha)..."
