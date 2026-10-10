@@ -74,6 +74,7 @@ Release builds use `--obfuscate --split-debug-info=symbols/<version>`. That fold
 - **Automatic upload:** the script uploads the symbols with `npx firebase-tools crashlytics:symbols:upload`. Run `npx firebase-tools login` once beforehand.
 - **If the upload fails:** the script only warns, and prints the command so you can rerun it.
 - **Decoding a trace by hand:** `flutter symbolize -i trace.txt -d symbols/<version>/app.android-arm64.symbols`.
+- **Decoding an error message:** Crashlytics decodes stack frames but not messages, so a name like `_Dgb@329498029` stays obfuscated. Look it up in `symbols/<version>.obfuscation-map.json`, saved by each release build. It's a flat `[original, obfuscated, …]` list; ignore the `@…` suffix.
 - **Java/Kotlin:** R8 already shrinks and obfuscates it, and the Crashlytics Gradle plugin uploads its mapping.
 
 ## Upload key (one-time setup)
